@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { User, Map, Globe, Sun } from "lucide-react"
-import { cn } from "@/src/lib/utils"
+import { cn } from "@/lib/utils"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 
 export default function Navbar() {
@@ -71,18 +72,17 @@ export default function Navbar() {
         {/* Center Logo & Nav */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
           <Link href="/" className="mb-4 group">
-            {/* Text-based logo */}
-            <div
+            <Image
+              src="/logo-transparent.png"
+              alt="Duck Entertainment"
+              width={0}
+              height={0}
+              sizes="100vw"
               className={cn(
-                "text-center font-serif transition-colors duration-500",
-                isSolid ? "text-text-dark" : "text-white",
+                "transition-all duration-500 w-16",
+                isSolid ? "" : "brightness-0 invert",
               )}
-            >
-              <div className="text-xs tracking-[0.2em] uppercase mb-0.5 opacity-80">
-                VISIT
-              </div>
-              <div className="text-xl font-bold tracking-wider">RED SEA</div>
-            </div>
+            />
           </Link>
 
           <div
@@ -91,14 +91,14 @@ export default function Navbar() {
               isSolid ? "text-text-body" : "text-white",
             )}
           >
-            {["الوجهات", "المنتجعات", "التجارب", "عروض حصرية"].map((item) => (
+            {["الخدمات", "المواقع", "التجارب", "عروض حصرية"].map((item) => (
               <Link
                 key={item}
                 href="#"
-                className="relative hover:text-teal-light transition-colors group"
+                className="relative hover:text-duck-cyan-light transition-colors group"
               >
                 {item}
-                <span className="absolute -bottom-2 right-0 w-0 h-0.5 bg-teal-primary transition-all group-hover:w-full" />
+                <span className="absolute -bottom-2 right-0 w-0 h-0.5 bg-duck-cyan transition-all group-hover:w-full" />
               </Link>
             ))}
           </div>
@@ -128,7 +128,7 @@ export default function Navbar() {
             <User className="w-4 h-4" />
             <span>حسابي</span>
           </button>
-          <button className="bg-button-mint text-dark-bg font-medium rounded-full px-6 py-2 hover:bg-teal-light transition-colors">
+          <button className="bg-duck-yellow text-duck-navy font-medium rounded-full px-6 py-2 hover:bg-duck-yellow-hover transition-colors">
             احجز
           </button>
         </div>

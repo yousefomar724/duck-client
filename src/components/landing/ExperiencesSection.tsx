@@ -124,7 +124,7 @@ export default function ExperiencesSection() {
     <section className="bg-white py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
-        <span className="text-teal-primary text-base block mb-3">
+        <span className="text-duck-cyan text-base block mb-3">
           التجارب والفعاليات
         </span>
         <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-8">
@@ -142,16 +142,16 @@ export default function ExperiencesSection() {
                 onClick={() => setActiveCategory(cat.id)}
                 className={`flex flex-col items-center gap-3 pb-4 transition-all relative ${
                   isActive
-                    ? "text-teal-primary"
+                    ? "text-duck-cyan"
                     : "text-text-muted hover:text-text-body"
                 }`}
               >
                 <Icon
-                  className={`w-8 h-8 ${isActive ? "text-teal-primary" : "text-gray-400"}`}
+                  className={`w-8 h-8 ${isActive ? "text-duck-cyan" : "text-gray-400"}`}
                 />
                 <span className="text-sm font-medium">{cat.label}</span>
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-primary" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-duck-cyan" />
                 )}
               </button>
             )

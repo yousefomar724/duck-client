@@ -79,7 +79,7 @@ export default function OffersSection() {
     <section className="bg-off-white py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
-        <span className="text-teal-primary text-base block mb-3">العروض</span>
+        <span className="text-duck-cyan text-base block mb-3">العروض</span>
         <h2 className="text-text-dark text-4xl md:text-5xl font-bold">
           اكتشف عروضنا الحصرية
         </h2>
@@ -117,7 +117,7 @@ export default function OffersSection() {
                       {offer.description}
                     </p>
                   </div>
-                  <button className="bg-button-mint text-dark-bg px-7 py-3 rounded-full font-medium hover:bg-teal-light transition-colors">
+                  <button className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors">
                     {offer.cta}
                   </button>
                 </div>

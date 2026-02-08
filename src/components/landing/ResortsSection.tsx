@@ -176,7 +176,7 @@ export default function ResortsSection() {
                 {/* Top Content */}
                 <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
                   {resort.badge && (
-                    <span className="bg-teal-light/90 text-dark-bg text-xs font-medium px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                    <span className="bg-duck-cyan-light/90 text-dark-bg text-xs font-medium px-3 py-1.5 rounded-lg backdrop-blur-sm">
                       {resort.badge}
                     </span>
                   )}
@@ -193,7 +193,7 @@ export default function ResortsSection() {
 
                 {/* Bottom Content */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-right">
-                  <div className="text-teal-primary text-sm font-medium mb-2 opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+                  <div className="text-duck-cyan text-sm font-medium mb-2 opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
                     لمعرفة المزيد
                   </div>
                   <h3 className="text-white text-2xl font-bold mb-1">

@@ -26,8 +26,8 @@ const fedraSerif = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "زوروا البحر الأحمر | Visit Red Sea",
-  description: "Visit Red Sea — Landing Page",
+  title: "دوك إنترتينمنت | Duck Entertainment",
+  description: "Duck Entertainment — Water Sports in Aswan",
 }
 
 export default function RootLayout({
