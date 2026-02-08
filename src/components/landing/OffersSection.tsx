@@ -76,7 +76,7 @@ export default function OffersSection() {
   }, [emblaApi, onSelect])
 
   return (
-    <section className="bg-white py-20 overflow-hidden">
+    <section className="bg-off-white py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
         <span className="text-teal-primary text-base block mb-3">العروض</span>
@@ -93,41 +93,33 @@ export default function OffersSection() {
             {offers.map((offer) => (
               <div
                 key={offer.id}
-                className="flex-[0_0_90%] md:flex-[0_0_700px] min-w-0 relative h-[500px] rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row"
+                className="flex-[0_0_90%] md:max-w-[70rem] min-w-0 relative h-[500px] rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row first:ms-6"
               >
-                {/* Image Side (Left in RTL flex-row) */}
-                {/* Wait, in RTL flex-row, first child is Right. 
-                      PRD: "Right column (in RTL): Text content... Left column: Full-bleed aerial photo"
-                      So Image should be 2nd child in code if using flex-row (default RTL) or 1st child with order-last?
-                      Standard flex behavior in RTL:
-                      <div flex>
-                        <Child1 /> (Right)
-                        <Child2 /> (Left)
-                      </div>
-                      So Text should be Child 1, Image Child 2.
-                  */}
-
-                {/* Text Side (Right) */}
-                <div className="w-full md:w-1/2 p-10 flex flex-col justify-center items-start text-right">
-                  <h3 className="text-2xl md:text-3xl font-bold text-text-dark mb-4">
-                    {offer.title}
-                  </h3>
-                  <p className="text-text-body leading-relaxed mb-8">
-                    {offer.description}
-                  </p>
-                  <button className="bg-button-mint text-dark-bg px-7 py-3 rounded-full font-medium hover:bg-teal-light transition-colors">
-                    {offer.cta}
-                  </button>
-                </div>
-
                 {/* Image Side (Left) */}
-                <div className="w-full md:w-1/2 relative h-full">
+                <div className="w-full md:w-2/3 relative h-full">
                   <Image
                     src={offer.image}
                     alt={offer.title}
-                    fill
-                    className="object-cover"
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                    className="object-cover w-full h-full"
                   />
+                </div>
+
+                {/* Text Side (Right) */}
+                <div className="w-full md:w-1/3 p-10 flex flex-col justify-between items-start text-right">
+                  <div>
+                    <h3 className="text-2xl md:text-3xl font-bold text-text-dark mb-4">
+                      {offer.title}
+                    </h3>
+                    <p className="text-text-body leading-relaxed mb-8">
+                      {offer.description}
+                    </p>
+                  </div>
+                  <button className="bg-button-mint text-dark-bg px-7 py-3 rounded-full font-medium hover:bg-teal-light transition-colors">
+                    {offer.cta}
+                  </button>
                 </div>
               </div>
             ))}

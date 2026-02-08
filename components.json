@@ -5,19 +5,27 @@
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "app/globals.css",
+    "css": "src/app/globals.css",
     "baseColor": "neutral",
     "cssVariables": true,
-    "prefix": ""
+    "prefix": "src"
   },
   "iconLibrary": "lucide",
   "rtl": true,
   "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+    "components": "@/src/components",
+    "utils": "@/src/lib/utils",
+    "ui": "@/src/components/ui",
+    "lib": "@/src/lib",
+    "hooks": "@/src/hooks"
   },
-  "registries": {}
+  "registries": {
+    "@aceternity": "https://ui.aceternity.com/registry/{name}.json",
+    "@abui": "https://abui.io/r/{name}.json",
+    "@8starlabs-ui": "https://ui.8starlabs.com/r/{name}.json",
+    "@aevr": "https://ui.aevr.space/r/{name}.json",
+    "@ai-blocks": "https://webllm.org/r/{name}.json",
+    "@aliimam": "https://aliimam.in/r/{name}.json",
+    "@basecn": "https://basecn.dev/r/{name}"
+  }
 }

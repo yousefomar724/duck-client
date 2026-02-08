@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { User, Map, Globe, Sun } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/src/lib/utils"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 
 export default function Navbar() {
