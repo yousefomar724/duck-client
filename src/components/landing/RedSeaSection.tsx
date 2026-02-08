@@ -30,10 +30,10 @@ export default function RedSeaSection() {
         <div className="flex flex-col items-start text-white max-w-xl pt-20">
           {/* Logo Placeholder */}
           <div className="mb-6">
-            <h2 className="text-3xl font-serif tracking-widest uppercase border-b-2 border-white/30 pb-2 inline-block">
-              THE RED SEA
+            <h2 className="text-2xl font-bold border-b-2 border-white/30 pb-2 inline-block">
+              Duck Entertainment
             </h2>
-            <div className="text-xl text-right mt-1">البحر الأحمر</div>
+            <div className="text-lg text-right mt-1 opacity-90">دوك إنترتينمنت</div>
           </div>
 
           <motion.h2
@@ -42,7 +42,7 @@ export default function RedSeaSection() {
             transition={{ duration: 0.6 }}
             className="text-5xl md:text-6xl font-bold mb-4"
           >
-            وجهة البحر الأحمر
+            لماذا تختار دوك إنترتينمنت؟
           </motion.h2>
 
           <motion.p
@@ -51,7 +51,7 @@ export default function RedSeaSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-lg md:text-xl text-white/90 mb-8 font-light"
           >
-            وجهة الفخامة والتجارب الفريدة
+            استمتع بالنيل كما لم يحدث من قبل مع أفضل شركة رياضات مائية في مصر. نحن لسنا مجرد شركة رياضات مائية أخرى. نحن محليون متحمسون نريد مشاركة سحر النيل مع العالم.
           </motion.p>
 
           <motion.button
@@ -64,22 +64,31 @@ export default function RedSeaSection() {
           </motion.button>
         </div>
 
-        {/* Left Content (End) - Promo Card */}
+        {/* Left Content (End) - Stats Card */}
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           whileInView={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="hidden md:flex flex-col w-[280px] bg-black/20 backdrop-blur-xl rounded-2xl p-4 border border-white/10 self-end mb-20 ml-10"
+          className="hidden md:flex flex-col w-[280px] bg-black/20 backdrop-blur-xl rounded-2xl p-6 border border-white/10 self-end mb-20 ml-10"
         >
-          <div className="relative h-32 w-full mb-4 rounded-xl overflow-hidden bg-white/10">
-            {/* Placeholder for FlyDubai image */}
-            <div className="absolute inset-0 flex items-center justify-center text-white/50 text-xs">
-              FlyDubai Image
+          <div className="grid grid-cols-2 gap-4 text-white text-center">
+            <div>
+              <div className="text-2xl font-bold">180</div>
+              <div className="text-xs text-white/80">EGP يبدأ من</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">4</div>
+              <div className="text-xs text-white/80">مواقع خلابة</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">4.9★</div>
+              <div className="text-xs text-white/80">التقييم</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">5+</div>
+              <div className="text-xs text-white/80">سنوات الخبرة</div>
             </div>
           </div>
-          <p className="text-white text-center text-sm font-medium mb-2">
-            احجز رحلتك على متن طيران فلاي دبي
-          </p>
         </motion.div>
       </div>
     </section>

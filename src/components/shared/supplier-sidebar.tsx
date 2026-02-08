@@ -29,7 +29,7 @@ export default function SupplierSidebar() {
   const pathname = usePathname()
 
   return (
-    <Sidebar side="right" collapsible="icon">
+    <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center justify-center py-4">
           <Logo width={100} height={50} />

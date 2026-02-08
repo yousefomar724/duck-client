@@ -23,7 +23,7 @@ export default function AdminDestinations() {
       {/* Destinations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {mockDestinations.map((destination) => (
-          <Card key={destination.id} className="overflow-hidden">
+          <Card key={destination.id} className="overflow-hidden py-0!">
             <div className="relative h-48 w-full">
               <Image
                 src={destination.image}

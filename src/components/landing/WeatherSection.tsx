@@ -15,8 +15,8 @@ export default function WeatherSection() {
         
         {/* Header */}
         <div className="text-center mb-8">
-          <span className="text-teal-primary text-base block mb-3">الطقس والفصول</span>
-          <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-8">وجهة على مدار العام</h2>
+          <span className="text-teal-primary text-base block mb-3">الطقس</span>
+          <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-8">أسوان على مدار العام</h2>
           
           {/* Destination Toggle */}
           <div className="inline-flex bg-white rounded-full p-1 shadow-sm mb-12">
@@ -28,7 +28,7 @@ export default function WeatherSection() {
                   : "bg-transparent text-text-dark hover:bg-gray-50"
               }`}
             >
-              وجهة البحر الأحمر
+              أسوان
             </button>
             <button
               onClick={() => setActiveDest("amaala")}
@@ -38,7 +38,7 @@ export default function WeatherSection() {
                   : "bg-transparent text-text-dark hover:bg-gray-50"
               }`}
             >
-              تريل باي، أمالا
+              نهر النيل
             </button>
           </div>
         </div>

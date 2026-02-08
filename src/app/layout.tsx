@@ -26,7 +26,7 @@ const fedraSerif = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "دوك إنترتينمنت | Duck Entertainment",
+  title: "Duck Entertainment",
   description: "Duck Entertainment — Water Sports in Aswan",
 }
 

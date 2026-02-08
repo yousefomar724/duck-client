@@ -55,7 +55,7 @@ function ChartContainer({
         data-slot="chart"
         data-chart={chartId}
         className={cn(
-          "src:[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground src:[&_.recharts-cartesian-grid_line[stroke=#ccc]]:stroke-border/50 src:[&_.recharts-curve.recharts-tooltip-cursor]:stroke-border src:[&_.recharts-polar-grid_[stroke=#ccc]]:stroke-border src:[&_.recharts-radial-bar-background-sector]:fill-muted src:[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted src:[&_.recharts-reference-line_[stroke=#ccc]]:stroke-border src:flex src:aspect-video src:justify-center src:text-xs src:[&_.recharts-dot[stroke=#fff]]:stroke-transparent src:[&_.recharts-layer]:outline-hidden src:[&_.recharts-sector]:outline-hidden src:[&_.recharts-sector[stroke=#fff]]:stroke-transparent src:[&_.recharts-surface]:outline-hidden",
+          "src:[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground src:[&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 src:[&_.recharts-curve.recharts-tooltip-cursor]:stroke-border src:[&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border src:[&_.recharts-radial-bar-background-sector]:fill-muted src:[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted src:[&_.recharts-reference-line_[stroke='#ccc']]:stroke-border src:flex src:aspect-video src:justify-center src:text-xs src:[&_.recharts-dot[stroke='#fff']]:stroke-transparent src:[&_.recharts-layer]:outline-hidden src:[&_.recharts-sector]:outline-hidden src:[&_.recharts-sector[stroke='#fff']]:stroke-transparent src:[&_.recharts-surface]:outline-hidden",
           className,
         )}
         {...props}

@@ -3,6 +3,8 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* shadcn/ui v4 components use src: variant; define pass-through so utilities generate */
+@custom-variant src (&);
 
 @theme inline {
   --color-background: var(--background);

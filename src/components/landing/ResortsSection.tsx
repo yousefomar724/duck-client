@@ -9,72 +9,36 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 const resorts = [
   {
     id: 1,
-    name: "ديزرت روك",
-    location: "وجهة البحر الأحمر",
-    tags: ["بين الجبال", "طبيعة"],
+    name: "جزيرة الفنتين",
+    location: "نهر النيل - أسوان",
+    tags: ["كاياك", "جولات الغروب"],
     image: "/resort.webp",
     logo: "/resot-logo.svg",
-    badge: "الافتتاح قريباً",
+    badge: "جولات الكاياك",
   },
   {
     id: 2,
-    name: "شيبارا",
-    location: "وجهة البحر الأحمر",
-    tags: ["على البحر", "للاستشفاء"],
+    name: "كورنيش أسوان",
+    location: "نهر النيل - أسوان",
+    tags: ["ستاند اب", "تجديف"],
     image: "/resort.webp",
     logo: "/resot-logo.svg",
     badge: null,
   },
   {
     id: 3,
-    name: "إديشن البحر الأحمر",
-    location: "جزيرة شورى",
-    tags: ["على الشاطئ", "للاستشفاء"],
+    name: "جزيرة النباتات",
+    location: "نهر النيل - أسوان",
+    tags: ["كاياك", "طبيعة"],
     image: "/resort.webp",
     logo: "/resot-logo.svg",
     badge: null,
   },
   {
     id: 4,
-    name: "منتجع ناموس",
-    location: "تريل باي، أمالا",
-    tags: ["على الشاطئ", "للاستشفاء"],
-    image: "/resort.webp",
-    logo: "/resot-logo.svg",
-    badge: "الافتتاح قريباً",
-  },
-  {
-    id: 5,
-    name: "كوينوكس",
-    location: "تريل باي، أمالا",
-    tags: ["للاستشفاء"],
-    image: "/resort.webp",
-    logo: "/resot-logo.svg",
-    badge: null,
-  },
-  {
-    id: 6,
-    name: "روزوود البحر الأحمر",
-    location: "جزيرة شورى",
-    tags: ["على الشاطئ", "طبيعة"],
-    image: "/resort.webp",
-    logo: "/resot-logo.svg",
-    badge: null,
-  },
-  {
-    id: 7,
-    name: "سانت ريجيس البحر الأحمر",
-    location: "جزيرة شورى",
-    tags: ["على الشاطئ", "رفاهية"],
-    image: "/resort.webp",
-    logo: "/resot-logo.svg",
-    badge: "الافتتاح قريباً",
-  },
-  {
-    id: 8,
-    name: "منتجع ريتز كارلتون أمالا",
-    location: "تريل باي، أمالا",
-    tags: ["للاستشفاء", "ترف"],
+    name: "شاطئ النيل",
+    location: "نهر النيل - أسوان",
+    tags: ["واتر بايك", "عائلات"],
     image: "/resort.webp",
     logo: "/resot-logo.svg",
     badge: null,
@@ -82,12 +46,10 @@ const resorts = [
 ]
 
 const filters = [
-  "كل المنتجعات",
-  "على الشاطئ",
-  "للاستشفاء",
-  "على البحر",
-  "بين الجبال",
-  "بين الكثبان الرملية",
+  "الكل",
+  "كاياك",
+  "ستاند اب",
+  "واتر بايك",
 ]
 
 export default function ResortsSection() {
@@ -132,9 +94,9 @@ export default function ResortsSection() {
     <section className="bg-dark-bg py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
-        <span className="text-white/60 text-base block mb-3">المنتجعات</span>
+        <span className="text-white/60 text-base block mb-3">المواقع</span>
         <h2 className="text-white text-4xl md:text-5xl font-bold">
-          وجهات الرفاهية والفخامة
+          اكتشف مواقعنا الرائعة
         </h2>
       </div>
 

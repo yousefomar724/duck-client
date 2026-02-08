@@ -9,31 +9,33 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 const offers = [
   {
     id: 1,
-    title: "عروض الافتتاح الخاص",
+    title: "السلامة أولاً",
     description:
-      "من قلب البحر الأحمر، ترحب بكم جزيرة شورى بعروضها الافتتاحية، وتدعوكم لاكتشاف عالم جديد من أفخم المنتجعات وتجربة أجوائها الاستثنائية.",
+      "جميع المعدات معتمدة ومُفحصة بانتظام. مرشدونا محترفون مدربون.",
     image: "/offer.webp",
     cta: "لمعرفة المزيد",
   },
   {
     id: 2,
-    title: "رومانسية للزوجين",
+    title: "الخبرة المحلية",
     description:
-      "رحلة ساحرة مصممة خصيصاً للأزواج عن ملاذ رومانسي لا مثيل له في الفاخرة.",
+      "ولدنا وترعرعنا في أسوان، نعرف كل ركن من أركان النيل وجواهره المخفية.",
     image: "/offer.webp",
     cta: "لمعرفة المزيد",
   },
   {
     id: 3,
-    title: "عطلة العائلة",
-    description: "استمتع بأوقات لا تنسى مع العائلة في وجهاتنا الفريدة.",
+    title: "جدولة مرنة",
+    description:
+      "شروق الشمس، غروب الشمس، أو منتصف النهار - اختر الوقت المثالي لمغامرتك.",
     image: "/offer.webp",
     cta: "لمعرفة المزيد",
   },
   {
     id: 4,
-    title: "باقة العافية",
-    description: "جدد نشاطك وحيويتك مع برامجنا الصحية المتكاملة.",
+    title: "مواقع مميزة",
+    description:
+      "الوصول إلى أماكن حصرية على طول النيل لا يراها معظم السياح.",
     image: "/offer.webp",
     cta: "لمعرفة المزيد",
   },
@@ -79,10 +81,13 @@ export default function OffersSection() {
     <section className="bg-off-white py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
-        <span className="text-duck-cyan text-base block mb-3">العروض</span>
+        <span className="text-duck-cyan text-base block mb-3">لماذا نحن</span>
         <h2 className="text-text-dark text-4xl md:text-5xl font-bold">
-          اكتشف عروضنا الحصرية
+          لماذا تختار دوك إنترتينمنت؟
         </h2>
+        <p className="text-text-body mt-4 max-w-2xl mx-auto">
+          نحن لسنا مجرد شركة رياضات مائية أخرى. نحن محليون متحمسون نريد مشاركة سحر النيل مع العالم.
+        </p>
       </div>
 
       {/* Carousel */}
@@ -157,7 +162,7 @@ export default function OffersSection() {
         </div>
 
         <button className="border border-text-dark text-text-dark px-8 py-3 rounded-full hover:bg-text-dark hover:text-white transition-colors">
-          استكشف جميع العروض
+          عرض جميع الخدمات
         </button>
       </div>
     </section>

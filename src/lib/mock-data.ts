@@ -249,6 +249,41 @@ export const mockDestinations: Destination[] = [
     status: "active",
     trip_count: 5,
   },
+  {
+    id: 4,
+    name: { ar: "شاطئ النيل", en: "Nile Beach" },
+    description: {
+      ar: "شاطئ هادئ مثالي للعائلات والواتر بايك",
+      en: "Peaceful beach ideal for families and water biking",
+    },
+    image: "/resort.webp",
+    status: "active",
+    trip_count: 6,
+  },
+]
+
+export const mockTestimonials = [
+  {
+    id: 1,
+    name: "Sarah Mitchell",
+    location: "London, UK",
+    quote:
+      "Absolutely magical experience! The sunset kayak tour around Elephantine Island was the highlight of our Egypt trip. The guides were professional and the equipment was top-notch.",
+  },
+  {
+    id: 2,
+    name: "Ahmed Hassan",
+    location: "Cairo, Egypt",
+    quote:
+      "As a local, I've always wanted to experience the Nile differently. Duck Entertainment made it happen! The SUP session was incredibly peaceful and well-organized.",
+  },
+  {
+    id: 3,
+    name: "Maria Garcia",
+    location: "Barcelona, Spain",
+    quote:
+      "The water bike experience was so much fun! Perfect for families. My kids loved it and the staff was very patient with beginners. Highly recommend!",
+  },
 ]
 
 export const mockPayouts: Payout[] = [

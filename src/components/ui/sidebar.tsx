@@ -294,10 +294,10 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        "src:hover:after:bg-sidebar-border src:absolute src:inset-y-0 src:z-20 src:hidden src:w-4 src:-translate-x-1/2 rtl:src:translate-x-1/2 src:transition-all src:ease-linear src:group-data-[side=left]:-right-4 src:group-data-[side=right]:left-0 src:after:absolute src:after:inset-y-0 src:after:start-1/2 src:after:w-[2px] src:sm:flex",
-        "src:in-data-[side=left]:cursor-w-resize rtl:src:in-data-[side=left]:cursor-e-resize src:in-data-[side=right]:cursor-e-resize rtl:src:in-data-[side=right]:cursor-w-resize",
-        "src:[[data-side=left][data-state=collapsed]_&]:cursor-e-resize rtl:src:[[data-side=left][data-state=collapsed]_&]:cursor-w-resize src:[[data-side=right][data-state=collapsed]_&]:cursor-w-resize rtl:src:[[data-side=right][data-state=collapsed]_&]:cursor-e-resize",
-        "src:hover:group-data-[collapsible=offcanvas]:bg-sidebar src:group-data-[collapsible=offcanvas]:translate-x-0 rtl:src:group-data-[collapsible=offcanvas]:-translate-x-0 src:group-data-[collapsible=offcanvas]:after:start-full",
+        "src:hover:after:bg-sidebar-border src:absolute src:inset-y-0 src:z-20 src:hidden src:w-4 src:-translate-x-1/2 src:transition-all src:ease-linear src:group-data-[side=left]:-right-4 src:group-data-[side=right]:left-0 src:after:absolute src:after:inset-y-0 src:after:start-1/2 src:after:w-[2px] src:sm:flex",
+        "src:in-data-[side=left]:cursor-w-resize src:in-data-[side=right]:cursor-e-resize",
+        "src:[[data-side=left][data-state=collapsed]_&]:cursor-e-resize src:[[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
+        "src:hover:group-data-[collapsible=offcanvas]:bg-sidebar src:group-data-[collapsible=offcanvas]:translate-x-0 src:group-data-[collapsible=offcanvas]:after:start-full",
         "src:[[data-side=left][data-collapsible=offcanvas]_&]:-end-2",
         "src:[[data-side=right][data-collapsible=offcanvas]_&]:-start-2",
         className,

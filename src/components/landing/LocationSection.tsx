@@ -2,21 +2,18 @@
 
 import Image from "next/image"
 
-const flightTimes = [
-  { time: "1:30", unit: "ساعة", desc: "من الرياض/جدة" },
-  { time: "3", unit: "ساعات", desc: "من العلا (بالسيارة)" },
-  { time: "3", unit: "ساعات", desc: "من دول الخليج العربي والشرق الأوسط" },
-  { time: "4-7", unit: "ساعات", desc: "من أوروبا وأفريقيا والهند" },
-  { time: "10", unit: "ساعات", desc: "من الصين وروسيا" },
+const accessInfo = [
+  { time: "4", unit: "مواقع", desc: "متاحة على النيل" },
+  { time: "1", unit: "ساعة", desc: "طيران من القاهرة" },
+  { time: "4", unit: "ساعات", desc: "بالقطار من القاهرة" },
+  { time: "3", unit: "ساعات", desc: "بالسيارة من الأقصر" },
 ]
 
 const regions = [
   "الكل",
-  "السعودية",
-  "دول الخليج العربي",
-  "آسيا",
-  "أوروبا",
-  "أمريكا الشمالية",
+  "كاياك",
+  "ستاند اب",
+  "واتر بايك",
 ]
 
 export default function LocationSection() {
@@ -26,9 +23,12 @@ export default function LocationSection() {
         {/* Header */}
         <div className="text-center mb-12">
           <span className="text-teal-primary text-base block mb-3">الموقع</span>
-          <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-8">
-            يقع عند التقاء القارات
+          <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-4">
+            اكتشف المكان المثالي لمغامرتك المائية
           </h2>
+          <p className="text-text-body mb-8 max-w-2xl mx-auto">
+            اختر النشاط لرؤية المواقع المتاحة على الخريطة
+          </p>
 
           {/* Tabs */}
           <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-12">
@@ -57,28 +57,18 @@ export default function LocationSection() {
             className="w-full h-full object-contain opacity-80"
           />
 
-          {/* Mock Overlay Elements for Map Visualization (since SVG might be static) */}
+          {/* Mock Overlay Elements for Map Visualization */}
           <div className="absolute inset-0 pointer-events-none">
-            {/* Red Sea Badge */}
+            {/* Aswan/Nile Badge */}
             <div className="absolute top-[45%] left-[55%] -translate-x-1/2 -translate-y-1/2 bg-teal-primary text-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
-              وجهة البحر الأحمر
-            </div>
-
-            {/* Europe Badge */}
-            <div className="absolute top-[30%] left-[50%] bg-dark-bg text-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
-              أوروبا
-            </div>
-
-            {/* Asia Badge */}
-            <div className="absolute top-[35%] left-[70%] bg-dark-bg text-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
-              آسيا
+              أسوان، مصر - نهر النيل
             </div>
           </div>
         </div>
 
-        {/* Flight Times */}
+        {/* Access Info */}
         <div className="flex flex-wrap justify-center gap-4 mb-8" dir="rtl">
-          {flightTimes.map((item, index) => (
+          {accessInfo.map((item, index) => (
             <div
               key={index}
               className="flex-1 min-w-[200px] max-w-[240px] bg-text-body text-white p-6 rounded-xl text-center flex flex-col items-center justify-center"
@@ -91,7 +81,7 @@ export default function LocationSection() {
         </div>
 
         <p className="text-center text-text-muted text-xs">
-          مدة الرحلات تقريبية وقد تختلف حسب نوع الطائرة والظروف.
+          4 مواقع متاحة للرياضات المائية على نهر النيل في أسوان.
         </p>
       </div>
     </section>

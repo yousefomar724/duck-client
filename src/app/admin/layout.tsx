@@ -22,8 +22,8 @@ export default function AdminLayout({
       <AdminSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="ml-1" />
-          <Separator orientation="vertical" className="ml-2 h-4" />
+          <SidebarTrigger className="me-1" />
+          <Separator orientation="vertical" className="me-2 h-4" />
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>

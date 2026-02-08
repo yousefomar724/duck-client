@@ -32,11 +32,11 @@ export default function AmaalaSection() {
           {/* Logo Placeholder */}
           <div className="mb-6 flex items-center gap-4">
              <div className="w-12 h-12 rounded-full border-2 border-white/80 flex items-center justify-center">
-                <span className="text-[10px]">LOGO</span>
+                <span className="text-[10px]">DUCK</span>
              </div>
              <div>
-                <h2 className="text-2xl font-bold">أمالا</h2>
-                <span className="text-sm tracking-widest uppercase">AMAALA</span>
+                <h2 className="text-2xl font-bold">دوك إنترتينمنت</h2>
+                <span className="text-sm tracking-widest uppercase opacity-80">Duck Entertainment</span>
              </div>
           </div>
           
@@ -46,7 +46,7 @@ export default function AmaalaSection() {
             transition={{ duration: 0.6 }}
             className="text-6xl md:text-7xl font-bold mb-4"
           >
-            أمالا
+            لماذا دوك إنترتينمنت؟
           </motion.h2>
           
           <motion.p 
@@ -55,7 +55,7 @@ export default function AmaalaSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-lg md:text-xl text-white/90 mb-8 font-light"
           >
-            الملاذ الساحلي للاستشفاء والفن والعيش الرغيد
+            من جولات الغروب الهادئة إلى المنحدرات المثيرة، لدينا المغامرة المثالية للجميع
           </motion.p>
           
           <motion.button 
@@ -64,11 +64,11 @@ export default function AmaalaSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="px-8 py-3 rounded-lg border-2 border-white text-white hover:bg-white/10 transition-colors"
           >
-            اكتشف المزيد
+            اكتشف خدماتنا
           </motion.button>
         </div>
 
-        {/* Left Content (End) - Promo Card */}
+        {/* Left Content (End) - Benefit Card */}
         <motion.div 
           initial={{ opacity: 0, x: -50 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -76,10 +76,13 @@ export default function AmaalaSection() {
           className="hidden md:flex flex-col w-[280px] bg-black/20 backdrop-blur-xl rounded-2xl p-4 border border-white/10 self-end mb-20 ml-10"
         >
           <div className="relative h-40 w-full mb-4 rounded-xl overflow-hidden bg-white/10">
-             <div className="absolute inset-0 flex items-center justify-center text-white/50 text-xs">Amaala Image</div>
+             <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 text-center">
+               <span className="text-lg font-bold mb-2">السلامة أولاً</span>
+               <span className="text-xs text-white/80">جميع المعدات معتمدة ومُفحصة بانتظام. مرشدونا محترفون مدربون.</span>
+             </div>
           </div>
           <div className="flex items-center justify-between text-white">
-            <span className="text-sm font-medium">اكتشف هذا الملاذ الساحلي.</span>
+            <span className="text-sm font-medium">اكتشف خدماتنا</span>
             <ArrowLeft className="w-4 h-4" />
           </div>
         </motion.div>

@@ -8,83 +8,72 @@ import {
   ChevronLeft,
   ChevronRight,
   Waves,
-  Mountain,
-  Leaf,
-  Building2,
-  Utensils,
-  Flag,
+  CircleDot,
+  Bike,
 } from "lucide-react"
 
 const categories = [
-  { id: "water", label: "الرياضات المائية", icon: Waves },
-  { id: "adventure", label: "رياضات المغامرة", icon: Mountain },
-  { id: "nature", label: "تجارب الطبيعة", icon: Leaf },
-  { id: "culture", label: "الثقافة", icon: Building2 },
-  { id: "culinary", label: "طهي", icon: Utensils },
-  { id: "golf", label: "الغولف", icon: Flag },
+  { id: "kayak", label: "كاياك", icon: Waves },
+  { id: "sup", label: "ستاند اب", icon: CircleDot },
+  { id: "waterbike", label: "واتر بايك", icon: Bike },
 ]
 
 const experiences = [
   {
     id: 1,
-    title: "الغوص السطحي",
+    title: "كاياك",
     description:
-      "اكتشف الشعاب المرجانية الزاهية خلال النهار أو تأمل الحياة البحرية المتوهجة في غوص ليلي ساحر.",
+      "استكشف النيل في كاياكاتنا المريحة الفردية والمزدوجة. خيارات فردية أو مزدوجة، مناسبة للمبتدئين، جميع المعدات متضمنة.",
     image: "/discover-card.webp",
+    isTestimonial: false,
   },
   {
     id: 2,
-    title: "الغوص",
+    title: "ستاند اب",
     description:
-      "اكتشف الشعاب المرجانية الزاهية خلال النهار أو تأمل الحياة البحرية المتوهجة في غوص ليلي ساحر.",
+      "انزلق عبر المياه الهادئة على لوح التجديف. تمرين كامل للجسم، مثالي للصور، طرق مياه هادئة.",
     image: "/discover-card.webp",
+    isTestimonial: false,
   },
   {
     id: 3,
-    title: "تجربة الإبحار",
+    title: "واتر بايك",
     description:
-      "استمتع برحلات الإبحار الهادئة وسط مياه البحر الأحمر الصافية لاكتشاف الجزر الخلابة والمناظر الطبيعية.",
+      "دوس طريقك عبر النيل على دراجاتنا المائية. سهل التعلم، مثالي للعائلات، لا حاجة لخبرة.",
     image: "/discover-card.webp",
+    isTestimonial: false,
   },
   {
     id: 4,
-    title: "ركوب الأمواج",
+    title: "Sarah Mitchell",
     description:
-      "خض تحدي ركوب الأمواج على الشواطئ الرملية وتمتع بإثارة الرياضات المائية في أجواء مثالية.",
+      '"Absolutely magical experience! The sunset kayak tour around Elephantine Island was the highlight of our Egypt trip. The guides were professional and the equipment was top-notch."',
+    subtitle: "London, UK",
     image: "/discover-card.webp",
+    isTestimonial: true,
   },
   {
     id: 5,
-    title: "جولات الحياة البرية",
+    title: "Ahmed Hassan",
     description:
-      "تجول بين المحميات الطبيعية لاكتشاف التنوع البيولوجي الفريد للحيوانات والنباتات المحلية.",
+      '"As a local, I\'ve always wanted to experience the Nile differently. Duck Entertainment made it happen! The SUP session was incredibly peaceful and well-organized."',
+    subtitle: "Cairo, Egypt",
     image: "/discover-card.webp",
+    isTestimonial: true,
   },
   {
     id: 6,
-    title: "تجربة المأكولات البحرية",
+    title: "Maria Garcia",
     description:
-      "تذوّق أشهى أطباق المأكولات البحرية الطازجة من مطاعم راقية بإطلالة مباشرة على البحر.",
+      '"The water bike experience was so much fun! Perfect for families. My kids loved it and the staff was very patient with beginners. Highly recommend!"',
+    subtitle: "Barcelona, Spain",
     image: "/discover-card.webp",
-  },
-  {
-    id: 7,
-    title: "الجولات الثقافية",
-    description:
-      "اكتشف التراث الغني للمنطقة عبر زيارات للمتاحف المحلية والمواقع الأثرية والفعاليات الثقافية.",
-    image: "/discover-card.webp",
-  },
-  {
-    id: 8,
-    title: "الجولف بين الطبيعة",
-    description:
-      "اختبر متعة لعب الجولف في ملاعب حديثة مفتوحة وسط مناظر طبيعية خلابة وأجواء هادئة.",
-    image: "/discover-card.webp",
+    isTestimonial: true,
   },
 ]
 
 export default function ExperiencesSection() {
-  const [activeCategory, setActiveCategory] = useState("water")
+  const [activeCategory, setActiveCategory] = useState("kayak")
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: "center",
@@ -125,10 +114,10 @@ export default function ExperiencesSection() {
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
         <span className="text-duck-cyan text-base block mb-3">
-          التجارب والفعاليات
+          خدماتنا
         </span>
         <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-8">
-          مغامرات استثنائية بانتظارك
+          من جولات الغروب الهادئة إلى المنحدرات المثيرة، لدينا المغامرة المثالية للجميع
         </h2>
 
         {/* Tabs */}
@@ -159,8 +148,7 @@ export default function ExperiencesSection() {
         </div>
 
         <p className="text-text-body max-w-2xl mx-auto text-lg leading-relaxed">
-          أيقظ حواسك مع مغامرات مائية تجمع بين الإثارة والهدوء، مصممة لتغمرك
-          بإيقاع وجمال وحرية البحر المفتوح.
+          ماذا يقول المغامرون لدينا - لا تأخذ كلمتنا فقط، استمع إلى الآلاف الذين جربوا سحر النيل معنا.
         </p>
       </div>
 
@@ -188,7 +176,9 @@ export default function ExperiencesSection() {
                   <h3 className="text-white text-2xl font-bold mb-2">
                     {exp.title}
                   </h3>
-                  {/* Show description only on active/center card ideally, but for now show on all or simplify */}
+                  {"subtitle" in exp && exp.subtitle && (
+                    <p className="text-white/70 text-xs mb-2">{exp.subtitle}</p>
+                  )}
                   <p className="text-white/80 text-sm leading-relaxed">
                     {exp.description}
                   </p>
@@ -229,7 +219,7 @@ export default function ExperiencesSection() {
         </div>
 
         <button className="border border-text-dark text-text-dark px-8 py-3 rounded-full hover:bg-text-dark hover:text-white transition-colors">
-          استكشف جميع التجارب
+          عرض جميع التقييمات
         </button>
       </div>
     </section>

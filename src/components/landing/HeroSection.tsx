@@ -38,12 +38,21 @@ export default function HeroSection() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-white text-5xl md:text-7xl font-bold leading-[1.2] drop-shadow-lg max-w-2xl"
             >
-              هُنا تبدأ رحلتك إلى وجهات <br /> استثنائية
+              اصنع مغامرتك المائية <br /> اللا تُنسى
             </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="text-white/90 text-lg md:text-xl mt-4 max-w-2xl drop-shadow-md"
+            >
+              استمتع بنهر النيل الأسطوري في أسوان كما لم يحدث من قبل. تجديف
+              بالكاياك، وستاند اب، واستكشف مع أفضل شركة رياضات مائية في مصر.
+            </motion.p>
           </div>
 
           {/* Scroll Indicator (Center) */}
-          <div className="flex flex-col items-center gap-2 mb-4 text-white absolute bottom-6 left-1/2 -translate-x-1/2">
+          <div className="flex flex-col items-center gap-2 mb-4 text-white absolute -bottom-20 left-1/2 -translate-x-1/2">
             <span className="text-sm font-medium">اكتشف المزيد</span>
             <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center p-1">
               <motion.div

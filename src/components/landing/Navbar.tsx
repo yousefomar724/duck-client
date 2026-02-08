@@ -57,7 +57,7 @@ export default function Navbar() {
             )}
           >
             <Globe className="w-4 h-4" />
-            <span>عربي / SAR</span>
+            <span>عربي / EGP</span>
             <span className="mx-1 opacity-30">|</span>
             <Sun
               className={cn(
@@ -91,7 +91,7 @@ export default function Navbar() {
               isSolid ? "text-text-body" : "text-white",
             )}
           >
-            {["الخدمات", "المواقع", "التجارب", "عروض حصرية"].map((item) => (
+            {["الخدمات", "المواقع", "التجارب", "من نحن"].map((item) => (
               <Link
                 key={item}
                 href="#"
