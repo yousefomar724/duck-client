@@ -49,13 +49,8 @@ export default function AmaalaSection() {
               width={0}
               height={0}
               sizes="100vw"
-              className="object-contain w-14 invert brightness-0"
+              className="object-contain w-16 invert brightness-0"
             />
-            <div>
-              <span className="text-sm tracking-widest uppercase opacity-80">
-                Duck Entertainment
-              </span>
-            </div>
           </div>
 
           <motion.h2

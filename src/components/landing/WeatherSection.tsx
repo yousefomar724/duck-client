@@ -1,23 +1,44 @@
-"use client";
+"use client"
 
-import Image from "next/image";
-import { useState } from "react";
+import Image from "next/image"
+import { useState } from "react"
 
-const seasons = ["الربيع", "الصيف", "الخريف", "الشتاء"];
+const seasons = ["الربيع", "الصيف", "الخريف", "الشتاء"] as const
+
+const seasonImages: Record<(typeof seasons)[number], string> = {
+  الربيع: "/resort.webp",
+  الصيف: "/weather-season-bg.webp",
+  الخريف: "/offer.webp",
+  الشتاء: "/resort.webp",
+}
+
+const seasonWeather: Record<
+  (typeof seasons)[number],
+  { temp: number; wind: string }
+> = {
+  الربيع: { temp: 26, wind: "8-14" },
+  الصيف: { temp: 38, wind: "5-12" },
+  الخريف: { temp: 28, wind: "10-18" },
+  الشتاء: { temp: 18, wind: "12-20" },
+}
 
 export default function WeatherSection() {
-  const [activeSeason, setActiveSeason] = useState("الربيع");
-  const [activeDest, setActiveDest] = useState("redsea");
+  const [activeSeason, setActiveSeason] =
+    useState<(typeof seasons)[number]>("الربيع")
+  const [activeDest, setActiveDest] = useState("redsea")
 
   return (
     <section className="bg-off-white py-12 sm:py-16 md:py-20 pb-24 sm:pb-32 md:pb-40">
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 md:px-10">
-        
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <span className="text-teal-primary text-sm sm:text-base block mb-2 sm:mb-3">الطقس</span>
-          <h2 className="text-text-dark text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8">أسوان على مدار العام</h2>
-          
+          <span className="text-teal-primary text-sm sm:text-base block mb-2 sm:mb-3">
+            الطقس
+          </span>
+          <h2 className="text-text-dark text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8">
+            أسوان على مدار العام
+          </h2>
+
           {/* Destination Toggle */}
           <div className="inline-flex bg-white rounded-full p-1 shadow-sm mb-8 sm:mb-12">
             <button
@@ -46,12 +67,14 @@ export default function WeatherSection() {
         {/* Weather Banner */}
         <div className="relative w-full h-[260px] sm:h-[320px] md:h-[380px] lg:h-[450px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg">
           <Image
-            src="/weather-season-bg.webp"
-            alt="Weather Background"
+            key={activeSeason}
+            src={seasonImages[activeSeason]}
+            alt={`طقس ${activeSeason}`}
             fill
-            className="object-cover"
+            className="object-cover transition-opacity duration-300"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1920px"
           />
-          
+
           {/* Overlay Gradient */}
           <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
 
@@ -61,17 +84,25 @@ export default function WeatherSection() {
             <div className="flex gap-2 sm:gap-4 justify-center md:justify-end rtl:md:justify-start shrink-0">
               <div className="bg-black/30 backdrop-blur-md rounded-lg sm:rounded-xl p-3 sm:p-5 text-white min-w-[100px] sm:min-w-[120px] md:min-w-[140px] text-right">
                 <div className="flex items-baseline justify-end gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold">23</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold">
+                    {seasonWeather[activeSeason].temp}
+                  </span>
                   <span className="text-base sm:text-lg md:text-xl">°م</span>
                 </div>
-                <div className="text-[10px] sm:text-xs text-white/70">درجة الحرارة</div>
+                <div className="text-[10px] sm:text-xs text-white/70">
+                  درجة الحرارة
+                </div>
               </div>
               <div className="bg-black/30 backdrop-blur-md rounded-lg sm:rounded-xl p-3 sm:p-5 text-white min-w-[100px] sm:min-w-[120px] md:min-w-[140px] text-right">
                 <div className="flex items-baseline justify-end gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
                   <span className="text-sm sm:text-base md:text-lg">كم/س</span>
-                  <span className="text-xl sm:text-2xl md:text-3xl font-bold">9-16</span>
+                  <span className="text-xl sm:text-2xl md:text-3xl font-bold">
+                    {seasonWeather[activeSeason].wind}
+                  </span>
                 </div>
-                <div className="text-[10px] sm:text-xs text-white/70">سرعة الرياح</div>
+                <div className="text-[10px] sm:text-xs text-white/70">
+                  سرعة الرياح
+                </div>
               </div>
             </div>
 
@@ -92,10 +123,8 @@ export default function WeatherSection() {
               ))}
             </div>
           </div>
-
         </div>
-
       </div>
     </section>
-  );
+  )
 }

@@ -85,7 +85,7 @@ export default function Navbar() {
             "absolute inset-0 z-0 pointer-events-none transition-opacity duration-500",
             isSolid
               ? "opacity-0"
-              : "bg-linear-to-b from-black/25 to-transparent",
+              : "bg-linear-to-b from-black/50 via-black/20 to-transparent",
           )}
           aria-hidden
         />
@@ -150,7 +150,7 @@ export default function Navbar() {
                 >
                   <Button
                     variant="outline"
-                    className="justify-center rounded-full gap-2"
+                    className="justify-center rounded-full gap-2 cursor-pointer"
                     onClick={() => {
                       setSheetOpen(false)
                       setSettingsOpen(true)
@@ -164,7 +164,11 @@ export default function Navbar() {
                     className="justify-center rounded-full gap-2"
                     asChild
                   >
-                    <Link href="#" onClick={() => setSheetOpen(false)}>
+                    <Link
+                      href="/map"
+                      className="cursor-pointer"
+                      onClick={() => setSheetOpen(false)}
+                    >
                       <Map className="size-4" />
                       {t("map")}
                     </Link>
@@ -174,7 +178,11 @@ export default function Navbar() {
                     className="justify-center rounded-full gap-2"
                     asChild
                   >
-                    <Link href="#" onClick={() => setSheetOpen(false)}>
+                    <Link
+                      href="#"
+                      className="cursor-pointer"
+                      onClick={() => setSheetOpen(false)}
+                    >
                       <User className="size-4" />
                       {t("my-account")}
                     </Link>
@@ -183,7 +191,11 @@ export default function Navbar() {
                     className="rounded-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
                     asChild
                   >
-                    <Link href="#" onClick={() => setSheetOpen(false)}>
+                    <Link
+                      href="#"
+                      className="cursor-pointer"
+                      onClick={() => setSheetOpen(false)}
+                    >
                       {t("book")}
                     </Link>
                   </Button>
@@ -253,17 +265,26 @@ export default function Navbar() {
 
           {/* End: tablet/desktop = map, account, book; mobile = spacer to keep logo centered */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0 justify-end w-10 md:w-auto">
-            <button className={cn("hidden! md:flex!", actionButtonClass)}>
+            <Link
+              href="/map"
+              className={cn("hidden! md:flex!", actionButtonClass)}
+            >
               <Map className="w-4 h-4 shrink-0" />
               <span>{t("map")}</span>
-            </button>
-            <button className={cn("hidden! md:flex!", actionButtonClass)}>
+            </Link>
+            <Link
+              href="/account"
+              className={cn("hidden! md:flex!", actionButtonClass)}
+            >
               <User className="w-4 h-4 shrink-0" />
               <span>{t("my-account")}</span>
-            </button>
-            <button className="hidden! md:inline-flex! bg-duck-yellow text-duck-navy font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-yellow-hover transition-colors shrink-0 text-sm">
+            </Link>
+            <Link
+              href="/book"
+              className="hidden! md:inline-flex! bg-duck-yellow text-duck-navy font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-yellow-hover transition-colors shrink-0 text-sm"
+            >
               {t("book")}
-            </button>
+            </Link>
             {/* Mobile: invisible spacer same width as menu button so logo stays centered */}
             <span
               className="w-10 h-10 md:hidden shrink-0 invisible pointer-events-none"

@@ -13,11 +13,19 @@ export default function ScrollManager() {
 
   // Initialize fade logic
   useEffect(() => {
+    // Check if browser has scroll restoration (e.g. back button)
+    // We want to force scroll to top on fresh load, but maybe handle restoration if complex.
+    // For now, simpler to force top to ensure intro sequence works.
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual"
+    }
+    window.scrollTo(0, 0)
+
     // Initial state: Show section 0, hide 1 and 2
     gsap.set("#intro-section-0", { autoAlpha: 1, zIndex: 10 })
     gsap.set("#intro-section-1", { autoAlpha: 0, zIndex: 9 })
     gsap.set("#intro-section-2", { autoAlpha: 0, zIndex: 8 })
-    
+
     // Initial content state
     gsap.set("#intro-section-0 .section-content", { y: 0, autoAlpha: 1 })
     gsap.set("#intro-section-1 .section-content", { y: 100, autoAlpha: 0 })
@@ -32,11 +40,12 @@ export default function ScrollManager() {
       // If we are scrolled down into normal content
       if (scrollY >= normalContentStart - 5) {
         // If at top of normal content and scrolling UP, go back to intro
-        if (Math.abs(scrollY - normalContentStart) < 10 && e.deltaY < 0) {
+        // Relaxed threshold: if within 50px of top, and scrolling UP significantly
+        if (scrollY < normalContentStart + 50 && e.deltaY < -5) {
           e.preventDefault()
           if (isAnimating.current) return
           isAnimating.current = true
-          
+
           gsap.to(window, {
             scrollTo: { y: 0 },
             duration: 1,
@@ -44,9 +53,12 @@ export default function ScrollManager() {
             onComplete: () => {
               isAnimating.current = false
               setCurrentSection(2)
-              // Reset content positions for re-entry if needed
-              gsap.set(`#intro-section-2 .section-content`, { y: 0, autoAlpha: 1 })
-            }
+              // Reset content positions for re-entry
+              gsap.set(`#intro-section-2 .section-content`, {
+                y: 0,
+                autoAlpha: 1,
+              })
+            },
           })
         }
         // Otherwise let native scroll happen
@@ -71,47 +83,49 @@ export default function ScrollManager() {
         if (nextSection <= 2) {
           isAnimating.current = true
           setCurrentSection(nextSection)
-          
+
           // Current Section: Moves UP and Fades Out
           gsap.to(`#intro-section-${currentSection} .section-content`, {
             y: -100,
             autoAlpha: 0,
             duration: 1,
-            ease: "power2.inOut"
+            ease: "power2.inOut",
           })
 
           // Next Section: Moves UP (from bottom) and Fades In
           gsap.set(`#intro-section-${nextSection}`, { zIndex: 20 })
           gsap.set(`#intro-section-${currentSection}`, { zIndex: 10 })
-          
+
           // Prepare next content
-          gsap.fromTo(`#intro-section-${nextSection} .section-content`, 
+          gsap.fromTo(
+            `#intro-section-${nextSection} .section-content`,
             { y: 100, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 1, ease: "power2.out", delay: 0.2 }
+            { y: 0, autoAlpha: 1, duration: 1, ease: "power2.out", delay: 0.2 },
           )
 
-          gsap.fromTo(`#intro-section-${nextSection}`, 
+          gsap.fromTo(
+            `#intro-section-${nextSection}`,
             { autoAlpha: 0 },
-            { 
-              autoAlpha: 1, 
-              duration: 1.2, 
+            {
+              autoAlpha: 1,
+              duration: 1.2,
               ease: "power2.inOut",
               onComplete: () => {
                 isAnimating.current = false
-                gsap.set(`#intro-section-${currentSection}`, { autoAlpha: 0 }) 
-              }
-            }
+                gsap.set(`#intro-section-${currentSection}`, { autoAlpha: 0 })
+              },
+            },
           )
         } else {
           // nextSection is 3 -> Go to Normal Content
           isAnimating.current = true
-          
+
           // Animate current content up/out
           gsap.to(`#intro-section-${currentSection} .section-content`, {
             y: -100,
             autoAlpha: 0,
             duration: 1,
-            ease: "power2.inOut"
+            ease: "power2.inOut",
           })
 
           gsap.to(window, {
@@ -120,8 +134,8 @@ export default function ScrollManager() {
             ease: "power2.inOut",
             onComplete: () => {
               isAnimating.current = false
-              setCurrentSection(3) 
-            }
+              setCurrentSection(3)
+            },
           })
         }
       } else {
@@ -133,23 +147,27 @@ export default function ScrollManager() {
           // Current Section (leaving): Moves DOWN and Fades Out
           // Actually, if we scroll UP, the current section should drop down (exit bottom)
           // And previous section should drop down (enter from top)
-          
+
           // Animate Current Content DOWN and Out
           gsap.to(`#intro-section-${currentSection} .section-content`, {
             y: 100,
             autoAlpha: 0,
             duration: 1,
-            ease: "power2.inOut"
+            ease: "power2.inOut",
           })
 
           // Previous Section (entering): Moves DOWN (from top) and Fades In
-          gsap.set(`#intro-section-${nextSection}`, { autoAlpha: 1, zIndex: 10 })
+          gsap.set(`#intro-section-${nextSection}`, {
+            autoAlpha: 1,
+            zIndex: 10,
+          })
           gsap.set(`#intro-section-${currentSection}`, { zIndex: 20 })
 
           // Prepare previous content to enter from TOP
-          gsap.fromTo(`#intro-section-${nextSection} .section-content`,
+          gsap.fromTo(
+            `#intro-section-${nextSection} .section-content`,
             { y: -100, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 1, ease: "power2.out", delay: 0.2 }
+            { y: 0, autoAlpha: 1, duration: 1, ease: "power2.out", delay: 0.2 },
           )
 
           // Fade out current section wrapper
@@ -159,7 +177,7 @@ export default function ScrollManager() {
             ease: "power2.inOut",
             onComplete: () => {
               isAnimating.current = false
-            }
+            },
           })
         }
       }

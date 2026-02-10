@@ -1,6 +1,22 @@
 "use client"
 
-import Image from "next/image"
+import { useState, useMemo } from "react"
+import Link from "next/link"
+import dynamic from "next/dynamic"
+import { MapPin } from "lucide-react"
+import { cn } from "@/lib/utils"
+import {
+  LOCATIONS,
+  ACTIVITY_FILTERS,
+  type ActivityType,
+} from "@/components/map/map-data"
+
+const MapView = dynamic(() => import("@/components/map/MapView"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full bg-gray-100 rounded-3xl animate-pulse" />
+  ),
+})
 
 const accessInfo = [
   { time: "4", unit: "مواقع", desc: "متاحة على النيل" },
@@ -9,20 +25,22 @@ const accessInfo = [
   { time: "3", unit: "ساعات", desc: "بالسيارة من الأقصر" },
 ]
 
-const regions = [
-  "الكل",
-  "كاياك",
-  "ستاند اب",
-  "واتر بايك",
-]
-
 export default function LocationSection() {
+  const [activeFilter, setActiveFilter] = useState<ActivityType | "all">("all")
+
+  const filteredLocations = useMemo(() => {
+    if (activeFilter === "all") return LOCATIONS
+    return LOCATIONS.filter((loc) => loc.activities.includes(activeFilter))
+  }, [activeFilter])
+
   return (
     <section className="bg-off-white py-20">
       <div className="max-w-[1920px] mx-auto px-4 md:px-10">
         {/* Header */}
         <div className="text-center mb-12">
-          <span className="text-teal-primary text-base block mb-3">الموقع</span>
+          <span className="text-teal-primary text-base block mb-3">
+            الموقع
+          </span>
           <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-4">
             اكتشف المكان المثالي لمغامرتك المائية
           </h2>
@@ -32,38 +50,40 @@ export default function LocationSection() {
 
           {/* Tabs */}
           <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-12">
-            {regions.map((region, index) => (
+            {ACTIVITY_FILTERS.map((filter) => (
               <button
-                key={region}
-                className={`text-sm md:text-base font-medium transition-colors pb-2 ${
-                  index === 0
+                key={filter.id}
+                onClick={() => setActiveFilter(filter.id)}
+                className={cn(
+                  "text-sm md:text-base font-medium transition-colors pb-2 cursor-pointer",
+                  activeFilter === filter.id
                     ? "text-text-dark border-b-2 border-text-dark"
-                    : "text-text-muted hover:text-text-body"
-                }`}
+                    : "text-text-muted hover:text-text-body",
+                )}
               >
-                {region}
+                {filter.label}
               </button>
             ))}
           </div>
         </div>
 
         {/* Map Container */}
-        <div className="relative w-full aspect-[16/9] max-h-[600px] mb-12 bg-white rounded-3xl shadow-sm overflow-hidden flex items-center justify-center">
-          <Image
-            src="/world-map.svg"
-            alt="World Map"
-            width={1200}
-            height={600}
-            className="w-full h-full object-contain opacity-80"
+        <div className="relative w-full aspect-video max-h-[600px] mb-12 rounded-3xl shadow-sm overflow-hidden">
+          <MapView
+            locations={filteredLocations}
+            selectedLocation={null}
+            onMarkerClick={() => {}}
+            mapStyle="light"
           />
 
-          {/* Mock Overlay Elements for Map Visualization */}
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Aswan/Nile Badge */}
-            <div className="absolute top-[45%] left-[55%] -translate-x-1/2 -translate-y-1/2 bg-teal-primary text-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
-              أسوان، مصر - نهر النيل
-            </div>
-          </div>
+          {/* Overlay link to full map page */}
+          <Link
+            href="/map"
+            className="absolute bottom-4 start-4 z-10 flex items-center gap-2 bg-duck-navy/80 backdrop-blur-sm text-white text-sm px-4 py-2.5 rounded-full hover:bg-duck-navy transition-colors shadow-lg"
+          >
+            <MapPin className="size-4" />
+            <span>عرض الخريطة التفاعلية</span>
+          </Link>
         </div>
 
         {/* Access Info */}
@@ -81,7 +101,8 @@ export default function LocationSection() {
         </div>
 
         <p className="text-center text-text-muted text-xs">
-          4 مواقع متاحة للرياضات المائية على نهر النيل في أسوان.
+          {filteredLocations.length} مواقع متاحة للرياضات المائية على نهر النيل
+          في أسوان.
         </p>
       </div>
     </section>
