@@ -1,0 +1,18 @@
+{
+  "navbar": {
+    "services": "الخدمات",
+    "locations": "المواقع",
+    "experiences": "التجارب",
+    "about": "من نحن",
+    "weather": "الطقس",
+    "temperature": "الحرارة",
+    "location": "الموقع",
+    "account": "حسابي",
+    "book": "احجز",
+    "language": "اللغة",
+    "arabic": "عربي",
+    "english": "انجليزي",
+    "map": "الخريطة",
+    "my-account": "حسابي"
+  }
+}

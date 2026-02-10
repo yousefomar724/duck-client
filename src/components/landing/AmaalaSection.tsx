@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function AmaalaSection() {
   return (
-    <section className="fullpage-section relative flex items-center">
+    <section id="amaala-section" className="fullpage-section relative flex items-center w-full h-full">
       {/* Background Video */}
       <video
         autoPlay
@@ -24,8 +24,16 @@ export default function AmaalaSection() {
           background: "linear-gradient(to top, rgba(50,20,0,0.4) 0%, rgba(50,20,0,0.1) 50%, transparent 80%)"
         }}
       />
+      {/* Top dark band for navbar readability */}
+      <div
+        className="absolute inset-x-0 top-0 h-[120px] z-10 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 100%)",
+        }}
+      />
 
-      <div className="relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex items-center justify-between">
+      <div className="section-content relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex items-center justify-between">
         
         {/* Right Content (Start) */}
         <div className="flex flex-col items-start text-white max-w-xl pt-20">

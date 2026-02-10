@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
 import "./globals.css"
+import { NextIntlClientProvider } from "next-intl"
 
 const fedraSerif = localFont({
   src: [
@@ -38,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body className={`${fedraSerif.variable} font-serif antialiased`}>
-        {children}
+        <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>
     </html>
   )

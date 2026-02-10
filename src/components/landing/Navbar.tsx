@@ -6,12 +6,13 @@ import Image from "next/image"
 import { User, Map, Globe, Sun } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
+import { useTranslations } from "next-intl"
 
 export default function Navbar() {
   const [isHidden, setIsHidden] = useState(false)
   const [isSolid, setIsSolid] = useState(false)
   const { scrollY } = useScroll()
-
+  const t = useTranslations("navbar")
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() ?? 0
     const diff = latest - previous
@@ -45,7 +46,15 @@ export default function Navbar() {
           : "bg-transparent py-6",
       )}
     >
-      <div className="flex items-center justify-between max-w-[1920px] mx-auto">
+      {/* Subtle black overlay for readability over light/bright content; hidden when solid */}
+      <div
+        className={cn(
+          "absolute inset-0 z-0 pointer-events-none transition-opacity duration-500",
+          isSolid ? "opacity-0" : "bg-linear-to-b from-black/25 to-transparent",
+        )}
+        aria-hidden
+      />
+      <div className="z-10 flex items-center justify-between max-w-[1920px] mx-auto">
         {/* Left Actions (RTL: Right visually) */}
         <div className="flex items-center gap-3">
           <div
@@ -57,15 +66,16 @@ export default function Navbar() {
             )}
           >
             <Globe className="w-4 h-4" />
-            <span>عربي / EGP</span>
-            <span className="mx-1 opacity-30">|</span>
+            <span>{t("language")} / EGP</span>
+          </div>
+          <div className="flex items-center gap-2 text-white text-sm">
             <Sun
               className={cn(
                 "w-4 h-4",
                 isSolid ? "text-orange-500" : "text-yellow-400",
               )}
             />
-            <span>20.8°C</span>
+            <span>{t("temperature")} 20.8°C</span>
           </div>
         </div>
 
@@ -91,13 +101,13 @@ export default function Navbar() {
               isSolid ? "text-text-body" : "text-white",
             )}
           >
-            {["الخدمات", "المواقع", "التجارب", "من نحن"].map((item) => (
+            {["services", "locations", "experiences", "about"].map((item) => (
               <Link
                 key={item}
                 href="#"
                 className="relative hover:text-duck-cyan-light transition-colors group"
               >
-                {item}
+                {t(item)}
                 <span className="absolute -bottom-2 right-0 w-0 h-0.5 bg-duck-cyan transition-all group-hover:w-full" />
               </Link>
             ))}
@@ -115,7 +125,7 @@ export default function Navbar() {
             )}
           >
             <Map className="w-4 h-4" />
-            <span>الخريطة</span>
+            <span>{t("map")}</span>
           </button>
           <button
             className={cn(
@@ -126,10 +136,10 @@ export default function Navbar() {
             )}
           >
             <User className="w-4 h-4" />
-            <span>حسابي</span>
+            <span>{t("my-account")}</span>
           </button>
           <button className="bg-duck-yellow text-duck-navy font-medium rounded-full px-6 py-2 hover:bg-duck-yellow-hover transition-colors">
-            احجز
+            {t("book")}
           </button>
         </div>
       </div>

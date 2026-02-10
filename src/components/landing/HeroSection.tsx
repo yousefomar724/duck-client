@@ -6,7 +6,7 @@ import { Search } from "lucide-react"
 
 export default function HeroSection() {
   return (
-    <section className="fullpage-section relative flex items-end justify-center pb-20">
+    <section id="hero-section" className="fullpage-section relative flex items-end justify-center pb-20 w-full h-full">
       {/* Background Video */}
       <video
         autoPlay
@@ -26,9 +26,17 @@ export default function HeroSection() {
             "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 40%, transparent 70%)",
         }}
       />
+      {/* Top dark band for navbar readability */}
+      <div
+        className="absolute inset-x-0 top-0 h-[120px] z-10 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 100%)",
+        }}
+      />
 
       {/* Content */}
-      <div className="relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex flex-col justify-end">
+      <div className="section-content relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex flex-col justify-end">
         <div className="flex items-end justify-between w-full pb-10">
           {/* Headline */}
           <div className="w-full md:w-auto">
