@@ -1,11 +1,15 @@
-"use client";
+"use client"
 
-import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion"
+import { ArrowLeft } from "lucide-react"
+import Image from "next/image"
 
 export default function AmaalaSection() {
   return (
-    <section id="amaala-section" className="fullpage-section relative flex items-center w-full h-full">
+    <section
+      id="amaala-section"
+      className="fullpage-section relative flex items-center w-full h-full"
+    >
       {/* Background Video */}
       <video
         autoPlay
@@ -18,10 +22,11 @@ export default function AmaalaSection() {
       </video>
 
       {/* Overlay Gradient - Warmer for Amaala */}
-      <div 
+      <div
         className="absolute inset-0 z-10 pointer-events-none"
         style={{
-          background: "linear-gradient(to top, rgba(50,20,0,0.4) 0%, rgba(50,20,0,0.1) 50%, transparent 80%)"
+          background:
+            "linear-gradient(to top, rgba(50,20,0,0.4) 0%, rgba(50,20,0,0.1) 50%, transparent 80%)",
         }}
       />
       {/* Top dark band for navbar readability */}
@@ -34,39 +39,45 @@ export default function AmaalaSection() {
       />
 
       <div className="section-content relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex items-center justify-between">
-        
         {/* Right Content (Start) */}
         <div className="flex flex-col items-start text-white max-w-xl pt-20">
           {/* Logo Placeholder */}
           <div className="mb-6 flex items-center gap-4">
-             <div className="w-12 h-12 rounded-full border-2 border-white/80 flex items-center justify-center">
-                <span className="text-[10px]">DUCK</span>
-             </div>
-             <div>
-                <h2 className="text-2xl font-bold">دوك إنترتينمنت</h2>
-                <span className="text-sm tracking-widest uppercase opacity-80">Duck Entertainment</span>
-             </div>
+            <Image
+              src="/logo-transparent.png"
+              alt="Duck Entertainment"
+              width={0}
+              height={0}
+              sizes="100vw"
+              className="object-contain w-14 invert brightness-0"
+            />
+            <div>
+              <span className="text-sm tracking-widest uppercase opacity-80">
+                Duck Entertainment
+              </span>
+            </div>
           </div>
-          
-          <motion.h2 
+
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-6xl md:text-7xl font-bold mb-4"
           >
-            لماذا دوك إنترتينمنت؟
+            هُنا تبدأ رحلتك إلى وجهات استثنائية
           </motion.h2>
-          
-          <motion.p 
+
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-lg md:text-xl text-white/90 mb-8 font-light"
           >
-            من جولات الغروب الهادئة إلى المنحدرات المثيرة، لدينا المغامرة المثالية للجميع
+            من جولات الغروب الهادئة إلى المنحدرات المثيرة، لدينا المغامرة
+            المثالية للاستشفاء والاسترخاء.
           </motion.p>
-          
-          <motion.button 
+
+          <motion.button
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -77,25 +88,26 @@ export default function AmaalaSection() {
         </div>
 
         {/* Left Content (End) - Benefit Card */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -50 }}
           whileInView={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
           className="hidden md:flex flex-col w-[280px] bg-black/20 backdrop-blur-xl rounded-2xl p-4 border border-white/10 self-end mb-20 ml-10"
         >
           <div className="relative h-40 w-full mb-4 rounded-xl overflow-hidden bg-white/10">
-             <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 text-center">
-               <span className="text-lg font-bold mb-2">السلامة أولاً</span>
-               <span className="text-xs text-white/80">جميع المعدات معتمدة ومُفحصة بانتظام. مرشدونا محترفون مدربون.</span>
-             </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 text-center">
+              <span className="text-lg font-bold mb-2">السلامة أولاً</span>
+              <span className="text-xs text-white/80">
+                جميع المعدات معتمدة ومُفحصة بانتظام. مرشدونا محترفون مدربون.
+              </span>
+            </div>
           </div>
           <div className="flex items-center justify-between text-white">
             <span className="text-sm font-medium">اكتشف خدماتنا</span>
             <ArrowLeft className="w-4 h-4" />
           </div>
         </motion.div>
-
       </div>
     </section>
-  );
+  )
 }

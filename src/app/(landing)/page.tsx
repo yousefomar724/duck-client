@@ -12,13 +12,22 @@ export default function Home() {
   return (
     <>
       <div className="fixed top-0 left-0 w-full h-screen z-0">
-        <div id="intro-section-0" className="absolute inset-0 w-full h-full opacity-100">
+        <div
+          id="intro-section-0"
+          className="absolute inset-0 w-full h-full opacity-100"
+        >
           <HeroSection />
         </div>
-        <div id="intro-section-1" className="absolute inset-0 w-full h-full opacity-0">
+        <div
+          id="intro-section-1"
+          className="absolute inset-0 w-full h-full opacity-0"
+        >
           <RedSeaSection />
         </div>
-        <div id="intro-section-2" className="absolute inset-0 w-full h-full opacity-0">
+        <div
+          id="intro-section-2"
+          className="absolute inset-0 w-full h-full opacity-0"
+        >
           <AmaalaSection />
         </div>
       </div>

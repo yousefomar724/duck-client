@@ -37,7 +37,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "src:border-input src:data-[placeholder]:text-muted-foreground src:[&_svg:not([class*=text-])]:text-muted-foreground src:focus-visible:border-ring src:focus-visible:ring-ring/50 src:aria-invalid:ring-destructive/20 src:dark:aria-invalid:ring-destructive/40 src:aria-invalid:border-destructive src:dark:bg-input/30 src:dark:hover:bg-input/50 src:flex src:w-fit src:items-center src:justify-between src:gap-2 src:rounded-md src:border src:bg-transparent src:px-3 src:py-2 src:text-sm src:whitespace-nowrap src:shadow-xs src:transition-[color,box-shadow] src:outline-none src:focus-visible:ring-[3px] src:disabled:cursor-not-allowed src:disabled:opacity-50 src:data-[size=default]:h-9 src:data-[size=sm]:h-8 src:*:data-[slot=select-value]:line-clamp-1 src:*:data-[slot=select-value]:flex src:*:data-[slot=select-value]:items-center src:*:data-[slot=select-value]:gap-2 src:[&_svg]:pointer-events-none src:[&_svg]:shrink-0 src:[&_svg:not([class*=size-])]:size-4",
+        "src:border-input src:data-placeholder:text-muted-foreground src:[&_svg:not([class*=text-])]:text-muted-foreground src:focus-visible:border-ring src:focus-visible:ring-ring/50 src:aria-invalid:ring-destructive/20 src:dark:aria-invalid:ring-destructive/40 src:aria-invalid:border-destructive src:dark:bg-input/30 src:dark:hover:bg-input/50 src:flex src:w-full src:items-center src:justify-between src:gap-2 src:rounded-md src:border src:bg-transparent src:px-3 src:py-2 src:text-sm src:whitespace-nowrap src:shadow-xs src:transition-[color,box-shadow] src:outline-none src:focus-visible:ring-[3px] src:disabled:cursor-not-allowed src:disabled:opacity-50 src:data-[size=default]:h-9 src:data-[size=sm]:h-8 src:*:data-[slot=select-value]:line-clamp-1 src:*:data-[slot=select-value]:flex src:*:data-[slot=select-value]:items-center src:*:data-[slot=select-value]:gap-2 src:[&_svg]:pointer-events-none src:[&_svg]:shrink-0 src:[&_svg:not([class*=size-])]:size-4",
         className,
       )}
       {...props}
@@ -53,7 +53,7 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  position = "item-aligned",
+  position = "popper",
   align = "center",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
@@ -62,7 +62,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "src:bg-popover src:text-popover-foreground src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:data-[side=bottom]:slide-in-from-top-2 src:data-[side=left]:slide-in-from-right-2 src:data-[side=right]:slide-in-from-left-2 src:data-[side=top]:slide-in-from-bottom-2 src:relative src:z-50 src:max-h-(--radix-select-content-available-height) src:min-w-[8rem] src:origin-(--radix-select-content-transform-origin) src:overflow-x-hidden src:overflow-y-auto src:rounded-md src:border src:shadow-md",
+          "src:bg-background src:text-foreground src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:data-[side=bottom]:slide-in-from-top-2 src:data-[side=left]:slide-in-from-right-2 src:data-[side=right]:slide-in-from-left-2 src:data-[side=top]:slide-in-from-bottom-2 src:relative src:z-50 src:max-h-(--radix-select-content-available-height) src:min-w-32 src:origin-(--radix-select-content-transform-origin) src:overflow-x-hidden src:overflow-y-auto src:rounded-md src:border src:shadow-md",
           position === "popper" &&
             "src:data-[side=bottom]:translate-y-1 src:data-[side=left]:-translate-x-1 rtl:src:data-[side=left]:translate-x-1 src:data-[side=right]:translate-x-1 rtl:src:data-[side=right]:-translate-x-1 src:data-[side=top]:-translate-y-1",
           className,
@@ -76,7 +76,7 @@ function SelectContent({
           className={cn(
             "src:p-1",
             position === "popper" &&
-              "src:h-[var(--radix-select-trigger-height)] src:w-full src:min-w-[var(--radix-select-trigger-width)] src:scroll-my-1",
+              "src:h-(--radix-select-trigger-height) src:w-full src:min-w-(--radix-select-trigger-width) src:scroll-my-1",
           )}
         >
           {children}
@@ -112,7 +112,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "src:focus:bg-accent src:focus:text-accent-foreground src:[&_svg:not([class*=text-])]:text-muted-foreground src:relative src:flex src:w-full src:cursor-default src:items-center src:gap-2 src:rounded-sm src:py-1.5 src:pe-8 src:ps-2 src:text-sm src:outline-hidden src:select-none src:data-[disabled]:pointer-events-none src:data-[disabled]:opacity-50 src:[&_svg]:pointer-events-none src:[&_svg]:shrink-0 src:[&_svg:not([class*=size-])]:size-4 src:*:[span]:last:flex src:*:[span]:last:items-center src:*:[span]:last:gap-2",
+        "src:focus:bg-accent src:focus:text-accent-foreground src:[&_svg:not([class*=text-])]:text-muted-foreground src:relative src:flex src:w-full src:cursor-default src:items-center src:gap-2 src:rounded-sm src:py-1.5 src:pe-8 src:ps-2 src:text-sm src:outline-hidden src:select-none src:data-disabled:pointer-events-none src:data-disabled:opacity-50 src:[&_svg]:pointer-events-none src:[&_svg]:shrink-0 src:[&_svg:not([class*=size-])]:size-4 src:*:[span]:last:flex src:*:[span]:last:items-center src:*:[span]:last:gap-2",
         className,
       )}
       {...props}

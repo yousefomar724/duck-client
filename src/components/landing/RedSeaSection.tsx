@@ -4,7 +4,10 @@ import { motion } from "framer-motion"
 
 export default function RedSeaSection() {
   return (
-    <section id="redsea-section" className="fullpage-section relative flex items-center w-full h-full">
+    <section
+      id="redsea-section"
+      className="fullpage-section relative flex items-center w-full h-full"
+    >
       {/* Background Video */}
       <video
         autoPlay
@@ -38,10 +41,9 @@ export default function RedSeaSection() {
         <div className="flex flex-col items-start text-white max-w-xl pt-20">
           {/* Logo Placeholder */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold border-b-2 border-white/30 pb-2 inline-block">
+            <h2 className="text-2xl font-bold inline-block">
               Duck Entertainment
             </h2>
-            <div className="text-lg text-right mt-1 opacity-90">دوك إنترتينمنت</div>
           </div>
 
           <motion.h2
@@ -50,7 +52,7 @@ export default function RedSeaSection() {
             transition={{ duration: 0.6 }}
             className="text-5xl md:text-6xl font-bold mb-4"
           >
-            لماذا تختار دوك إنترتينمنت؟
+            لماذا تختارنا لمغامرتك المائية؟
           </motion.h2>
 
           <motion.p
@@ -59,7 +61,9 @@ export default function RedSeaSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-lg md:text-xl text-white/90 mb-8 font-light"
           >
-            استمتع بالنيل كما لم يحدث من قبل مع أفضل شركة رياضات مائية في مصر. نحن لسنا مجرد شركة رياضات مائية أخرى. نحن محليون متحمسون نريد مشاركة سحر النيل مع العالم.
+            استمتع بالنيل كما لم يحدث من قبل مع أفضل تجربة رياضات مائية في مصر.
+            نحن لسنا مجرد مكان لممارسة الرياضات المائية. نحن محليون متحمسون نريد
+            مشاركة السحر الذي يجمع النيل مع العالم.
           </motion.p>
 
           <motion.button

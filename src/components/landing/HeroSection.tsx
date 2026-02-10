@@ -1,12 +1,14 @@
 "use client"
 
 import { motion } from "framer-motion"
-import Image from "next/image"
-import { Search } from "lucide-react"
+import { MessageCircleMore } from "lucide-react"
 
 export default function HeroSection() {
   return (
-    <section id="hero-section" className="fullpage-section relative flex items-end justify-center pb-20 w-full h-full">
+    <section
+      id="hero-section"
+      className="fullpage-section relative flex items-end justify-center pb-20 w-full h-full"
+    >
       {/* Background Video */}
       <video
         autoPlay
@@ -46,7 +48,7 @@ export default function HeroSection() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-white text-5xl md:text-7xl font-bold leading-[1.2] drop-shadow-lg max-w-2xl"
             >
-              اصنع مغامرتك المائية <br /> اللا تُنسى
+              اصنع مغامرتك المائية <br /> التي لا تُنسى
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -55,7 +57,7 @@ export default function HeroSection() {
               className="text-white/90 text-lg md:text-xl mt-4 max-w-2xl drop-shadow-md"
             >
               استمتع بنهر النيل الأسطوري في أسوان كما لم يحدث من قبل. تجديف
-              بالكاياك، وستاند اب، واستكشف مع أفضل شركة رياضات مائية في مصر.
+              بالكاياك، وستاند اب، واستكشف مع أفضل تجربة رياضات مائية في مصر.
             </motion.p>
           </div>
 
@@ -74,9 +76,14 @@ export default function HeroSection() {
       </div>
 
       {/* Floating Search Button (Bottom End) */}
-      <button className="fixed bottom-6 end-6 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all">
-        <Search className="w-5 h-5" />
-      </button>
+      <a
+        href="https://wa.me/201550061006"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 end-6 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all"
+      >
+        <MessageCircleMore className="w-5 h-5" />
+      </a>
     </section>
   )
 }

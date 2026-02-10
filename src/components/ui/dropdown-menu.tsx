@@ -42,7 +42,7 @@ function DropdownMenuContent({
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
         className={cn(
-          "src:bg-popover src:text-popover-foreground src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:data-[side=bottom]:slide-in-from-top-2 src:data-[side=left]:slide-in-from-right-2 src:data-[side=right]:slide-in-from-left-2 src:data-[side=top]:slide-in-from-bottom-2 src:z-50 src:max-h-(--radix-dropdown-menu-content-available-height) src:min-w-[8rem] src:origin-(--radix-dropdown-menu-content-transform-origin) src:overflow-x-hidden src:overflow-y-auto src:rounded-md src:border src:p-1 src:shadow-md",
+          "src:bg-background src:text-foreground src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:data-[side=bottom]:slide-in-from-top-2 src:data-[side=left]:slide-in-from-right-2 src:data-[side=right]:slide-in-from-left-2 src:data-[side=top]:slide-in-from-bottom-2 src:z-50 src:max-h-(--radix-dropdown-menu-content-available-height) src:min-w-32 src:origin-(--radix-dropdown-menu-content-transform-origin) src:overflow-x-hidden src:overflow-y-auto src:rounded-md src:border src:p-1 src:shadow-md",
           className,
         )}
         {...props}
@@ -230,7 +230,7 @@ function DropdownMenuSubContent({
     <DropdownMenuPrimitive.SubContent
       data-slot="dropdown-menu-sub-content"
       className={cn(
-        "src:bg-popover src:text-popover-foreground src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:data-[side=bottom]:slide-in-from-top-2 src:data-[side=left]:slide-in-from-right-2 src:data-[side=right]:slide-in-from-left-2 src:data-[side=top]:slide-in-from-bottom-2 src:z-50 src:min-w-[8rem] src:origin-(--radix-dropdown-menu-content-transform-origin) src:overflow-hidden src:rounded-md src:border src:p-1 src:shadow-lg",
+        "src:bg-background src:text-foreground src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:data-[side=bottom]:slide-in-from-top-2 src:data-[side=left]:slide-in-from-right-2 src:data-[side=right]:slide-in-from-left-2 src:data-[side=top]:slide-in-from-bottom-2 src:z-50 src:min-w-32 src:origin-(--radix-dropdown-menu-content-transform-origin) src:overflow-hidden src:rounded-md src:border src:p-1 src:shadow-lg",
         className,
       )}
       {...props}
