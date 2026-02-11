@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { CalendarCheck, DollarSign, Ship, Users } from "lucide-react"
 import StatCard from "@/components/shared/stat-card"
 import StatusBadge from "@/components/shared/status-badge"
@@ -12,21 +13,71 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { mockBookings, mockTrips, mockSuppliers } from "@/lib/mock-data"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
+import * as bookingsApi from "@/lib/api/bookings"
+import * as tripsApi from "@/lib/api/trips"
+import * as suppliersApi from "@/lib/api/suppliers"
+import { DashboardSkeleton } from "@/components/shared/loading-skeletons"
+import { ErrorDisplay } from "@/components/shared/error-display"
+import type { Booking, Trip, Supplier } from "@/lib/types"
 
 export default function AdminDashboard() {
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [trips, setTrips] = useState<Trip[]>([])
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const [bookingsRes, tripsRes, suppliersRes] = await Promise.all([
+        bookingsApi.getBookings(),
+        tripsApi.getTrips(),
+        suppliersApi.getSuppliers(),
+      ])
+
+      if (bookingsRes.error || tripsRes.error || suppliersRes.error) {
+        setError("فشل في تحميل البيانات")
+        return
+      }
+
+      setBookings(bookingsRes.data || [])
+      setTrips(tripsRes.data || [])
+      setSuppliers(suppliersRes.data || [])
+    } catch (err) {
+      setError("حدث خطأ أثناء تحميل البيانات")
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (isLoading) {
+    return <DashboardSkeleton />
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} onRetry={fetchData} />
+  }
+
   // Calculate stats
-  const totalBookings = mockBookings.length
-  const totalRevenue = mockBookings.reduce(
+  const totalBookings = bookings.length
+  const totalRevenue = bookings.reduce(
     (sum, booking) => sum + booking.amount,
     0,
   )
-  const activeSuppliers = mockSuppliers.length
-  const activeTrips = mockTrips.length
+  const activeSuppliers = suppliers.length
+  const activeTrips = trips.length
 
   // Get recent bookings (last 10)
-  const recentBookings = [...mockBookings]
+  const recentBookings = [...bookings]
     .sort(
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -74,7 +125,7 @@ export default function AdminDashboard() {
             </TableHeader>
             <TableBody>
               {recentBookings.map((booking) => {
-                const trip = mockTrips.find((t) => t.id === booking.trip_id)
+                const trip = trips.find((t) => t.id === booking.trip_id)
                 return (
                   <TableRow key={booking.id}>
                     <TableCell className="font-medium">#{booking.id}</TableCell>

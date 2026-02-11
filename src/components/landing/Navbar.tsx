@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import SettingsDialog from "@/components/landing/SettingsDialog"
+import { useAuth } from "@/lib/auth/auth-context"
 
 export default function Navbar() {
   const [isHidden, setIsHidden] = useState(false)
@@ -24,6 +25,7 @@ export default function Navbar() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const { scrollY } = useScroll()
   const t = useTranslations("navbar")
+  const { isAuthenticated, user } = useAuth()
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() ?? 0
@@ -173,22 +175,55 @@ export default function Navbar() {
                       {t("map")}
                     </Link>
                   </Button>
+                  {isAuthenticated ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="justify-center rounded-full gap-2"
+                        asChild
+                      >
+                        <Link
+                          href={user?.role === 2 ? "/admin/dashboard" : "/supplier/my-trips"}
+                          className="cursor-pointer"
+                          onClick={() => setSheetOpen(false)}
+                        >
+                          <User className="size-4" />
+                          لوحة التحكم
+                        </Link>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="justify-center rounded-full gap-2"
+                        asChild
+                      >
+                        <Link
+                          href="/login"
+                          className="cursor-pointer"
+                          onClick={() => setSheetOpen(false)}
+                        >
+                          <User className="size-4" />
+                          {t("my-account")}
+                        </Link>
+                      </Button>
+                      <Button
+                        className="rounded-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
+                        asChild
+                      >
+                        <Link
+                          href="/register"
+                          className="cursor-pointer"
+                          onClick={() => setSheetOpen(false)}
+                        >
+                          انضم كمزود خدمة
+                        </Link>
+                      </Button>
+                    </>
+                  )}
                   <Button
-                    variant="outline"
-                    className="justify-center rounded-full gap-2"
-                    asChild
-                  >
-                    <Link
-                      href="#"
-                      className="cursor-pointer"
-                      onClick={() => setSheetOpen(false)}
-                    >
-                      <User className="size-4" />
-                      {t("my-account")}
-                    </Link>
-                  </Button>
-                  <Button
-                    className="rounded-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
+                    className="rounded-full bg-duck-cyan text-white hover:bg-duck-cyan-light font-medium"
                     asChild
                   >
                     <Link
@@ -272,13 +307,31 @@ export default function Navbar() {
               <Map className="w-4 h-4 shrink-0" />
               <span>{t("map")}</span>
             </Link>
-            <Link
-              href="/account"
-              className={cn("hidden! md:flex!", actionButtonClass)}
-            >
-              <User className="w-4 h-4 shrink-0" />
-              <span>{t("my-account")}</span>
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href={user?.role === 2 ? "/admin/dashboard" : "/supplier/my-trips"}
+                className={cn("hidden! md:flex!", actionButtonClass)}
+              >
+                <User className="w-4 h-4 shrink-0" />
+                <span>لوحة التحكم</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className={cn("hidden! md:flex!", actionButtonClass)}
+                >
+                  <User className="w-4 h-4 shrink-0" />
+                  <span>{t("my-account")}</span>
+                </Link>
+                <Link
+                  href="/register"
+                  className="hidden! md:inline-flex! bg-duck-cyan text-white font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-cyan-light transition-colors shrink-0 text-sm"
+                >
+                  انضم كمزود خدمة
+                </Link>
+              </>
+            )}
             <Link
               href="/book"
               className="hidden! md:inline-flex! bg-duck-yellow text-duck-navy font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-yellow-hover transition-colors shrink-0 text-sm"

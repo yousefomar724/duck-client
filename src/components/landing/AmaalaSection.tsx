@@ -57,7 +57,7 @@ export default function AmaalaSection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-6xl md:text-7xl font-bold mb-4"
+            className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4"
           >
             هُنا تبدأ رحلتك إلى وجهات استثنائية
           </motion.h2>

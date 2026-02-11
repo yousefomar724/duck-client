@@ -27,20 +27,21 @@ export interface Trip {
   price: number
   currency: string
   rate: number
-  destination: string
-  location: string
+  destination: boolean
+  location: boolean
   from: string // ISO date
-  to: string // ISO date
-  itinerary: { ar: string; en: string }[]
+  to?: string // ISO date
+  itinerary?: { ar: string; en: string }[] | { ar: string; en: string }
   name: { ar: string; en: string }
   description: { ar: string; en: string }
-  availability: { date: string; slots: number }[]
+  availability?: { date: string; slots: number }[] | { ar: string; en: string }
   max_guests: number
-  images: string[]
+  images?: string[] | { [key: string]: string }
   cancelation_policy: { ar: string; en: string }
   refundable: boolean
   tour_guide_id?: number
-  created_at: string
+  destinations?: Destination[]
+  created_at?: string
 }
 
 export interface Booking {
@@ -73,7 +74,8 @@ export interface Destination {
   description: { ar: string; en: string }
   image: string
   status: "active" | "inactive"
-  trip_count: number
+  trip_count?: number
+  trips?: Trip[]
 }
 
 export interface Payout {
@@ -86,6 +88,56 @@ export interface Payout {
   date: string
 }
 
-export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "FAILED" | "SUCCESS"
 export type PayoutStatus = "pending" | "paid" | "failed"
 export type UserRole = 0 | 1 | 2
+
+// Additional types for API integration
+export interface TourGuide {
+  id: number
+  name: string
+  price: number
+  phone_number: string
+  created_at?: string
+}
+
+export interface ImageStorage {
+  id: number
+  user_id: number
+  supplier_id: number
+  image_url: string
+}
+
+export interface RegisterInput {
+  username: string
+  email: string
+  password: string
+  first_name: string
+  last_name: string
+  phone_number?: string
+}
+
+export interface CreateBookingRequest {
+  trip_id: number
+  full_name: string
+  phone_number: string
+}
+
+export interface CreateTripRequest {
+  supplier_id?: number
+  name: { ar: string; en: string }
+  description: { ar: string; en: string }
+  price: number
+  currency: string
+  destination: boolean
+  location: boolean
+  from: string
+  to?: string
+  itinerary?: { ar: string; en: string }
+  availability?: { ar: string; en: string }
+  max_guests: number
+  images?: { [key: string]: string }
+  cancelation_policy?: { ar: string; en: string }
+  refundable: boolean
+  tour_guide_id?: number
+}

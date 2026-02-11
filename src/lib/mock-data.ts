@@ -67,8 +67,8 @@ export const mockTrips: Trip[] = [
     price: 180,
     currency: "EGP",
     rate: 5,
-    destination: "نهر النيل - أسوان",
-    location: "جزيرة الفنتين",
+    destination: true,
+    location: true,
     from: "2024-03-01",
     to: "2024-12-31",
     itinerary: [
@@ -100,8 +100,8 @@ export const mockTrips: Trip[] = [
     price: 150,
     currency: "EGP",
     rate: 5,
-    destination: "نهر النيل - أسوان",
-    location: "كورنيش أسوان",
+    destination: true,
+    location: true,
     from: "2024-03-01",
     to: "2024-12-31",
     itinerary: [
@@ -132,8 +132,8 @@ export const mockTrips: Trip[] = [
     price: 120,
     currency: "EGP",
     rate: 4,
-    destination: "نهر النيل - أسوان",
-    location: "نادي الرياضات المائية",
+    destination: true,
+    location: true,
     from: "2024-03-01",
     to: "2024-12-31",
     itinerary: [
@@ -197,7 +197,7 @@ export const mockBookings: Booking[] = [
     currency: "EGP",
     full_name: "محمد علي",
     phone_number: "+20 102 345 6789",
-    status: "COMPLETED",
+    status: "SUCCESS",
     created_at: "2024-03-05T16:45:00Z",
   },
   {

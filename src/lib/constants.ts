@@ -69,10 +69,15 @@ export const bookingStatusColors: Record<
     text: "text-red-800",
     label: "ملغي",
   },
-  COMPLETED: {
+  FAILED: {
+    bg: "bg-red-100",
+    text: "text-red-800",
+    label: "فشل",
+  },
+  SUCCESS: {
     bg: "bg-green-100",
     text: "text-green-800",
-    label: "مكتمل",
+    label: "نجح",
   },
 }
 

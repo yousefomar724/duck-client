@@ -2,6 +2,9 @@ import type { Metadata } from "next"
 import localFont from "next/font/local"
 import "./globals.css"
 import { NextIntlClientProvider } from "next-intl"
+import { AuthProvider } from "@/lib/auth/auth-context"
+import { ToastProvider } from "@/lib/toast/toast-context"
+import { ToastContainer } from "@/components/shared/toast-container"
 
 const fedraSerif = localFont({
   src: [
@@ -39,7 +42,12 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body className={`${fedraSerif.variable} font-serif antialiased`}>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <NextIntlClientProvider>{children}</NextIntlClientProvider>
+          </AuthProvider>
+          <ToastContainer />
+        </ToastProvider>
       </body>
     </html>
   )

@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   Card,
@@ -12,8 +14,32 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { useAuth } from "@/lib/auth/auth-context"
 
 export default function LoginPage() {
+  const { login } = useAuth()
+  const router = useRouter()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+
+    const { error: loginError } = await login(email, password)
+    if (loginError) {
+      setError(loginError)
+      setIsLoading(false)
+    } else {
+      // Redirect based on role will be handled by auth context
+      // For now, redirect to dashboard
+      router.replace("/supplier/my-trips")
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="space-y-1">
@@ -23,30 +49,51 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">البريد الإلكتروني</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="name@example.com"
-            dir="ltr"
-          />
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">كلمة المرور</Label>
-            <Link
-              href="/forgot-password"
-              className="text-sm text-duck-cyan hover:text-duck-cyan-light"
-            >
-              نسيت كلمة المرور؟
-            </Link>
+        <form onSubmit={handleLogin} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="email">البريد الإلكتروني</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              dir="ltr"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-          <Input id="password" type="password" dir="ltr" />
-        </div>
-        <Button className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium">
-          تسجيل الدخول
-        </Button>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">كلمة المرور</Label>
+              <Link
+                href="/forgot-password"
+                className="text-sm text-duck-cyan hover:text-duck-cyan-light"
+              >
+                نسيت كلمة المرور؟
+              </Link>
+            </div>
+            <Input
+              id="password"
+              type="password"
+              dir="ltr"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
+          >
+            {isLoading ? "جاري التحميل..." : "تسجيل الدخول"}
+          </Button>
+        </form>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

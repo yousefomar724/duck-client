@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import PageHeader from "@/components/shared/page-header"
 import StatusBadge from "@/components/shared/status-badge"
 import {
@@ -18,29 +18,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { mockBookings, mockTrips } from "@/lib/mock-data"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
-import type { BookingStatus } from "@/lib/types"
+import * as bookingsApi from "@/lib/api/bookings"
+import { TableSkeleton } from "@/components/shared/loading-skeletons"
+import { ErrorDisplay } from "@/components/shared/error-display"
+import type { Booking, BookingStatus } from "@/lib/types"
 
 export default function SupplierBookingsPage() {
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Filter bookings for supplier_id = 1
-  let supplierBookings = mockBookings.filter(
-    (booking) => booking.supplier_id === 1,
-  )
+  const fetchBookings = async () => {
+    setIsLoading(true)
+    setError(null)
+    const { data, error: fetchError } = await bookingsApi.getMyBookings()
+    if (fetchError) {
+      setError(fetchError)
+    } else {
+      setBookings(data || [])
+    }
+    setIsLoading(false)
+  }
 
-  // Apply status filter
+  useEffect(() => {
+    fetchBookings()
+  }, [])
+
+  // Filter bookings by status
+  let filteredBookings = bookings
   if (statusFilter !== "all") {
-    supplierBookings = supplierBookings.filter(
+    filteredBookings = bookings.filter(
       (booking) => booking.status === statusFilter,
     )
   }
 
   // Get trip name for a booking
-  const getTripName = (tripId: number) => {
-    const trip = mockTrips.find((t) => t.id === tripId)
-    return trip ? trip.name.ar : "غير معروف"
+  const getTripName = (booking: Booking) => {
+    if (booking.trip) {
+      return typeof booking.trip.name === "string"
+        ? booking.trip.name
+        : booking.trip.name.ar
+    }
+    return "غير معروف"
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <PageHeader title="الحجوزات" />
+        <TableSkeleton rows={5} columns={7} />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <PageHeader title="الحجوزات" />
+        <ErrorDisplay error={error} onRetry={fetchBookings} />
+      </div>
+    )
   }
 
   return (
@@ -83,7 +122,7 @@ export default function SupplierBookingsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {supplierBookings.length === 0 ? (
+            {filteredBookings.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={7}
@@ -93,14 +132,14 @@ export default function SupplierBookingsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              supplierBookings.map((booking) => (
+              filteredBookings.map((booking) => (
                 <TableRow key={booking.id} className="hover:bg-duck-cyan/5">
                   <TableCell className="font-medium">#{booking.id}</TableCell>
                   <TableCell>{booking.full_name}</TableCell>
                   <TableCell className="font-mono text-sm">
                     {booking.phone_number}
                   </TableCell>
-                  <TableCell>{getTripName(booking.trip_id)}</TableCell>
+                  <TableCell>{getTripName(booking)}</TableCell>
                   <TableCell className="font-bold text-duck-navy">
                     {formatCurrency(booking.amount, booking.currency)}
                   </TableCell>
@@ -121,19 +160,19 @@ export default function SupplierBookingsPage() {
       </div>
 
       {/* Summary Stats */}
-      {supplierBookings.length > 0 && (
+      {filteredBookings.length > 0 && (
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg border border-gray-300-light p-4">
             <div className="text-sm text-text-muted">إجمالي الحجوزات</div>
             <div className="text-2xl font-bold text-duck-navy mt-1">
-              {supplierBookings.length}
+              {filteredBookings.length}
             </div>
           </div>
           <div className="bg-white rounded-lg border border-gray-300-light p-4">
             <div className="text-sm text-text-muted">إجمالي الإيرادات</div>
             <div className="text-2xl font-bold text-duck-cyan mt-1">
               {formatCurrency(
-                supplierBookings.reduce((sum, b) => sum + b.amount, 0),
+                filteredBookings.reduce((sum: number, b: Booking) => sum + b.amount, 0),
                 "EGP",
               )}
             </div>
@@ -141,13 +180,13 @@ export default function SupplierBookingsPage() {
           <div className="bg-white rounded-lg border border-gray-300-light p-4">
             <div className="text-sm text-text-muted">الحجوزات المؤكدة</div>
             <div className="text-2xl font-bold text-green-600 mt-1">
-              {supplierBookings.filter((b) => b.status === "CONFIRMED").length}
+              {filteredBookings.filter((b: Booking) => b.status === "CONFIRMED").length}
             </div>
           </div>
           <div className="bg-white rounded-lg border border-gray-300-light p-4">
             <div className="text-sm text-text-muted">قيد الانتظار</div>
             <div className="text-2xl font-bold text-yellow-600 mt-1">
-              {supplierBookings.filter((b) => b.status === "PENDING").length}
+              {filteredBookings.filter((b: Booking) => b.status === "PENDING").length}
             </div>
           </div>
         </div>

@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   Card,
@@ -12,8 +14,71 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { useAuth } from "@/lib/auth/auth-context"
 
 export default function RegisterPage() {
+  const { register } = useAuth()
+  const router = useRouter()
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    username: "",
+    email: "",
+    phone_number: "",
+    password: "",
+    confirmPassword: "",
+  })
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target
+    const fieldMap: { [key: string]: string } = {
+      firstName: "first_name",
+      lastName: "last_name",
+      companyName: "username",
+      phone: "phone_number",
+      confirmPassword: "confirmPassword",
+    }
+    const fieldName = fieldMap[id] || id
+    setFormData((prev) => ({ ...prev, [fieldName]: value }))
+  }
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError("كلمات المرور غير متطابقة")
+      return
+    }
+
+    if (!formData.first_name || !formData.last_name || !formData.username || !formData.email || !formData.password) {
+      setError("الرجاء ملء جميع الحقول المطلوبة")
+      return
+    }
+
+    setIsLoading(true)
+
+    const { error: registerError } = await register({
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      username: formData.username,
+      email: formData.email,
+      phone_number: formData.phone_number || undefined,
+      password: formData.password,
+    })
+
+    if (registerError) {
+      setError(registerError)
+      setIsLoading(false)
+    } else {
+      // Redirect to dashboard
+      router.replace("/supplier/my-trips")
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="space-y-1">
@@ -25,55 +90,103 @@ export default function RegisterPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">الاسم الأول</Label>
-            <Input id="firstName" placeholder="محمد" />
+        <form onSubmit={handleRegister} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">الاسم الأول</Label>
+              <Input
+                id="firstName"
+                placeholder="محمد"
+                value={formData.first_name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">الاسم الأخير</Label>
+              <Input
+                id="lastName"
+                placeholder="أحمد"
+                value={formData.last_name}
+                onChange={handleChange}
+                required
+              />
+            </div>
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="lastName">الاسم الأخير</Label>
-            <Input id="lastName" placeholder="أحمد" />
+            <Label htmlFor="companyName">اسم الشركة / المزود</Label>
+            <Input
+              id="companyName"
+              placeholder="دوك إنترتينمنت"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="companyName">اسم الشركة / المزود</Label>
-          <Input id="companyName" placeholder="دوك إنترتينمنت" />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">البريد الإلكتروني</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              dir="ltr"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="email">البريد الإلكتروني</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="name@example.com"
-            dir="ltr"
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">رقم الجوال</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+20 123 456 7890"
+              dir="ltr"
+              value={formData.phone_number}
+              onChange={handleChange}
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="phone">رقم الجوال</Label>
-          <Input
-            id="phone"
-            type="tel"
-            placeholder="+20 123 456 7890"
-            dir="ltr"
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">كلمة المرور</Label>
+            <Input
+              id="password"
+              type="password"
+              dir="ltr"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">كلمة المرور</Label>
-          <Input id="password" type="password" dir="ltr" />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              dir="ltr"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
-          <Input id="confirmPassword" type="password" dir="ltr" />
-        </div>
-
-        <Button className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium">
-          إنشاء حساب
-        </Button>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
+          >
+            {isLoading ? "جاري الإنشاء..." : "إنشاء حساب"}
+          </Button>
+        </form>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

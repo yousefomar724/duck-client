@@ -1,0 +1,10 @@
+export * from './client';
+export * as authApi from './auth';
+export * as tripsApi from './trips';
+export * as suppliersApi from './suppliers';
+export * as bookingsApi from './bookings';
+export * as walletApi from './wallet';
+export * as imagesApi from './images';
+export * as destinationsApi from './destinations';
+export * as payoutsApi from './payouts';
+export * as tourGuidesApi from './tour-guides';
