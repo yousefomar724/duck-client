@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { ArrowRight } from "lucide-react"
 import * as authApi from "@/lib/api/auth"
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get("token")
@@ -172,5 +172,31 @@ export default function ResetPasswordPage() {
         </p>
       </CardContent>
     </Card>
+  )
+}
+
+function ResetPasswordFallback() {
+  return (
+    <Card>
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl text-center">
+          إعادة تعيين كلمة المرور
+        </CardTitle>
+        <CardDescription className="text-center">
+          جاري التحميل...
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-10 bg-muted animate-pulse rounded" />
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordFallback />}>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }
