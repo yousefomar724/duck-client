@@ -39,110 +39,107 @@ export default function ScrollManager() {
     }
     window.scrollTo(0, 0)
     resetIntroState()
-    setCurrentSection(0)
+    queueMicrotask(() => setCurrentSection(0))
   }, [pathname])
 
   // Shared transition logic - called by both wheel and touch handlers
-  const runTransition = useCallback(
-    (direction: number, current: number) => {
-      if (isAnimating.current) return
+  const runTransition = useCallback((direction: number, current: number) => {
+    if (isAnimating.current) return
 
-      const nextSection = current + direction
+    const nextSection = current + direction
 
-      if (direction > 0) {
-        // SCROLL DOWN
-        if (nextSection <= 2) {
-          isAnimating.current = true
-          setCurrentSection(nextSection)
+    if (direction > 0) {
+      // SCROLL DOWN
+      if (nextSection <= 2) {
+        isAnimating.current = true
+        setCurrentSection(nextSection)
 
-          gsap.to(`#intro-section-${current} .section-content`, {
-            y: -100,
-            autoAlpha: 0,
-            duration: 1,
-            ease: "power2.inOut",
-          })
+        gsap.to(`#intro-section-${current} .section-content`, {
+          y: -100,
+          autoAlpha: 0,
+          duration: 1,
+          ease: "power2.inOut",
+        })
 
-          gsap.set(`#intro-section-${nextSection}`, { zIndex: 20 })
-          gsap.set(`#intro-section-${current}`, { zIndex: 10 })
+        gsap.set(`#intro-section-${nextSection}`, { zIndex: 20 })
+        gsap.set(`#intro-section-${current}`, { zIndex: 10 })
 
-          gsap.fromTo(
-            `#intro-section-${nextSection} .section-content`,
-            { y: 100, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 1, ease: "power2.out", delay: 0.2 },
-          )
+        gsap.fromTo(
+          `#intro-section-${nextSection} .section-content`,
+          { y: 100, autoAlpha: 0 },
+          { y: 0, autoAlpha: 1, duration: 1, ease: "power2.out", delay: 0.2 },
+        )
 
-          gsap.fromTo(
-            `#intro-section-${nextSection}`,
-            { autoAlpha: 0 },
-            {
-              autoAlpha: 1,
-              duration: 1.2,
-              ease: "power2.inOut",
-              onComplete: () => {
-                isAnimating.current = false
-                gsap.set(`#intro-section-${current}`, { autoAlpha: 0 })
-              },
-            },
-          )
-        } else {
-          // nextSection is 3 -> Go to Normal Content
-          isAnimating.current = true
-
-          gsap.to(`#intro-section-${current} .section-content`, {
-            y: -100,
-            autoAlpha: 0,
-            duration: 1,
-            ease: "power2.inOut",
-          })
-
-          gsap.to(window, {
-            scrollTo: { y: window.innerHeight },
-            duration: 1,
-            ease: "power2.inOut",
-            onComplete: () => {
-              isAnimating.current = false
-              setCurrentSection(3)
-            },
-          })
-        }
-      } else {
-        // SCROLL UP
-        if (nextSection >= 0) {
-          isAnimating.current = true
-          setCurrentSection(nextSection)
-
-          gsap.to(`#intro-section-${current} .section-content`, {
-            y: 100,
-            autoAlpha: 0,
-            duration: 1,
-            ease: "power2.inOut",
-          })
-
-          gsap.set(`#intro-section-${nextSection}`, {
+        gsap.fromTo(
+          `#intro-section-${nextSection}`,
+          { autoAlpha: 0 },
+          {
             autoAlpha: 1,
-            zIndex: 10,
-          })
-          gsap.set(`#intro-section-${current}`, { zIndex: 20 })
-
-          gsap.fromTo(
-            `#intro-section-${nextSection} .section-content`,
-            { y: -100, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 1, ease: "power2.out", delay: 0.2 },
-          )
-
-          gsap.to(`#intro-section-${current}`, {
-            autoAlpha: 0,
             duration: 1.2,
             ease: "power2.inOut",
             onComplete: () => {
               isAnimating.current = false
+              gsap.set(`#intro-section-${current}`, { autoAlpha: 0 })
             },
-          })
-        }
+          },
+        )
+      } else {
+        // nextSection is 3 -> Go to Normal Content
+        isAnimating.current = true
+
+        gsap.to(`#intro-section-${current} .section-content`, {
+          y: -100,
+          autoAlpha: 0,
+          duration: 1,
+          ease: "power2.inOut",
+        })
+
+        gsap.to(window, {
+          scrollTo: { y: window.innerHeight },
+          duration: 1,
+          ease: "power2.inOut",
+          onComplete: () => {
+            isAnimating.current = false
+            setCurrentSection(3)
+          },
+        })
       }
-    },
-    [],
-  )
+    } else {
+      // SCROLL UP
+      if (nextSection >= 0) {
+        isAnimating.current = true
+        setCurrentSection(nextSection)
+
+        gsap.to(`#intro-section-${current} .section-content`, {
+          y: 100,
+          autoAlpha: 0,
+          duration: 1,
+          ease: "power2.inOut",
+        })
+
+        gsap.set(`#intro-section-${nextSection}`, {
+          autoAlpha: 1,
+          zIndex: 10,
+        })
+        gsap.set(`#intro-section-${current}`, { zIndex: 20 })
+
+        gsap.fromTo(
+          `#intro-section-${nextSection} .section-content`,
+          { y: -100, autoAlpha: 0 },
+          { y: 0, autoAlpha: 1, duration: 1, ease: "power2.out", delay: 0.2 },
+        )
+
+        gsap.to(`#intro-section-${current}`, {
+          autoAlpha: 0,
+          duration: 1.2,
+          ease: "power2.inOut",
+          onComplete: () => {
+            isAnimating.current = false
+          },
+        })
+      }
+    }
+  }, [])
 
   // Scroll back from normal content to intro (section 2)
   const scrollBackToIntro = useCallback(() => {
@@ -211,11 +208,12 @@ export default function ScrollManager() {
       const deltaY = lastTouchY.current - currentY
       lastTouchY.current = currentY
 
-      // In normal content zone - check if at top and scrolling up
+      // In normal content zone - check if at top and user scrolling UP (to see intro)
+      // deltaY < 0 = finger moved down = scroll up intent
       if (scrollY >= normalContentStart - 5) {
         if (
           scrollY < normalContentStart + 50 &&
-          deltaY > 5 &&
+          deltaY < -5 &&
           !touchHandled.current
         ) {
           e.preventDefault()
