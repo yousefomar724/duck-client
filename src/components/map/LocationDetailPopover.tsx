@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -24,6 +25,16 @@ export default function LocationDetailPopover({
   onOpenChange,
   anchorPoint,
 }: LocationDetailPopoverProps) {
+  const [side, setSide] = useState<"right" | "bottom">("right")
+
+  useEffect(() => {
+    const m = window.matchMedia("(max-width: 640px)")
+    const update = () => setSide(m.matches ? "bottom" : "right")
+    update()
+    m.addEventListener("change", update)
+    return () => m.removeEventListener("change", update)
+  }, [])
+
   if (!location) return null
 
   return (
@@ -37,14 +48,18 @@ export default function LocationDetailPopover({
       </PopoverAnchor>
 
       <PopoverContent
-        side="right"
-        sideOffset={16}
+        side={side}
+        sideOffset={side === "bottom" ? 12 : 16}
         align="center"
         collisionPadding={16}
-        className="w-[340px] bg-duck-navy-deep text-white border-none p-0 overflow-hidden rounded-xl shadow-2xl z-40"
+        className={cn(
+          "bg-duck-navy-deep text-white border-none p-0 overflow-hidden rounded-xl shadow-2xl z-40",
+          "w-[340px] max-w-[min(340px,calc(100vw-2rem))]",
+          side === "bottom" && "pb-[env(safe-area-inset-bottom)] mx-2",
+        )}
       >
         {/* Image */}
-        <div className="relative w-full aspect-16/9">
+        <div className="relative w-full aspect-video">
           <Image
             src={location.image}
             alt={location.name}
@@ -115,7 +130,7 @@ export default function LocationDetailPopover({
           {/* CTA */}
           <Button
             className={cn(
-              "w-full rounded-full font-medium text-sm py-2",
+              "w-full rounded-full font-medium text-sm py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 touch-manipulation",
               location.status === "coming_soon"
                 ? "bg-white/10 text-white/50 cursor-not-allowed hover:bg-white/10"
                 : "bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover",

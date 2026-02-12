@@ -183,7 +183,11 @@ export default function Navbar() {
                         asChild
                       >
                         <Link
-                          href={user?.role === 2 ? "/admin/dashboard" : "/supplier/my-trips"}
+                          href={
+                            user?.role === 2
+                              ? "/admin/dashboard"
+                              : "/supplier/my-trips"
+                          }
                           className="cursor-pointer"
                           onClick={() => setSheetOpen(false)}
                         >
@@ -194,20 +198,6 @@ export default function Navbar() {
                     </>
                   ) : (
                     <>
-                      <Button
-                        variant="outline"
-                        className="justify-center rounded-full gap-2"
-                        asChild
-                      >
-                        <Link
-                          href="/login"
-                          className="cursor-pointer"
-                          onClick={() => setSheetOpen(false)}
-                        >
-                          <User className="size-4" />
-                          {t("my-account")}
-                        </Link>
-                      </Button>
                       <Button
                         className="rounded-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
                         asChild
@@ -309,28 +299,21 @@ export default function Navbar() {
             </Link>
             {isAuthenticated ? (
               <Link
-                href={user?.role === 2 ? "/admin/dashboard" : "/supplier/my-trips"}
+                href={
+                  user?.role === 2 ? "/admin/dashboard" : "/supplier/my-trips"
+                }
                 className={cn("hidden! md:flex!", actionButtonClass)}
               >
                 <User className="w-4 h-4 shrink-0" />
                 <span>لوحة التحكم</span>
               </Link>
             ) : (
-              <>
-                <Link
-                  href="/login"
-                  className={cn("hidden! md:flex!", actionButtonClass)}
-                >
-                  <User className="w-4 h-4 shrink-0" />
-                  <span>{t("my-account")}</span>
-                </Link>
-                <Link
-                  href="/register"
-                  className="hidden! md:inline-flex! bg-duck-cyan text-white font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-cyan-light transition-colors shrink-0 text-sm"
-                >
-                  انضم كمزود خدمة
-                </Link>
-              </>
+              <Link
+                href="/register"
+                className="hidden! md:inline-flex! bg-duck-cyan text-white font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-cyan-light transition-colors shrink-0 text-sm"
+              >
+                انضم كمزود خدمة
+              </Link>
             )}
             <Link
               href="/book"

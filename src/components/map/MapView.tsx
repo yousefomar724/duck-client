@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useCallback, useState } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet"
@@ -64,6 +64,20 @@ function createMarkerIcon(
 function FitBounds({ locations }: { locations: WaterActivityLocation[] }) {
   const map = useMap()
   const prevLengthRef = useRef(locations.length)
+  const [padding, setPadding] = useState([60, 60] as [number, number])
+
+  useEffect(() => {
+    const updatePadding = () => {
+      setPadding(
+        typeof window !== "undefined" && window.innerWidth < 640
+          ? [24, 24]
+          : [60, 60],
+      )
+    }
+    updatePadding()
+    window.addEventListener("resize", updatePadding)
+    return () => window.removeEventListener("resize", updatePadding)
+  }, [])
 
   useEffect(() => {
     if (locations.length === 0) {
@@ -76,10 +90,10 @@ function FitBounds({ locations }: { locations: WaterActivityLocation[] }) {
       const bounds = L.latLngBounds(
         locations.map((loc) => loc.coordinates),
       )
-      map.flyToBounds(bounds, { padding: [60, 60], duration: 0.8 })
+      map.flyToBounds(bounds, { padding, duration: 0.8 })
       prevLengthRef.current = locations.length
     }
-  }, [locations, map])
+  }, [locations, map, padding])
 
   return null
 }

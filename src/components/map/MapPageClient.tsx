@@ -55,7 +55,7 @@ export default function MapPageClient() {
   const isDark = mapStyle === "dark"
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative h-screen min-h-dvh w-full overflow-hidden">
       {/* Map container — z-0 creates a stacking context so Leaflet's internal
           z-indexes (up to 1000+) don't escape and overlap navbar/popover */}
       <div className="absolute inset-0 z-0">
@@ -69,7 +69,7 @@ export default function MapPageClient() {
       </div>
 
       {/* Filter tabs — above map but below navbar (z-50) */}
-      <div className="relative z-10 pt-28 md:pt-32">
+      <div className="relative z-10 pt-24 sm:pt-28 md:pt-32 px-0 sm:px-0">
         <ActivityFilters
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
@@ -85,13 +85,13 @@ export default function MapPageClient() {
         anchorPoint={anchorPoint}
       />
 
-      {/* Map controls — bottom right */}
-      <div className="absolute bottom-6 end-4 z-10 flex flex-col gap-2">
+      {/* Map controls — bottom right, safe area aware */}
+      <div className="absolute bottom-4 end-3 sm:bottom-6 sm:end-4 z-10 flex flex-col gap-2 pb-[env(safe-area-inset-bottom)] pr-[env(safe-area-inset-right)]">
         {/* Style toggle */}
         <button
           onClick={() => setMapStyle(isDark ? "light" : "dark")}
           className={cn(
-            "w-9 h-9 rounded-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer shadow-md",
+            "w-10 h-10 sm:w-9 sm:h-9 rounded-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer shadow-md touch-manipulation",
             isDark
               ? "bg-white/20 text-white hover:bg-white/30"
               : "bg-white text-duck-navy hover:bg-gray-100 border border-black/10",
@@ -106,7 +106,7 @@ export default function MapPageClient() {
           <button
             onClick={() => mapRef.current?.zoomIn()}
             className={cn(
-              "w-9 h-9 rounded-t-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer",
+              "w-10 h-10 sm:w-9 sm:h-9 rounded-t-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer touch-manipulation",
               isDark
                 ? "bg-white/20 text-white hover:bg-white/30"
                 : "bg-white text-duck-navy hover:bg-gray-100 border border-black/10",
@@ -118,7 +118,7 @@ export default function MapPageClient() {
           <button
             onClick={() => mapRef.current?.zoomOut()}
             className={cn(
-              "w-9 h-9 rounded-b-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer",
+              "w-10 h-10 sm:w-9 sm:h-9 rounded-b-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer touch-manipulation",
               isDark
                 ? "bg-white/20 text-white hover:bg-white/30"
                 : "bg-white text-duck-navy hover:bg-gray-100 border border-black/10 border-t-0",
