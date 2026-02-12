@@ -65,10 +65,10 @@ function ResetPasswordContent() {
 
   if (success) {
     return (
-      <Card>
+      <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">تم إعادة التعيين بنجاح</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl text-center text-duck-navy">تم إعادة التعيين بنجاح</CardTitle>
+          <CardDescription className="text-center text-text-muted">
             تم تحديث كلمة المرور بنجاح، سيتم نقلك إلى صفحة تسجيل الدخول
           </CardDescription>
         </CardHeader>
@@ -76,7 +76,7 @@ function ResetPasswordContent() {
           <div className="text-center">
             <Link
               href="/login"
-              className="inline-flex items-center text-sm text-duck-cyan hover:text-duck-cyan-light"
+              className="inline-flex items-center text-sm text-duck-cyan hover:text-duck-cyan-light font-medium transition-colors"
             >
               <ArrowRight className="w-4 h-4 ml-1" />
               العودة إلى تسجيل الدخول
@@ -89,10 +89,10 @@ function ResetPasswordContent() {
 
   if (!token) {
     return (
-      <Card>
+      <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">رابط غير صالح</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl text-center text-duck-navy">رابط غير صالح</CardTitle>
+          <CardDescription className="text-center text-text-muted">
             رابط إعادة تعيين كلمة المرور غير صالح أو انتهى
           </CardDescription>
         </CardHeader>
@@ -100,7 +100,7 @@ function ResetPasswordContent() {
           <div className="text-center">
             <Link
               href="/forgot-password"
-              className="inline-flex items-center text-sm text-duck-cyan hover:text-duck-cyan-light"
+              className="inline-flex items-center text-sm text-duck-cyan hover:text-duck-cyan-light font-medium transition-colors"
             >
               <ArrowRight className="w-4 h-4 ml-1" />
               طلب رابط جديد
@@ -112,19 +112,19 @@ function ResetPasswordContent() {
   }
 
   return (
-    <Card>
+    <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">
+        <CardTitle className="text-2xl text-center text-duck-navy">
           إعادة تعيين كلمة المرور
         </CardTitle>
-        <CardDescription className="text-center">
+        <CardDescription className="text-center text-text-muted">
           أدخل كلمة المرور الجديدة لحسابك
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -137,6 +137,7 @@ function ResetPasswordContent() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
             />
           </div>
 
@@ -149,23 +150,24 @@ function ResetPasswordContent() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
+              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
             />
           </div>
 
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
+            className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-bold shadow-md transition-all hover:shadow-lg"
           >
             {isLoading ? "جاري إعادة التعيين..." : "إعادة تعيين كلمة المرور"}
           </Button>
         </form>
 
-        <p className="text-center text-sm text-text-muted">
+        <p className="text-center text-sm text-text-muted mt-4">
           هل لديك حساب؟{" "}
           <Link
             href="/login"
-            className="text-duck-cyan hover:text-duck-cyan-light font-medium"
+            className="text-duck-cyan hover:text-duck-cyan-light font-medium transition-colors"
           >
             تسجيل الدخول
           </Link>
@@ -177,12 +179,12 @@ function ResetPasswordContent() {
 
 function ResetPasswordFallback() {
   return (
-    <Card>
+    <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">
+        <CardTitle className="text-2xl text-center text-duck-navy">
           إعادة تعيين كلمة المرور
         </CardTitle>
-        <CardDescription className="text-center">
+        <CardDescription className="text-center text-text-muted">
           جاري التحميل...
         </CardDescription>
       </CardHeader>

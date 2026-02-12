@@ -48,7 +48,6 @@ export default function RegisterPage() {
     e.preventDefault()
     setError(null)
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError("كلمات المرور غير متطابقة")
       return
@@ -74,25 +73,24 @@ export default function RegisterPage() {
       setError(registerError)
       setIsLoading(false)
     } else {
-      // Redirect to dashboard
       router.replace("/supplier/my-trips")
     }
   }
 
   return (
-    <Card>
+    <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">
+        <CardTitle className="text-2xl text-center text-duck-navy">
           إنشاء حساب مزود خدمة
         </CardTitle>
-        <CardDescription className="text-center">
+        <CardDescription className="text-center text-text-muted">
           أدخل معلوماتك لإنشاء حساب جديد
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleRegister} className="space-y-4">
           {error && (
-            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -105,6 +103,7 @@ export default function RegisterPage() {
                 value={formData.first_name}
                 onChange={handleChange}
                 required
+                className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
               />
             </div>
             <div className="space-y-2">
@@ -115,6 +114,7 @@ export default function RegisterPage() {
                 value={formData.last_name}
                 onChange={handleChange}
                 required
+                className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
               />
             </div>
           </div>
@@ -127,6 +127,7 @@ export default function RegisterPage() {
               value={formData.username}
               onChange={handleChange}
               required
+              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
             />
           </div>
 
@@ -140,6 +141,7 @@ export default function RegisterPage() {
               value={formData.email}
               onChange={handleChange}
               required
+              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
             />
           </div>
 
@@ -152,6 +154,7 @@ export default function RegisterPage() {
               dir="ltr"
               value={formData.phone_number}
               onChange={handleChange}
+              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
             />
           </div>
 
@@ -164,6 +167,7 @@ export default function RegisterPage() {
               value={formData.password}
               onChange={handleChange}
               required
+              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
             />
           </div>
 
@@ -176,30 +180,31 @@ export default function RegisterPage() {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
+              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
             />
           </div>
 
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
+            className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-bold shadow-md transition-all hover:shadow-lg"
           >
             {isLoading ? "جاري الإنشاء..." : "إنشاء حساب"}
           </Button>
         </form>
 
-        <div className="relative">
+        <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <Separator />
+            <Separator className="bg-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-text-muted">
+            <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
               او التسجيل عبر
             </span>
           </div>
         </div>
 
-        <Button variant="outline" className="w-full" type="button">
+        <Button variant="outline" className="w-full bg-white hover:bg-gray-50 border-gray-200 text-text-body" type="button">
           <svg className="ml-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -221,11 +226,11 @@ export default function RegisterPage() {
           التسجيل بحساب جوجل
         </Button>
 
-        <p className="text-center text-sm text-text-muted">
+        <p className="text-center text-sm text-text-muted mt-4">
           لديك حساب بالفعل؟{" "}
           <Link
             href="/login"
-            className="text-duck-cyan hover:text-duck-cyan-light font-medium"
+            className="text-duck-cyan hover:text-duck-cyan-light font-bold transition-colors"
           >
             تسجيل الدخول
           </Link>

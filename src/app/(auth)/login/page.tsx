@@ -34,24 +34,22 @@ export default function LoginPage() {
       setError(loginError)
       setIsLoading(false)
     } else {
-      // Redirect based on role will be handled by auth context
-      // For now, redirect to dashboard
       router.replace("/supplier/my-trips")
     }
   }
 
   return (
-    <Card>
+    <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">تسجيل الدخول</CardTitle>
-        <CardDescription className="text-center">
+        <CardTitle className="text-2xl text-center text-duck-navy">تسجيل الدخول</CardTitle>
+        <CardDescription className="text-center text-text-muted">
           أدخل بريدك الإلكتروني وكلمة المرور للدخول إلى حسابك
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleLogin} className="space-y-4">
           {error && (
-            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -65,6 +63,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
             />
           </div>
           <div className="space-y-2">
@@ -72,7 +71,7 @@ export default function LoginPage() {
               <Label htmlFor="password">كلمة المرور</Label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-duck-cyan hover:text-duck-cyan-light"
+                className="text-sm text-duck-cyan hover:text-duck-cyan-light transition-colors"
               >
                 نسيت كلمة المرور؟
               </Link>
@@ -84,29 +83,30 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
             />
           </div>
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
+            className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-bold shadow-md transition-all hover:shadow-lg"
           >
             {isLoading ? "جاري التحميل..." : "تسجيل الدخول"}
           </Button>
         </form>
 
-        <div className="relative">
+        <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <Separator />
+            <Separator className="bg-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-text-muted">
+            <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
               او المتابعة عبر
             </span>
           </div>
         </div>
 
-        <Button variant="outline" className="w-full" type="button">
+        <Button variant="outline" className="w-full bg-white hover:bg-gray-50 border-gray-200 text-text-body" type="button">
           <svg className="ml-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -128,11 +128,11 @@ export default function LoginPage() {
           تسجيل الدخول بحساب جوجل
         </Button>
 
-        <p className="text-center text-sm text-text-muted">
+        <p className="text-center text-sm text-text-muted mt-4">
           ليس لديك حساب؟{" "}
           <Link
             href="/register"
-            className="text-duck-cyan hover:text-duck-cyan-light font-medium"
+            className="text-duck-cyan hover:text-duck-cyan-light font-bold transition-colors"
           >
             سجل كمزود خدمة
           </Link>
