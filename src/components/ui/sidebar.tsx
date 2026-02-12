@@ -76,21 +76,32 @@ function SidebarProvider({
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
-      const openState = typeof value === "function" ? value(open) : value
       if (setOpenProp) {
+        const openState = typeof value === "function" ? value(open) : value
         setOpenProp(openState)
       } else {
-        _setOpen(openState)
+        _setOpen((prev) => {
+          const openState = typeof value === "function" ? value(prev) : value
+          // #region agent log
+          fetch('http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.tsx:setOpen',message:'_setOpen updater',data:{prev,openState},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
+          return openState
+        })
       }
-
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
     },
     [setOpenProp, open],
   )
 
+  // Persist sidebar state to cookie when open changes (avoids stale closure in setOpen).
+  React.useEffect(() => {
+    document.cookie = `${SIDEBAR_COOKIE_NAME}=${open}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+  }, [open])
+
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.tsx:toggleSidebar',message:'toggleSidebar',data:{isMobile},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
 
@@ -127,11 +138,19 @@ function SidebarProvider({
     [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
   )
 
+  // Ensure RTL is applied so sidebar appears on the right when dir="rtl" (start = right).
+  const [dir, setDir] = React.useState<"ltr" | "rtl">("ltr")
+  React.useEffect(() => {
+    const d = document.documentElement.getAttribute("dir")
+    setDir(d === "rtl" ? "rtl" : "ltr")
+  }, [])
+
   return (
     <SidebarContext.Provider value={contextValue}>
       <TooltipProvider delayDuration={0}>
         <div
           data-slot="sidebar-wrapper"
+          dir={dir}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH,
@@ -165,6 +184,11 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  // #region agent log
+  React.useEffect(() => {
+    fetch('http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.tsx:Sidebar',message:'Sidebar state',data:{state,isMobile,collapsible},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+  }, [state, isMobile, collapsible]);
+  // #endregion
 
   if (collapsible === "none") {
     return (
@@ -220,26 +244,30 @@ function Sidebar({
       {/* This is what handles the sidebar gap on desktop */}
       <div
         data-slot="sidebar-gap"
+        data-state={state}
+        data-collapsible={state === "collapsed" ? collapsible : ""}
         className={cn(
           "src:relative src:w-(--sidebar-width) src:bg-transparent src:transition-[width] src:duration-200 src:ease-linear",
-          "src:group-data-[collapsible=offcanvas]:w-0",
+          "src:data-[collapsible=offcanvas]:w-0",
           "src:group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
-            ? "src:group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
-            : "src:group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
+            ? "src:data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
+            : "src:data-[collapsible=icon]:w-(--sidebar-width-icon)",
         )}
       />
       <div
         data-slot="sidebar-container"
+        data-state={state}
+        data-collapsible={state === "collapsed" ? collapsible : ""}
         className={cn(
           "src:fixed src:inset-y-0 src:z-10 src:hidden src:h-svh src:w-(--sidebar-width) src:transition-[left,right,width] src:duration-200 src:ease-linear src:md:flex",
           side === "left"
-            ? "src:start-0 src:group-data-[collapsible=offcanvas]:start-[calc(var(--sidebar-width)*-1)]"
-            : "src:end-0 src:group-data-[collapsible=offcanvas]:end-[calc(var(--sidebar-width)*-1)]",
+            ? "src:start-0 src:data-[collapsible=offcanvas]:start-[calc(var(--sidebar-width)*-1)]"
+            : "src:end-0 src:data-[collapsible=offcanvas]:end-[calc(var(--sidebar-width)*-1)]",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
-            ? "src:p-2 src:group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
-            : "src:group-data-[collapsible=icon]:w-(--sidebar-width-icon) src:group-data-[side=left]:border-e src:group-data-[side=right]:border-s",
+            ? "src:p-2 src:data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
+            : "src:data-[collapsible=icon]:w-(--sidebar-width-icon) src:group-data-[side=left]:border-e src:group-data-[side=right]:border-s",
           className,
         )}
         {...props}
@@ -271,6 +299,9 @@ function SidebarTrigger({
       size="icon"
       className={cn("src:size-7", className)}
       onClick={(event) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.tsx:SidebarTrigger',message:'trigger click',data:{},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
         onClick?.(event)
         toggleSidebar()
       }}

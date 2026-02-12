@@ -1,7 +1,6 @@
 'use client';
 
 import { getToken, clearToken } from '@/lib/auth/token';
-import { useLocale } from 'next-intl';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 

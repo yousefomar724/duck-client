@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { DollarSign } from "lucide-react"
 import PageHeader from "@/components/shared/page-header"
 import StatCard from "@/components/shared/stat-card"
-import StatusBadge from "@/components/shared/status-badge"
 import {
   Table,
   TableBody,
@@ -78,9 +77,7 @@ export default function AdminPayouts() {
       }
 
       setPayouts(
-        payouts.map((p) =>
-          p.id === id ? { ...p, status: newStatus } : p
-        )
+        payouts.map((p) => (p.id === id ? { ...p, status: newStatus } : p)),
       )
     } catch (err) {
       setError("حدث خطأ أثناء تحديث الدفعة")
@@ -231,7 +228,7 @@ export default function AdminPayouts() {
                               onValueChange={(newStatus) =>
                                 handleStatusUpdate(
                                   payout.id,
-                                  newStatus as PayoutStatus
+                                  newStatus as PayoutStatus,
                                 )
                               }
                               disabled={updatingId === payout.id}

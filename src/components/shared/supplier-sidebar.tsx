@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LogOut, User } from "lucide-react"
+import { useAuth } from "@/lib/auth/auth-context"
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +28,10 @@ import { supplierNavItems } from "@/lib/constants"
 
 export default function SupplierSidebar() {
   const pathname = usePathname()
+  const { user, logout } = useAuth()
+  const displayName = user
+    ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
+    : "مزود خدمة"
 
   return (
     <Sidebar collapsible="icon">
@@ -67,11 +72,11 @@ export default function SupplierSidebar() {
                 <SidebarMenuButton className="w-full">
                   <Avatar className="w-8 h-8">
                     <AvatarFallback className="bg-duck-cyan text-white">
-                      م
+                      {displayName.charAt(0) || "م"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start text-right">
-                    <span className="text-sm font-medium">محمود علي</span>
+                    <span className="text-sm font-medium">{displayName}</span>
                     <span className="text-xs text-text-muted">مزود خدمة</span>
                   </div>
                 </SidebarMenuButton>
@@ -81,7 +86,7 @@ export default function SupplierSidebar() {
                   <User className="w-4 h-4 ml-2" />
                   <span>الملف الشخصي</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => logout()}>
                   <LogOut className="w-4 h-4 ml-2" />
                   <span>تسجيل الخروج</span>
                 </DropdownMenuItem>

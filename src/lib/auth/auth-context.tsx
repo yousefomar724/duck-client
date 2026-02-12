@@ -1,136 +1,149 @@
-'use client';
+"use client"
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { setToken, getToken, clearToken, decodeToken, isTokenExpired } from './token';
-import * as authApi from '@/lib/api/auth';
-import type { User, RegisterInput } from '@/lib/types';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react"
+import { setToken, getToken, clearToken, isTokenExpired } from "./token"
+import * as authApi from "@/lib/api/auth"
+import type { User, RegisterInput } from "@/lib/types"
 
 export interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ error?: string }>;
-  loginWithGoogle: (googleToken: string) => Promise<{ error?: string }>;
-  register: (input: RegisterInput) => Promise<{ error?: string }>;
-  logout: () => void;
+  user: User | null
+  token: string | null
+  isLoading: boolean
+  isAuthenticated: boolean
+  login: (email: string, password: string) => Promise<{ error?: string }>
+  loginWithGoogle: (googleToken: string) => Promise<{ error?: string }>
+  register: (input: RegisterInput) => Promise<{ error?: string }>
+  logout: () => void
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setTokenState] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null)
+  const [token, setTokenState] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Initialize auth on mount
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = getToken();
+      const storedToken = getToken()
 
       if (storedToken && !isTokenExpired(storedToken)) {
-        setTokenState(storedToken);
+        setTokenState(storedToken)
 
         // Fetch user profile
-        const { data: userData, error } = await authApi.getMe();
+        const { data: userData, error } = await authApi.getMe()
         if (!error && userData) {
-          setUser(userData);
+          setUser(userData)
         } else {
           // Token invalid or user not found
-          clearToken();
-          setTokenState(null);
-          setUser(null);
+          clearToken()
+          setTokenState(null)
+          setUser(null)
         }
       } else if (storedToken) {
         // Token expired
-        clearToken();
-        setTokenState(null);
-        setUser(null);
+        clearToken()
+        setTokenState(null)
+        setUser(null)
       }
 
-      setIsLoading(false);
-    };
+      setIsLoading(false)
+    }
 
-    initAuth();
-  }, []);
+    initAuth()
+  }, [])
 
-  const login = async (email: string, password: string): Promise<{ error?: string }> => {
-    setIsLoading(true);
-    const { data, error } = await authApi.login(email, password);
+  const login = async (
+    email: string,
+    password: string,
+  ): Promise<{ error?: string }> => {
+    setIsLoading(true)
+    const { data, error } = await authApi.login(email, password)
 
     if (error) {
-      setIsLoading(false);
-      return { error };
+      setIsLoading(false)
+      return { error }
     }
 
     if (data?.token) {
-      setToken(data.token);
-      setTokenState(data.token);
+      setToken(data.token)
+      setTokenState(data.token)
 
       // Fetch user profile
-      const { data: userData, error: userError } = await authApi.getMe();
+      const { data: userData, error: userError } = await authApi.getMe()
       if (!userError && userData) {
-        setUser(userData);
+        setUser(userData)
       }
 
-      setIsLoading(false);
-      return {};
+      setIsLoading(false)
+      return {}
     }
 
-    setIsLoading(false);
-    return { error: 'Login failed' };
-  };
+    setIsLoading(false)
+    return { error: "Login failed" }
+  }
 
-  const loginWithGoogle = async (googleToken: string): Promise<{ error?: string }> => {
-    setIsLoading(true);
-    const { data, error } = await authApi.loginWithGoogle(googleToken);
+  const loginWithGoogle = async (
+    googleToken: string,
+  ): Promise<{ error?: string }> => {
+    setIsLoading(true)
+    const { data, error } = await authApi.loginWithGoogle(googleToken)
 
     if (error) {
-      setIsLoading(false);
-      return { error };
+      setIsLoading(false)
+      return { error }
     }
 
     if (data?.token) {
-      setToken(data.token);
-      setTokenState(data.token);
+      setToken(data.token)
+      setTokenState(data.token)
 
       // Fetch user profile
-      const { data: userData, error: userError } = await authApi.getMe();
+      const { data: userData, error: userError } = await authApi.getMe()
       if (!userError && userData) {
-        setUser(userData);
+        setUser(userData)
       }
 
-      setIsLoading(false);
-      return {};
+      setIsLoading(false)
+      return {}
     }
 
-    setIsLoading(false);
-    return { error: 'Login failed' };
-  };
+    setIsLoading(false)
+    return { error: "Login failed" }
+  }
 
-  const register = async (input: RegisterInput): Promise<{ error?: string }> => {
-    setIsLoading(true);
-    const { error } = await authApi.register(input);
+  const register = async (
+    input: RegisterInput,
+  ): Promise<{ error?: string }> => {
+    setIsLoading(true)
+    const { error } = await authApi.register(input)
 
     if (error) {
-      setIsLoading(false);
-      return { error };
+      setIsLoading(false)
+      return { error }
     }
 
     // Auto-login after registration
-    const loginResult = await login(input.email, input.password);
-    setIsLoading(false);
-    return loginResult;
-  };
+    const loginResult = await login(input.email, input.password)
+    setIsLoading(false)
+    return loginResult
+  }
 
   const logout = () => {
-    clearToken();
-    setTokenState(null);
-    setUser(null);
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+    clearToken()
+    setTokenState(null)
+    setUser(null)
+    if (typeof window !== "undefined") {
+      window.location.href = "/login"
     }
-  };
+  }
 
   const value: AuthContextType = {
     user,
@@ -141,15 +154,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginWithGoogle,
     register,
     logout,
-  };
+  }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
+  const context = useContext(AuthContext)
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider")
   }
-  return context;
+  return context
 }
