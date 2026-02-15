@@ -186,15 +186,6 @@ export default function ScrollManager() {
         return
       }
 
-      // Check if we are at Section 2 (Amaala) and scrolling DOWN
-      // If so, we want to allow native scroll to Section 3 (Resorts)
-      if (currentSection === 2 && e.deltaY > 0) {
-        // Do NOT prevent default
-        // Do NOT trigger GSAP transition
-        // Just let the browser scroll down naturally
-        return
-      }
-
       e.preventDefault()
 
       const now = Date.now()
@@ -243,14 +234,6 @@ export default function ScrollManager() {
 
       // In intro zone - handle section transitions
       touchDeltaSum.current += deltaY
-
-      // Check if we are at Section 2 (Amaala) and scrolling DOWN (deltaY > 0)
-      // If so, we want to allow native scroll to Section 3 (Resorts)
-      if (currentSection === 2 && deltaY > 0) {
-        // Do NOT prevent default
-        // Do NOT trigger GSAP transition
-        return
-      }
 
       // Prevent native scroll after threshold to avoid blocking taps
       if (Math.abs(touchDeltaSum.current) > 15) {
