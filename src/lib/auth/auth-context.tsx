@@ -7,9 +7,12 @@ import React, {
   useState,
   ReactNode,
 } from "react"
+import { GoogleOAuthProvider } from "@react-oauth/google"
 import { setToken, getToken, clearToken, isTokenExpired } from "./token"
 import * as authApi from "@/lib/api/auth"
 import type { User, RegisterInput } from "@/lib/types"
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
 
 export interface AuthContextType {
   user: User | null
@@ -156,7 +159,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    </GoogleOAuthProvider>
+  )
 }
 
 export function useAuth(): AuthContextType {

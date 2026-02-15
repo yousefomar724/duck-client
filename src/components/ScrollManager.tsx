@@ -85,6 +85,11 @@ export default function ScrollManager() {
         )
       } else {
         // nextSection is 3 -> Go to Normal Content
+        // We want to scroll to normal content, but NOT hijack the scroll completely.
+        // We just animate the scroll to the start of normal content once.
+        // After that, the wheel handler's early return (scrollY >= normalContentStart - 5)
+        // will let native scroll take over.
+        
         isAnimating.current = true
 
         gsap.to(`#intro-section-${current} .section-content`, {
@@ -169,11 +174,24 @@ export default function ScrollManager() {
       const scrollY = window.scrollY
       const normalContentStart = window.innerHeight
 
+      // If we are scrolled down into normal content
       if (scrollY >= normalContentStart - 5) {
-        if (scrollY < normalContentStart + 50 && e.deltaY < -5) {
+        if (
+          scrollY < normalContentStart + 50 &&
+          e.deltaY < -5
+        ) {
           e.preventDefault()
           scrollBackToIntro()
         }
+        return
+      }
+
+      // Check if we are at Section 2 (Amaala) and scrolling DOWN
+      // If so, we want to allow native scroll to Section 3 (Resorts)
+      if (currentSection === 2 && e.deltaY > 0) {
+        // Do NOT prevent default
+        // Do NOT trigger GSAP transition
+        // Just let the browser scroll down naturally
         return
       }
 
@@ -225,6 +243,14 @@ export default function ScrollManager() {
 
       // In intro zone - handle section transitions
       touchDeltaSum.current += deltaY
+
+      // Check if we are at Section 2 (Amaala) and scrolling DOWN (deltaY > 0)
+      // If so, we want to allow native scroll to Section 3 (Resorts)
+      if (currentSection === 2 && deltaY > 0) {
+        // Do NOT prevent default
+        // Do NOT trigger GSAP transition
+        return
+      }
 
       // Prevent native scroll after threshold to avoid blocking taps
       if (Math.abs(touchDeltaSum.current) > 15) {

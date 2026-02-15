@@ -50,9 +50,9 @@ async function apiClient<T>(
     // Handle unauthorized - clear token and potentially redirect
     if (response.status === 401) {
       clearToken();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
+      // if (typeof window !== 'undefined') {
+      //   window.location.href = '/login';
+      // }
       return { data: null, error: 'Unauthorized' };
     }
 
@@ -103,9 +103,9 @@ async function uploadFile<T>(
 
     if (response.status === 401) {
       clearToken();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
+      // if (typeof window !== 'undefined') {
+      //   window.location.href = '/login';
+      // }
       return { data: null, error: 'Unauthorized' };
     }
 

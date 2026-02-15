@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useGoogleLogin } from "@react-oauth/google"
 import {
   Card,
   CardContent,
@@ -17,7 +18,7 @@ import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth/auth-context"
 
 export default function RegisterPage() {
-  const { register } = useAuth()
+  const { register, loginWithGoogle } = useAuth()
   const router = useRouter()
   const [formData, setFormData] = useState({
     first_name: "",
@@ -29,6 +30,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,6 +78,33 @@ export default function RegisterPage() {
       router.replace("/supplier/my-trips")
     }
   }
+
+  const handleGoogleSuccess = useCallback(
+    async (tokenResponse: { access_token: string }) => {
+      setIsGoogleLoading(true)
+      setError(null)
+
+      const { error: googleError } = await loginWithGoogle(
+        tokenResponse.access_token,
+      )
+
+      if (googleError) {
+        setError(googleError)
+        setIsGoogleLoading(false)
+      } else {
+        router.replace("/supplier/my-trips")
+      }
+    },
+    [loginWithGoogle, router],
+  )
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => {
+      setError("فشل التسجيل بحساب جوجل")
+      setIsGoogleLoading(false)
+    },
+  })
 
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
@@ -204,7 +233,13 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <Button variant="outline" className="w-full bg-white hover:bg-gray-50 border-gray-200 text-text-body" type="button">
+        <Button
+          variant="outline"
+          className="w-full bg-white hover:bg-gray-50 border-gray-200 text-text-body"
+          type="button"
+          disabled={isGoogleLoading || isLoading}
+          onClick={() => googleLogin()}
+        >
           <svg className="ml-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -223,7 +258,7 @@ export default function RegisterPage() {
               fill="#EA4335"
             />
           </svg>
-          التسجيل بحساب جوجل
+          {isGoogleLoading ? "جاري التحميل..." : "التسجيل بحساب جوجل"}
         </Button>
 
         <p className="text-center text-sm text-text-muted mt-4">

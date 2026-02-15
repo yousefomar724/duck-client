@@ -40,8 +40,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ar" dir="rtl">
-      <body className={`${fedraSerif.variable} font-serif antialiased`}>
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <body
+        className={`${fedraSerif.variable} font-serif antialiased`}
+        suppressHydrationWarning
+      >
         <ToastProvider>
           <AuthProvider>
             <NextIntlClientProvider>{children}</NextIntlClientProvider>

@@ -269,7 +269,7 @@ export default function Navbar() {
                 sizes="100vw"
                 className={cn(
                   "transition-all duration-500 w-20 md:w-14 lg:w-16",
-                  isSolid ? "" : "brightness-0 invert",
+                  // isSolid ? "" : "brightness-0 invert",
                 )}
               />
             </Link>
