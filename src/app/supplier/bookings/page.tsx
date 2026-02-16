@@ -93,7 +93,11 @@ export default function SupplierBookingsPage() {
           <label htmlFor="status-filter" className="text-sm font-medium">
             تصفية حسب الحالة:
           </label>
-          <Select dir="rtl" value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            dir="rtl"
+            value={statusFilter}
+            onValueChange={setStatusFilter}
+          >
             <SelectTrigger className="w-[200px]">
               <SelectValue />
             </SelectTrigger>
@@ -127,7 +131,7 @@ export default function SupplierBookingsPage() {
               <TableRow>
                 <TableCell
                   colSpan={7}
-                  className="text-center py-8 text-text-muted"
+                  className="text-center py-8 h-44 text-text-muted"
                 >
                   لا توجد حجوزات
                 </TableCell>
@@ -173,7 +177,10 @@ export default function SupplierBookingsPage() {
             <div className="text-sm text-text-muted">إجمالي الإيرادات</div>
             <div className="text-2xl font-bold text-duck-cyan mt-1">
               {formatCurrency(
-                filteredBookings.reduce((sum: number, b: Booking) => sum + b.amount, 0),
+                filteredBookings.reduce(
+                  (sum: number, b: Booking) => sum + b.amount,
+                  0,
+                ),
                 "EGP",
               )}
             </div>
@@ -181,13 +188,20 @@ export default function SupplierBookingsPage() {
           <div className="bg-white rounded-lg border border-gray-300-light p-4">
             <div className="text-sm text-text-muted">الحجوزات المؤكدة</div>
             <div className="text-2xl font-bold text-green-600 mt-1">
-              {filteredBookings.filter((b: Booking) => b.status === "CONFIRMED").length}
+              {
+                filteredBookings.filter(
+                  (b: Booking) => b.status === "CONFIRMED",
+                ).length
+              }
             </div>
           </div>
           <div className="bg-white rounded-lg border border-gray-300-light p-4">
             <div className="text-sm text-text-muted">قيد الانتظار</div>
             <div className="text-2xl font-bold text-yellow-600 mt-1">
-              {filteredBookings.filter((b: Booking) => b.status === "PENDING").length}
+              {
+                filteredBookings.filter((b: Booking) => b.status === "PENDING")
+                  .length
+              }
             </div>
           </div>
         </div>

@@ -32,6 +32,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Sync state when API client signals 401 (e.g. after clearToken + redirect)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const handleUnauthorized = () => {
+      clearToken()
+      setTokenState(null)
+      setUser(null)
+    }
+    window.addEventListener("auth:unauthorized", handleUnauthorized)
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized)
+  }, [])
+
   // Initialize auth on mount
   useEffect(() => {
     const initAuth = async () => {

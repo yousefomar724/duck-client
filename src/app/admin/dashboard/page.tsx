@@ -124,25 +124,38 @@ export default function AdminDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentBookings.map((booking) => {
-                const trip = trips.find((t) => t.id === booking.trip_id)
-                return (
-                  <TableRow key={booking.id}>
-                    <TableCell className="font-medium">#{booking.id}</TableCell>
-                    <TableCell>{booking.full_name}</TableCell>
-                    <TableCell>{trip?.name.ar || "-"}</TableCell>
-                    <TableCell>
-                      {formatCurrency(booking.amount, booking.currency)}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={booking.status} type="booking" />
-                    </TableCell>
-                    <TableCell className="text-text-muted">
-                      {formatDateTime(booking.created_at)}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
+              {recentBookings.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-8 h-44 text-text-muted"
+                  >
+                    لا توجد حجوزات
+                  </TableCell>
+                </TableRow>
+              ) : (
+                recentBookings.map((booking) => {
+                  const trip = trips.find((t) => t.id === booking.trip_id)
+                  return (
+                    <TableRow key={booking.id}>
+                      <TableCell className="font-medium">
+                        #{booking.id}
+                      </TableCell>
+                      <TableCell>{booking.full_name}</TableCell>
+                      <TableCell>{trip?.name?.ar ?? "-"}</TableCell>
+                      <TableCell>
+                        {formatCurrency(booking.amount, booking.currency)}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={booking.status} type="booking" />
+                      </TableCell>
+                      <TableCell className="text-text-muted">
+                        {formatDateTime(booking.created_at)}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
             </TableBody>
           </Table>
         </CardContent>

@@ -179,8 +179,9 @@ export default function AdminPayouts() {
 
       {/* Payouts Table with Tabs */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="px-6">
           <Tabs
+            dir="rtl"
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as typeof activeTab)}
           >
