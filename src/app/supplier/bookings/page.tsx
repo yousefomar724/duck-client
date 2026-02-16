@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import PageHeader from "@/components/shared/page-header"
 import StatusBadge from "@/components/shared/status-badge"
 import {
@@ -30,7 +30,7 @@ export default function SupplierBookingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     const { data, error: fetchError } = await bookingsApi.getMyBookings()
@@ -40,11 +40,12 @@ export default function SupplierBookingsPage() {
       setBookings(data || [])
     }
     setIsLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
-    fetchBookings()
-  }, [])
+    const id = setTimeout(() => fetchBookings(), 0)
+    return () => clearTimeout(id)
+  }, [fetchBookings])
 
   // Filter bookings by status
   let filteredBookings = bookings
@@ -92,7 +93,7 @@ export default function SupplierBookingsPage() {
           <label htmlFor="status-filter" className="text-sm font-medium">
             تصفية حسب الحالة:
           </label>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select dir="rtl" value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[200px]">
               <SelectValue />
             </SelectTrigger>

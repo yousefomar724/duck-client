@@ -224,6 +224,7 @@ export default function AdminPayouts() {
                           </TableCell>
                           <TableCell>
                             <Select
+                              dir="rtl"
                               value={payout.status}
                               onValueChange={(newStatus) =>
                                 handleStatusUpdate(

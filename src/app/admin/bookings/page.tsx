@@ -70,7 +70,8 @@ export default function AdminBookings() {
 
   // Filter bookings
   const filteredBookings = bookings.filter((booking) => {
-    const matchesStatus = statusFilter === "all" || booking.status === statusFilter
+    const matchesStatus =
+      statusFilter === "all" || booking.status === statusFilter
     return matchesStatus
   })
 
@@ -113,12 +114,17 @@ export default function AdminBookings() {
           value={confirmedCount}
           icon={CheckCircle}
         />
-        <StatCard title="حجوزات قيد الانتظار" value={pendingCount} icon={Clock} />
+        <StatCard
+          title="حجوزات قيد الانتظار"
+          value={pendingCount}
+          icon={Clock}
+        />
       </div>
 
       {/* Filters */}
       <div className="flex gap-4">
         <Select
+          dir="rtl"
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
         >

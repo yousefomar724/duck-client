@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import PageHeader from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
@@ -35,7 +36,9 @@ export default function EditTripPage({ params }: EditTripPageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedDestinationIds, setSelectedDestinationIds] = useState<number[]>([])
+  const [selectedDestinationIds, setSelectedDestinationIds] = useState<
+    number[]
+  >([])
   const [formData, setFormData] = useState({
     name_ar: "",
     name_en: "",
@@ -54,42 +57,19 @@ export default function EditTripPage({ params }: EditTripPageProps) {
     images: ["", "", ""],
   })
 
-  useEffect(() => {
-    params.then((resolvedParams) => {
-      const id = parseInt(resolvedParams.id)
-      setTripId(id)
-      fetchTrip(id)
-      fetchDestinations()
-    })
-  }, [params])
-
-  const fetchTrip = async (id: number) => {
-    setIsLoading(true)
-    setError(null)
-    const { data, error: fetchError } = await tripsApi.getTrip(id, "ar")
-    if (fetchError) {
-      setError(fetchError)
-    } else if (data) {
-      setTrip(data)
-      populateForm(data)
-      if (data.destinations) {
-        setSelectedDestinationIds(data.destinations.map((d) => d.id))
-      }
-    }
-    setIsLoading(false)
-  }
-
-  const fetchDestinations = async () => {
-    const { data, error: fetchError } = await destinationsApi.getDestinations("ar", "active")
-    if (!fetchError && data) {
-      setDestinations(data)
-    }
-  }
-
   const populateForm = (tripData: Trip) => {
-    const tripName = typeof tripData.name === "string" ? { ar: tripData.name, en: "" } : tripData.name
-    const tripDesc = typeof tripData.description === "string" ? { ar: tripData.description, en: "" } : tripData.description
-    const tripPolicy = typeof tripData.cancelation_policy === "string" ? { ar: tripData.cancelation_policy, en: "" } : tripData.cancelation_policy
+    const tripName =
+      typeof tripData.name === "string"
+        ? { ar: tripData.name, en: "" }
+        : tripData.name
+    const tripDesc =
+      typeof tripData.description === "string"
+        ? { ar: tripData.description, en: "" }
+        : tripData.description
+    const tripPolicy =
+      typeof tripData.cancelation_policy === "string"
+        ? { ar: tripData.cancelation_policy, en: "" }
+        : tripData.cancelation_policy
 
     const imageUrls: string[] = []
     if (Array.isArray(tripData.images)) {
@@ -113,13 +93,44 @@ export default function EditTripPage({ params }: EditTripPageProps) {
       from: tripData.from,
       to: tripData.to || "",
       max_guests: tripData.max_guests.toString(),
-      images: [
-        imageUrls[0] || "",
-        imageUrls[1] || "",
-        imageUrls[2] || "",
-      ],
+      images: [imageUrls[0] || "", imageUrls[1] || "", imageUrls[2] || ""],
     })
   }
+
+  const fetchTrip = useCallback(async (id: number) => {
+    setIsLoading(true)
+    setError(null)
+    const { data, error: fetchError } = await tripsApi.getTrip(id, "ar")
+    if (fetchError) {
+      setError(fetchError)
+    } else if (data) {
+      setTrip(data)
+      populateForm(data)
+      if (data.destinations) {
+        setSelectedDestinationIds(data.destinations.map((d) => d.id))
+      }
+    }
+    setIsLoading(false)
+  }, [])
+
+  const fetchDestinations = useCallback(async () => {
+    const { data, error: fetchError } = await destinationsApi.getDestinations(
+      "ar",
+      "active",
+    )
+    if (!fetchError && data) {
+      setDestinations(data)
+    }
+  }, [])
+
+  useEffect(() => {
+    params.then((resolvedParams) => {
+      const id = parseInt(resolvedParams.id)
+      setTripId(id)
+      fetchTrip(id)
+      fetchDestinations()
+    })
+  }, [params, fetchTrip, fetchDestinations])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -143,7 +154,10 @@ export default function EditTripPage({ params }: EditTripPageProps) {
       price: parseFloat(formData.price),
       currency: formData.currency,
       refundable: formData.refundable,
-      cancelation_policy: { ar: formData.cancelation_policy_ar, en: formData.cancelation_policy_en },
+      cancelation_policy: {
+        ar: formData.cancelation_policy_ar,
+        en: formData.cancelation_policy_en,
+      },
       from: formData.from,
       to: formData.to,
       max_guests: parseInt(formData.max_guests),
@@ -170,7 +184,7 @@ export default function EditTripPage({ params }: EditTripPageProps) {
     setSelectedDestinationIds((prev) =>
       prev.includes(destId)
         ? prev.filter((id) => id !== destId)
-        : [...prev, destId]
+        : [...prev, destId],
     )
   }
 
@@ -191,7 +205,10 @@ export default function EditTripPage({ params }: EditTripPageProps) {
     return (
       <div className="p-6">
         <PageHeader title="تعديل الرحلة" />
-        <ErrorDisplay error={error} onRetry={() => tripId && fetchTrip(tripId)} />
+        <ErrorDisplay
+          error={error}
+          onRetry={() => tripId && fetchTrip(tripId)}
+        />
       </div>
     )
   }
@@ -323,7 +340,9 @@ export default function EditTripPage({ params }: EditTripPageProps) {
                         htmlFor={`dest-${dest.id}`}
                         className="text-sm cursor-pointer"
                       >
-                        {typeof dest.name === "string" ? dest.name : dest.name.ar}
+                        {typeof dest.name === "string"
+                          ? dest.name
+                          : dest.name.ar}
                       </label>
                     </div>
                   ))}
@@ -356,6 +375,7 @@ export default function EditTripPage({ params }: EditTripPageProps) {
                   <div className="space-y-2">
                     <Label htmlFor="currency">العملة</Label>
                     <Select
+                      dir="rtl"
                       value={formData.currency}
                       onValueChange={(value) =>
                         setFormData({ ...formData, currency: value })
@@ -391,7 +411,9 @@ export default function EditTripPage({ params }: EditTripPageProps) {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="cancelation_policy_ar">سياسة الإلغاء (العربية)</Label>
+                    <Label htmlFor="cancelation_policy_ar">
+                      سياسة الإلغاء (العربية)
+                    </Label>
                     <Textarea
                       id="cancelation_policy_ar"
                       value={formData.cancelation_policy_ar}
@@ -408,7 +430,9 @@ export default function EditTripPage({ params }: EditTripPageProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cancelation_policy_en">سياسة الإلغاء (الإنجليزية)</Label>
+                    <Label htmlFor="cancelation_policy_en">
+                      سياسة الإلغاء (الإنجليزية)
+                    </Label>
                     <Textarea
                       id="cancelation_policy_en"
                       value={formData.cancelation_policy_en}

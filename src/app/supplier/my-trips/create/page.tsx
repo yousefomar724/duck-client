@@ -50,7 +50,8 @@ export default function CreateTripPage() {
 
   useEffect(() => {
     const fetchDestinations = async () => {
-      const { data, error: fetchError } = await destinationsApi.getDestinations("ar")
+      const { data, error: fetchError } =
+        await destinationsApi.getDestinations("ar")
       if (fetchError) {
         setError(fetchError)
       } else {
@@ -77,7 +78,8 @@ export default function CreateTripPage() {
       const uploadedImages: { [key: string]: string } = {}
       for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i]
-        const { data: imageData, error: uploadError } = await imagesApi.uploadImage(file)
+        const { data: imageData, error: uploadError } =
+          await imagesApi.uploadImage(file)
         if (uploadError) {
           throw new Error(`خطأ في تحميل الصورة: ${uploadError}`)
         }
@@ -129,7 +131,13 @@ export default function CreateTripPage() {
 
       <Card>
         <CardContent className="p-6">
-          {error && <ErrorDisplay error={error} onRetry={() => setError(null)} showRetry={false} />}
+          {error && (
+            <ErrorDisplay
+              error={error}
+              onRetry={() => setError(null)}
+              showRetry={false}
+            />
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Info Section */}
@@ -213,7 +221,9 @@ export default function CreateTripPage() {
                       }
                       className="w-4 h-4"
                     />
-                    <Label htmlFor="destination" className="mb-0">هذه الرحلة لها وجهة محددة</Label>
+                    <Label htmlFor="destination" className="mb-0">
+                      هذه الرحلة لها وجهة محددة
+                    </Label>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -226,7 +236,9 @@ export default function CreateTripPage() {
                       }
                       className="w-4 h-4"
                     />
-                    <Label htmlFor="location" className="mb-0">هذه الرحلة لها موقع محدد</Label>
+                    <Label htmlFor="location" className="mb-0">
+                      هذه الرحلة لها موقع محدد
+                    </Label>
                   </div>
                 </div>
 
@@ -238,36 +250,52 @@ export default function CreateTripPage() {
                     ) : destinations.length > 0 ? (
                       <div className="grid grid-cols-2 gap-2">
                         {destinations.map((dest) => (
-                          <div key={dest.id} className="flex items-center gap-2">
+                          <div
+                            key={dest.id}
+                            className="flex items-center gap-2"
+                          >
                             <input
                               type="checkbox"
                               id={`dest-${dest.id}`}
-                              checked={formData.destination_ids.includes(dest.id)}
+                              checked={formData.destination_ids.includes(
+                                dest.id,
+                              )}
                               onChange={(e) => {
                                 if (e.target.checked) {
                                   setFormData({
                                     ...formData,
-                                    destination_ids: [...formData.destination_ids, dest.id],
+                                    destination_ids: [
+                                      ...formData.destination_ids,
+                                      dest.id,
+                                    ],
                                   })
                                 } else {
                                   setFormData({
                                     ...formData,
-                                    destination_ids: formData.destination_ids.filter(
-                                      (id) => id !== dest.id
-                                    ),
+                                    destination_ids:
+                                      formData.destination_ids.filter(
+                                        (id) => id !== dest.id,
+                                      ),
                                   })
                                 }
                               }}
                               className="w-4 h-4"
                             />
-                            <Label htmlFor={`dest-${dest.id}`} className="mb-0 text-sm">
-                              {typeof dest.name === 'string' ? dest.name : dest.name?.ar || 'Destination'}
+                            <Label
+                              htmlFor={`dest-${dest.id}`}
+                              className="mb-0 text-sm"
+                            >
+                              {typeof dest.name === "string"
+                                ? dest.name
+                                : dest.name?.ar || "Destination"}
                             </Label>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-text-muted">لا توجد وجهات متاحة</p>
+                      <p className="text-sm text-text-muted">
+                        لا توجد وجهات متاحة
+                      </p>
                     )}
                   </div>
                 )}
@@ -299,6 +327,7 @@ export default function CreateTripPage() {
                   <div className="space-y-2">
                     <Label htmlFor="currency">العملة</Label>
                     <Select
+                      dir="rtl"
                       value={formData.currency}
                       onValueChange={(value) =>
                         setFormData({ ...formData, currency: value })
@@ -333,7 +362,9 @@ export default function CreateTripPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cancelation_policy_ar">سياسة الإلغاء (عربي)</Label>
+                  <Label htmlFor="cancelation_policy_ar">
+                    سياسة الإلغاء (عربي)
+                  </Label>
                   <Textarea
                     id="cancelation_policy_ar"
                     value={formData.cancelation_policy_ar}
@@ -350,7 +381,9 @@ export default function CreateTripPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cancelation_policy_en">سياسة الإلغاء (English)</Label>
+                  <Label htmlFor="cancelation_policy_en">
+                    سياسة الإلغاء (English)
+                  </Label>
                   <Textarea
                     id="cancelation_policy_en"
                     value={formData.cancelation_policy_en}
@@ -447,7 +480,7 @@ export default function CreateTripPage() {
                           key={index}
                           className="relative w-full aspect-square bg-gray-100 rounded border border-gray-300 flex items-center justify-center overflow-hidden"
                         >
-                          {file.type.startsWith('image/') && (
+                          {file.type.startsWith("image/") && (
                             <img
                               src={URL.createObjectURL(file)}
                               alt={`Preview ${index}`}
