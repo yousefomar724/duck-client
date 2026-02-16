@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Pencil, Trash2 } from "lucide-react"
 import PageHeader from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
@@ -44,7 +43,8 @@ export default function MyTripsPage() {
   }
 
   useEffect(() => {
-    fetchTrips()
+    const id = setTimeout(() => fetchTrips(), 0)
+    return () => clearTimeout(id)
   }, [])
 
   const handleDelete = async (tripId: number) => {
@@ -104,28 +104,63 @@ export default function MyTripsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {trips.map((trip) => {
-          const imageUrl = typeof trip.images === 'string' ? trip.images :
-                           Array.isArray(trip.images) && trip.images.length > 0 ?
-                           trip.images[0] : null
+          let imageUrl: string | null = null
+          if (typeof trip.images === "string") {
+            imageUrl = trip.images
+          } else if (Array.isArray(trip.images) && trip.images.length > 0) {
+            imageUrl = trip.images[0]
+          } else if (
+            trip.images &&
+            typeof trip.images === "object" &&
+            !Array.isArray(trip.images)
+          ) {
+            const urls = Object.values(
+              trip.images as Record<string, string>,
+            ).filter(Boolean)
+            imageUrl = urls[0] ?? null
+          }
+          const fullImageUrl = (() => {
+            if (!imageUrl) return null
+            if (imageUrl.startsWith("http")) return imageUrl
+            const normalized = imageUrl.startsWith("/")
+              ? imageUrl
+              : `/${imageUrl}`
+            const apiUrl =
+              process.env.NEXT_PUBLIC_API_URL ||
+              "https://duckapi.alefmenu.com/api/v1"
+            if (!apiUrl) return normalized
+            try {
+              const url = new URL(apiUrl)
+              if (url.hostname === "localhost" && url.port === "8080") {
+                return normalized
+              }
+              return `${url.origin}${normalized}`
+            } catch {
+              return normalized
+            }
+          })()
 
           return (
             <Card key={trip.id} className="overflow-hidden py-0!">
               <div className="relative h-48 w-full">
-                {imageUrl ? (
-                  imageUrl.endsWith(".mp4") ? (
+                {fullImageUrl ? (
+                  fullImageUrl.endsWith(".mp4") ? (
                     <video
-                      src={imageUrl}
+                      src={fullImageUrl}
                       className="w-full h-full object-cover"
                       muted
                       loop
                       autoPlay
                     />
                   ) : (
-                    <Image
-                      src={imageUrl}
-                      alt={typeof trip.name === 'string' ? trip.name : trip.name?.ar || 'Trip'}
-                      fill
-                      className="object-cover"
+                    <img
+                      src={fullImageUrl}
+                      alt={
+                        typeof trip.name === "string"
+                          ? trip.name
+                          : trip.name?.ar || "Trip"
+                      }
+                      className="w-full h-full object-cover"
                     />
                   )
                 ) : (
@@ -136,7 +171,9 @@ export default function MyTripsPage() {
               </div>
               <CardContent className="p-4">
                 <h3 className="font-bold text-lg mb-2 text-duck-navy">
-                  {typeof trip.name === 'string' ? trip.name : trip.name?.ar || 'بدون عنوان'}
+                  {typeof trip.name === "string"
+                    ? trip.name
+                    : trip.name?.ar || "بدون عنوان"}
                 </h3>
                 <div className="space-y-1 text-sm text-text-body">
                   {trip.destination && (
@@ -170,7 +207,10 @@ export default function MyTripsPage() {
                     تعديل
                   </Link>
                 </Button>
-                <AlertDialog open={deleteId === trip.id} onOpenChange={(open) => !open && setDeleteId(null)}>
+                <AlertDialog
+                  open={deleteId === trip.id}
+                  onOpenChange={(open) => !open && setDeleteId(null)}
+                >
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="outline"
@@ -191,7 +231,9 @@ export default function MyTripsPage() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel>
+                      <AlertDialogCancel disabled={isDeleting}>
+                        إلغاء
+                      </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDelete(trip.id)}
                         className="bg-red-500 hover:bg-red-600"

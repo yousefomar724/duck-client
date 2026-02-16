@@ -136,7 +136,8 @@ export interface CreateTripRequest {
   itinerary?: { ar: string; en: string }
   availability?: { ar: string; en: string }
   max_guests: number
-  images?: { [key: string]: string }
+  images?: string[]
+  destination_ids?: number[]
   cancelation_policy?: { ar: string; en: string }
   refundable: boolean
   tour_guide_id?: number

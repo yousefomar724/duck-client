@@ -30,8 +30,6 @@ export default function CreateTripPage() {
     name_en: "",
     description_ar: "",
     description_en: "",
-    destination: false,
-    location: false,
     destination_ids: [] as number[],
     price: "",
     currency: "EGP",
@@ -75,20 +73,26 @@ export default function CreateTripPage() {
 
     try {
       // Upload images first
-      const uploadedImages: { [key: string]: string } = {}
+      const uploadedImageUrls: string[] = []
       for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i]
-        const { data: imageData, error: uploadError } =
+        const { data: imageData, error: uploadErr } =
           await imagesApi.uploadImage(file)
-        if (uploadError) {
-          throw new Error(`خطأ في تحميل الصورة: ${uploadError}`)
+        if (uploadErr) {
+          throw new Error(`خطأ في تحميل الصورة: ${uploadErr}`)
         }
         if (imageData?.image_url) {
-          uploadedImages[`image_${i}`] = imageData.image_url
+          uploadedImageUrls.push(imageData.image_url)
         }
       }
 
-      // Create trip with uploaded image URLs
+      // Build full image URLs if API returns relative paths (e.g. /uploads/xxx)
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || ""
+      const imageUrls = uploadedImageUrls.map((url) =>
+        url.startsWith("/") && apiBase ? `${apiBase.replace(/\/$/, "")}${url}` : url
+      )
+
+      // Create trip with uploaded image URLs and destination associations
       const { error: createError } = await tripsApi.createTrip({
         name: {
           ar: formData.name_ar,
@@ -98,8 +102,8 @@ export default function CreateTripPage() {
           ar: formData.description_ar,
           en: formData.description_en,
         },
-        destination: formData.destination,
-        location: formData.location,
+        destination: formData.destination_ids.length > 0,
+        location: false,
         price: parseFloat(formData.price),
         currency: formData.currency,
         refundable: formData.refundable,
@@ -108,9 +112,10 @@ export default function CreateTripPage() {
           en: formData.cancelation_policy_en,
         },
         from: formData.from,
-        to: formData.to,
-        max_guests: parseInt(formData.max_guests),
-        images: uploadedImages,
+        to: formData.to || undefined,
+        max_guests: parseInt(formData.max_guests, 10),
+        images: imageUrls,
+        destination_ids: formData.destination_ids,
       })
 
       if (createError) {
@@ -207,44 +212,8 @@ export default function CreateTripPage() {
                   />
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="destination"
-                      type="checkbox"
-                      checked={formData.destination}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          destination: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="destination" className="mb-0">
-                      هذه الرحلة لها وجهة محددة
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="location"
-                      type="checkbox"
-                      checked={formData.location}
-                      onChange={(e) =>
-                        setFormData({ ...formData, location: e.target.checked })
-                      }
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="location" className="mb-0">
-                      هذه الرحلة لها موقع محدد
-                    </Label>
-                  </div>
-                </div>
-
-                {formData.destination && (
-                  <div className="space-y-2">
-                    <Label htmlFor="destination_ids">اختر الوجهات</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="destination_ids">اختر الوجهات (اختياري)</Label>
                     {isLoadingDestinations ? (
                       <p className="text-sm text-text-muted">جاري التحميل...</p>
                     ) : destinations.length > 0 ? (
@@ -297,8 +266,7 @@ export default function CreateTripPage() {
                         لا توجد وجهات متاحة
                       </p>
                     )}
-                  </div>
-                )}
+                </div>
               </div>
             </div>
 

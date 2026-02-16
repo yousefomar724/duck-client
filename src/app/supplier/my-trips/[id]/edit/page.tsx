@@ -19,10 +19,12 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { currencies } from "@/lib/constants"
 import * as tripsApi from "@/lib/api/trips"
+import * as imagesApi from "@/lib/api/images"
 import * as destinationsApi from "@/lib/api/destinations"
 import { DetailPageSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Trip, Destination } from "@/lib/types"
+import Image from "next/image"
 
 interface EditTripPageProps {
   params: Promise<{ id: string }>
@@ -44,8 +46,6 @@ export default function EditTripPage({ params }: EditTripPageProps) {
     name_en: "",
     description_ar: "",
     description_en: "",
-    destination_toggle: false,
-    location_toggle: false,
     price: "",
     currency: "EGP",
     refundable: true,
@@ -54,8 +54,9 @@ export default function EditTripPage({ params }: EditTripPageProps) {
     from: "",
     to: "",
     max_guests: "",
-    images: ["", "", ""],
   })
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([])
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([])
 
   const populateForm = (tripData: Trip) => {
     const tripName =
@@ -73,9 +74,17 @@ export default function EditTripPage({ params }: EditTripPageProps) {
 
     const imageUrls: string[] = []
     if (Array.isArray(tripData.images)) {
-      imageUrls.push(...tripData.images)
+      imageUrls.push(...(tripData.images as string[]))
     } else if (typeof tripData.images === "string") {
       imageUrls.push(tripData.images)
+    } else if (
+      tripData.images &&
+      typeof tripData.images === "object" &&
+      !Array.isArray(tripData.images)
+    ) {
+      imageUrls.push(
+        ...Object.values(tripData.images as Record<string, string>),
+      )
     }
 
     setFormData({
@@ -83,8 +92,6 @@ export default function EditTripPage({ params }: EditTripPageProps) {
       name_en: tripName.en || "",
       description_ar: tripDesc.ar || "",
       description_en: tripDesc.en || "",
-      destination_toggle: tripData.destination || false,
-      location_toggle: tripData.location || false,
       price: tripData.price.toString(),
       currency: tripData.currency,
       refundable: tripData.refundable,
@@ -93,8 +100,8 @@ export default function EditTripPage({ params }: EditTripPageProps) {
       from: tripData.from,
       to: tripData.to || "",
       max_guests: tripData.max_guests.toString(),
-      images: [imageUrls[0] || "", imageUrls[1] || "", imageUrls[2] || ""],
     })
+    setExistingImageUrls(imageUrls)
   }
 
   const fetchTrip = useCallback(async (id: number) => {
@@ -139,45 +146,77 @@ export default function EditTripPage({ params }: EditTripPageProps) {
     setIsSubmitting(true)
     setError(null)
 
-    const imageMap: { [key: string]: string } = {}
-    formData.images.forEach((img, index) => {
-      if (img.trim()) {
-        imageMap[`image_${index + 1}`] = img
+    try {
+      const uploadedUrls: string[] = []
+      for (let i = 0; i < newImageFiles.length; i++) {
+        const { data: imageData, error: uploadErr } =
+          await imagesApi.uploadImage(newImageFiles[i])
+        if (uploadErr) {
+          setError(`خطأ في تحميل الصورة: ${uploadErr}`)
+          setIsSubmitting(false)
+          return
+        }
+        if (imageData?.image_url) {
+          uploadedUrls.push(imageData.image_url)
+        }
       }
-    })
 
-    const updateData: Partial<any> = {
-      name: { ar: formData.name_ar, en: formData.name_en },
-      description: { ar: formData.description_ar, en: formData.description_en },
-      destination: formData.destination_toggle,
-      location: formData.location_toggle,
-      price: parseFloat(formData.price),
-      currency: formData.currency,
-      refundable: formData.refundable,
-      cancelation_policy: {
-        ar: formData.cancelation_policy_ar,
-        en: formData.cancelation_policy_en,
-      },
-      from: formData.from,
-      to: formData.to,
-      max_guests: parseInt(formData.max_guests),
-      images: imageMap,
-      destination_ids: selectedDestinationIds,
-    }
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || ""
+      const fullUrls = uploadedUrls.map((url) =>
+        url.startsWith("/") && apiBase
+          ? `${apiBase.replace(/\/$/, "")}${url}`
+          : url,
+      )
+      const allImageUrls = [...existingImageUrls, ...fullUrls]
 
-    const { error: updateError } = await tripsApi.updateTrip(tripId, updateData)
-    if (updateError) {
-      setError(updateError)
-    } else {
-      router.push("/supplier/my-trips")
+      const updateData: Partial<any> = {
+        name: { ar: formData.name_ar, en: formData.name_en },
+        description: {
+          ar: formData.description_ar,
+          en: formData.description_en,
+        },
+        destination: selectedDestinationIds.length > 0,
+        location: false,
+        price: parseFloat(formData.price),
+        currency: formData.currency,
+        refundable: formData.refundable,
+        cancelation_policy: {
+          ar: formData.cancelation_policy_ar,
+          en: formData.cancelation_policy_en,
+        },
+        from: formData.from,
+        to: formData.to || undefined,
+        max_guests: parseInt(formData.max_guests, 10),
+        images: allImageUrls,
+        destination_ids: selectedDestinationIds,
+      }
+
+      const { error: updateError } = await tripsApi.updateTrip(
+        tripId,
+        updateData,
+      )
+      if (updateError) {
+        setError(updateError)
+      } else {
+        router.push("/supplier/my-trips")
+      }
+    } finally {
+      setIsSubmitting(false)
     }
-    setIsSubmitting(false)
   }
 
-  const handleImageChange = (index: number, value: string) => {
-    const newImages = [...formData.images]
-    newImages[index] = value
-    setFormData({ ...formData, images: newImages })
+  const handleNewImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setNewImageFiles((prev) => [...prev, ...Array.from(e.target.files!)])
+    }
+  }
+
+  const removeExistingImage = (index: number) => {
+    setExistingImageUrls((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const removeNewImage = (index: number) => {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const toggleDestination = (destId: number) => {
@@ -284,36 +323,6 @@ export default function EditTripPage({ params }: EditTripPageProps) {
                       }
                       placeholder="Detailed trip description..."
                       rows={4}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="destination_toggle">هل تتضمن وجهة؟</Label>
-                    <Switch
-                      id="destination_toggle"
-                      checked={formData.destination_toggle}
-                      onCheckedChange={(checked) =>
-                        setFormData({
-                          ...formData,
-                          destination_toggle: checked,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="location_toggle">هل تتضمن موقع؟</Label>
-                    <Switch
-                      id="location_toggle"
-                      checked={formData.location_toggle}
-                      onCheckedChange={(checked) =>
-                        setFormData({
-                          ...formData,
-                          location_toggle: checked,
-                        })
-                      }
                     />
                   </div>
                 </div>
@@ -505,20 +514,84 @@ export default function EditTripPage({ params }: EditTripPageProps) {
                 الصور
               </h2>
               <div className="grid gap-4">
-                {formData.images.map((image, index) => (
-                  <div key={index} className="space-y-2">
-                    <Label htmlFor={`image-${index}`}>
-                      رابط الصورة {index + 1}
-                    </Label>
-                    <Input
-                      id={`image-${index}`}
-                      type="url"
-                      value={image}
-                      onChange={(e) => handleImageChange(index, e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                    />
+                {existingImageUrls.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">الصور الحالية</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {existingImageUrls.map((url, index) => (
+                        <div
+                          key={`existing-${index}`}
+                          className="relative aspect-square rounded border border-gray-300 overflow-hidden bg-gray-100"
+                        >
+                          <Image
+                            width={0}
+                            height={0}
+                            sizes="100vw"
+                            src={(() => {
+                              const base = process.env.NEXT_PUBLIC_API_URL || ""
+                              const normalized = url.startsWith("http")
+                                ? url
+                                : url.startsWith("/")
+                                  ? url
+                                  : `/${url}`
+                              return base
+                                ? `${base.replace(/\/$/, "")}${normalized}`
+                                : normalized
+                            })()}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeExistingImage(index)}
+                            className="absolute top-1 left-1 rounded bg-red-500 text-white text-xs px-2 py-1"
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="new-images">اضافة صور جديدة</Label>
+                  <Input
+                    id="new-images"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleNewImageChange}
+                    className="cursor-pointer"
+                  />
+                </div>
+                {newImageFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">الصور الجديدة</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {newImageFiles.map((file, index) => (
+                        <div
+                          key={`new-${index}`}
+                          className="relative aspect-square rounded border border-gray-300 overflow-hidden bg-gray-100 flex items-center justify-center"
+                        >
+                          {file.type.startsWith("image/") && (
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeNewImage(index)}
+                            className="absolute top-1 left-1 rounded bg-red-500 text-white text-xs px-2 py-1"
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

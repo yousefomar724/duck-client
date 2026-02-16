@@ -6,12 +6,29 @@ import Image from "next/image"
 import PageHeader from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,12 +43,26 @@ import { CardGridSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Destination } from "@/lib/types"
 
+const emptyForm = {
+  name_ar: "",
+  name_en: "",
+  description_ar: "",
+  description_en: "",
+  image: "",
+  status: "active",
+}
+
 export default function AdminDestinations() {
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingDestination, setEditingDestination] = useState<Destination | null>(null)
+  const [formData, setFormData] = useState(emptyForm)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [dialogError, setDialogError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDestinations()
@@ -78,6 +109,64 @@ export default function AdminDestinations() {
     }
   }
 
+  const openCreateDialog = () => {
+    setEditingDestination(null)
+    setFormData(emptyForm)
+    setDialogError(null)
+    setDialogOpen(true)
+  }
+
+  const openEditDialog = (destination: Destination) => {
+    const name = typeof destination.name === "string" ? { ar: destination.name, en: "" } : destination.name
+    const description = typeof destination.description === "string" ? { ar: destination.description, en: "" } : destination.description
+    setEditingDestination(destination)
+    setFormData({
+      name_ar: name?.ar ?? "",
+      name_en: name?.en ?? "",
+      description_ar: description?.ar ?? "",
+      description_en: description?.en ?? "",
+      image: destination.image ?? "",
+      status: destination.status ?? "active",
+    })
+    setDialogError(null)
+    setDialogOpen(true)
+  }
+
+  const handleDialogSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setDialogError(null)
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        name: { ar: formData.name_ar, en: formData.name_en },
+        description: { ar: formData.description_ar, en: formData.description_en },
+        image: formData.image,
+        status: formData.status,
+      }
+      if (editingDestination) {
+        const res = await destinationsApi.updateDestination(editingDestination.id, payload)
+        if (res.error) {
+          setDialogError(res.error)
+          return
+        }
+        setDestinations(destinations.map((d) => (d.id === editingDestination.id ? (res.data as Destination) : d)))
+      } else {
+        const res = await destinationsApi.createDestination(payload)
+        if (res.error) {
+          setDialogError(res.error)
+          return
+        }
+        setDestinations([...(res.data ? [res.data] : []), ...destinations])
+      }
+      setDialogOpen(false)
+    } catch (err) {
+      setDialogError("حدث خطأ غير متوقع")
+      console.error(err)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -103,7 +192,9 @@ export default function AdminDestinations() {
   return (
     <div className="space-y-6">
       <PageHeader title="الوجهات">
-        <Button>+ اضافة وجهة</Button>
+        <Button onClick={openCreateDialog} className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy">
+          + اضافة وجهة
+        </Button>
       </PageHeader>
 
       {/* Destinations Grid */}
@@ -114,7 +205,7 @@ export default function AdminDestinations() {
               {destination.image ? (
                 <Image
                   src={destination.image}
-                  alt={destination.name.ar}
+                  alt={typeof destination.name === "string" ? destination.name : destination.name?.ar ?? ""}
                   fill
                   className="object-cover"
                   unoptimized
@@ -129,10 +220,10 @@ export default function AdminDestinations() {
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-text-dark">
-                    {destination.name.ar}
+                    {typeof destination.name === "string" ? destination.name : destination.name?.ar ?? ""}
                   </h3>
                   <p className="text-sm text-text-muted mt-1 line-clamp-2">
-                    {destination.description.ar}
+                    {typeof destination.description === "string" ? destination.description : destination.description?.ar ?? ""}
                   </p>
                 </div>
                 <DropdownMenu>
@@ -147,7 +238,7 @@ export default function AdminDestinations() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openEditDialog(destination)}>
                       <Pencil className="me-2 h-4 w-4" />
                       تعديل
                     </DropdownMenuItem>
@@ -177,6 +268,99 @@ export default function AdminDestinations() {
           <p className="text-text-muted">لا توجد وجهات متاحة</p>
         </div>
       )}
+
+      {/* Create/Edit Destination Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingDestination ? "تعديل الوجهة" : "اضافة وجهة جديدة"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleDialogSubmit} className="space-y-4">
+            {dialogError && (
+              <p className="text-sm text-red-600">{dialogError}</p>
+            )}
+            <div className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name_ar">الاسم (عربي)</Label>
+                  <Input
+                    id="name_ar"
+                    value={formData.name_ar}
+                    onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                    placeholder="اسم الوجهة"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name_en">الاسم (English)</Label>
+                  <Input
+                    id="name_en"
+                    value={formData.name_en}
+                    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                    placeholder="Destination name"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="description_ar">الوصف (عربي)</Label>
+                  <Textarea
+                    id="description_ar"
+                    value={formData.description_ar}
+                    onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                    placeholder="وصف الوجهة"
+                    rows={3}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description_en">الوصف (English)</Label>
+                  <Textarea
+                    id="description_en"
+                    value={formData.description_en}
+                    onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                    placeholder="Description"
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="image">رابط الصورة</Label>
+                <Input
+                  id="image"
+                  type="url"
+                  value={formData.image}
+                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">الحالة</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">نشط</SelectItem>
+                    <SelectItem value="inactive">غير نشط</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>
+                إلغاء
+              </Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy">
+                {isSubmitting ? "جاري الحفظ..." : editingDestination ? "حفظ التغييرات" : "اضافة"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>

@@ -19,7 +19,7 @@ async function apiClient<T>(
 ): Promise<ApiResponse<T>> {
   try {
     const token = getToken();
-    const url = new URL(`${API_BASE}${endpoint}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+    const url = new URL(`${API_BASE}${endpoint}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
 
     // Add language query parameter
     const lang = options.lang || (typeof window !== 'undefined' ? document.documentElement.lang : 'ar');
@@ -79,7 +79,7 @@ async function uploadFile<T>(
 ): Promise<ApiResponse<T>> {
   try {
     const token = getToken();
-    const url = new URL(`${API_BASE}${endpoint}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+    const url = new URL(`${API_BASE}${endpoint}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
 
     const formData = new FormData();
     formData.append('image', file);
