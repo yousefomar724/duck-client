@@ -105,13 +105,16 @@ export default function Footer() {
           <div>
             <h4 className="text-base font-bold mb-6">الدعم</h4>
             <ul className="space-y-3 text-white/70 text-sm mb-3">
-              {["الأسئلة الشائعة", "اتصل بنا"].map((link) => (
-                <li key={link}>
-                  <a href="#" className="hover:text-white transition-colors">
-                    {link}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <a href="#" className="hover:text-white transition-colors">
+                  الأسئلة الشائعة
+                </a>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors">
+                  تواصل معنا
+                </Link>
+              </li>
             </ul>
 
             <a

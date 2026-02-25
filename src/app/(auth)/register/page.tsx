@@ -55,7 +55,13 @@ export default function RegisterPage() {
       return
     }
 
-    if (!formData.first_name || !formData.last_name || !formData.username || !formData.email || !formData.password) {
+    if (
+      !formData.first_name ||
+      !formData.last_name ||
+      !formData.username ||
+      !formData.email ||
+      !formData.password
+    ) {
       setError("الرجاء ملء جميع الحقول المطلوبة")
       return
     }

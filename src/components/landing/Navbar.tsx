@@ -43,10 +43,10 @@ export default function Navbar() {
   })
 
   const navLinks = [
-    { key: "services", href: "#" },
-    { key: "locations", href: "#" },
-    { key: "experiences", href: "#" },
-    { key: "about", href: "#" },
+    { key: "locations", href: "#locations" },
+    { key: "experiences", href: "#experiences" },
+    { key: "faq", href: "#faq" },
+    { key: "contact", href: "/contact" },
   ] as const
 
   const actionButtonClass = cn(

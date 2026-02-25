@@ -1,1 +1,23 @@
-{"navbar":{"services":"Services","locations":"Locations","experiences":"Experiences","about":"About","weather":"Weather","temperature":"Temperature","location":"Location","account":"Account","book":"Book","language":"Language","arabic":"Arabic","english":"English","map":"Map","my-account":"My Account","settings":"Settings","currency":"Currency","save":"Save","cancel":"Cancel"}}
+{
+  "navbar": {
+    "services": "Services",
+    "locations": "Locations",
+    "experiences": "Experiences",
+    "faq": "FAQ",
+    "contact": "Contact Us",
+    "weather": "Weather",
+    "temperature": "Temperature",
+    "location": "Location",
+    "account": "Account",
+    "book": "Book",
+    "language": "Language",
+    "arabic": "Arabic",
+    "english": "English",
+    "map": "Map",
+    "my-account": "My Account",
+    "settings": "Settings",
+    "currency": "Currency",
+    "save": "Save",
+    "cancel": "Cancel"
+  }
+}
