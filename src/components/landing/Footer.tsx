@@ -59,10 +59,21 @@ export default function Footer() {
             </div>
 
             <div className="flex gap-4">
-              <Linkedin className="w-5 h-5 text-white/80 hover:text-white cursor-pointer" />
-              <Instagram className="w-5 h-5 text-white/80 hover:text-white cursor-pointer" />
+              <a
+                href="https://www.instagram.com/duck.asw/?hl=en"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Instagram className="w-5 h-5 text-white/80 hover:text-white cursor-pointer" />
+              </a>
               <Twitter className="w-5 h-5 text-white/80 hover:text-white cursor-pointer" />
-              <Facebook className="w-5 h-5 text-white/80 hover:text-white cursor-pointer" />
+              <a
+                href="https://www.facebook.com/duck.asw/?hl=en"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Facebook className="w-5 h-5 text-white/80 hover:text-white cursor-pointer" />
+              </a>
             </div>
           </div>
 
