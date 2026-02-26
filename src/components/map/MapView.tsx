@@ -15,47 +15,41 @@ const TILE_URLS: Record<MapStyle, string> = {
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
 }
 
+const LOGO_PIN_URL = "/duck.png"
+
 function createMarkerIcon(
   isSelected: boolean,
   isComingSoon: boolean,
   mapStyle: MapStyle,
 ) {
-  const borderColor = mapStyle === "dark" ? "white" : "#1b2838"
-  const bg = isSelected
-    ? "#f5e642"
-    : isComingSoon
-      ? "#f5e642"
-      : "#2bbbc5"
-  const size = isSelected ? 32 : 24
-  const borderWidth = isSelected ? 4 : 3
-  const shadow =
+  const size = isSelected ? 44 : 32
+  const dropShadow =
     mapStyle === "dark"
-      ? "0 2px 8px rgba(0,0,0,0.3)"
-      : "0 2px 8px rgba(0,0,0,0.2)"
+      ? "drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 1px 3px rgba(0,0,0,0.5))"
+      : "none"
+  const opacity = isComingSoon && !isSelected ? "0.7" : "1"
   const pulseAnimation =
     isComingSoon && !isSelected
-      ? `<style>.pulse-ring{animation:pulse-ring 2s ease-out infinite}@keyframes pulse-ring{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.5);opacity:0}}</style><div class="pulse-ring" style="position:absolute;inset:-4px;border-radius:50%;background:${bg};opacity:0.4"></div>`
+      ? `<style>.pulse-ring{animation:pulse-ring 2s ease-out infinite}@keyframes pulse-ring{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.5);opacity:0}}</style><div class="pulse-ring" style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin-left:-${size / 2}px;margin-top:-${size / 2}px;border-radius:50%;background:#2bbbc5;opacity:0.4"></div>`
       : ""
 
   return L.divIcon({
     className: "",
     iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconAnchor: [size / 2, size],
     html: `
-      <div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="position:relative;width:${size}px;height:${size}px;cursor:pointer;">
         ${pulseAnimation}
-        <div style="
-          width:${size}px;
-          height:${size}px;
-          background:${bg};
-          border:${borderWidth}px solid ${borderColor};
-          border-radius:50%;
-          box-shadow:${shadow};
-          transition:transform 0.2s;
-          position:relative;
-          z-index:1;
-          cursor:pointer;
-        "></div>
+        <img
+          src="${LOGO_PIN_URL}"
+          alt=""
+          style="
+            width:100%;height:100%;object-fit:contain;position:relative;z-index:1;
+            filter:${dropShadow};
+            opacity:${opacity};
+            transition:transform 0.2s;
+          "
+        />
       </div>
     `,
   })
@@ -87,9 +81,7 @@ function FitBounds({ locations }: { locations: WaterActivityLocation[] }) {
     }
 
     if (locations.length !== prevLengthRef.current) {
-      const bounds = L.latLngBounds(
-        locations.map((loc) => loc.coordinates),
-      )
+      const bounds = L.latLngBounds(locations.map((loc) => loc.coordinates))
       map.flyToBounds(bounds, { padding, duration: 0.8 })
       prevLengthRef.current = locations.length
     }
@@ -98,11 +90,7 @@ function FitBounds({ locations }: { locations: WaterActivityLocation[] }) {
   return null
 }
 
-function MapReadyBridge({
-  onMapReady,
-}: {
-  onMapReady: (map: L.Map) => void
-}) {
+function MapReadyBridge({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
   const map = useMap()
   const calledRef = useRef(false)
 

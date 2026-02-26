@@ -10,6 +10,7 @@ import LocationDetailPopover from "./LocationDetailPopover"
 import type { MapStyle, MarkerClickEvent } from "./MapView"
 import {
   LOCATIONS,
+  FOCUSED_ZOOM,
   type ActivityType,
   type WaterActivityLocation,
 } from "./map-data"
@@ -38,6 +39,10 @@ export default function MapPageClient() {
   }, [activeFilter])
 
   const handleMarkerClick = useCallback((event: MarkerClickEvent) => {
+    const map = mapRef.current
+    if (map) {
+      map.flyTo(event.location.coordinates, FOCUSED_ZOOM, { duration: 0.5 })
+    }
     setSelectedLocation(event.location)
     setAnchorPoint(event.point)
     setPopoverOpen(true)
