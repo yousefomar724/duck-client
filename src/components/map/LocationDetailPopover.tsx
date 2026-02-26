@@ -139,7 +139,7 @@ export default function LocationDetailPopover({
           <div className="px-4 pt-4 flex flex-col gap-3">
             {/* Name + Status badge */}
             <div className="flex flex-col gap-2">
-              <h3 className="text-white text-xl font-bold leading-tight text-end">
+              <h3 className="text-white text-xl font-bold leading-tight">
                 {location.name}
               </h3>
               <span

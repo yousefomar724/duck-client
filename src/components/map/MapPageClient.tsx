@@ -1,19 +1,38 @@
 "use client"
 
-import { useState, useMemo, useRef, useCallback } from "react"
+import { useState, useMemo, useRef, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
 import type L from "leaflet"
 import { Plus, Minus, Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getDestinations } from "@/lib/api/destinations"
 import ActivityFilters from "./ActivityFilters"
 import LocationDetailPopover from "./LocationDetailPopover"
 import type { MapStyle, MarkerClickEvent } from "./MapView"
 import {
-  LOCATIONS,
+  destinationsToMapLocations,
   FOCUSED_ZOOM,
   type ActivityType,
   type WaterActivityLocation,
 } from "./map-data"
+
+function resolveImageUrl(url: string): string {
+  if (!url) return ""
+  if (url.startsWith("http")) return url
+  const normalized = url.startsWith("/") ? url : `/${url}`
+  const apiUrl =
+    typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL
+      ? process.env.NEXT_PUBLIC_API_URL
+      : "https://duckapi.alefmenu.com/api/v1"
+  try {
+    const parsed = new URL(apiUrl)
+    if (parsed.hostname === "localhost" && parsed.port === "8080")
+      return normalized
+    return `${parsed.origin}${normalized}`
+  } catch {
+    return normalized
+  }
+}
 
 const MapView = dynamic(() => import("./MapView"), {
   ssr: false,
@@ -25,6 +44,8 @@ const MapView = dynamic(() => import("./MapView"), {
 })
 
 export default function MapPageClient() {
+  const [locations, setLocations] = useState<WaterActivityLocation[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<ActivityType | "all">("all")
   const [selectedLocation, setSelectedLocation] =
     useState<WaterActivityLocation | null>(null)
@@ -33,10 +54,31 @@ export default function MapPageClient() {
   const [mapStyle, setMapStyle] = useState<MapStyle>("light")
   const mapRef = useRef<L.Map | null>(null)
 
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setIsLoading(true)
+      const res = await getDestinations(undefined, "active")
+      if (cancelled) return
+      if (res.error || !res.data) {
+        setLocations([])
+      } else {
+        setLocations(
+          destinationsToMapLocations(res.data, { resolveImageUrl }),
+        )
+      }
+      setIsLoading(false)
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const filteredLocations = useMemo(() => {
-    if (activeFilter === "all") return LOCATIONS
-    return LOCATIONS.filter((loc) => loc.activities.includes(activeFilter))
-  }, [activeFilter])
+    if (activeFilter === "all") return locations
+    return locations.filter((loc) => loc.activities.includes(activeFilter))
+  }, [locations, activeFilter])
 
   const handleMarkerClick = useCallback((event: MarkerClickEvent) => {
     const map = mapRef.current
@@ -61,6 +103,11 @@ export default function MapPageClient() {
 
   return (
     <div className="relative h-screen min-h-dvh w-full overflow-hidden">
+      {isLoading && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-off-white/90">
+          <div className="w-10 h-10 rounded-full border-2 border-duck-cyan border-t-transparent animate-spin" />
+        </div>
+      )}
       {/* Map container — z-0 creates a stacking context so Leaflet's internal
           z-indexes (up to 1000+) don't escape and overlap navbar/popover */}
       <div className="absolute inset-0 z-0">

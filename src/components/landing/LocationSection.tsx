@@ -1,15 +1,34 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getDestinations } from "@/lib/api/destinations"
 import {
-  LOCATIONS,
   ACTIVITY_FILTERS,
+  destinationsToMapLocations,
   type ActivityType,
 } from "@/components/map/map-data"
+
+function resolveImageUrl(url: string): string {
+  if (!url) return ""
+  if (url.startsWith("http")) return url
+  const normalized = url.startsWith("/") ? url : `/${url}`
+  const apiUrl =
+    typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL
+      ? process.env.NEXT_PUBLIC_API_URL
+      : "https://duckapi.alefmenu.com/api/v1"
+  try {
+    const parsed = new URL(apiUrl)
+    if (parsed.hostname === "localhost" && parsed.port === "8080")
+      return normalized
+    return `${parsed.origin}${normalized}`
+  } catch {
+    return normalized
+  }
+}
 
 const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
@@ -26,12 +45,30 @@ const accessInfo = [
 ]
 
 export default function LocationSection() {
+  const [locations, setLocations] = useState(
+    destinationsToMapLocations([], { resolveImageUrl }),
+  )
   const [activeFilter, setActiveFilter] = useState<ActivityType | "all">("all")
 
+  useEffect(() => {
+    let cancelled = false
+    getDestinations(undefined, "active").then((res) => {
+      if (cancelled) return
+      if (res.data) {
+        setLocations(
+          destinationsToMapLocations(res.data, { resolveImageUrl }),
+        )
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const filteredLocations = useMemo(() => {
-    if (activeFilter === "all") return LOCATIONS
-    return LOCATIONS.filter((loc) => loc.activities.includes(activeFilter))
-  }, [activeFilter])
+    if (activeFilter === "all") return locations
+    return locations.filter((loc) => loc.activities.includes(activeFilter))
+  }, [locations, activeFilter])
 
   return (
     <section className="bg-off-white py-20">

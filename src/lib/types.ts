@@ -68,12 +68,21 @@ export interface Wallet {
   supplier_id: number
 }
 
+export type DestinationActivity = "waterbike" | "sup" | "kayak"
+export type DestinationPublicStatus = "open" | "coming-soon"
+
 export interface Destination {
   id: number
   name: { ar: string; en: string }
   description: { ar: string; en: string }
   image: string
+  images?: string[]
+  lat?: number
+  lng?: number
+  activities?: DestinationActivity[]
   status: "active" | "inactive"
+  public_status?: DestinationPublicStatus
+  operating_hours?: string
   trip_count?: number
   trips?: Trip[]
 }

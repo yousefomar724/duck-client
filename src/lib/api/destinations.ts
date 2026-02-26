@@ -1,23 +1,31 @@
 'use client';
 
 import { apiClient, ApiResponse } from './client';
-import type { Destination } from '@/lib/types';
+import type { Destination, DestinationActivity, DestinationPublicStatus } from '@/lib/types';
 
 export interface CreateDestinationInput {
   name: { ar: string; en: string };
   description: { ar: string; en: string };
   image: string;
+  images?: string[];
   status?: string;
+  lat?: number;
+  lng?: number;
+  activities?: DestinationActivity[];
+  public_status?: DestinationPublicStatus;
+  operating_hours?: string;
 }
 
 export async function getDestinations(
   lang?: string,
   status?: string,
+  public_status?: string,
 ): Promise<ApiResponse<Destination[]>> {
   let endpoint = '/destinations';
   const params = new URLSearchParams();
   if (lang) params.append('lang', lang);
   if (status) params.append('status', status);
+  if (public_status) params.append('public_status', public_status);
   if (params.toString()) endpoint += `?${params.toString()}`;
 
   return apiClient<Destination[]>(endpoint, { method: 'GET' });

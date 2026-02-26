@@ -42,7 +42,17 @@ import * as destinationsApi from "@/lib/api/destinations"
 import * as imagesApi from "@/lib/api/images"
 import { CardGridSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
-import type { Destination } from "@/lib/types"
+import type {
+  Destination,
+  DestinationActivity,
+  DestinationPublicStatus,
+} from "@/lib/types"
+
+const ACTIVITY_OPTIONS: { id: DestinationActivity; label: string }[] = [
+  { id: "kayak", label: "كاياك" },
+  { id: "sup", label: "تجديف واقف" },
+  { id: "waterbike", label: "دراجة مائية" },
+]
 
 const emptyForm = {
   name_ar: "",
@@ -50,7 +60,13 @@ const emptyForm = {
   description_ar: "",
   description_en: "",
   image: "",
+  images: [] as string[],
   status: "active",
+  lat: "" as number | "",
+  lng: "" as number | "",
+  activities: [] as DestinationActivity[],
+  public_status: "" as "" | DestinationPublicStatus,
+  operating_hours: "",
 }
 
 export default function AdminDestinations() {
@@ -67,6 +83,8 @@ export default function AdminDestinations() {
   const [dialogError, setDialogError] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
 
   useEffect(() => {
     if (!imageFile) {
@@ -77,6 +95,16 @@ export default function AdminDestinations() {
     setImagePreviewUrl(objectUrl)
     return () => URL.revokeObjectURL(objectUrl)
   }, [imageFile])
+
+  useEffect(() => {
+    if (imageFiles.length === 0) {
+      setImagePreviewUrls([])
+      return
+    }
+    const urls = imageFiles.map((f) => URL.createObjectURL(f))
+    setImagePreviewUrls(urls)
+    return () => urls.forEach((u) => URL.revokeObjectURL(u))
+  }, [imageFiles])
 
   useEffect(() => {
     fetchDestinations()
@@ -127,6 +155,7 @@ export default function AdminDestinations() {
     setEditingDestination(null)
     setFormData(emptyForm)
     setImageFile(null)
+    setImageFiles([])
     setDialogError(null)
     setDialogOpen(true)
   }
@@ -140,6 +169,12 @@ export default function AdminDestinations() {
       typeof destination.description === "string"
         ? { ar: destination.description, en: "" }
         : destination.description
+    const images =
+      destination.images && destination.images.length > 0
+        ? destination.images
+        : destination.image
+          ? [destination.image]
+          : []
     setEditingDestination(destination)
     setFormData({
       name_ar: name?.ar ?? "",
@@ -147,9 +182,18 @@ export default function AdminDestinations() {
       description_ar: description?.ar ?? "",
       description_en: description?.en ?? "",
       image: destination.image ?? "",
+      images,
       status: destination.status ?? "active",
+      lat: destination.lat ?? ("" as number | ""),
+      lng: destination.lng ?? ("" as number | ""),
+      activities: destination.activities ?? [],
+      public_status: (destination.public_status ?? "") as
+        | ""
+        | DestinationPublicStatus,
+      operating_hours: destination.operating_hours ?? "",
     })
     setImageFile(null)
+    setImageFiles([])
     setDialogError(null)
     setDialogOpen(true)
   }
@@ -157,6 +201,29 @@ export default function AdminDestinations() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0] ?? null
     setImageFile(selected)
+  }
+
+  const handleMultipleImagesChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(e.target.files ?? [])
+    setImageFiles((prev) => [...prev, ...files])
+    e.target.value = ""
+  }
+
+  const removeNewImageAt = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const removeExistingImageAt = (index: number) => {
+    setFormData({
+      ...formData,
+      images: formData.images.filter((_, i) => i !== index),
+      image:
+        formData.images[index] === formData.image && formData.images.length > 1
+          ? (formData.images[0] ?? "")
+          : formData.image,
+    })
   }
 
   const removeExistingImage = () => {
@@ -167,10 +234,20 @@ export default function AdminDestinations() {
     setImageFile(null)
   }
 
+  const toggleActivity = (activity: DestinationActivity) => {
+    setFormData((prev) => ({
+      ...prev,
+      activities: prev.activities.includes(activity)
+        ? prev.activities.filter((a) => a !== activity)
+        : [...prev.activities, activity],
+    }))
+  }
+
   const handleDialogOpenChange = (open: boolean) => {
     setDialogOpen(open)
     if (!open) {
       setImageFile(null)
+      setImageFiles([])
       setDialogError(null)
     }
   }
@@ -209,14 +286,38 @@ export default function AdminDestinations() {
         imageUrl = uploadedImage.image_url
       }
 
+      const uploadedMulti: string[] = []
+      for (const file of imageFiles) {
+        const { data: uploadedImage, error: uploadError } =
+          await imagesApi.uploadImageForAdmin(file)
+        if (uploadError || !uploadedImage?.image_url) {
+          setDialogError(uploadError || "فشل في تحميل إحدى الصور")
+          return
+        }
+        uploadedMulti.push(uploadedImage.image_url)
+      }
+
+      const images = [...formData.images, ...uploadedMulti]
+      const primaryImage = imageUrl || images[0] || ""
+
       const payload = {
         name: { ar: formData.name_ar, en: formData.name_en },
         description: {
           ar: formData.description_ar,
           en: formData.description_en,
         },
-        image: imageUrl,
+        image: primaryImage,
+        images: images.length > 0 ? images : undefined,
         status: formData.status,
+        lat: formData.lat === "" ? undefined : Number(formData.lat),
+        lng: formData.lng === "" ? undefined : Number(formData.lng),
+        activities:
+          formData.activities.length > 0 ? formData.activities : undefined,
+        public_status:
+          formData.public_status === ""
+            ? undefined
+            : (formData.public_status as DestinationPublicStatus),
+        operating_hours: formData.operating_hours || undefined,
       }
       if (editingDestination) {
         const res = await destinationsApi.updateDestination(
@@ -241,6 +342,7 @@ export default function AdminDestinations() {
         setDestinations([...(res.data ? [res.data] : []), ...destinations])
       }
       setImageFile(null)
+      setImageFiles([])
       setDialogOpen(false)
     } catch (err) {
       setDialogError("حدث خطأ غير متوقع")
@@ -286,9 +388,9 @@ export default function AdminDestinations() {
       {/* Destinations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {destinations.map((destination) => {
-          const fullImageUrl = destination.image
-            ? resolveImageUrl(destination.image)
-            : ""
+          const primaryImage =
+            destination.images?.[0] ?? destination.image ?? ""
+          const fullImageUrl = primaryImage ? resolveImageUrl(primaryImage) : ""
 
           return (
             <Card
@@ -313,6 +415,13 @@ export default function AdminDestinations() {
                     لا توجد صورة
                   </div>
                 )}
+                {destination.public_status && (
+                  <span className="absolute top-2 end-2 rounded-full bg-duck-navy/80 text-white text-xs px-2 py-0.5">
+                    {destination.public_status === "coming-soon"
+                      ? "قريباً"
+                      : "متاح"}
+                  </span>
+                )}
               </div>
               <CardContent className="p-3! pt-0!">
                 <div className="flex items-start justify-between mb-2">
@@ -327,6 +436,20 @@ export default function AdminDestinations() {
                         ? destination.description
                         : (destination.description?.ar ?? "")}
                     </p>
+                    {destination.activities &&
+                      destination.activities.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {destination.activities.map((a) => (
+                            <span
+                              key={a}
+                              className="text-xs px-2 py-0.5 rounded-full bg-duck-cyan/20 text-duck-navy"
+                            >
+                              {ACTIVITY_OPTIONS.find((o) => o.id === a)
+                                ?.label ?? a}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                   </div>
                   <DropdownMenu dir="rtl">
                     <DropdownMenuTrigger asChild>
@@ -508,9 +631,162 @@ export default function AdminDestinations() {
                   </div>
                 )}
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="lat">خط العرض (Lat)</Label>
+                  <Input
+                    id="lat"
+                    type="number"
+                    step="any"
+                    value={formData.lat === "" ? "" : formData.lat}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        lat:
+                          e.target.value === ""
+                            ? ("" as number | "")
+                            : Number(e.target.value),
+                      })
+                    }
+                    placeholder="24.0889"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lng">خط الطول (Lng)</Label>
+                  <Input
+                    id="lng"
+                    type="number"
+                    step="any"
+                    value={formData.lng === "" ? "" : formData.lng}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        lng:
+                          e.target.value === ""
+                            ? ("" as number | "")
+                            : Number(e.target.value),
+                      })
+                    }
+                    placeholder="32.8998"
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="status">الحالة</Label>
+                <Label>الأنشطة</Label>
+                <div className="flex flex-wrap gap-3">
+                  {ACTIVITY_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.id}
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.activities.includes(opt.id)}
+                        onChange={() => toggleActivity(opt.id)}
+                        className="rounded border-gray-300"
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="public_status">الحالة العامة (للخريطة)</Label>
                 <Select
+                  dir="rtl"
+                  value={formData.public_status || "none"}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      public_status:
+                        value === "none"
+                          ? ""
+                          : (value as DestinationPublicStatus),
+                    })
+                  }
+                >
+                  <SelectTrigger id="public_status">
+                    <SelectValue placeholder="اختر" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">—</SelectItem>
+                    <SelectItem value="open">متاح الآن</SelectItem>
+                    <SelectItem value="coming-soon">قريباً</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="operating_hours">ساعات العمل (اختياري)</Label>
+                <Input
+                  id="operating_hours"
+                  value={formData.operating_hours}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      operating_hours: e.target.value,
+                    })
+                  }
+                  placeholder="٨ ص - ٥ م"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>صور إضافية</Label>
+                <div className="flex flex-wrap gap-2">
+                  {formData.images.map((url, i) => (
+                    <div
+                      key={`existing-${i}`}
+                      className="relative w-20 h-20 rounded border overflow-hidden bg-gray-100"
+                    >
+                      <Image
+                        src={resolveImageUrl(url)}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImageAt(i)}
+                        className="absolute top-0.5 start-0.5 rounded bg-red-500 text-white text-xs px-1.5 py-0.5"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  ))}
+                  {imagePreviewUrls.map((url, i) => (
+                    <div
+                      key={`new-${i}`}
+                      className="relative w-20 h-20 rounded border overflow-hidden bg-gray-100"
+                    >
+                      <Image
+                        src={url}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeNewImageAt(i)}
+                        className="absolute top-0.5 start-0.5 rounded bg-red-500 text-white text-xs px-1.5 py-0.5"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleMultipleImagesChange}
+                  className="cursor-pointer mt-1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">الحالة (إداري)</Label>
+                <Select
+                  dir="rtl"
                   value={formData.status}
                   onValueChange={(value) =>
                     setFormData({ ...formData, status: value })
