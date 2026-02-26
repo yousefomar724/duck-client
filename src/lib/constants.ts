@@ -26,6 +26,11 @@ export const adminNavItems: NavItem[] = [
     icon: MapPin,
   },
   {
+    title: "الرحلات",
+    href: "/admin/trips",
+    icon: Ship,
+  },
+  {
     title: "المدفوعات",
     href: "/admin/payouts",
     icon: Wallet,

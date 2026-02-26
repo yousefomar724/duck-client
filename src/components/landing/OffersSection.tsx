@@ -12,6 +12,9 @@ import { getTripImage, resolveImageUrl } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
 
 export default function OffersSection() {
+  const getLocalizedText = (value: any, fallback = "") =>
+    typeof value === "string" ? value : value?.ar || value?.en || fallback
+
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -74,7 +77,7 @@ export default function OffersSection() {
   const placeholderImage = "/offer.webp"
 
   return (
-    <section className="bg-off-white py-20 overflow-hidden">
+    <section id="experiences" className="bg-off-white py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
         <span className="text-duck-cyan text-base block mb-3">الرحلات</span>
@@ -111,34 +114,38 @@ export default function OffersSection() {
               </div>
             ) : (
               trips.map((trip) => {
+                const tripName = getLocalizedText(trip.name, "رحلة")
+                const tripDescription = getLocalizedText(trip.description)
                 const rawImage = getTripImage(trip.images)
-                const imageUrl =
-                  resolveImageUrl(rawImage) ?? placeholderImage
+                const imageUrl = resolveImageUrl(rawImage) ?? placeholderImage
                 const isExternal = imageUrl.startsWith("http")
-                const supplierName = trip.supplier?.name?.ar
+                const supplierName =
+                  typeof trip.supplier?.name === "string"
+                    ? trip.supplier?.name
+                    : trip.supplier?.name?.ar ||
+                      trip.supplier?.name?.en ||
+                      "Unknown Supplier"
 
                 return (
                   <div
                     key={trip.id}
-                    className="flex-[0_0_90%] md:max-w-280 min-w-0 relative h-[500px] rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row first:ms-6"
+                    className="flex-[0_0_90%] md:max-w-280 min-w-0 relative h-[500px] rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row first:ms-6 group"
                   >
                     {/* Image Side */}
-                    <div className="w-full md:w-2/3 relative h-full">
+                    <div className="w-full md:w-2/3 relative h-full overflow-hidden">
                       {isExternal ? (
                         // eslint-disable-next-line @next/next/no-img-element -- API image URL may be external
                         <img
                           src={imageUrl}
-                          alt={trip.name.ar}
-                          className="object-cover w-full h-full"
+                          alt={tripName}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
                         <Image
                           src={imageUrl}
-                          alt={trip.name.ar}
-                          width={0}
-                          height={0}
-                          sizes="100vw"
-                          className="object-cover w-full h-full"
+                          alt={tripName}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       )}
                     </div>
@@ -165,10 +172,10 @@ export default function OffersSection() {
                           </div>
                         )}
                         <h3 className="text-2xl md:text-3xl font-bold text-text-dark mb-4">
-                          {trip.name.ar}
+                          {tripName}
                         </h3>
                         <p className="text-text-body leading-relaxed mb-4 line-clamp-4">
-                          {trip.description.ar}
+                          {tripDescription}
                         </p>
                         <p className="text-duck-cyan font-semibold text-lg">
                           {formatCurrency(trip.price, trip.currency)}

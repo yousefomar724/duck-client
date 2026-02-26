@@ -58,7 +58,7 @@ function AlertDialogContent({
         data-slot="alert-dialog-content"
         data-size={size}
         className={cn(
-          "src:bg-background src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:group/alert-dialog-content src:fixed src:top-[50%] src:start-[50%] src:z-50 src:grid src:w-full src:max-w-[calc(100%-2rem)] src:translate-x-[-50%] rtl:src:-translate-x-[-50%] src:translate-y-[-50%] src:gap-4 src:rounded-lg src:border src:p-6 src:shadow-lg src:duration-200 src:data-[size=sm]:max-w-xs src:data-[size=default]:sm:max-w-lg",
+          "src:bg-background src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:group/alert-dialog-content src:fixed src:top-[50%] src:start-[50%] src:z-50 src:grid src:w-full src:max-w-[calc(100%-2rem)] src:max-h-[85vh] src:overflow-y-auto src:translate-x-[-50%] rtl:src:translate-x-[50%] src:translate-y-[-50%] src:gap-4 src:rounded-lg src:border src:p-6 src:shadow-lg src:duration-200 src:data-[size=sm]:max-w-xs src:data-[size=default]:sm:max-w-lg",
           className,
         )}
         {...props}

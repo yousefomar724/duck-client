@@ -30,6 +30,13 @@ import { CalendarCheck, CheckCircle, Clock } from "lucide-react"
 import type { BookingStatus, Booking, Trip, Supplier } from "@/lib/types"
 
 export default function AdminBookings() {
+  const getSupplierName = (supplier?: Supplier) => {
+    if (!supplier) return "-"
+    return typeof supplier.name === "string"
+      ? supplier.name
+      : supplier.name.ar || supplier.name.en || "-"
+  }
+
   const [bookings, setBookings] = useState<Booking[]>([])
   const [trips, setTrips] = useState<Trip[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -159,7 +166,7 @@ export default function AdminBookings() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/50">
                   <TableHead className="text-right">رقم الحجز</TableHead>
                   <TableHead className="text-right">اسم العميل</TableHead>
                   <TableHead className="text-right">رقم الهاتف</TableHead>
@@ -177,7 +184,7 @@ export default function AdminBookings() {
                     (s) => s.id === booking.supplier_id,
                   )
                   return (
-                    <TableRow key={booking.id}>
+                    <TableRow key={booking.id} className="hover:bg-duck-cyan/5 transition-colors">
                       <TableCell className="font-medium">
                         #{booking.id}
                       </TableCell>
@@ -186,7 +193,7 @@ export default function AdminBookings() {
                         {booking.phone_number}
                       </TableCell>
                       <TableCell>{trip?.name.ar || "-"}</TableCell>
-                      <TableCell>{supplier?.name.ar || "-"}</TableCell>
+                      <TableCell>{getSupplierName(supplier)}</TableCell>
                       <TableCell>
                         {formatCurrency(booking.amount, booking.currency)}
                       </TableCell>

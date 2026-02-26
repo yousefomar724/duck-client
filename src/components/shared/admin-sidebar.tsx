@@ -30,7 +30,8 @@ export default function AdminSidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const displayName = user
-    ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
+    ? [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+      user.username
     : "مدير"
 
   return (
@@ -67,7 +68,7 @@ export default function AdminSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
+            <DropdownMenu dir="rtl">
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="w-full">
                   <Avatar className="w-8 h-8">
@@ -83,11 +84,11 @@ export default function AdminSidebar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" side="top" className="w-56">
                 <DropdownMenuItem>
-                  <User className="w-4 h-4 ml-2" />
+                  <User className="w-4 h-4 ms-2" />
                   <span>الملف الشخصي</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => logout()}>
-                  <LogOut className="w-4 h-4 ml-2" />
+                  <LogOut className="w-4 h-4 ms-2" />
                   <span>تسجيل الخروج</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>

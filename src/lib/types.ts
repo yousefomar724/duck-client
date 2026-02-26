@@ -13,9 +13,9 @@ export interface User {
 
 export interface Supplier {
   id: number
-  user_id: number
-  name: { ar: string; en: string }
-  about: { ar: string; en: string }
+  user_id?: number
+  name: string | { ar: string; en: string }
+  about: string | { ar: string; en: string }
   icon: string
   rate: number
 }

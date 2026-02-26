@@ -8,9 +8,22 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { getDestinations } from "@/lib/api/destinations"
 import type { Destination } from "@/lib/types"
 import { resolveImageUrl } from "@/lib/image-utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export default function ResortsSection() {
+  const getLocalizedText = (value: any, fallback = "") =>
+    typeof value === "string" ? value : value?.ar || value?.en || fallback
+
   const [destinations, setDestinations] = useState<Destination[]>([])
+  const [selectedDestination, setSelectedDestination] = useState<Destination | null>(
+    null,
+  )
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -70,9 +83,20 @@ export default function ResortsSection() {
   }, [emblaApi, onSelect])
 
   const placeholderImage = "/resort.webp"
+  const selectedDestinationName = getLocalizedText(
+    selectedDestination?.name,
+    "وجهة سياحية",
+  )
+  const selectedDestinationDescription = getLocalizedText(
+    selectedDestination?.description,
+  )
+  const selectedDestinationImageUrl =
+    resolveImageUrl(selectedDestination?.image) ?? placeholderImage
+  const selectedDestinationImageIsExternal =
+    selectedDestinationImageUrl.startsWith("http")
 
   return (
-    <section className="bg-dark-bg py-20 overflow-hidden">
+    <section id="locations" className="bg-dark-bg py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
         <span className="text-white/60 text-base block mb-3">الوجهات</span>
@@ -106,6 +130,13 @@ export default function ResortsSection() {
               </div>
             ) : (
               destinations.map((destination) => {
+                const destinationName = getLocalizedText(
+                  destination.name,
+                  "وجهة سياحية",
+                )
+                const destinationDescription = getLocalizedText(
+                  destination.description,
+                )
                 const imageUrl =
                   resolveImageUrl(destination.image) ?? placeholderImage
                 const isExternal = imageUrl.startsWith("http")
@@ -118,13 +149,13 @@ export default function ResortsSection() {
                       // eslint-disable-next-line @next/next/no-img-element -- API image URL may be external
                       <img
                         src={imageUrl}
-                        alt={destination.name.ar}
+                        alt={destinationName}
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
                       <Image
                         src={imageUrl}
-                        alt={destination.name.ar}
+                        alt={destinationName}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
@@ -145,14 +176,18 @@ export default function ResortsSection() {
 
                     {/* Bottom Content */}
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-right">
-                      <div className="text-duck-cyan text-sm font-medium mb-2 opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDestination(destination)}
+                        className="text-duck-cyan text-sm font-medium mb-2 opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 hover:underline"
+                      >
                         لمعرفة المزيد
-                      </div>
+                      </button>
                       <h3 className="text-white text-2xl font-bold mb-1">
-                        {destination.name.ar}
+                        {destinationName}
                       </h3>
                       <div className="text-white/70 text-sm line-clamp-2">
-                        {destination.description.ar}
+                        {destinationDescription}
                       </div>
                     </div>
                   </div>
@@ -192,6 +227,48 @@ export default function ResortsSection() {
           </button>
         </div>
       )}
+
+      <Dialog
+        open={selectedDestination !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedDestination(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden text-right">
+          <div className="relative h-56 sm:h-72 bg-black/10">
+            {selectedDestinationImageIsExternal ? (
+              // eslint-disable-next-line @next/next/no-img-element -- API image URL may be external
+              <img
+                src={selectedDestinationImageUrl}
+                alt={selectedDestinationName}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={selectedDestinationImageUrl}
+                alt={selectedDestinationName}
+                fill
+                className="object-cover"
+              />
+            )}
+          </div>
+
+          <div className="p-6">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-2xl">{selectedDestinationName}</DialogTitle>
+              {selectedDestination?.trip_count != null &&
+                selectedDestination.trip_count > 0 && (
+                  <div className="text-sm text-text-muted">
+                    عدد الرحلات المتاحة: {selectedDestination.trip_count}
+                  </div>
+                )}
+            </DialogHeader>
+            <DialogDescription className="text-base leading-8 text-text-body whitespace-pre-line">
+              {selectedDestinationDescription || "لا يوجد وصف متاح حالياً."}
+            </DialogDescription>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

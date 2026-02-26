@@ -141,7 +141,7 @@ export default function MyTripsPage() {
           })()
 
           return (
-            <Card key={trip.id} className="overflow-hidden py-0!">
+            <Card key={trip.id} className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200">
               <div className="relative h-48 w-full">
                 {fullImageUrl ? (
                   fullImageUrl.endsWith(".mp4") ? (

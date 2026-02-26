@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import * as destinationsApi from "@/lib/api/destinations"
+import * as imagesApi from "@/lib/api/images"
 import { CardGridSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Destination } from "@/lib/types"
@@ -59,10 +60,23 @@ export default function AdminDestinations() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingDestination, setEditingDestination] = useState<Destination | null>(null)
+  const [editingDestination, setEditingDestination] =
+    useState<Destination | null>(null)
   const [formData, setFormData] = useState(emptyForm)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [dialogError, setDialogError] = useState<string | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl(null)
+      return
+    }
+    const objectUrl = URL.createObjectURL(imageFile)
+    setImagePreviewUrl(objectUrl)
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [imageFile])
 
   useEffect(() => {
     fetchDestinations()
@@ -112,13 +126,20 @@ export default function AdminDestinations() {
   const openCreateDialog = () => {
     setEditingDestination(null)
     setFormData(emptyForm)
+    setImageFile(null)
     setDialogError(null)
     setDialogOpen(true)
   }
 
   const openEditDialog = (destination: Destination) => {
-    const name = typeof destination.name === "string" ? { ar: destination.name, en: "" } : destination.name
-    const description = typeof destination.description === "string" ? { ar: destination.description, en: "" } : destination.description
+    const name =
+      typeof destination.name === "string"
+        ? { ar: destination.name, en: "" }
+        : destination.name
+    const description =
+      typeof destination.description === "string"
+        ? { ar: destination.description, en: "" }
+        : destination.description
     setEditingDestination(destination)
     setFormData({
       name_ar: name?.ar ?? "",
@@ -128,8 +149,48 @@ export default function AdminDestinations() {
       image: destination.image ?? "",
       status: destination.status ?? "active",
     })
+    setImageFile(null)
     setDialogError(null)
     setDialogOpen(true)
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0] ?? null
+    setImageFile(selected)
+  }
+
+  const removeExistingImage = () => {
+    setFormData({ ...formData, image: "" })
+  }
+
+  const removeNewImage = () => {
+    setImageFile(null)
+  }
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open)
+    if (!open) {
+      setImageFile(null)
+      setDialogError(null)
+    }
+  }
+
+  const resolveImageUrl = (url: string) => {
+    if (!url) return ""
+    if (url.startsWith("http")) return url
+    const normalized = url.startsWith("/") ? url : `/${url}`
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "https://duckapi.alefmenu.com/api/v1"
+    if (!apiUrl) return normalized
+    try {
+      const parsedUrl = new URL(apiUrl)
+      if (parsedUrl.hostname === "localhost" && parsedUrl.port === "8080") {
+        return normalized
+      }
+      return `${parsedUrl.origin}${normalized}`
+    } catch {
+      return normalized
+    }
   }
 
   const handleDialogSubmit = async (e: React.FormEvent) => {
@@ -137,19 +198,40 @@ export default function AdminDestinations() {
     setDialogError(null)
     setIsSubmitting(true)
     try {
+      let imageUrl = formData.image
+      if (imageFile) {
+        const { data: uploadedImage, error: uploadError } =
+          await imagesApi.uploadImageForAdmin(imageFile)
+        if (uploadError || !uploadedImage?.image_url) {
+          setDialogError(uploadError || "فشل في تحميل الصورة")
+          return
+        }
+        imageUrl = uploadedImage.image_url
+      }
+
       const payload = {
         name: { ar: formData.name_ar, en: formData.name_en },
-        description: { ar: formData.description_ar, en: formData.description_en },
-        image: formData.image,
+        description: {
+          ar: formData.description_ar,
+          en: formData.description_en,
+        },
+        image: imageUrl,
         status: formData.status,
       }
       if (editingDestination) {
-        const res = await destinationsApi.updateDestination(editingDestination.id, payload)
+        const res = await destinationsApi.updateDestination(
+          editingDestination.id,
+          payload,
+        )
         if (res.error) {
           setDialogError(res.error)
           return
         }
-        setDestinations(destinations.map((d) => (d.id === editingDestination.id ? (res.data as Destination) : d)))
+        setDestinations(
+          destinations.map((d) =>
+            d.id === editingDestination.id ? (res.data as Destination) : d,
+          ),
+        )
       } else {
         const res = await destinationsApi.createDestination(payload)
         if (res.error) {
@@ -158,6 +240,7 @@ export default function AdminDestinations() {
         }
         setDestinations([...(res.data ? [res.data] : []), ...destinations])
       }
+      setImageFile(null)
       setDialogOpen(false)
     } catch (err) {
       setDialogError("حدث خطأ غير متوقع")
@@ -192,75 +275,97 @@ export default function AdminDestinations() {
   return (
     <div className="space-y-6">
       <PageHeader title="الوجهات">
-        <Button onClick={openCreateDialog} className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy">
+        <Button
+          onClick={openCreateDialog}
+          className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
+        >
           + اضافة وجهة
         </Button>
       </PageHeader>
 
       {/* Destinations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {destinations.map((destination) => (
-          <Card key={destination.id} className="overflow-hidden py-0!">
-            <div className="relative h-48 w-full bg-gray-200">
-              {destination.image ? (
-                <Image
-                  src={destination.image}
-                  alt={typeof destination.name === "string" ? destination.name : destination.name?.ar ?? ""}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-text-muted">
-                  لا توجد صورة
-                </div>
-              )}
-            </div>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-text-dark">
-                    {typeof destination.name === "string" ? destination.name : destination.name?.ar ?? ""}
-                  </h3>
-                  <p className="text-sm text-text-muted mt-1 line-clamp-2">
-                    {typeof destination.description === "string" ? destination.description : destination.description?.ar ?? ""}
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="mr-2"
-                      disabled={isDeleting}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEditDialog(destination)}>
-                      <Pencil className="me-2 h-4 w-4" />
-                      تعديل
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-red-600"
-                      onClick={() => setDeleteId(destination.id)}
-                    >
-                      <Trash2 className="me-2 h-4 w-4" />
-                      حذف
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+        {destinations.map((destination) => {
+          const fullImageUrl = destination.image
+            ? resolveImageUrl(destination.image)
+            : ""
+
+          return (
+            <Card
+              key={destination.id}
+              className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200 gap-2!"
+            >
+              <div className="relative h-48 w-full bg-gray-200">
+                {fullImageUrl ? (
+                  <Image
+                    src={fullImageUrl}
+                    alt={
+                      typeof destination.name === "string"
+                        ? destination.name
+                        : (destination.name?.ar ?? "")
+                    }
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-text-muted">
+                    لا توجد صورة
+                  </div>
+                )}
               </div>
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-300">
-                <span className="text-sm text-text-muted">عدد الرحلات</span>
-                <span className="text-lg font-bold text-duck-cyan">
-                  {destination.trip_count || 0}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              <CardContent className="p-3! pt-0!">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-text-dark">
+                      {typeof destination.name === "string"
+                        ? destination.name
+                        : (destination.name?.ar ?? "")}
+                    </h3>
+                    <p className="text-sm text-text-muted mt-1 line-clamp-2">
+                      {typeof destination.description === "string"
+                        ? destination.description
+                        : (destination.description?.ar ?? "")}
+                    </p>
+                  </div>
+                  <DropdownMenu dir="rtl">
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ms-2 rounded-full! p-1!"
+                        disabled={isDeleting}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => openEditDialog(destination)}
+                      >
+                        <Pencil className="me-2 h-4 w-4" />
+                        تعديل
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => setDeleteId(destination.id)}
+                      >
+                        <Trash2 className="me-2 h-4 w-4" />
+                        حذف
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-300">
+                  <span className="text-sm text-text-muted">عدد الرحلات</span>
+                  <span className="text-lg font-bold text-duck-cyan">
+                    {destination.trip_count || 0}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {destinations.length === 0 && (
@@ -270,10 +375,12 @@ export default function AdminDestinations() {
       )}
 
       {/* Create/Edit Destination Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingDestination ? "تعديل الوجهة" : "اضافة وجهة جديدة"}</DialogTitle>
+            <DialogTitle>
+              {editingDestination ? "تعديل الوجهة" : "اضافة وجهة جديدة"}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleDialogSubmit} className="space-y-4">
             {dialogError && (
@@ -286,7 +393,9 @@ export default function AdminDestinations() {
                   <Input
                     id="name_ar"
                     value={formData.name_ar}
-                    onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name_ar: e.target.value })
+                    }
                     placeholder="اسم الوجهة"
                     required
                   />
@@ -296,7 +405,9 @@ export default function AdminDestinations() {
                   <Input
                     id="name_en"
                     value={formData.name_en}
-                    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name_en: e.target.value })
+                    }
                     placeholder="Destination name"
                   />
                 </div>
@@ -307,7 +418,12 @@ export default function AdminDestinations() {
                   <Textarea
                     id="description_ar"
                     value={formData.description_ar}
-                    onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description_ar: e.target.value,
+                      })
+                    }
                     placeholder="وصف الوجهة"
                     rows={3}
                     required
@@ -318,27 +434,87 @@ export default function AdminDestinations() {
                   <Textarea
                     id="description_en"
                     value={formData.description_en}
-                    onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description_en: e.target.value,
+                      })
+                    }
                     placeholder="Description"
                     rows={3}
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="image">رابط الصورة</Label>
-                <Input
-                  id="image"
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://..."
-                />
+              <div className="space-y-4">
+                {formData.image && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">الصورة الحالية</p>
+                    <div className="relative w-32 h-32 rounded border border-gray-300 overflow-hidden bg-gray-100">
+                      <Image
+                        src={resolveImageUrl(formData.image)}
+                        alt="Current destination"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      <button
+                        type="button"
+                        onClick={removeExistingImage}
+                        className="absolute top-1 start-1 rounded bg-red-500 text-white text-xs px-2 py-1"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="image">
+                    {editingDestination
+                      ? "اختيار صورة جديدة"
+                      : "اختيار صورة الوجهة"}
+                  </Label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-text-muted">
+                    سيتم تحميل الصورة تلقائياً عند حفظ الوجهة.
+                  </p>
+                </div>
+
+                {imagePreviewUrl && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">الصورة المختارة</p>
+                    <div className="relative w-32 h-32 rounded border border-gray-300 overflow-hidden bg-gray-100">
+                      <Image
+                        src={imagePreviewUrl}
+                        alt="Selected destination"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      <button
+                        type="button"
+                        onClick={removeNewImage}
+                        className="absolute top-1 start-1 rounded bg-red-500 text-white text-xs px-2 py-1"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">الحالة</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, status: value })
+                  }
                 >
                   <SelectTrigger id="status">
                     <SelectValue />
@@ -351,11 +527,24 @@ export default function AdminDestinations() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                disabled={isSubmitting}
+              >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy">
-                {isSubmitting ? "جاري الحفظ..." : editingDestination ? "حفظ التغييرات" : "اضافة"}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
+              >
+                {isSubmitting
+                  ? "جاري الحفظ..."
+                  : editingDestination
+                    ? "حفظ التغييرات"
+                    : "اضافة"}
               </Button>
             </DialogFooter>
           </form>
@@ -363,7 +552,10 @@ export default function AdminDestinations() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog
+        open={deleteId !== null}
+        onOpenChange={() => setDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>حذف الوجهة</AlertDialogTitle>
@@ -372,9 +564,7 @@ export default function AdminDestinations() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-3 justify-end">
-            <AlertDialogCancel disabled={isDeleting}>
-              إلغاء
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteId && handleDelete(deleteId)}
               disabled={isDeleting}

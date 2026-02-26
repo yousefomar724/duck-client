@@ -17,7 +17,7 @@ export default function HeroSection() {
         playsInline
         className="absolute inset-0 w-full h-full object-cover z-0"
       >
-        <source src="/hero.mp4" type="video/mp4" />
+        <source src="/videos/hero1.mp4" type="video/mp4" />
       </video>
 
       {/* Overlay Gradient */}
@@ -59,6 +59,31 @@ export default function HeroSection() {
               استمتع بنهر النيل الأسطوري في أسوان كما لم يحدث من قبل. تجديف
               بالكاياك، وستاند اب، واستكشف مع أفضل تجربة رياضات مائية في مصر.
             </motion.p>
+            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+              {/* <motion.a
+                href="https://wa.me/201550061006"
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.7 }}
+                // Use a more subtle CTA color than yellow: cyan with low opacity and good contrast
+                className="inline-flex items-center justify-center rounded-2xl bg-duck-cyan/80 text-white font-bold text-xl px-8 py-3 shadow-md hover:bg-duck-cyan transition-all duration-200"
+              >
+                تحدث مع فريقنا
+              </motion.a> */}
+              <motion.a
+                href="https://wa.me/201550061006"
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+                className="inline-flex items-center justify-center rounded-2xl bg-duck-yellow text-neutral-900 font-bold text-xl px-10 py-3 shadow-xl hover:bg-duck-yellow-hover transition-all duration-200 drop-shadow-lg"
+              >
+                احجز
+              </motion.a>
+            </div>
           </div>
 
           {/* Scroll Indicator (Center) */}

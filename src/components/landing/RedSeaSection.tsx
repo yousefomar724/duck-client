@@ -16,15 +16,23 @@ export default function RedSeaSection() {
         playsInline
         className="absolute inset-0 w-full h-full object-cover z-0"
       >
-        <source src="/hero.mp4" type="video/mp4" />
+        <source src="/videos/hero2.mp4" type="video/mp4" />
       </video>
 
-      {/* Overlay Gradient */}
+      {/* Overlay Gradient - bottom */}
       <div
         className="absolute inset-0 z-10 pointer-events-none"
         style={{
           background:
             "linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 80%)",
+        }}
+      />
+      {/* Right-to-left gradient for text readability (darker on text side in RTL) */}
+      <div
+        className="absolute inset-0 z-10 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to left, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 45%, transparent 75%)",
         }}
       />
       {/* Top dark band for navbar readability */}
@@ -39,13 +47,6 @@ export default function RedSeaSection() {
       <div className="section-content relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex items-center justify-between">
         {/* Right Content (Start) */}
         <div className="flex flex-col items-start text-white max-w-xl pt-20">
-          {/* Logo Placeholder */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold inline-block">
-              Duck Entertainment
-            </h2>
-          </div>
-
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

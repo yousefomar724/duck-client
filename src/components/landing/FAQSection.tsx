@@ -67,11 +67,15 @@ export default function FAQSection() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, ease: "easeOut" as const },
+    },
   }
 
   return (
-    <section className="bg-off-white py-20 px-4 md:px-10">
+    <section id="faq" className="bg-off-white py-20 px-4 md:px-10">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">

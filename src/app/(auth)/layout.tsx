@@ -11,7 +11,7 @@ export default function AuthLayout({
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/hero.mp4" // Using hero video poster or fallback if video not supported in next/image, but for static bg image we should use an image asset.
+          src="/hero1.mp4" // Using hero video poster or fallback if video not supported in next/image, but for static bg image we should use an image asset.
           // Since we don't have a dedicated auth bg, let's use one of the landing images like resort.webp or offer.webp
           // resort.webp seems appropriate for a luxury feel.
           // Wait, video as background is nicer?
@@ -23,7 +23,7 @@ export default function AuthLayout({
           priority
         />
         {/* Overlay gradient to ensure text readability and match theme */}
-        <div className="absolute inset-0 bg-gradient-to-br from-duck-navy/90 via-duck-navy/80 to-duck-cyan/20" />
+        <div className="absolute inset-0 bg-linear-to-br from-duck-navy/90 via-duck-navy/80 to-duck-cyan/20" />
       </div>
 
       {/* Decorative elements */}

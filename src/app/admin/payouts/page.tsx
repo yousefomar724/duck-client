@@ -30,6 +30,13 @@ import { ErrorDisplay } from "@/components/shared/error-display"
 import type { PayoutStatus, Payout, Supplier } from "@/lib/types"
 
 export default function AdminPayouts() {
+  const getSupplierName = (supplier?: Supplier) => {
+    if (!supplier) return "-"
+    return typeof supplier.name === "string"
+      ? supplier.name
+      : supplier.name.ar || supplier.name.en || "-"
+  }
+
   const [payouts, setPayouts] = useState<Payout[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [activeTab, setActiveTab] = useState<"all" | PayoutStatus>("all")
@@ -200,7 +207,7 @@ export default function AdminPayouts() {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="bg-muted/50">
                       <TableHead className="text-right">رقم الدفعة</TableHead>
                       <TableHead className="text-right">اسم المورد</TableHead>
                       <TableHead className="text-right">المبلغ</TableHead>
@@ -215,11 +222,11 @@ export default function AdminPayouts() {
                         (s) => s.id === payout.supplier_id,
                       )
                       return (
-                        <TableRow key={payout.id}>
+                        <TableRow key={payout.id} className="hover:bg-duck-cyan/5 transition-colors">
                           <TableCell className="font-medium">
                             #{payout.id}
                           </TableCell>
-                          <TableCell>{supplier?.name.ar || "-"}</TableCell>
+                          <TableCell>{getSupplierName(supplier)}</TableCell>
                           <TableCell>
                             {formatCurrency(payout.amount, payout.currency)}
                           </TableCell>

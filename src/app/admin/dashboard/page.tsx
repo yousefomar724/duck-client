@@ -28,9 +28,9 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // useEffect(() => {
-  //   fetchData()
-  // }, [])
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   const fetchData = async () => {
     try {
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-muted/50">
                 <TableHead className="text-right">رقم الحجز</TableHead>
                 <TableHead className="text-right">اسم العميل</TableHead>
                 <TableHead className="text-right">اسم الرحلة</TableHead>
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
                 recentBookings.map((booking) => {
                   const trip = trips.find((t) => t.id === booking.trip_id)
                   return (
-                    <TableRow key={booking.id}>
+                    <TableRow key={booking.id} className="hover:bg-duck-cyan/5 transition-colors">
                       <TableCell className="font-medium">
                         #{booking.id}
                       </TableCell>

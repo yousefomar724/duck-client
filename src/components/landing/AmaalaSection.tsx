@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion"
 import { ArrowLeft } from "lucide-react"
-import Image from "next/image"
 
 export default function AmaalaSection() {
   return (
@@ -18,15 +17,23 @@ export default function AmaalaSection() {
         playsInline
         className="absolute inset-0 w-full h-full object-cover z-0"
       >
-        <source src="/hero.mp4" type="video/mp4" />
+        <source src="/videos/hero3.mp4" type="video/mp4" />
       </video>
 
-      {/* Overlay Gradient - Warmer for Amaala */}
+      {/* Overlay Gradient - bottom, warmer for Amaala */}
       <div
         className="absolute inset-0 z-10 pointer-events-none"
         style={{
           background:
             "linear-gradient(to top, rgba(50,20,0,0.4) 0%, rgba(50,20,0,0.1) 50%, transparent 80%)",
+        }}
+      />
+      {/* Right-to-left gradient for text readability (darker on text side in RTL) */}
+      <div
+        className="absolute inset-0 z-10 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to left, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.12) 45%, transparent 75%)",
         }}
       />
       {/* Top dark band for navbar readability */}
@@ -41,18 +48,6 @@ export default function AmaalaSection() {
       <div className="section-content relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex items-center justify-between">
         {/* Right Content (Start) */}
         <div className="flex flex-col items-start text-white max-w-xl pt-20">
-          {/* Logo Placeholder */}
-          <div className="mb-6 flex items-center gap-4">
-            <Image
-              src="/logo-transparent.png"
-              alt="Duck Entertainment"
-              width={0}
-              height={0}
-              sizes="100vw"
-              className="object-contain w-16 invert brightness-0"
-            />
-          </div>
-
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

@@ -30,7 +30,8 @@ export default function SupplierSidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const displayName = user
-    ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
+    ? [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+      user.username
     : "مزود خدمة"
 
   return (
@@ -67,7 +68,7 @@ export default function SupplierSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
+            <DropdownMenu dir="rtl">
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="w-full">
                   <Avatar className="w-8 h-8">
