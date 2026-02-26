@@ -1,5 +1,6 @@
 import Logo from "@/components/shared/logo"
 import Image from "next/image"
+import Link from "next/link"
 
 export default function AuthLayout({
   children,
@@ -34,9 +35,12 @@ export default function AuthLayout({
 
       {/* Logo at top */}
       <div className="relative z-10 flex justify-center pt-12 pb-8">
-        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-lg">
+        <Link
+          href="/"
+          className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-lg"
+        >
           <Logo width={160} height={80} className="text-white" />
-        </div>
+        </Link>
       </div>
 
       {/* Main content */}

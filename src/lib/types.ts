@@ -31,6 +31,7 @@ export interface Trip {
   location: boolean
   from: string // ISO date
   to?: string // ISO date
+  duration: number
   itinerary?: { ar: string; en: string }[] | { ar: string; en: string }
   name: { ar: string; en: string }
   description: { ar: string; en: string }
@@ -40,6 +41,7 @@ export interface Trip {
   cancelation_policy: { ar: string; en: string }
   refundable: boolean
   tour_guide_id?: number
+  tour_guide?: TourGuide
   destinations?: Destination[]
   created_at?: string
 }
@@ -142,6 +144,7 @@ export interface CreateTripRequest {
   location: boolean
   from: string
   to?: string
+  duration?: number
   itinerary?: { ar: string; en: string }
   availability?: { ar: string; en: string }
   max_guests: number

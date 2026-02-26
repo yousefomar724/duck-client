@@ -55,9 +55,7 @@ export default function LocationSection() {
     getDestinations(undefined, "active").then((res) => {
       if (cancelled) return
       if (res.data) {
-        setLocations(
-          destinationsToMapLocations(res.data, { resolveImageUrl }),
-        )
+        setLocations(destinationsToMapLocations(res.data, { resolveImageUrl }))
       }
     })
     return () => {
@@ -75,9 +73,7 @@ export default function LocationSection() {
       <div className="max-w-[1920px] mx-auto px-4 md:px-10">
         {/* Header */}
         <div className="text-center mb-12">
-          <span className="text-teal-primary text-base block mb-3">
-            الموقع
-          </span>
+          <span className="text-teal-primary text-base block mb-3">الموقع</span>
           <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-4">
             اكتشف المكان المثالي لمغامرتك المائية
           </h2>
@@ -105,7 +101,7 @@ export default function LocationSection() {
         </div>
 
         {/* Map Container */}
-        <div className="relative w-full aspect-video max-h-[600px] mb-12 rounded-3xl shadow-sm overflow-hidden">
+        <div className="relative w-full aspect-video max-h-[600px] mb-12 rounded-3xl shadow-sm overflow-hidden max-w-5xl mx-auto">
           <MapView
             locations={filteredLocations}
             selectedLocation={null}

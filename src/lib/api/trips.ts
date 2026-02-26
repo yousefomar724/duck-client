@@ -6,11 +6,13 @@ import type { Trip, CreateTripRequest } from '@/lib/types';
 export async function getTrips(
   lang?: string,
   supplierId?: number,
+  destinationId?: number,
 ): Promise<ApiResponse<Trip[]>> {
   let endpoint = '/trips';
   const params = new URLSearchParams();
   if (lang) params.append('lang', lang);
   if (supplierId) params.append('supplier_id', supplierId.toString());
+  if (destinationId) params.append('destination_id', destinationId.toString());
   if (params.toString()) endpoint += `?${params.toString()}`;
 
   return apiClient<Trip[]>(endpoint, { method: 'GET' });

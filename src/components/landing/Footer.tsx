@@ -39,7 +39,7 @@ export default function Footer() {
           {/* Column 1: Logo & Brand */}
           <div>
             <div className="mb-8">
-              <Link href="/" className="mb-4 w-fit">
+              <Link href="/" className="mb-4 w-fit bg-white!">
                 <Image
                   src="/logo-transparent.png"
                   alt="Duck Entertainment"
@@ -47,8 +47,8 @@ export default function Footer() {
                   height={0}
                   sizes="100vw"
                   className={cn(
-                    "transition-all duration-500 w-24",
-                    "brightness-0 invert",
+                    "transition-all duration-500 w-24 bg-white rounded-full h-24 object-contain p-4",
+                    // "brightness-0 invert",
                   )}
                 />
               </Link>
@@ -111,7 +111,10 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-white transition-colors">
+                <Link
+                  href="/contact"
+                  className="hover:text-white transition-colors"
+                >
                   تواصل معنا
                 </Link>
               </li>

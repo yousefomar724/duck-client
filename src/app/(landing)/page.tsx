@@ -47,7 +47,7 @@ export default function Home() {
           <OffersSection />
           <ExperiencesSection />
           <LocationSection />
-          <WeatherSection />
+          {/* <WeatherSection /> */}
           <FAQSection />
           <Footer />
         </div>

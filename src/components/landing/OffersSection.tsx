@@ -180,6 +180,10 @@ export default function OffersSection() {
                         <p className="text-duck-cyan font-semibold text-lg">
                           {formatCurrency(trip.price, trip.currency)}
                         </p>
+                        <p className="text-text-muted text-sm mt-1">
+                          {(trip.duration ?? 1)}{" "}
+                          {(trip.duration ?? 1) === 1 ? "يوم" : "أيام"}
+                        </p>
                       </div>
                       <Link
                         href={`/book?trip=${trip.id}`}

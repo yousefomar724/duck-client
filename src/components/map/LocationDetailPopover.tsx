@@ -1,11 +1,27 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
-import { X, Clock, Gauge, Banknote, CheckCircle2 } from "lucide-react"
+import {
+  X,
+  Clock,
+  Gauge,
+  Banknote,
+  CheckCircle2,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel"
 import {
   ACTIVITY_LABELS,
   DIFFICULTY_LABELS,
@@ -32,7 +48,38 @@ export default function LocationDetailPopover({
   anchorPoint,
 }: LocationDetailPopoverProps) {
   const [side, setSide] = useState<"right" | "bottom">("right")
-  const [imageIndex, setImageIndex] = useState(0)
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const carouselApiRef = useRef<CarouselApi | null>(null)
+
+  useEffect(() => {
+    carouselApiRef.current = carouselApi
+  }, [carouselApi])
+
+  useEffect(() => {
+    if (!carouselApi) return
+    const onSelect = () => setSelectedIndex(carouselApi.selectedScrollSnap())
+    carouselApi.on("select", onSelect)
+    queueMicrotask(() => setSelectedIndex(carouselApi.selectedScrollSnap()))
+    return () => {
+      carouselApi.off("select", onSelect)
+    }
+  }, [carouselApi])
+
+  // Reinit carousel when popover opens so Embla measures the visible container
+  useEffect(() => {
+    if (!open || !carouselApi) return
+    let cancelled = false
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) carouselApi.reInit()
+      })
+    })
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(id)
+    }
+  }, [open, carouselApi])
 
   useEffect(() => {
     const m = window.matchMedia("(max-width: 640px)")
@@ -44,7 +91,7 @@ export default function LocationDetailPopover({
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
-      if (!next) setImageIndex(0)
+      if (!next) carouselApiRef.current?.scrollTo(0)
       onOpenChange(next)
     },
     [onOpenChange],
@@ -70,48 +117,76 @@ export default function LocationDetailPopover({
         align="center"
         collisionPadding={16}
         className={cn(
-          "bg-duck-navy-deep! text-white border-none p-0! overflow-hidden rounded-xl shadow-2xl z-40",
+          "bg-duck-navy-deep! text-white border-none p-0! overflow-hidden rounded-xl shadow-2xl z-40 flex flex-col",
           "w-[380px] max-w-[min(380px,calc(100vw-2rem))]",
-          side === "bottom" &&
-            "pb-[env(safe-area-inset-bottom)] mx-2 max-h-[85vh] flex flex-col",
+          side === "bottom"
+            ? "max-h-[65vh] w-[calc(100vw-1rem)] max-w-[380px] pb-[env(safe-area-inset-bottom)] mx-2"
+            : "max-h-[85vh]",
         )}
       >
-        {/* Full-bleed image(s) — no padding */}
-        <div className="relative w-full aspect-16/10 shrink-0 overflow-hidden">
-          {hasMultipleImages ? (
-            <>
-              <Image
-                key={imageIndex}
-                src={images[imageIndex]!}
-                alt={location.name}
-                fill
-                className="object-cover"
-              />
-              {/* Dot indicators */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-                {images.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setImageIndex(i)}
-                    className={cn(
-                      "w-2 h-2 rounded-full transition-colors cursor-pointer",
-                      i === imageIndex
-                        ? "bg-white"
-                        : "bg-white/50 hover:bg-white/70",
-                    )}
-                    aria-label={`صورة ${i + 1}`}
-                  />
-                ))}
-              </div>
-            </>
-          ) : (
-            <Image
-              src={images[0]!}
-              alt={location.name}
-              fill
-              className="object-cover"
-            />
+        {/* Full-bleed image carousel — shorter aspect on mobile so popover fits */}
+        <div
+          dir="ltr"
+          className="relative w-full aspect-2/1 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
+        >
+          <Carousel
+            setApi={setCarouselApi}
+            opts={{ align: "start", loop: true, direction: "ltr" }}
+            className="h-full w-full relative"
+          >
+            <CarouselContent className="h-full ms-0 min-h-full">
+              {images.map((src, i) => (
+                <CarouselItem key={i} className="h-full ps-0">
+                  <div className="relative h-full w-full">
+                    <Image
+                      src={src}
+                      alt={`${location.name} - صورة ${i + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {hasMultipleImages && (
+              <>
+                <CarouselPrevious
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                  aria-label="السابق"
+                >
+                  <ChevronLeft className="size-4" />
+                </CarouselPrevious>
+                <CarouselNext
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                  aria-label="التالي"
+                >
+                  <ChevronRight className="size-4" />
+                </CarouselNext>
+              </>
+            )}
+          </Carousel>
+          {hasMultipleImages && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => carouselApi?.scrollTo(i)}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-colors cursor-pointer",
+                    i === selectedIndex
+                      ? "bg-white"
+                      : "bg-white/50 hover:bg-white/70",
+                  )}
+                  aria-label={`صورة ${i + 1}`}
+                  aria-current={i === selectedIndex ? "true" : undefined}
+                />
+              ))}
+            </div>
           )}
           <div className="absolute inset-0 bg-linear-to-t from-duck-navy-deep via-transparent to-transparent pointer-events-none" />
 
@@ -123,19 +198,10 @@ export default function LocationDetailPopover({
           >
             <X className="size-4" />
           </button>
-
-          <div className="absolute top-3 end-3 z-10 text-white/60 text-xs font-medium">
-            أسوان
-          </div>
         </div>
 
-        {/* Content — structured spacing */}
-        <div
-          className={cn(
-            "flex flex-col overflow-y-auto",
-            side === "bottom" && "min-h-0 flex-1",
-          )}
-        >
+        {/* Content — only description scrolls when long */}
+        <div className="flex flex-col min-h-0 flex-1">
           <div className="px-4 pt-4 flex flex-col gap-3">
             {/* Name + Status badge */}
             <div className="flex flex-col gap-2">
@@ -178,10 +244,12 @@ export default function LocationDetailPopover({
               )}
             </div>
 
-            {/* Description */}
-            <p className="text-white/80 text-sm leading-relaxed">
-              {location.description}
-            </p>
+            {/* Description — scrolls only when height exceeds max */}
+            <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+              <p className="text-white/80 text-sm leading-relaxed ps-1">
+                {location.description}
+              </p>
+            </div>
 
             {/* Activity tags */}
             <div className="flex flex-wrap gap-1.5">

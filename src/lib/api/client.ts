@@ -48,14 +48,14 @@ async function apiClient<T>(
     });
 
     // Handle unauthorized - clear token, notify auth, redirect to login
-    if (response.status === 401) {
-      clearToken();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-        window.location.href = '/login';
-      }
-      return { data: null, error: 'Unauthorized' };
-    }
+    // if (response.status === 401) {
+    //   clearToken();
+    //   if (typeof window !== 'undefined') {
+    //     window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    //     window.location.href = '/login';
+    //   }
+    //   return { data: null, error: 'Unauthorized' };
+    // }
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -102,14 +102,14 @@ async function uploadFile<T>(
       body: formData,
     });
 
-    if (response.status === 401) {
-      clearToken();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-        window.location.href = '/login';
-      }
-      return { data: null, error: 'Unauthorized' };
-    }
+    // if (response.status === 401) {
+    //   clearToken();
+    //   if (typeof window !== 'undefined') {
+    //     window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    //     window.location.href = '/login';
+    //   }
+    //   return { data: null, error: 'Unauthorized' };
+    // }
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));

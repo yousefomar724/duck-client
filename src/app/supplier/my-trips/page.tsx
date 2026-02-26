@@ -194,6 +194,11 @@ export default function MyTripsPage() {
                     <span className="font-medium">عدد الضيوف:</span>{" "}
                     {trip.max_guests}
                   </p>
+                  <p>
+                    <span className="font-medium">المدة:</span>{" "}
+                    {(trip.duration ?? 1)}{" "}
+                    {(trip.duration ?? 1) === 1 ? "يوم" : "أيام"}
+                  </p>
                 </div>
               </CardContent>
               <CardFooter className="p-4 pt-0 flex gap-2">

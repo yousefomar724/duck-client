@@ -16,11 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
 import { currencies } from "@/lib/constants"
 import * as tripsApi from "@/lib/api/trips"
 import * as imagesApi from "@/lib/api/images"
 import * as destinationsApi from "@/lib/api/destinations"
+import { DateTimePicker } from "@/components/shared/date-time-picker"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Trip, Destination, Supplier } from "@/lib/types"
 
@@ -59,11 +60,12 @@ export default function TripForm({
     refundable: true,
     cancelation_policy_ar: "",
     cancelation_policy_en: "",
-    from: "",
-    to: "",
+    duration: "1",
     max_guests: "",
     supplier_id: "",
   })
+  const [fromDate, setFromDate] = useState<Date | undefined>(undefined)
+  const [toDate, setToDate] = useState<Date | undefined>(undefined)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([])
   const [destinations, setDestinations] = useState<Destination[]>([])
@@ -111,11 +113,12 @@ export default function TripForm({
       refundable: tripData.refundable,
       cancelation_policy_ar: tripPolicy?.ar || "",
       cancelation_policy_en: tripPolicy?.en || "",
-      from: tripData.from,
-      to: tripData.to || "",
+      duration: (tripData.duration ?? 1).toString(),
       max_guests: tripData.max_guests.toString(),
       supplier_id: tripData.supplier_id?.toString() || "",
     })
+    setFromDate(tripData.from ? new Date(tripData.from) : undefined)
+    setToDate(tripData.to ? new Date(tripData.to) : undefined)
     setExistingImageUrls(imageUrls)
   }, [])
 
@@ -161,10 +164,9 @@ export default function TripForm({
       const uploadedImageUrls: string[] = []
       for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i]
-        const { data: imageData, error: uploadErr } =
-          await (useAdminImageUpload
-            ? imagesApi.uploadImageForAdmin(file)
-            : imagesApi.uploadImage(file))
+        const { data: imageData, error: uploadErr } = await (useAdminImageUpload
+          ? imagesApi.uploadImageForAdmin(file)
+          : imagesApi.uploadImage(file))
         if (uploadErr) {
           throw new Error(`خطأ في تحميل الصورة: ${uploadErr}`)
         }
@@ -196,8 +198,9 @@ export default function TripForm({
           ar: formData.cancelation_policy_ar,
           en: formData.cancelation_policy_en,
         },
-        from: formData.from,
-        to: formData.to || undefined,
+        from: fromDate?.toISOString(),
+        to: toDate?.toISOString() ?? undefined,
+        duration: parseInt(formData.duration, 10) || 1,
         max_guests: parseInt(formData.max_guests, 10),
         images: allImageUrls,
         destination_ids: formData.destination_ids,
@@ -227,7 +230,7 @@ export default function TripForm({
   }
 
   return (
-    <Card>
+    <Card className="p-0!">
       <CardContent className="p-6">
         {error && (
           <ErrorDisplay
@@ -438,16 +441,20 @@ export default function TripForm({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <Label htmlFor="refundable">قابل للاسترداد</Label>
-                <Switch
-                  dir="rtl"
+              <div className="flex items-center gap-2">
+                <Checkbox
                   id="refundable"
                   checked={formData.refundable}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, refundable: checked })
+                    setFormData({ ...formData, refundable: checked === true })
                   }
                 />
+                <Label
+                  htmlFor="refundable"
+                  className="cursor-pointer font-normal"
+                >
+                  قابل للاسترداد
+                </Label>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
@@ -497,28 +504,38 @@ export default function TripForm({
               الجدول الزمني
             </h2>
             <div className="grid gap-4">
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="from">من تاريخ</Label>
-                  <Input
-                    id="from"
-                    type="date"
-                    value={formData.from}
-                    onChange={(e) =>
-                      setFormData({ ...formData, from: e.target.value })
-                    }
+                  <Label>من تاريخ</Label>
+                  <DateTimePicker
+                    value={fromDate}
+                    onChange={setFromDate}
+                    placeholder="اختر تاريخ البدء"
                     required
+                    id="from"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="to">إلى تاريخ</Label>
-                  <Input
+                  <Label>إلى تاريخ</Label>
+                  <DateTimePicker
+                    value={toDate}
+                    onChange={setToDate}
+                    placeholder="اختر تاريخ الانتهاء"
                     id="to"
-                    type="date"
-                    value={formData.to}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="duration">المدة (أيام)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min={1}
+                    value={formData.duration}
                     onChange={(e) =>
-                      setFormData({ ...formData, to: e.target.value })
+                      setFormData({ ...formData, duration: e.target.value })
                     }
+                    placeholder="1"
+                    required
                   />
                 </div>
                 <div className="space-y-2">

@@ -30,7 +30,7 @@ function PopoverContent({
         align={align}
         sideOffset={sideOffset}
         className={cn(
-          "src:bg-background src:text-foreground src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:data-[side=bottom]:slide-in-from-top-2 src:data-[side=left]:slide-in-from-right-2 src:data-[side=right]:slide-in-from-left-2 src:data-[side=top]:slide-in-from-bottom-2 src:z-50 src:w-96 src:origin-(--radix-popover-content-transform-origin) src:rounded-md src:border src:p-4 src:shadow-md src:outline-hidden",
+          "src:bg-background src:text-foreground src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:data-[side=bottom]:slide-in-from-top-2 src:data-[side=left]:slide-in-from-right-2 src:data-[side=right]:slide-in-from-left-2 src:data-[side=top]:slide-in-from-bottom-2 src:z-50 md:src:w-96 src:w-72 src:origin-(--radix-popover-content-transform-origin) src:rounded-md src:border src:p-4 src:shadow-md src:outline-hidden",
           className,
         )}
         {...props}

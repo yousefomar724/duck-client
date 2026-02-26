@@ -209,6 +209,7 @@ export default function AdminTripsPage() {
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">التاريخ</TableHead>
                   <TableHead className="text-right">عدد الضيوف</TableHead>
+                  <TableHead className="text-right">المدة</TableHead>
                   <TableHead className="text-right">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
@@ -217,6 +218,7 @@ export default function AdminTripsPage() {
                   const supplier = suppliers.find(
                     (s) => s.id === trip.supplier_id,
                   )
+                  const duration = trip.duration ?? 1
                   return (
                     <TableRow
                       key={trip.id}
@@ -236,6 +238,9 @@ export default function AdminTripsPage() {
                         {formatDate(trip.from)}
                       </TableCell>
                       <TableCell>{trip.max_guests}</TableCell>
+                      <TableCell>
+                        {duration} {duration === 1 ? "يوم" : "أيام"}
+                      </TableCell>
                       <TableCell>
                         <DropdownMenu dir="rtl">
                           <DropdownMenuTrigger asChild>

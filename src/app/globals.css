@@ -128,7 +128,7 @@
 
   html {
     /* scroll-snap-type: y mandatory; */
-    scroll-behavior: smooth;
+    /* scroll-behavior: smooth; */
     overflow-x: hidden;
   }
 
@@ -161,5 +161,26 @@
   }
   .text-shadow-sm {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Scrollbar styled to match duck brand (navy/cyan) */
+  .scrollbar-duck {
+    scrollbar-width: thin;
+    scrollbar-color: var(--duck-cyan) var(--duck-navy-deep);
+  }
+  .scrollbar-duck::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-duck::-webkit-scrollbar-track {
+    background: var(--duck-navy-deep);
+    border-radius: var(--radius-full);
+  }
+  .scrollbar-duck::-webkit-scrollbar-thumb {
+    background: var(--duck-cyan);
+    border-radius: var(--radius-full);
+  }
+  .scrollbar-duck::-webkit-scrollbar-thumb:hover {
+    background: var(--duck-cyan-light);
   }
 }
