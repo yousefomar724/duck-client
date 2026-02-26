@@ -59,3 +59,21 @@ export async function getMe(): Promise<ApiResponse<User>> {
     method: 'GET',
   });
 }
+
+export async function activateUser(
+  userId: number,
+  activate: boolean,
+): Promise<ApiResponse<{ message: string }>> {
+  return apiClient<{ message: string }>(
+    `/auth/activate?id=${userId}&activate=${activate}`,
+    { method: 'PATCH' },
+  );
+}
+
+export async function deleteUser(
+  userId: number,
+): Promise<ApiResponse<{ message: string }>> {
+  return apiClient<{ message: string }>(`/auth/delete?id=${userId}`, {
+    method: 'PATCH',
+  });
+}

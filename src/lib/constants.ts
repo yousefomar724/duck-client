@@ -4,6 +4,7 @@ import {
   Wallet,
   CalendarCheck,
   Ship,
+  Users,
   type LucideIcon,
 } from "lucide-react"
 import type { BookingStatus, PayoutStatus } from "./types"
@@ -39,6 +40,11 @@ export const adminNavItems: NavItem[] = [
     title: "الحجوزات",
     href: "/admin/bookings",
     icon: CalendarCheck,
+  },
+  {
+    title: "الموردين",
+    href: "/admin/suppliers",
+    icon: Users,
   },
 ]
 

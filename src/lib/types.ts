@@ -18,6 +18,7 @@ export interface Supplier {
   about: string | { ar: string; en: string }
   icon: string
   rate: number
+  active?: boolean
 }
 
 export interface Trip {
