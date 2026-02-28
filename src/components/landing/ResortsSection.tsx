@@ -39,10 +39,10 @@ export default function ResortsSection() {
     typeof value === "string" ? value : value?.ar || value?.en || fallback
 
   const [destinations, setDestinations] = useState<Destination[]>([])
-  const [selectedDestination, setSelectedDestination] = useState<Destination | null>(
-    null,
-  )
-  const [dialogCarouselApi, setDialogCarouselApi] = useState<CarouselApi | null>(null)
+  const [selectedDestination, setSelectedDestination] =
+    useState<Destination | null>(null)
+  const [dialogCarouselApi, setDialogCarouselApi] =
+    useState<CarouselApi | null>(null)
   const [dialogCarouselIndex, setDialogCarouselIndex] = useState(0)
   const dialogCarouselApiRef = useRef<CarouselApi | null>(null)
   const [loading, setLoading] = useState(true)
@@ -109,9 +109,12 @@ export default function ResortsSection() {
 
   useEffect(() => {
     if (!dialogCarouselApi) return
-    const handler = () => setDialogCarouselIndex(dialogCarouselApi.selectedScrollSnap())
+    const handler = () =>
+      setDialogCarouselIndex(dialogCarouselApi.selectedScrollSnap())
     dialogCarouselApi.on("select", handler)
-    queueMicrotask(() => setDialogCarouselIndex(dialogCarouselApi.selectedScrollSnap()))
+    queueMicrotask(() =>
+      setDialogCarouselIndex(dialogCarouselApi.selectedScrollSnap()),
+    )
     return () => {
       dialogCarouselApi.off("select", handler)
     }
@@ -290,14 +293,14 @@ export default function ResortsSection() {
       <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent
           className={cn(
-            "sm:max-w-2xl p-0 overflow-hidden text-right",
-            "bg-duck-navy-deep text-white border-none",
+            "sm:max-w-2xl! p-0! overflow-hidden text-right",
+            "bg-duck-navy-deep! text-white border-none",
           )}
         >
-          {/* Image carousel */}
+          {/* Image carousel - structure matches LocationDetailPopover */}
           <div
             dir="ltr"
-            className="relative w-full aspect-2/1 sm:aspect-16/10 shrink-0 overflow-hidden"
+            className="relative w-full aspect-2/1 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
           >
             <Carousel
               setApi={setDialogCarouselApi}
@@ -305,30 +308,19 @@ export default function ResortsSection() {
               className="h-full w-full relative"
             >
               <CarouselContent className="h-full ms-0 min-h-full">
-                {displayImages.map((imageUrl, i) => {
-                  const isExternal = imageUrl.startsWith("http")
-                  return (
-                    <CarouselItem key={i} className="h-full ps-0">
-                      <div className="relative h-full w-full">
-                        {isExternal ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- API image URL may be external
-                          <img
-                            src={imageUrl}
-                            alt={`${selectedDestinationName} - صورة ${i + 1}`}
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Image
-                            src={imageUrl}
-                            alt={`${selectedDestinationName} - صورة ${i + 1}`}
-                            fill
-                            className="object-cover"
-                          />
-                        )}
-                      </div>
-                    </CarouselItem>
-                  )
-                })}
+                {displayImages.map((imageUrl, i) => (
+                  <CarouselItem key={i} className="h-full ps-0">
+                    <div className="relative h-full w-full">
+                      <Image
+                        src={imageUrl}
+                        alt={`${selectedDestinationName} - صورة ${i + 1}`}
+                        fill
+                        className="object-cover"
+                        unoptimized={imageUrl.startsWith("http")}
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
               </CarouselContent>
               {hasMultipleImages && (
                 <>
@@ -365,7 +357,9 @@ export default function ResortsSection() {
                         : "bg-white/50 hover:bg-white/70",
                     )}
                     aria-label={`صورة ${i + 1}`}
-                    aria-current={i === dialogCarouselIndex ? "true" : undefined}
+                    aria-current={
+                      i === dialogCarouselIndex ? "true" : undefined
+                    }
                   />
                 ))}
               </div>
@@ -410,7 +404,8 @@ export default function ResortsSection() {
                       key={activity}
                       className="px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold"
                     >
-                      {ACTIVITY_LABELS[activity as DestinationActivity] ?? activity}
+                      {ACTIVITY_LABELS[activity as DestinationActivity] ??
+                        activity}
                     </span>
                   ))}
                 </div>

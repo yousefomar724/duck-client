@@ -8,8 +8,15 @@ import Link from "next/link"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { getTrips } from "@/lib/api/trips"
 import type { Trip } from "@/lib/types"
-import { getTripImage, resolveImageUrl } from "@/lib/image-utils"
+import { getTripImage, getTripImages, resolveImageUrl } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 export default function OffersSection() {
   const getLocalizedText = (value: any, fallback = "") =>
@@ -116,9 +123,19 @@ export default function OffersSection() {
               trips.map((trip) => {
                 const tripName = getLocalizedText(trip.name, "رحلة")
                 const tripDescription = getLocalizedText(trip.description)
-                const rawImage = getTripImage(trip.images)
-                const imageUrl = resolveImageUrl(rawImage) ?? placeholderImage
-                const isExternal = imageUrl.startsWith("http")
+                const rawImages = getTripImages(trip.images)
+                const fallbackImage = getTripImage(trip.images)
+                const imageUrls =
+                  rawImages.length > 0
+                    ? rawImages
+                        .map((raw) => resolveImageUrl(raw) ?? placeholderImage)
+                        .filter(Boolean)
+                    : [
+                        resolveImageUrl(fallbackImage) ?? placeholderImage,
+                      ].filter(Boolean)
+                const displayUrls =
+                  imageUrls.length > 0 ? imageUrls : [placeholderImage]
+                const hasMultipleImages = displayUrls.length > 1
                 const supplierName =
                   typeof trip.supplier?.name === "string"
                     ? trip.supplier?.name
@@ -131,23 +148,55 @@ export default function OffersSection() {
                     key={trip.id}
                     className="flex-[0_0_90%] md:max-w-280 min-w-0 relative h-[500px] rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row first:ms-6 group"
                   >
-                    {/* Image Side */}
-                    <div className="w-full md:w-2/3 relative h-full overflow-hidden">
-                      {isExternal ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- API image URL may be external
-                        <img
-                          src={imageUrl}
-                          alt={tripName}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <Image
-                          src={imageUrl}
-                          alt={tripName}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      )}
+                    {/* Image Side - Carousel (structure matches LocationDetailPopover) */}
+                    <div
+                      dir="ltr"
+                      className="w-full md:w-2/3 relative h-full overflow-hidden **:data-[slot=carousel-content]:h-full"
+                    >
+                      <Carousel
+                        opts={{
+                          align: "start",
+                          loop: true,
+                          direction: "ltr",
+                        }}
+                        className="h-full w-full relative"
+                      >
+                        <CarouselContent className="h-full ms-0 min-h-full">
+                          {displayUrls.map((imageUrl, i) => (
+                            <CarouselItem key={i} className="h-full ps-0">
+                              <div className="relative h-full w-full">
+                                <Image
+                                  src={imageUrl}
+                                  alt={`${tripName} - صورة ${i + 1}`}
+                                  fill
+                                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                  unoptimized={imageUrl.startsWith("http")}
+                                />
+                              </div>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                        {hasMultipleImages && (
+                          <>
+                            <CarouselPrevious
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                              aria-label="السابق"
+                            >
+                              <ChevronLeft className="size-4" />
+                            </CarouselPrevious>
+                            <CarouselNext
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                              aria-label="التالي"
+                            >
+                              <ChevronRight className="size-4" />
+                            </CarouselNext>
+                          </>
+                        )}
+                      </Carousel>
                     </div>
 
                     {/* Text Side */}

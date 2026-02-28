@@ -43,3 +43,14 @@ export function getTripImage(
   const values = Object.values(images);
   return values[0] ?? null;
 }
+
+/**
+ * Extracts all images from Trip.images (array or object) for carousel display.
+ */
+export function getTripImages(
+  images?: string[] | { [key: string]: string },
+): string[] {
+  if (!images) return [];
+  if (Array.isArray(images)) return images.filter(Boolean);
+  return Object.values(images).filter(Boolean);
+}
