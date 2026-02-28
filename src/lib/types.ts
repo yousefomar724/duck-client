@@ -127,6 +127,7 @@ export interface RegisterInput {
   first_name: string
   last_name: string
   phone_number?: string
+  role?: number // 1 = supplier (default for /register page)
 }
 
 export interface CreateBookingRequest {

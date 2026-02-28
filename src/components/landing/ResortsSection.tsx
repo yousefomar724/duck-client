@@ -2,9 +2,9 @@
 "use client"
 
 import useEmblaCarousel from "embla-carousel-react"
-import { useCallback, useState, useEffect } from "react"
+import { useCallback, useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { getDestinations } from "@/lib/api/destinations"
 import type { Destination } from "@/lib/types"
 import { resolveImageUrl } from "@/lib/image-utils"
@@ -15,6 +15,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel"
+import { cn } from "@/lib/utils"
+import { ACTIVITY_LABELS } from "@/components/map/map-data"
+import type { DestinationActivity } from "@/lib/types"
+
+function getDisplayImages(destination: Destination | null): string[] {
+  if (!destination) return []
+  const primary = destination.image
+  const extras = destination.images ?? []
+  return primary ? [primary, ...extras] : extras
+}
 
 export default function ResortsSection() {
   const getLocalizedText = (value: any, fallback = "") =>
@@ -24,6 +42,9 @@ export default function ResortsSection() {
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(
     null,
   )
+  const [dialogCarouselApi, setDialogCarouselApi] = useState<CarouselApi | null>(null)
+  const [dialogCarouselIndex, setDialogCarouselIndex] = useState(0)
+  const dialogCarouselApiRef = useRef<CarouselApi | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -82,6 +103,34 @@ export default function ResortsSection() {
     emblaApi.on("reInit", onSelect)
   }, [emblaApi, onSelect])
 
+  useEffect(() => {
+    dialogCarouselApiRef.current = dialogCarouselApi
+  }, [dialogCarouselApi])
+
+  useEffect(() => {
+    if (!dialogCarouselApi) return
+    const handler = () => setDialogCarouselIndex(dialogCarouselApi.selectedScrollSnap())
+    dialogCarouselApi.on("select", handler)
+    queueMicrotask(() => setDialogCarouselIndex(dialogCarouselApi.selectedScrollSnap()))
+    return () => {
+      dialogCarouselApi.off("select", handler)
+    }
+  }, [dialogCarouselApi])
+
+  useEffect(() => {
+    if (!selectedDestination || !dialogCarouselApi) return
+    let cancelled = false
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) dialogCarouselApi.reInit()
+      })
+    })
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(id)
+    }
+  }, [selectedDestination, dialogCarouselApi])
+
   const placeholderImage = "/resort.webp"
   const selectedDestinationName = getLocalizedText(
     selectedDestination?.name,
@@ -90,10 +139,20 @@ export default function ResortsSection() {
   const selectedDestinationDescription = getLocalizedText(
     selectedDestination?.description,
   )
-  const selectedDestinationImageUrl =
-    resolveImageUrl(selectedDestination?.image) ?? placeholderImage
-  const selectedDestinationImageIsExternal =
-    selectedDestinationImageUrl.startsWith("http")
+  const dialogImages = getDisplayImages(selectedDestination)
+  const displayImages =
+    dialogImages.length > 0
+      ? dialogImages.map((src) => resolveImageUrl(src) ?? placeholderImage)
+      : [placeholderImage]
+  const hasMultipleImages = displayImages.length > 1
+  const isDialogOpen = selectedDestination !== null
+
+  const handleDialogClose = useCallback((open: boolean) => {
+    if (!open) {
+      dialogCarouselApiRef.current?.scrollTo(0)
+      setSelectedDestination(null)
+    }
+  }, [])
 
   return (
     <section id="locations" className="bg-dark-bg py-20 overflow-hidden">
@@ -228,44 +287,152 @@ export default function ResortsSection() {
         </div>
       )}
 
-      <Dialog
-        open={selectedDestination !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedDestination(null)
-        }}
-      >
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden text-right">
-          <div className="relative h-56 sm:h-72 bg-black/10">
-            {selectedDestinationImageIsExternal ? (
-              // eslint-disable-next-line @next/next/no-img-element -- API image URL may be external
-              <img
-                src={selectedDestinationImageUrl}
-                alt={selectedDestinationName}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <Image
-                src={selectedDestinationImageUrl}
-                alt={selectedDestinationName}
-                fill
-                className="object-cover"
-              />
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent
+          className={cn(
+            "sm:max-w-2xl p-0 overflow-hidden text-right",
+            "bg-duck-navy-deep text-white border-none",
+          )}
+        >
+          {/* Image carousel */}
+          <div
+            dir="ltr"
+            className="relative w-full aspect-2/1 sm:aspect-16/10 shrink-0 overflow-hidden"
+          >
+            <Carousel
+              setApi={setDialogCarouselApi}
+              opts={{ align: "start", loop: true, direction: "ltr" }}
+              className="h-full w-full relative"
+            >
+              <CarouselContent className="h-full ms-0 min-h-full">
+                {displayImages.map((imageUrl, i) => {
+                  const isExternal = imageUrl.startsWith("http")
+                  return (
+                    <CarouselItem key={i} className="h-full ps-0">
+                      <div className="relative h-full w-full">
+                        {isExternal ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- API image URL may be external
+                          <img
+                            src={imageUrl}
+                            alt={`${selectedDestinationName} - صورة ${i + 1}`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Image
+                            src={imageUrl}
+                            alt={`${selectedDestinationName} - صورة ${i + 1}`}
+                            fill
+                            className="object-cover"
+                          />
+                        )}
+                      </div>
+                    </CarouselItem>
+                  )
+                })}
+              </CarouselContent>
+              {hasMultipleImages && (
+                <>
+                  <CarouselPrevious
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                    aria-label="السابق"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </CarouselPrevious>
+                  <CarouselNext
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                    aria-label="التالي"
+                  >
+                    <ChevronRight className="size-4" />
+                  </CarouselNext>
+                </>
+              )}
+            </Carousel>
+            {hasMultipleImages && (
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+                {displayImages.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => dialogCarouselApi?.scrollTo(i)}
+                    className={cn(
+                      "w-2 h-2 rounded-full transition-colors cursor-pointer",
+                      i === dialogCarouselIndex
+                        ? "bg-white"
+                        : "bg-white/50 hover:bg-white/70",
+                    )}
+                    aria-label={`صورة ${i + 1}`}
+                    aria-current={i === dialogCarouselIndex ? "true" : undefined}
+                  />
+                ))}
+              </div>
             )}
+            <div className="absolute inset-0 bg-linear-to-t from-duck-navy-deep via-transparent to-transparent pointer-events-none" />
           </div>
 
-          <div className="p-6">
-            <DialogHeader className="mb-4">
-              <DialogTitle className="text-2xl">{selectedDestinationName}</DialogTitle>
-              {selectedDestination?.trip_count != null &&
-                selectedDestination.trip_count > 0 && (
-                  <div className="text-sm text-text-muted">
-                    عدد الرحلات المتاحة: {selectedDestination.trip_count}
-                  </div>
-                )}
-            </DialogHeader>
-            <DialogDescription className="text-base leading-8 text-text-body whitespace-pre-line">
-              {selectedDestinationDescription || "لا يوجد وصف متاح حالياً."}
-            </DialogDescription>
+          {/* Content section */}
+          <div className="flex flex-col min-h-0 flex-1">
+            <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
+              {/* Name + Status badge */}
+              <div className="flex flex-col gap-2">
+                <DialogHeader className="mb-0">
+                  <DialogTitle className="text-white text-xl font-bold leading-tight">
+                    {selectedDestinationName}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedDestination?.public_status === "coming-soon" ? (
+                    <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-yellow/20 text-duck-yellow animate-pulse">
+                      الافتتاح قريباً
+                    </span>
+                  ) : (
+                    <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-cyan/20 text-duck-cyan">
+                      متاح الآن
+                    </span>
+                  )}
+                  {selectedDestination?.trip_count != null &&
+                    selectedDestination.trip_count > 0 && (
+                      <span className="text-sm text-white/70">
+                        عدد الرحلات المتاحة: {selectedDestination.trip_count}
+                      </span>
+                    )}
+                </div>
+              </div>
+
+              {/* Activities */}
+              {selectedDestination?.activities?.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedDestination.activities.map((activity) => (
+                    <span
+                      key={activity}
+                      className="px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold"
+                    >
+                      {ACTIVITY_LABELS[activity as DestinationActivity] ?? activity}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Operating hours */}
+              {selectedDestination?.operating_hours ? (
+                <div className="flex items-center gap-2 text-white/70 text-xs">
+                  <Clock className="size-3.5 shrink-0 text-duck-cyan/80" />
+                  <span>
+                    ساعات العمل: {selectedDestination.operating_hours}
+                  </span>
+                </div>
+              ) : null}
+
+              {/* Description */}
+              <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                <DialogDescription className="text-white/80 text-sm leading-relaxed whitespace-pre-line ps-1">
+                  {selectedDestinationDescription || "لا يوجد وصف متاح حالياً."}
+                </DialogDescription>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

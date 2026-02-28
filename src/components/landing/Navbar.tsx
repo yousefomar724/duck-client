@@ -25,7 +25,7 @@ export default function Navbar() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const { scrollY } = useScroll()
   const t = useTranslations("navbar")
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, effectiveRole } = useAuth()
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() ?? 0
@@ -184,7 +184,7 @@ export default function Navbar() {
                       >
                         <Link
                           href={
-                            user?.role === 2
+                            effectiveRole === 2
                               ? "/admin/dashboard"
                               : "/supplier/my-trips"
                           }
@@ -303,7 +303,7 @@ export default function Navbar() {
             {isAuthenticated ? (
               <Link
                 href={
-                  user?.role === 2 ? "/admin/dashboard" : "/supplier/my-trips"
+                  effectiveRole === 2 ? "/admin/dashboard" : "/supplier/my-trips"
                 }
                 className={cn("hidden! md:flex!", actionButtonClass)}
               >

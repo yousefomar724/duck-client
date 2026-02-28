@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { useForm } from "react-hook-form"
@@ -46,7 +46,7 @@ function getLocalizedText(value: any, fallback = ""): string {
     : value?.ar || value?.en || fallback
 }
 
-export default function BookPage() {
+function BookPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tripParam = searchParams.get("trip")
@@ -471,5 +471,21 @@ export default function BookPage() {
 
       <Footer />
     </>
+  )
+}
+
+function BookPageFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-pulse text-text-muted">جاري التحميل...</div>
+    </div>
+  )
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={<BookPageFallback />}>
+      <BookPageContent />
+    </Suspense>
   )
 }

@@ -8,17 +8,27 @@ import React, {
   ReactNode,
 } from "react"
 import { GoogleOAuthProvider } from "@react-oauth/google"
-import { setToken, getToken, clearToken, isTokenExpired } from "./token"
+import { setToken, getToken, clearToken, isTokenExpired, decodeToken } from "./token"
 import * as authApi from "@/lib/api/auth"
 import type { User, RegisterInput } from "@/lib/types"
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
+
+/** Resolve effective role: user.role (coerced to number) or JWT token role as fallback */
+function getEffectiveRole(user: User | null, token: string | null): number | null {
+  const fromUser = user?.role != null ? Number(user.role) : NaN
+  if (!Number.isNaN(fromUser)) return fromUser
+  const decoded = token ? decodeToken(token) : null
+  return decoded?.role ?? null
+}
 
 export interface AuthContextType {
   user: User | null
   token: string | null
   isLoading: boolean
   isAuthenticated: boolean
+  /** Resolved role (0=user, 1=supplier, 2=admin) from user or JWT token */
+  effectiveRole: number | null
   login: (email: string, password: string) => Promise<{ error?: string; user?: User }>
   loginWithGoogle: (googleToken: string) => Promise<{ error?: string; user?: User }>
   register: (input: RegisterInput) => Promise<{ error?: string }>
@@ -160,11 +170,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const effectiveRole = getEffectiveRole(user, token)
+
   const value: AuthContextType = {
     user,
     token,
     isLoading,
     isAuthenticated: !!user && !!token,
+    effectiveRole,
     login,
     loginWithGoogle,
     register,

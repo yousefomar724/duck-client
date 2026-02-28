@@ -4,41 +4,51 @@ import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getToken, decodeToken } from '@/lib/auth/token';
 
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles: number[];
 }
 
-function normalizeRole(role: unknown): number | null {
-  if (role === null || role === undefined) return null;
-  const n = Number(role);
-  return Number.isNaN(n) ? null : n;
+/** Supplier routes: allow role 1, users with supplier_id, or JWT token with role 1 (fallback when user.role ambiguous) */
+function hasAccess(
+  user: { role?: unknown; supplier_id?: number } | null,
+  allowedRoles: number[],
+): boolean {
+  if (!user) return false;
+
+  const normalizeRole = (r: unknown): number | null => {
+    if (r === null || r === undefined) return null;
+    const n = Number(r);
+    return Number.isNaN(n) ? null : n;
+  };
+
+  const role = normalizeRole(user.role);
+  if (role != null && allowedRoles.includes(role)) return true;
+  if (allowedRoles.includes(1) && user.supplier_id != null) return true;
+
+  const token = typeof window !== 'undefined' ? getToken() : null;
+  const decoded = token ? decodeToken(token) : null;
+  if (decoded && allowedRoles.includes(decoded.role)) return true;
+
+  return false;
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
-  const userRole = normalizeRole(user?.role);
+  const canAccess = hasAccess(user, allowedRoles);
 
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7571/ingest/7916041f-fd0d-4d77-93ea-abd7b85f901a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f6d6e2'},body:JSON.stringify({sessionId:'f6d6e2',location:'protected-route.tsx:useEffect',message:'ProtectedRoute check',data:{isLoading,isAuthenticated,userRole,rawRole:user?.role,userRoleType:typeof user?.role,allowedRoles,includesRole:userRole!=null?allowedRoles.includes(userRole):'no-user'},timestamp:Date.now(),hypothesisId:'H1-H3',runId:'post-fix'})}).catch(()=>{});
-    // #endregion
     if (!isLoading) {
       if (!isAuthenticated) {
-        // #region agent log
-        fetch('http://127.0.0.1:7571/ingest/7916041f-fd0d-4d77-93ea-abd7b85f901a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f6d6e2'},body:JSON.stringify({sessionId:'f6d6e2',location:'protected-route.tsx:redirect-login',message:'Redirecting to /login',data:{reason:'not authenticated'},timestamp:Date.now(),hypothesisId:'H3',runId:'post-fix'})}).catch(()=>{});
-        // #endregion
         router.replace('/login');
-      } else if (user && userRole != null && !allowedRoles.includes(userRole)) {
-        // #region agent log
-        fetch('http://127.0.0.1:7571/ingest/7916041f-fd0d-4d77-93ea-abd7b85f901a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f6d6e2'},body:JSON.stringify({sessionId:'f6d6e2',location:'protected-route.tsx:redirect-landing',message:'Redirecting to / (landing)',data:{userRole,rawRole:user.role,allowedRoles},timestamp:Date.now(),hypothesisId:'H1',runId:'post-fix'})}).catch(()=>{});
-        // #endregion
+      } else if (user && !canAccess) {
         router.replace('/');
       }
     }
-  }, [isLoading, isAuthenticated, user, userRole, allowedRoles, router]);
+  }, [isLoading, isAuthenticated, user, canAccess, allowedRoles, router]);
 
   if (isLoading) {
     return (
@@ -49,7 +59,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     );
   }
 
-  if (!isAuthenticated || !user || userRole == null || !allowedRoles.includes(userRole)) {
+  if (!isAuthenticated || !user || !canAccess) {
     return null;
   }
 

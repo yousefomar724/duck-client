@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { GoogleLogin } from "@react-oauth/google"
 import {
@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth/auth-context"
 
-function getRedirectPath(returnUrl: string | null, userRole?: number): string {
+function getRedirectPath(returnUrl: string | null, userRole?: unknown): string {
   if (returnUrl) {
     try {
       const decoded = decodeURIComponent(returnUrl)
@@ -26,14 +26,14 @@ function getRedirectPath(returnUrl: string | null, userRole?: number): string {
       // invalid URL, fall through to default
     }
   }
-  if (userRole === 2) return "/admin/dashboard"
-  if (userRole === 1) return "/supplier/my-trips"
+  const role = userRole != null ? Number(userRole) : NaN
+  if (role === 2) return "/admin/dashboard"
+  if (role === 1) return "/supplier/my-trips"
   return "/book"
 }
 
-export default function LoginPage() {
+function LoginFormContent() {
   const { login, loginWithGoogle } = useAuth()
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -53,10 +53,7 @@ export default function LoginPage() {
     } else {
       const returnUrl = searchParams.get("returnUrl")
       const path = getRedirectPath(returnUrl, user?.role)
-      // #region agent log
-      fetch('http://127.0.0.1:7571/ingest/7916041f-fd0d-4d77-93ea-abd7b85f901a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f6d6e2'},body:JSON.stringify({sessionId:'f6d6e2',location:'login/page.tsx:handleLogin',message:'Login success, redirecting',data:{path,userRole:user?.role,userRoleType:typeof user?.role},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
-      router.replace(path)
+      window.location.href = path
     }
   }
 
@@ -77,10 +74,7 @@ export default function LoginPage() {
     } else {
       const returnUrl = searchParams.get("returnUrl")
       const path = getRedirectPath(returnUrl, user?.role)
-      // #region agent log
-      fetch('http://127.0.0.1:7571/ingest/7916041f-fd0d-4d77-93ea-abd7b85f901a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f6d6e2'},body:JSON.stringify({sessionId:'f6d6e2',location:'login/page.tsx:handleGoogleSuccess',message:'Google login success, redirecting',data:{path,userRole:user?.role},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
-      router.replace(path)
+      window.location.href = path
     }
   }
 
@@ -190,5 +184,29 @@ export default function LoginPage() {
         </p>
       </CardContent>
     </Card>
+  )
+}
+
+function LoginFormFallback() {
+  return (
+    <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl animate-pulse">
+      <CardHeader className="space-y-1">
+        <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto" />
+        <div className="h-4 bg-gray-100 rounded w-3/4 mx-auto" />
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="h-10 bg-gray-100 rounded" />
+        <div className="h-10 bg-gray-100 rounded" />
+        <div className="h-10 bg-gray-100 rounded" />
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFormFallback />}>
+      <LoginFormContent />
+    </Suspense>
   )
 }

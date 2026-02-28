@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { GoogleLogin } from "@react-oauth/google"
 import {
@@ -19,7 +18,6 @@ import { useAuth } from "@/lib/auth/auth-context"
 
 export default function RegisterPage() {
   const { register, loginWithGoogle } = useAuth()
-  const router = useRouter()
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -75,13 +73,14 @@ export default function RegisterPage() {
       email: formData.email,
       phone_number: formData.phone_number || undefined,
       password: formData.password,
+      role: 1, // supplier - required for /supplier/* access
     })
 
     if (registerError) {
       setError(registerError)
       setIsLoading(false)
     } else {
-      router.replace("/supplier/my-trips")
+      window.location.href = "/supplier/my-trips"
     }
   }
 
@@ -100,7 +99,7 @@ export default function RegisterPage() {
       setError(googleError)
       setIsGoogleLoading(false)
     } else {
-      router.replace("/supplier/my-trips")
+      window.location.href = "/supplier/my-trips"
     }
   }
 
