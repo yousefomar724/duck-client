@@ -217,7 +217,7 @@ export default function Navbar() {
                     asChild
                   >
                     <Link
-                      href="#"
+                      href="/book"
                       className="cursor-pointer"
                       onClick={() => setSheetOpen(false)}
                     >

@@ -19,8 +19,8 @@ export interface AuthContextType {
   token: string | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<{ error?: string }>
-  loginWithGoogle: (googleToken: string) => Promise<{ error?: string }>
+  login: (email: string, password: string) => Promise<{ error?: string; user?: User }>
+  loginWithGoogle: (googleToken: string) => Promise<{ error?: string; user?: User }>
   register: (input: RegisterInput) => Promise<{ error?: string }>
   logout: () => void
 }
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (
     email: string,
     password: string,
-  ): Promise<{ error?: string }> => {
+  ): Promise<{ error?: string; user?: User }> => {
     setIsLoading(true)
     const { data, error } = await authApi.login(email, password)
 
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setIsLoading(false)
-      return {}
+      return { user: userData ?? undefined }
     }
 
     setIsLoading(false)
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = async (
     googleToken: string,
-  ): Promise<{ error?: string }> => {
+  ): Promise<{ error?: string; user?: User }> => {
     setIsLoading(true)
     const { data, error } = await authApi.loginWithGoogle(googleToken)
 
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setIsLoading(false)
-      return {}
+      return { user: userData ?? undefined }
     }
 
     setIsLoading(false)

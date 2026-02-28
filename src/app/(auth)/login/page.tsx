@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { GoogleLogin } from "@react-oauth/google"
 import {
@@ -17,9 +17,24 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth/auth-context"
 
+function getRedirectPath(returnUrl: string | null, userRole?: number): string {
+  if (returnUrl) {
+    try {
+      const decoded = decodeURIComponent(returnUrl)
+      if (decoded.startsWith("/")) return decoded
+    } catch {
+      // invalid URL, fall through to default
+    }
+  }
+  if (userRole === 2) return "/admin/dashboard"
+  if (userRole === 1) return "/supplier/my-trips"
+  return "/book"
+}
+
 export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -31,12 +46,17 @@ export default function LoginPage() {
     setIsLoading(true)
     setError(null)
 
-    const { error: loginError } = await login(email, password)
+    const { error: loginError, user } = await login(email, password)
     if (loginError) {
       setError(loginError)
       setIsLoading(false)
     } else {
-      router.replace("/supplier/my-trips")
+      const returnUrl = searchParams.get("returnUrl")
+      const path = getRedirectPath(returnUrl, user?.role)
+      // #region agent log
+      fetch('http://127.0.0.1:7571/ingest/7916041f-fd0d-4d77-93ea-abd7b85f901a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f6d6e2'},body:JSON.stringify({sessionId:'f6d6e2',location:'login/page.tsx:handleLogin',message:'Login success, redirecting',data:{path,userRole:user?.role,userRoleType:typeof user?.role},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
+      router.replace(path)
     }
   }
 
@@ -47,7 +67,7 @@ export default function LoginPage() {
     setIsGoogleLoading(true)
     setError(null)
 
-    const { error: googleError } = await loginWithGoogle(
+    const { error: googleError, user } = await loginWithGoogle(
       credentialResponse.credential,
     )
 
@@ -55,7 +75,12 @@ export default function LoginPage() {
       setError(googleError)
       setIsGoogleLoading(false)
     } else {
-      router.replace("/supplier/my-trips")
+      const returnUrl = searchParams.get("returnUrl")
+      const path = getRedirectPath(returnUrl, user?.role)
+      // #region agent log
+      fetch('http://127.0.0.1:7571/ingest/7916041f-fd0d-4d77-93ea-abd7b85f901a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f6d6e2'},body:JSON.stringify({sessionId:'f6d6e2',location:'login/page.tsx:handleGoogleSuccess',message:'Google login success, redirecting',data:{path,userRole:user?.role},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
+      router.replace(path)
     }
   }
 
