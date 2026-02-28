@@ -2,7 +2,7 @@
 "use client"
 
 import { Suspense, useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { z } from "zod/v3"
@@ -41,16 +41,13 @@ const contactSchema = z.object({
 type ContactFormValues = z.infer<typeof contactSchema>
 
 function getLocalizedText(value: any, fallback = ""): string {
-  return typeof value === "string"
-    ? value
-    : value?.ar || value?.en || fallback
+  return typeof value === "string" ? value : value?.ar || value?.en || fallback
 }
 
 function BookPageContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const tripParam = searchParams.get("trip")
-  const { isAuthenticated, isLoading: authLoading, user } = useAuth()
+  const { user } = useAuth()
   const { addToast } = useToast()
 
   const [step, setStep] = useState(1)
@@ -58,15 +55,6 @@ function BookPageContent() {
   const [tripsLoading, setTripsLoading] = useState(true)
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
-
-  // Auth gate
-  useEffect(() => {
-    if (authLoading) return
-    if (!isAuthenticated) {
-      const returnUrl = tripParam ? `/book?trip=${tripParam}` : "/book"
-      router.replace(`/login?returnUrl=${encodeURIComponent(returnUrl)}`)
-    }
-  }, [authLoading, isAuthenticated, router, tripParam])
 
   // Fetch trips
   useEffect(() => {
@@ -138,14 +126,6 @@ function BookPageContent() {
     }
   })
 
-  if (authLoading || !isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-text-muted">جاري التحميل...</div>
-      </div>
-    )
-  }
-
   const placeholderImage = "/offer.webp"
 
   return (
@@ -153,7 +133,9 @@ function BookPageContent() {
       {/* Hero */}
       <section className="bg-duck-navy pt-28 md:pt-44 pb-20 px-4 md:px-10 text-center">
         <div className="max-w-2xl mx-auto">
-          <span className="text-duck-cyan text-base block mb-4">احجز رحلتك</span>
+          <span className="text-duck-cyan text-base block mb-4">
+            احجز رحلتك
+          </span>
           <h1 className="text-white text-4xl md:text-6xl font-bold mb-5">
             خطوات بسيطة لمغامرة لا تُنسى
           </h1>
@@ -216,11 +198,12 @@ function BookPageContent() {
                     لا توجد رحلات متاحة حالياً.
                   </p>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-h-[500px] overflow-y-auto scrollbar-duck">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-2 max-h-[500px] overflow-y-auto scrollbar-duck">
                     {trips.map((trip) => {
                       const name = getLocalizedText(trip.name, "رحلة")
                       const rawImage = getTripImage(trip.images)
-                      const imageUrl = resolveImageUrl(rawImage) ?? placeholderImage
+                      const imageUrl =
+                        resolveImageUrl(rawImage) ?? placeholderImage
                       const isSelected = selectedTrip?.id === trip.id
                       const isExternal = imageUrl.startsWith("http")
                       return (
@@ -264,7 +247,7 @@ function BookPageContent() {
                               {formatCurrency(trip.price, trip.currency)}
                             </p>
                             <p className="text-text-muted text-sm mt-1">
-                              {(trip.duration ?? 1)}{" "}
+                              {trip.duration ?? 1}{" "}
                               {(trip.duration ?? 1) === 1 ? "يوم" : "أيام"}
                             </p>
                           </div>
@@ -331,7 +314,7 @@ function BookPageContent() {
                             رقم الهاتف <span className="text-red-500">*</span>
                           </FormLabel>
                           <FormControl>
-                            <div className="flex flex-wrap gap-3">
+                            <div dir="ltr" className="flex flex-wrap gap-3">
                               {PHONE_PREFIXES.map((prefix) => (
                                 <button
                                   key={prefix}
@@ -343,7 +326,7 @@ function BookPageContent() {
                                       : "border-gray-300 hover:border-duck-cyan"
                                   }`}
                                 >
-                                  +20 {prefix}
+                                  {prefix}
                                 </button>
                               ))}
                             </div>
@@ -417,14 +400,17 @@ function BookPageContent() {
                   <div className="flex justify-between">
                     <span className="text-text-muted">المدة</span>
                     <span>
-                      {(selectedTrip.duration ?? 1)}{" "}
+                      {selectedTrip.duration ?? 1}{" "}
                       {(selectedTrip.duration ?? 1) === 1 ? "يوم" : "أيام"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-muted">المبلغ</span>
                     <span className="font-bold text-duck-cyan">
-                      {formatCurrency(selectedTrip.price, selectedTrip.currency)}
+                      {formatCurrency(
+                        selectedTrip.price,
+                        selectedTrip.currency,
+                      )}
                     </span>
                   </div>
                   <div className="flex justify-between">

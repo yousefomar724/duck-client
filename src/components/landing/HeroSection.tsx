@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import { MessageCircleMore } from "lucide-react"
+import Link from "next/link"
 
 export default function HeroSection() {
   return (
@@ -72,17 +73,14 @@ export default function HeroSection() {
               >
                 تحدث مع فريقنا
               </motion.a> */}
-              <motion.a
-                href="https://wa.me/201550061006"
-                target="_blank"
-                rel="noopener noreferrer"
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.5 }}
                 className="inline-flex items-center justify-center rounded-2xl bg-duck-yellow text-neutral-900 font-bold text-xl px-10 py-3 shadow-xl hover:bg-duck-yellow-hover transition-all duration-200 drop-shadow-lg"
               >
-                احجز
-              </motion.a>
+                <Link href="/book">احجز</Link>
+              </motion.div>
             </div>
           </div>
 
