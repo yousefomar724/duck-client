@@ -45,7 +45,7 @@ export default function Home() {
         <div className="bg-white">
           <ResortsSection />
           <OffersSection />
-          <ExperiencesSection />
+          {/* <ExperiencesSection /> */}
           <LocationSection />
           {/* <WeatherSection /> */}
           <FAQSection />
