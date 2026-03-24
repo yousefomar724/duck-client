@@ -67,7 +67,9 @@ function ResetPasswordContent() {
     return (
       <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center text-duck-navy">تم إعادة التعيين بنجاح</CardTitle>
+          <CardTitle className="text-2xl text-center text-duck-navy">
+            تم إعادة التعيين بنجاح
+          </CardTitle>
           <CardDescription className="text-center text-text-muted">
             تم تحديث كلمة المرور بنجاح، سيتم نقلك إلى صفحة تسجيل الدخول
           </CardDescription>
@@ -91,7 +93,9 @@ function ResetPasswordContent() {
     return (
       <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center text-duck-navy">رابط غير صالح</CardTitle>
+          <CardTitle className="text-2xl text-center text-duck-navy">
+            رابط غير صالح
+          </CardTitle>
           <CardDescription className="text-center text-text-muted">
             رابط إعادة تعيين كلمة المرور غير صالح أو انتهى
           </CardDescription>

@@ -8,3 +8,4 @@ export * as imagesApi from './images';
 export * as destinationsApi from './destinations';
 export * as payoutsApi from './payouts';
 export * as tourGuidesApi from './tour-guides';
+export * as supplierStorageApi from './supplier-storage';

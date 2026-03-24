@@ -39,7 +39,9 @@ export default function ForgotPasswordPage() {
     return (
       <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center text-duck-navy">تم الإرسال بنجاح</CardTitle>
+          <CardTitle className="text-2xl text-center text-duck-navy">
+            تم الإرسال بنجاح
+          </CardTitle>
           <CardDescription className="text-center text-text-muted">
             تحقق من بريدك الإلكتروني لتلقي رابط إعادة تعيين كلمة المرور
           </CardDescription>
@@ -62,7 +64,9 @@ export default function ForgotPasswordPage() {
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center text-duck-navy">نسيت كلمة المرور</CardTitle>
+        <CardTitle className="text-2xl text-center text-duck-navy">
+          نسيت كلمة المرور
+        </CardTitle>
         <CardDescription className="text-center text-text-muted">
           أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور
         </CardDescription>

@@ -47,6 +47,8 @@ export interface Trip {
   created_at?: string
 }
 
+export type ResourceType = "kayak" | "water_cycle" | "sup"
+
 export interface Booking {
   id: number
   session_id: string
@@ -62,6 +64,12 @@ export interface Booking {
   phone_number: string
   status: BookingStatus
   created_at: string
+  /** ISO 8601 date string */
+  booking_date?: string
+  quantity?: number
+  resource_type?: string
+  order_ref?: string
+  order_id?: string
 }
 
 export interface Wallet {
@@ -100,7 +108,17 @@ export interface Payout {
   date: string
 }
 
-export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "FAILED" | "SUCCESS"
+export type BookingStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "CANCELLED"
+  | "FAILED"
+  | "SUCCESS"
+  | "REFUND_PENDING"
+  | "REFUNDED"
+  | "REFUND_FAILED"
+  | "COMPLETED"
+  | "PAID"
 export type PayoutStatus = "pending" | "paid" | "failed"
 export type UserRole = 0 | 1 | 2
 
@@ -116,8 +134,21 @@ export interface TourGuide {
 export interface ImageStorage {
   id: number
   user_id: number
-  supplier_id: number
+  supplier_id?: number
   image_url: string
+}
+
+/** Supplier resource limits (kayak, water_cycle, sup) from GET /supplier-storage/:id */
+export interface SupplierStorage {
+  id: number
+  supplier_id: number
+  supplier?: Supplier
+  /** Parsed JSON map of resource type -> max count */
+  resources: Record<string, number>
+}
+
+export interface SetStorageRequest {
+  resources: Record<string, number>
 }
 
 export interface RegisterInput {
@@ -127,13 +158,18 @@ export interface RegisterInput {
   first_name: string
   last_name: string
   phone_number?: string
-  role?: number // 1 = supplier (default for /register page)
+  role: 0 | 1 // 0 = normal user, 1 = supplier
 }
 
 export interface CreateBookingRequest {
   trip_id: number
   full_name: string
   phone_number: string
+  /** ISO 8601 datetime string */
+  booking_date: string
+  guests: number
+  resource_type: ResourceType
+  quantity: number
 }
 
 export interface CreateTripRequest {

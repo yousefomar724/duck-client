@@ -1,13 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { Suspense, useState, useEffect } from "react"
+import { Suspense, useState, useEffect, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import Image from "next/image"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod/v3"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, ChevronLeft, User } from "lucide-react"
+import { Check, ChevronLeft, ChevronDownIcon, User } from "lucide-react"
+import { format, formatISO, startOfDay } from "date-fns"
+import { arSA } from "date-fns/locale"
+import { arSA as arSADayPicker } from "react-day-picker/locale"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Form,
   FormControl,
@@ -20,7 +36,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { getTrips } from "@/lib/api/trips"
 import * as bookingsApi from "@/lib/api/bookings"
-import type { Trip } from "@/lib/types"
+import type { ResourceType, Trip } from "@/lib/types"
 import { getTripImage, resolveImageUrl } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
 import { useAuth } from "@/lib/auth/auth-context"
@@ -29,6 +45,14 @@ import Footer from "@/components/landing/Footer"
 
 const PHONE_PREFIXES = ["010", "011", "012", "015"] as const
 
+const RESOURCE_TYPES = ["kayak", "water_cycle", "sup"] as const satisfies readonly ResourceType[]
+
+const resourceLabels: Record<ResourceType, string> = {
+  kayak: "كاياك",
+  water_cycle: "دراجة مائية",
+  sup: "سب",
+}
+
 const contactSchema = z.object({
   full_name: z.string().min(2, "الاسم يجب أن يحتوي على حرفين على الأقل"),
   phone_prefix: z.enum(PHONE_PREFIXES),
@@ -36,6 +60,19 @@ const contactSchema = z.object({
     .string()
     .length(8, "رقم الهاتف يجب أن يكون 8 أرقام")
     .regex(/^\d{8}$/, "أدخل 8 أرقام فقط"),
+  booking_date: z.date({
+    required_error: "اختر تاريخ الحجز",
+    invalid_type_error: "تاريخ غير صالح",
+  }),
+  resource_type: z.enum(RESOURCE_TYPES),
+  quantity: z.coerce
+    .number({ invalid_type_error: "أدخل عدداً صحيحاً" })
+    .int()
+    .min(1, "الحد الأدنى 1"),
+  guests: z.coerce
+    .number({ invalid_type_error: "أدخل عدداً صحيحاً" })
+    .int()
+    .min(1, "الحد الأدنى راكب واحد"),
 })
 
 type ContactFormValues = z.infer<typeof contactSchema>
@@ -55,6 +92,24 @@ function BookPageContent() {
   const [tripsLoading, setTripsLoading] = useState(true)
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
+  const [bookingDateOpen, setBookingDateOpen] = useState(false)
+
+  const formSchema = useMemo(
+    () =>
+      contactSchema.superRefine((data, ctx) => {
+        if (
+          selectedTrip &&
+          data.guests > selectedTrip.max_guests
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `الحد الأقصى للضيوف هو ${selectedTrip.max_guests}`,
+            path: ["guests"],
+          })
+        }
+      }),
+    [selectedTrip],
+  )
 
   // Fetch trips
   useEffect(() => {
@@ -78,13 +133,43 @@ function BookPageContent() {
     }
   }, [tripParam])
 
+  const defaultTomorrow = useMemo(() => {
+    const t = new Date()
+    t.setDate(t.getDate() + 1)
+    return startOfDay(t)
+  }, [])
+
   const form = useForm<ContactFormValues>({
-    resolver: zodResolver(contactSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: "",
       phone_prefix: "010",
       phone_suffix: "",
+      booking_date: defaultTomorrow,
+      resource_type: "kayak",
+      quantity: 1,
+      guests: 1,
     },
+  })
+
+  const watchedBookingDate = useWatch({
+    control: form.control,
+    name: "booking_date",
+  })
+  const watchedResourceType = useWatch({
+    control: form.control,
+    name: "resource_type",
+  })
+  const watchedQuantity = useWatch({ control: form.control, name: "quantity" })
+  const watchedGuests = useWatch({ control: form.control, name: "guests" })
+  const watchedFullName = useWatch({ control: form.control, name: "full_name" })
+  const watchedPhonePrefix = useWatch({
+    control: form.control,
+    name: "phone_prefix",
+  })
+  const watchedPhoneSuffix = useWatch({
+    control: form.control,
+    name: "phone_suffix",
   })
 
   const handleUseMyData = () => {
@@ -111,18 +196,33 @@ function BookPageContent() {
       : values.phone_prefix
     const phoneNumber = `+20${prefixDigits}${values.phone_suffix}`
     setSubmitLoading(true)
+    const booking_date = formatISO(startOfDay(values.booking_date))
     const { data, error } = await bookingsApi.createBooking({
       trip_id: selectedTrip.id,
       full_name: values.full_name.trim(),
       phone_number: phoneNumber,
+      booking_date,
+      guests: values.guests,
+      resource_type: values.resource_type,
+      quantity: values.quantity,
     })
     setSubmitLoading(false)
     if (error) {
-      addToast(error, "error")
+      const isConflict =
+        error.toLowerCase().includes("availability") ||
+        error.toLowerCase().includes("no availability") ||
+        error.includes("409")
+      addToast(
+        isConflict
+          ? "لا توجد أماكن كافية لهذا التاريخ أو نوع المعدات. جرّب تاريخاً آخر أو كمية أقل."
+          : error,
+        "error",
+      )
       return
     }
     if (data?.payment_url) {
-      window.location.href = data.payment_url
+      // Navigate to payment gateway (full page redirect)
+      window.location.assign(data.payment_url)
     }
   })
 
@@ -360,6 +460,157 @@ function BookPageContent() {
                       )}
                     />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="booking_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel className="text-text-dark font-medium">
+                          تاريخ الحجز <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Popover
+                          open={bookingDateOpen}
+                          onOpenChange={setBookingDateOpen}
+                        >
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full justify-between font-normal text-right"
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", { locale: arSA })
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    اختر التاريخ
+                                  </span>
+                                )}
+                                <ChevronDownIcon className="ms-2 size-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto overflow-hidden p-0"
+                            align="start"
+                            dir="rtl"
+                          >
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={(d) => {
+                                field.onChange(d)
+                                setBookingDateOpen(false)
+                              }}
+                              disabled={(date) =>
+                                startOfDay(date) < startOfDay(new Date())
+                              }
+                              defaultMonth={field.value}
+                              locale={arSADayPicker}
+                              dir="rtl"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="resource_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-text-dark font-medium">
+                          نوع المعدات <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select
+                          dir="rtl"
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="rounded-lg border-black/20">
+                              <SelectValue placeholder="اختر النوع" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {RESOURCE_TYPES.map((rt) => (
+                              <SelectItem key={rt} value={rt}>
+                                {resourceLabels[rt]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-text-dark font-medium">
+                            الكمية <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              className="rounded-lg border-black/20"
+                              {...field}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value === ""
+                                    ? ""
+                                    : Number(e.target.value),
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="guests"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-text-dark font-medium">
+                            عدد الضيوف <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={selectedTrip?.max_guests ?? undefined}
+                              className="rounded-lg border-black/20"
+                              {...field}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value === ""
+                                    ? ""
+                                    : Number(e.target.value),
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          {selectedTrip ? (
+                            <p className="text-xs text-text-muted">
+                              الحد الأقصى: {selectedTrip.max_guests} ضيف
+                            </p>
+                          ) : null}
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <div className="flex gap-4">
                     <Button
                       type="button"
@@ -405,24 +656,48 @@ function BookPageContent() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">المبلغ</span>
+                    <span className="text-text-muted">تاريخ الحجز</span>
+                    <span>
+                      {watchedBookingDate
+                        ? format(watchedBookingDate, "PPP", {
+                            locale: arSA,
+                          })
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">نوع المعدات</span>
+                    <span>
+                      {resourceLabels[
+                        (watchedResourceType || "kayak") as ResourceType
+                      ]}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">الكمية / الضيوف</span>
+                    <span>
+                      {watchedQuantity} × المعدات — {watchedGuests} ضيف
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">المبلغ الإجمالي</span>
                     <span className="font-bold text-duck-cyan">
                       {formatCurrency(
-                        selectedTrip.price,
+                        selectedTrip.price * (Number(watchedQuantity) || 1),
                         selectedTrip.currency,
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-muted">الاسم</span>
-                    <span>{form.watch("full_name")}</span>
+                    <span>{watchedFullName}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-muted">الهاتف</span>
                     <span dir="ltr">
                       +20
-                      {(form.watch("phone_prefix") || "010").replace(/^0/, "")}
-                      {form.watch("phone_suffix")}
+                      {(watchedPhonePrefix || "010").replace(/^0/, "")}
+                      {watchedPhoneSuffix}
                     </span>
                   </div>
                 </div>

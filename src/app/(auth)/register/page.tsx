@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { GoogleLogin } from "@react-oauth/google"
 import {
   Card,
@@ -14,10 +15,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth/auth-context"
+
+type RegisterKind = "user" | "supplier"
 
 export default function RegisterPage() {
   const { register, loginWithGoogle } = useAuth()
+  const searchParams = useSearchParams()
+  const initialType: RegisterKind =
+    searchParams.get("type") === "supplier" ? "supplier" : "user"
+
+  const [registerType, setRegisterType] = useState<RegisterKind>(initialType)
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -31,12 +40,27 @@ export default function RegisterPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const content = useMemo(() => {
+    const isSupplier = registerType === "supplier"
+    const role: 0 | 1 = isSupplier ? 1 : 0
+    return {
+      role,
+      title: isSupplier ? "إنشاء حساب مزود خدمة" : "إنشاء حساب",
+      description: isSupplier
+        ? "أدخل معلوماتك لإنشاء حساب مزود جديد"
+        : "أدخل معلوماتك لإنشاء حساب جديد",
+      usernameLabel: isSupplier ? "اسم الشركة / المزود" : "اسم المستخدم",
+      usernamePlaceholder: isSupplier ? "دوك إنترتينمنت" : "yousef123",
+      redirectPath: isSupplier ? "/supplier/my-trips" : "/",
+    }
+  }, [registerType])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target
-    const fieldMap: { [key: string]: string } = {
+    const fieldMap: Record<string, string> = {
       firstName: "first_name",
       lastName: "last_name",
-      companyName: "username",
+      usernameField: "username",
       phone: "phone_number",
       confirmPassword: "confirmPassword",
     }
@@ -73,15 +97,16 @@ export default function RegisterPage() {
       email: formData.email,
       phone_number: formData.phone_number || undefined,
       password: formData.password,
-      role: 1, // supplier - required for /supplier/* access
+      role: content.role,
     })
 
     if (registerError) {
       setError(registerError)
       setIsLoading(false)
-    } else {
-      window.location.href = "/supplier/my-trips"
+      return
     }
+
+    window.location.assign(content.redirectPath)
   }
 
   const handleGoogleSuccess = async (credentialResponse: {
@@ -98,9 +123,10 @@ export default function RegisterPage() {
     if (googleError) {
       setError(googleError)
       setIsGoogleLoading(false)
-    } else {
-      window.location.href = "/supplier/my-trips"
+      return
     }
+
+    window.location.assign("/supplier/my-trips")
   }
 
   const handleGoogleError = () => {
@@ -110,12 +136,22 @@ export default function RegisterPage() {
 
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
-      <CardHeader className="space-y-1">
+      <CardHeader className="space-y-3">
+        <Tabs
+          dir="rtl"
+          value={registerType}
+          onValueChange={(v) => setRegisterType(v as RegisterKind)}
+        >
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="user">حساب مستخدم</TabsTrigger>
+            <TabsTrigger value="supplier">حساب مزود</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <CardTitle className="text-2xl text-center text-duck-navy">
-          إنشاء حساب مزود خدمة
+          {content.title}
         </CardTitle>
         <CardDescription className="text-center text-text-muted">
-          أدخل معلوماتك لإنشاء حساب جديد
+          {content.description}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -151,10 +187,10 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="companyName">اسم الشركة / المزود</Label>
+            <Label htmlFor="usernameField">{content.usernameLabel}</Label>
             <Input
-              id="companyName"
-              placeholder="دوك إنترتينمنت"
+              id="usernameField"
+              placeholder={content.usernamePlaceholder}
               value={formData.username}
               onChange={handleChange}
               required
@@ -224,36 +260,43 @@ export default function RegisterPage() {
           </Button>
         </form>
 
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <Separator className="bg-gray-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
-              او التسجيل عبر
-            </span>
-          </div>
-        </div>
-
-        <div
-          className="relative flex justify-center [&_iframe]:max-w-full!"
-          style={{ pointerEvents: isGoogleLoading || isLoading ? "none" : undefined }}
-        >
-          {isGoogleLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 text-sm text-text-muted">
-              جاري التحميل...
+        {registerType === "supplier" && (
+          <>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="bg-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
+                  او التسجيل عبر
+                </span>
+              </div>
             </div>
-          )}
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            theme="outline"
-            size="large"
-            text="signup_with"
-            shape="rectangular"
-            width="320"
-          />
-        </div>
+
+            <div
+              className="relative flex justify-center [&_iframe]:max-w-full!"
+              style={{
+                pointerEvents:
+                  isGoogleLoading || isLoading ? "none" : undefined,
+              }}
+            >
+              {isGoogleLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 text-sm text-text-muted">
+                  جاري التحميل...
+                </div>
+              )}
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                theme="outline"
+                size="large"
+                text="signup_with"
+                shape="rectangular"
+                width="320"
+              />
+            </div>
+          </>
+        )}
 
         <p className="text-center text-sm text-text-muted mt-4">
           لديك حساب بالفعل؟{" "}

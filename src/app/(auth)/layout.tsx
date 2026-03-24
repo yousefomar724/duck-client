@@ -1,5 +1,4 @@
 import Logo from "@/components/shared/logo"
-import Image from "next/image"
 import Link from "next/link"
 
 export default function AuthLayout({
@@ -8,63 +7,50 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-off-white flex flex-col relative overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/hero1.mp4" // Using hero video poster or fallback if video not supported in next/image, but for static bg image we should use an image asset.
-          // Since we don't have a dedicated auth bg, let's use one of the landing images like resort.webp or offer.webp
-          // resort.webp seems appropriate for a luxury feel.
-          // Wait, video as background is nicer?
-          // Let's use an image for better performance on auth pages.
-          // 'resort.webp' is good.
-          alt="Background"
-          fill
-          className="object-cover opacity-20 blur-sm"
-          priority
-        />
-        {/* Overlay gradient to ensure text readability and match theme */}
-        <div className="absolute inset-0 bg-linear-to-br from-duck-navy/90 via-duck-navy/80 to-duck-cyan/20" />
-      </div>
-
-      {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-duck-cyan/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-duck-yellow/10 rounded-full blur-3xl" />
-      </div>
-
-      {/* Logo at top */}
-      <div className="relative z-10 flex justify-center pt-12 pb-8">
-        <Link
-          href="/"
-          className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-lg"
-        >
-          <Logo width={160} height={80} className="text-white" />
+    <div className="grid h-svh overflow-hidden bg-off-white lg:grid-cols-2">
+      <div className="absolute top-8 bg-white p-2 flex items-center justify-center rounded-b-2xl left-1/2 -translate-1/2 z-50 shadow-lg">
+        <Link href="/" className="rounded-2xl bg-white p-1">
+          <Logo className="text-duck-navy h-12 w-auto" />
         </Link>
       </div>
+      <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-6 md:p-10">
+        <div className="flex flex-1 items-center justify-center py-2">
+          <div className="w-full max-w-md">{children}</div>
+        </div>
 
-      {/* Main content */}
-      <div className="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md">
-          {/* We wrap children in a div that can have some shared styles if needed, 
-              but the Cards inside pages will handle their own look. 
-              We might want to make the Cards semi-transparent? 
-              Let's update the pages to use a specific card style if possible, 
-              or just wrap them here? 
-              Actually, the pages use <Card>. We can override Card styles globally or pass className.
-              But since we can't easily prop-drill into children pages without changing them,
-              we will rely on the pages' Card implementation.
-              However, to make them match the theme, we might want to edit the pages to use a transparent/glassmorphic card.
-          */}
-          {children}
+        <div className="text-center text-sm text-text-muted md:text-start">
+          <p>
+            © {new Date().getFullYear()} Duck Entertainment. جميع الحقوق محفوظة.
+          </p>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="relative z-10 text-center py-6 text-sm text-white/60">
-        <p>
-          © {new Date().getFullYear()} Duck Entertainment. جميع الحقوق محفوظة.
-        </p>
+      <div className="relative hidden h-full overflow-hidden lg:block">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: "url('/kayak2.webp'), url('/resort.webp')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            opacity: 0.14,
+            backgroundImage: "url('/duck-wave.svg')",
+            backgroundSize: "1200px auto",
+            backgroundPosition: "center bottom",
+            backgroundRepeat: "repeat-x",
+          }}
+        />
+        <div className="absolute inset-0 bg-duck-navy/35" />
+        <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-duck-cyan/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-duck-yellow/15 blur-3xl" />
+        <div className="absolute inset-x-8 bottom-8 rounded-xl border border-white/20 bg-black/20 p-4 text-sm text-white/85 backdrop-blur-sm">
+          Explore, book, and manage unforgettable travel experiences.
+        </div>
       </div>
     </div>
   )

@@ -19,6 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import * as bookingsApi from "@/lib/api/bookings"
 import * as tripsApi from "@/lib/api/trips"
 import * as suppliersApi from "@/lib/api/suppliers"
@@ -28,8 +41,45 @@ import { ErrorDisplay } from "@/components/shared/error-display"
 import StatCard from "@/components/shared/stat-card"
 import { CalendarCheck, CheckCircle, Clock } from "lucide-react"
 import type { BookingStatus, Booking, Trip, Supplier } from "@/lib/types"
+import { useToast } from "@/lib/toast/toast-context"
+
+const ALL_STATUSES: BookingStatus[] = [
+  "PENDING",
+  "CONFIRMED",
+  "CANCELLED",
+  "FAILED",
+  "SUCCESS",
+  "REFUND_PENDING",
+  "REFUNDED",
+  "REFUND_FAILED",
+  "COMPLETED",
+  "PAID",
+]
+
+const statusFilterLabels: Partial<Record<BookingStatus, string>> & {
+  all: string
+} = {
+  all: "كل الحالات",
+  PENDING: "قيد الانتظار",
+  CONFIRMED: "مؤكد",
+  CANCELLED: "ملغي",
+  FAILED: "فشل",
+  SUCCESS: "نجح",
+  REFUND_PENDING: "في انتظار الاسترداد",
+  REFUNDED: "تم الاسترداد",
+  REFUND_FAILED: "فشل الاسترداد",
+  COMPLETED: "مكتمل",
+  PAID: "مدفوع",
+}
+
+const resourceLabels: Record<string, string> = {
+  kayak: "كاياك",
+  water_cycle: "دراجة مائية",
+  sup: "سب",
+}
 
 export default function AdminBookings() {
+  const { addToast } = useToast()
   const getSupplierName = (supplier?: Supplier) => {
     if (!supplier) return "-"
     return typeof supplier.name === "string"
@@ -43,6 +93,9 @@ export default function AdminBookings() {
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refundId, setRefundId] = useState<number | null>(null)
+  const [refundReason, setRefundReason] = useState("")
+  const [refundLoading, setRefundLoading] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -75,23 +128,39 @@ export default function AdminBookings() {
     }
   }
 
-  // Filter bookings
   const filteredBookings = bookings.filter((booking) => {
     const matchesStatus =
       statusFilter === "all" || booking.status === statusFilter
     return matchesStatus
   })
 
-  // Calculate stats
   const totalCount = bookings.length
   const confirmedCount = bookings.filter((b) => b.status === "CONFIRMED").length
   const pendingCount = bookings.filter((b) => b.status === "PENDING").length
+
+  const processRefund = async () => {
+    if (refundId == null) return
+    setRefundLoading(true)
+    const { error: err } = await bookingsApi.processRefund(
+      refundId,
+      refundReason.trim() || undefined,
+    )
+    setRefundLoading(false)
+    setRefundId(null)
+    setRefundReason("")
+    if (err) {
+      addToast(err, "error")
+      return
+    }
+    addToast("تمت معالجة الاسترداد", "success")
+    await fetchData()
+  }
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <PageHeader title="الحجوزات" />
-        <TableSkeleton rows={5} columns={8} />
+        <TableSkeleton rows={5} columns={11} />
       </div>
     )
   }
@@ -109,7 +178,6 @@ export default function AdminBookings() {
     <div className="space-y-6">
       <PageHeader title="الحجوزات" />
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
           title="إجمالي الحجوزات"
@@ -128,37 +196,35 @@ export default function AdminBookings() {
         />
       </div>
 
-      {/* Filters */}
       <div className="flex gap-4">
         <Select
           dir="rtl"
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
         >
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[240px]">
             <SelectValue placeholder="تصفية حسب الحالة" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">كل الحالات</SelectItem>
-            <SelectItem value="PENDING">قيد الانتظار</SelectItem>
-            <SelectItem value="CONFIRMED">مؤكد</SelectItem>
-            <SelectItem value="CANCELLED">ملغي</SelectItem>
-            <SelectItem value="FAILED">فشل</SelectItem>
-            <SelectItem value="SUCCESS">نجح</SelectItem>
+            <SelectItem value="all">{statusFilterLabels.all}</SelectItem>
+            {ALL_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {statusFilterLabels[s] ?? s}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Bookings Table */}
       <Card>
         <CardHeader>
           <CardTitle>
             {statusFilter === "all"
               ? "جميع الحجوزات"
-              : `الحجوزات - ${statusFilter}`}
+              : `الحجوزات - ${statusFilterLabels[statusFilter] ?? statusFilter}`}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-6 overflow-x-auto">
           {filteredBookings.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-text-muted">لا توجد حجوزات متاحة</p>
@@ -172,9 +238,13 @@ export default function AdminBookings() {
                   <TableHead className="text-right">رقم الهاتف</TableHead>
                   <TableHead className="text-right">اسم الرحلة</TableHead>
                   <TableHead className="text-right">المورد</TableHead>
+                  <TableHead className="text-right">تاريخ الحجز</TableHead>
+                  <TableHead className="text-right">المعدّات</TableHead>
+                  <TableHead className="text-right">الكمية</TableHead>
                   <TableHead className="text-right">المبلغ</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">التاريخ</TableHead>
+                  <TableHead className="text-right">تاريخ الإنشاء</TableHead>
+                  <TableHead className="text-right">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -183,8 +253,15 @@ export default function AdminBookings() {
                   const supplier = suppliers.find(
                     (s) => s.id === booking.supplier_id,
                   )
+                  const rt = booking.resource_type
+                    ? resourceLabels[booking.resource_type] ??
+                      booking.resource_type
+                    : "—"
                   return (
-                    <TableRow key={booking.id} className="hover:bg-duck-cyan/5 transition-colors">
+                    <TableRow
+                      key={booking.id}
+                      className="hover:bg-duck-cyan/5 transition-colors"
+                    >
                       <TableCell className="font-medium">
                         #{booking.id}
                       </TableCell>
@@ -194,14 +271,39 @@ export default function AdminBookings() {
                       </TableCell>
                       <TableCell>{trip?.name.ar || "-"}</TableCell>
                       <TableCell>{getSupplierName(supplier)}</TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {booking.booking_date
+                          ? formatDateTime(booking.booking_date)
+                          : "—"}
+                      </TableCell>
+                      <TableCell>{rt}</TableCell>
+                      <TableCell>{booking.quantity ?? "—"}</TableCell>
                       <TableCell>
                         {formatCurrency(booking.amount, booking.currency)}
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={booking.status} type="booking" />
+                        <StatusBadge
+                          status={booking.status as BookingStatus}
+                          type="booking"
+                        />
                       </TableCell>
-                      <TableCell className="text-text-muted">
+                      <TableCell className="text-text-muted whitespace-nowrap">
                         {formatDateTime(booking.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        {booking.status === "REFUND_PENDING" ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="border-amber-300 text-amber-900"
+                            onClick={() => setRefundId(booking.id)}
+                          >
+                            استرداد
+                          </Button>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                     </TableRow>
                   )
@@ -211,6 +313,46 @@ export default function AdminBookings() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={refundId != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRefundId(null)
+            setRefundReason("")
+          }
+        }}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>معالجة الاسترداد</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم إرسال طلب الاسترداد إلى بوابة الدفع. يمكنك إضافة سبب اختياري.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="refund-reason">السبب (اختياري)</Label>
+            <Input
+              id="refund-reason"
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              placeholder="مثال: طلب العميل"
+            />
+          </div>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={refundLoading}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                void processRefund()
+              }}
+              disabled={refundLoading}
+            >
+              {refundLoading ? "جاري..." : "تأكيد الاسترداد"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

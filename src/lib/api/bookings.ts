@@ -24,3 +24,33 @@ export async function getBookings(): Promise<ApiResponse<Booking[]>> {
 export async function getMyBookings(): Promise<ApiResponse<Booking[]>> {
   return apiClient<Booking[]>('/bookings/my-bookings', { method: 'GET' });
 }
+
+/** Authenticated end-user's own bookings */
+export async function getUserBookings(): Promise<ApiResponse<Booking[]>> {
+  return apiClient<Booking[]>('/bookings/user', { method: 'GET' });
+}
+
+export async function cancelBooking(
+  id: number,
+): Promise<ApiResponse<{ message: string; booking: Booking }>> {
+  return apiClient<{ message: string; booking: Booking }>(
+    `/bookings/${id}/cancel`,
+    { method: 'POST' },
+  );
+}
+
+export interface ProcessRefundResponse {
+  message: string;
+  booking_status: string;
+  refund: unknown;
+}
+
+export async function processRefund(
+  id: number,
+  reason?: string,
+): Promise<ApiResponse<ProcessRefundResponse>> {
+  return apiClient<ProcessRefundResponse>(`/bookings/${id}/refund`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: reason ?? '' }),
+  });
+}

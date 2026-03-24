@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   Ship,
   Users,
+  Package,
   type LucideIcon,
 } from "lucide-react"
 import type { BookingStatus, PayoutStatus } from "./types"
@@ -59,6 +60,11 @@ export const supplierNavItems: NavItem[] = [
     href: "/supplier/bookings",
     icon: CalendarCheck,
   },
+  {
+    title: "سعة المعدات",
+    href: "/supplier/storage",
+    icon: Package,
+  },
 ]
 
 export const bookingStatusColors: Record<
@@ -89,6 +95,31 @@ export const bookingStatusColors: Record<
     bg: "bg-green-100",
     text: "text-green-800",
     label: "نجح",
+  },
+  REFUND_PENDING: {
+    bg: "bg-amber-100",
+    text: "text-amber-900",
+    label: "في انتظار الاسترداد",
+  },
+  REFUNDED: {
+    bg: "bg-slate-100",
+    text: "text-slate-800",
+    label: "تم الاسترداد",
+  },
+  REFUND_FAILED: {
+    bg: "bg-red-100",
+    text: "text-red-900",
+    label: "فشل الاسترداد",
+  },
+  COMPLETED: {
+    bg: "bg-emerald-100",
+    text: "text-emerald-800",
+    label: "مكتمل",
+  },
+  PAID: {
+    bg: "bg-teal-100",
+    text: "text-teal-800",
+    label: "مدفوع",
   },
 }
 

@@ -14,12 +14,20 @@ export default function StatusBadge({ status, type }: StatusBadgeProps) {
       ? bookingStatusColors[status as BookingStatus]
       : payoutStatusColors[status as PayoutStatus]
 
+  const label =
+    colors?.label ??
+    (typeof status === "string" ? status : String(status ?? "—"))
+
   return (
     <Badge
       variant="secondary"
-      className={cn("font-medium", colors.bg, colors.text)}
+      className={cn(
+        "font-medium",
+        colors?.bg ?? "bg-gray-100",
+        colors?.text ?? "text-gray-800",
+      )}
     >
-      {colors.label}
+      {label}
     </Badge>
   )
 }

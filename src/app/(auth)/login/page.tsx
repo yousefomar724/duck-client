@@ -29,7 +29,7 @@ function getRedirectPath(returnUrl: string | null, userRole?: unknown): string {
   const role = userRole != null ? Number(userRole) : NaN
   if (role === 2) return "/admin/dashboard"
   if (role === 1) return "/supplier/my-trips"
-  return "/book"
+  return "/"
 }
 
 function LoginFormContent() {
@@ -53,7 +53,7 @@ function LoginFormContent() {
     } else {
       const returnUrl = searchParams.get("returnUrl")
       const path = getRedirectPath(returnUrl, user?.role)
-      window.location.href = path
+      window.location.assign(path)
     }
   }
 
@@ -74,7 +74,7 @@ function LoginFormContent() {
     } else {
       const returnUrl = searchParams.get("returnUrl")
       const path = getRedirectPath(returnUrl, user?.role)
-      window.location.href = path
+      window.location.assign(path)
     }
   }
 
@@ -155,7 +155,9 @@ function LoginFormContent() {
 
         <div
           className="relative flex justify-center [&_iframe]:max-w-full!"
-          style={{ pointerEvents: isGoogleLoading || isLoading ? "none" : undefined }}
+          style={{
+            pointerEvents: isGoogleLoading || isLoading ? "none" : undefined,
+          }}
         >
           {isGoogleLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 text-sm text-text-muted">
@@ -177,6 +179,13 @@ function LoginFormContent() {
           ليس لديك حساب؟{" "}
           <Link
             href="/register"
+            className="text-duck-cyan hover:text-duck-cyan-light font-bold transition-colors"
+          >
+            إنشاء حساب
+          </Link>{" "}
+          |{" "}
+          <Link
+            href="/register?type=supplier"
             className="text-duck-cyan hover:text-duck-cyan-light font-bold transition-colors"
           >
             سجل كمزود خدمة

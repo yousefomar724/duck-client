@@ -186,24 +186,41 @@ export default function Navbar() {
                           href={
                             effectiveRole === 2
                               ? "/admin/dashboard"
-                              : "/supplier/my-trips"
+                              : effectiveRole === 1
+                                ? "/supplier/my-trips"
+                                : "/profile"
                           }
                           className="cursor-pointer"
                           onClick={() => setSheetOpen(false)}
                         >
                           <User className="size-4" />
-                          لوحة التحكم
+                          {effectiveRole === 2 || effectiveRole === 1
+                            ? "لوحة التحكم"
+                            : "الملف الشخصي"}
                         </Link>
                       </Button>
                     </>
                   ) : (
                     <>
                       <Button
+                        variant="outline"
+                        className="justify-center rounded-full gap-2"
+                        asChild
+                      >
+                        <Link
+                          href="/login"
+                          className="cursor-pointer"
+                          onClick={() => setSheetOpen(false)}
+                        >
+                          تسجيل الدخول
+                        </Link>
+                      </Button>
+                      <Button
                         className="rounded-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-medium"
                         asChild
                       >
                         <Link
-                          href="/register"
+                          href="/register?type=supplier"
                           className="cursor-pointer"
                           onClick={() => setSheetOpen(false)}
                         >
@@ -212,18 +229,6 @@ export default function Navbar() {
                       </Button>
                     </>
                   )}
-                  <Button
-                    className="rounded-full bg-duck-cyan text-white hover:bg-duck-cyan-light font-medium"
-                    asChild
-                  >
-                    <Link
-                      href="/book"
-                      className="cursor-pointer"
-                      onClick={() => setSheetOpen(false)}
-                    >
-                      {t("book")}
-                    </Link>
-                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
@@ -303,27 +308,39 @@ export default function Navbar() {
             {isAuthenticated ? (
               <Link
                 href={
-                  effectiveRole === 2 ? "/admin/dashboard" : "/supplier/my-trips"
+                  effectiveRole === 2
+                    ? "/admin/dashboard"
+                    : effectiveRole === 1
+                      ? "/supplier/my-trips"
+                      : "/profile"
                 }
                 className={cn("hidden! md:flex!", actionButtonClass)}
               >
                 <User className="w-4 h-4 shrink-0" />
-                <span>لوحة التحكم</span>
+                <span>
+                  {effectiveRole === 2
+                    ? "لوحة التحكم"
+                    : effectiveRole === 1
+                      ? "لوحة التحكم"
+                      : "الملف الشخصي"}
+                </span>
               </Link>
             ) : (
-              <Link
-                href="/register"
-                className="hidden! md:inline-flex! bg-duck-cyan text-white font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-cyan-light transition-colors shrink-0 text-sm"
-              >
-                انضم كمزود خدمة
-              </Link>
+              <>
+                <Link
+                  href="/login"
+                  className={cn("hidden! md:flex!", actionButtonClass)}
+                >
+                  تسجيل الدخول
+                </Link>
+                <Link
+                  href="/register?type=supplier"
+                  className="hidden! md:inline-flex! bg-duck-cyan text-white font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-cyan-light transition-colors shrink-0 text-sm"
+                >
+                  انضم كمزود خدمة
+                </Link>
+              </>
             )}
-            <Link
-              href="/book"
-              className="hidden! md:inline-flex! bg-duck-yellow text-duck-navy font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-yellow-hover transition-colors shrink-0 text-sm"
-            >
-              {t("book")}
-            </Link>
             {/* Mobile: invisible spacer same width as menu button so logo stays centered */}
             <span
               className="w-10 h-10 md:hidden shrink-0 invisible pointer-events-none"

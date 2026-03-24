@@ -24,6 +24,40 @@ import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Booking, BookingStatus } from "@/lib/types"
 
+const ALL_FILTER_VALUES = [
+  "all",
+  "PENDING",
+  "CONFIRMED",
+  "COMPLETED",
+  "SUCCESS",
+  "PAID",
+  "REFUND_PENDING",
+  "REFUNDED",
+  "CANCELLED",
+  "FAILED",
+  "REFUND_FAILED",
+] as const
+
+const filterLabels: Record<(typeof ALL_FILTER_VALUES)[number], string> = {
+  all: "الكل",
+  PENDING: "قيد الانتظار",
+  CONFIRMED: "مؤكد",
+  COMPLETED: "مكتمل",
+  SUCCESS: "نجح",
+  PAID: "مدفوع",
+  REFUND_PENDING: "في انتظار الاسترداد",
+  REFUNDED: "تم الاسترداد",
+  CANCELLED: "ملغي",
+  FAILED: "فشل",
+  REFUND_FAILED: "فشل الاسترداد",
+}
+
+const resourceLabels: Record<string, string> = {
+  kayak: "كاياك",
+  water_cycle: "دراجة مائية",
+  sup: "سب",
+}
+
 export default function SupplierBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -69,7 +103,7 @@ export default function SupplierBookingsPage() {
     return (
       <div className="p-6">
         <PageHeader title="الحجوزات" />
-        <TableSkeleton rows={5} columns={7} />
+        <TableSkeleton rows={5} columns={10} />
       </div>
     )
   }
@@ -102,11 +136,11 @@ export default function SupplierBookingsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">الكل</SelectItem>
-              <SelectItem value="PENDING">قيد الانتظار</SelectItem>
-              <SelectItem value="CONFIRMED">مؤكد</SelectItem>
-              <SelectItem value="COMPLETED">مكتمل</SelectItem>
-              <SelectItem value="CANCELLED">ملغي</SelectItem>
+              {ALL_FILTER_VALUES.map((v) => (
+                <SelectItem key={v} value={v}>
+                  {filterLabels[v]}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -121,44 +155,60 @@ export default function SupplierBookingsPage() {
               <TableHead className="text-right font-bold">اسم العميل</TableHead>
               <TableHead className="text-right font-bold">رقم الهاتف</TableHead>
               <TableHead className="text-right font-bold">اسم الرحلة</TableHead>
+              <TableHead className="text-right font-bold">تاريخ الحجز</TableHead>
+              <TableHead className="text-right font-bold">المعدّات</TableHead>
+              <TableHead className="text-right font-bold">الكمية</TableHead>
               <TableHead className="text-right font-bold">المبلغ</TableHead>
               <TableHead className="text-right font-bold">الحالة</TableHead>
-              <TableHead className="text-right font-bold">التاريخ</TableHead>
+              <TableHead className="text-right font-bold">تاريخ الإنشاء</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredBookings.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={10}
                   className="text-center py-8 h-44 text-text-muted"
                 >
                   لا توجد حجوزات
                 </TableCell>
               </TableRow>
             ) : (
-              filteredBookings.map((booking) => (
-                <TableRow key={booking.id} className="hover:bg-duck-cyan/5">
-                  <TableCell className="font-medium">#{booking.id}</TableCell>
-                  <TableCell>{booking.full_name}</TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {booking.phone_number}
-                  </TableCell>
-                  <TableCell>{getTripName(booking)}</TableCell>
-                  <TableCell className="font-bold text-duck-navy">
-                    {formatCurrency(booking.amount, booking.currency)}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge
-                      status={booking.status as BookingStatus}
-                      type="booking"
-                    />
-                  </TableCell>
-                  <TableCell className="text-sm text-text-muted">
-                    {formatDateTime(booking.created_at)}
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredBookings.map((booking) => {
+                const rt = booking.resource_type
+                  ? resourceLabels[booking.resource_type] ??
+                    booking.resource_type
+                  : "—"
+                return (
+                  <TableRow key={booking.id} className="hover:bg-duck-cyan/5">
+                    <TableCell className="font-medium">#{booking.id}</TableCell>
+                    <TableCell>{booking.full_name}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {booking.phone_number}
+                    </TableCell>
+                    <TableCell>{getTripName(booking)}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {booking.booking_date
+                        ? formatDateTime(booking.booking_date)
+                        : "—"}
+                    </TableCell>
+                    <TableCell>{rt}</TableCell>
+                    <TableCell>{booking.quantity ?? "—"}</TableCell>
+                    <TableCell className="font-bold text-duck-navy">
+                      {formatCurrency(booking.amount, booking.currency)}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge
+                        status={booking.status as BookingStatus}
+                        type="booking"
+                      />
+                    </TableCell>
+                    <TableCell className="text-sm text-text-muted whitespace-nowrap">
+                      {formatDateTime(booking.created_at)}
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>
