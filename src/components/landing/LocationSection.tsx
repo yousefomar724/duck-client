@@ -11,6 +11,7 @@ import {
   destinationsToMapLocations,
   type ActivityType,
 } from "@/components/map/map-data"
+import { useTranslations, useLocale } from "next-intl"
 
 function resolveImageUrl(url: string): string {
   if (!url) return ""
@@ -37,14 +38,17 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
   ),
 })
 
-const accessInfo = [
-  { time: "4", unit: "مواقع", desc: "متاحة على النيل" },
-  { time: "1", unit: "ساعة", desc: "طيران من القاهرة" },
-  { time: "4", unit: "ساعات", desc: "بالقطار من القاهرة" },
-  { time: "3", unit: "ساعات", desc: "بالسيارة من الأقصر" },
-]
-
 export default function LocationSection() {
+  const t = useTranslations("location")
+  const locale = useLocale()
+
+  const accessInfo = [
+    { time: "4", unit: t("accessLocations"), desc: t("accessLocationsDesc") },
+    { time: "1", unit: t("accessFlight"), desc: t("accessFlightDesc") },
+    { time: "4", unit: t("accessTrain"), desc: t("accessTrainDesc") },
+    { time: "3", unit: t("accessCar"), desc: t("accessCarDesc") },
+  ]
+
   const [locations, setLocations] = useState(
     destinationsToMapLocations([], { resolveImageUrl }),
   )
@@ -73,12 +77,12 @@ export default function LocationSection() {
       <div className="max-w-[1920px] mx-auto px-4 md:px-10">
         {/* Header */}
         <div className="text-center mb-12">
-          <span className="text-teal-primary text-base block mb-3">الموقع</span>
+          <span className="text-teal-primary text-base block mb-3">{t("subtitle")}</span>
           <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-4">
-            اكتشف المكان المثالي لمغامرتك المائية
+            {t("title")}
           </h2>
           <p className="text-text-body mb-8 max-w-2xl mx-auto">
-            اختر النشاط لرؤية المواقع المتاحة على الخريطة
+            {t("filterHint")}
           </p>
 
           {/* Tabs */}
@@ -115,12 +119,12 @@ export default function LocationSection() {
             className="absolute bottom-4 start-4 z-10 flex items-center gap-2 bg-duck-navy/80 backdrop-blur-sm text-white text-sm px-4 py-2.5 rounded-full hover:bg-duck-navy transition-colors shadow-lg"
           >
             <MapPin className="size-4" />
-            <span>عرض الخريطة التفاعلية</span>
+            <span>{t("viewInteractiveMap")}</span>
           </Link>
         </div>
 
         {/* Access Info */}
-        <div className="flex flex-wrap justify-center gap-4 mb-8" dir="rtl">
+        <div className="flex flex-wrap justify-center gap-4 mb-8" dir={locale === "ar" ? "rtl" : "ltr"}>
           {accessInfo.map((item, index) => (
             <div
               key={index}
@@ -134,8 +138,7 @@ export default function LocationSection() {
         </div>
 
         <p className="text-center text-text-muted text-xs">
-          {filteredLocations.length} مواقع متاحة للرياضات المائية على نهر النيل
-          في أسوان.
+          {t("locationsAvailable", { count: filteredLocations.length })}
         </p>
       </div>
     </section>

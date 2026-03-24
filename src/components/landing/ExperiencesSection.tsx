@@ -11,73 +11,74 @@ import {
   CircleDot,
   Bike,
 } from "lucide-react"
-
-const categories = [
-  { id: "kayak", label: "كاياك", icon: Waves },
-  { id: "sup", label: "ستاند اب", icon: CircleDot },
-  { id: "waterbike", label: "واتر بايك", icon: Bike },
-]
-
-const experiences = [
-  {
-    id: 1,
-    title: "كاياك",
-    description:
-      "استكشف النيل في كاياكاتنا المريحة الفردية والمزدوجة. خيارات فردية أو مزدوجة، مناسبة للمبتدئين، جميع المعدات متضمنة.",
-    image: "/discover-card.webp",
-    isTestimonial: false,
-  },
-  {
-    id: 2,
-    title: "ستاند اب",
-    description:
-      "انزلق عبر المياه الهادئة على لوح التجديف. تمرين كامل للجسم، مثالي للصور، طرق مياه هادئة.",
-    image: "/discover-card.webp",
-    isTestimonial: false,
-  },
-  {
-    id: 3,
-    title: "واتر بايك",
-    description:
-      "دوس طريقك عبر النيل على دراجاتنا المائية. سهل التعلم، مثالي للعائلات، لا حاجة لخبرة.",
-    image: "/discover-card.webp",
-    isTestimonial: false,
-  },
-  {
-    id: 4,
-    title: "Sarah Mitchell",
-    description:
-      '"Absolutely magical experience! The sunset kayak tour around Elephantine Island was the highlight of our Egypt trip. The guides were professional and the equipment was top-notch."',
-    subtitle: "London, UK",
-    image: "/discover-card.webp",
-    isTestimonial: true,
-  },
-  {
-    id: 5,
-    title: "Ahmed Hassan",
-    description:
-      '"As a local, I\'ve always wanted to experience the Nile differently. Duck Entertainment made it happen! The SUP session was incredibly peaceful and well-organized."',
-    subtitle: "Cairo, Egypt",
-    image: "/discover-card.webp",
-    isTestimonial: true,
-  },
-  {
-    id: 6,
-    title: "Maria Garcia",
-    description:
-      '"The water bike experience was so much fun! Perfect for families. My kids loved it and the staff was very patient with beginners. Highly recommend!"',
-    subtitle: "Barcelona, Spain",
-    image: "/discover-card.webp",
-    isTestimonial: true,
-  },
-]
+import { useTranslations, useLocale } from "next-intl"
 
 export default function ExperiencesSection() {
+  const t = useTranslations("experiences")
+  const locale = useLocale()
+
+  const categories = [
+    { id: "kayak", label: t("kayak"), icon: Waves },
+    { id: "sup", label: t("sup"), icon: CircleDot },
+    { id: "waterbike", label: t("waterbike"), icon: Bike },
+  ]
+
+  const experiences = [
+    {
+      id: 1,
+      title: t("kayak"),
+      description: t("kayakDesc"),
+      image: "/discover-card.webp",
+      isTestimonial: false,
+    },
+    {
+      id: 2,
+      title: t("sup"),
+      description: t("supDesc"),
+      image: "/discover-card.webp",
+      isTestimonial: false,
+    },
+    {
+      id: 3,
+      title: t("waterbike"),
+      description: t("waterbikeDesc"),
+      image: "/discover-card.webp",
+      isTestimonial: false,
+    },
+    {
+      id: 4,
+      title: "Sarah Mitchell",
+      description:
+        '"Absolutely magical experience! The sunset kayak tour around Elephantine Island was the highlight of our Egypt trip. The guides were professional and the equipment was top-notch."',
+      subtitle: "London, UK",
+      image: "/discover-card.webp",
+      isTestimonial: true,
+    },
+    {
+      id: 5,
+      title: "Ahmed Hassan",
+      description:
+        '"As a local, I\'ve always wanted to experience the Nile differently. Duck Entertainment made it happen! The SUP session was incredibly peaceful and well-organized."',
+      subtitle: "Cairo, Egypt",
+      image: "/discover-card.webp",
+      isTestimonial: true,
+    },
+    {
+      id: 6,
+      title: "Maria Garcia",
+      description:
+        '"The water bike experience was so much fun! Perfect for families. My kids loved it and the staff was very patient with beginners. Highly recommend!"',
+      subtitle: "Barcelona, Spain",
+      image: "/discover-card.webp",
+      isTestimonial: true,
+    },
+  ]
+
   const [activeCategory, setActiveCategory] = useState("kayak")
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: "center",
-    direction: "rtl",
+    direction: locale === "ar" ? "rtl" : "ltr",
     containScroll: "trimSnaps",
   })
 
@@ -114,10 +115,10 @@ export default function ExperiencesSection() {
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
         <span className="text-duck-cyan text-base block mb-3">
-          خدماتنا
+          {t("subtitle")}
         </span>
         <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-8">
-          من جولات الغروب الهادئة إلى المنحدرات المثيرة، لدينا المغامرة المثالية للجميع
+          {t("title")}
         </h2>
 
         {/* Tabs */}
@@ -148,12 +149,12 @@ export default function ExperiencesSection() {
         </div>
 
         <p className="text-text-body max-w-2xl mx-auto text-lg leading-relaxed">
-          ماذا يقول المغامرون لدينا - لا تأخذ كلمتنا فقط، استمع إلى الآلاف الذين جربوا سحر النيل معنا.
+          {t("testimonialIntro")}
         </p>
       </div>
 
       {/* Carousel */}
-      <div className="relative mb-12" dir="rtl">
+      <div className="relative mb-12" dir={locale === "ar" ? "rtl" : "ltr"}>
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex gap-6 touch-pan-y">
             {experiences.map((exp) => (
@@ -219,7 +220,7 @@ export default function ExperiencesSection() {
         </div>
 
         <button className="border border-text-dark text-text-dark px-8 py-3 rounded-full hover:bg-text-dark hover:text-white transition-colors">
-          عرض جميع التقييمات
+          {t("viewAllReviews")}
         </button>
       </div>
     </section>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import {
   ArrowUp,
@@ -15,6 +16,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 export default function Footer() {
+  const t = useTranslations("footer")
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
@@ -35,7 +37,7 @@ export default function Footer() {
 
       {/* Main Footer Content */}
       <div className="py-16 px-4 md:px-10 max-w-[1920px] mx-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-12" dir="rtl">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Column 1: Logo & Brand */}
           <div>
             <div className="mb-8">
@@ -53,8 +55,7 @@ export default function Footer() {
                 />
               </Link>
               <p className="text-white/80 text-sm mt-2">
-                اصنع مغامرتك المائية التي لا تُنسى على نهر النيل الأسطوري.
-                استمتع بسحر أسوان من منظور فريد.
+                {t("brandDescription")}
               </p>
             </div>
 
@@ -79,29 +80,32 @@ export default function Footer() {
 
           {/* Column 2: الشركة */}
           <div>
-            <h4 className="text-base font-bold mb-6">الشركة</h4>
+            <h4 className="text-base font-bold mb-6">{t("company")}</h4>
             <ul className="space-y-3 text-white/70 text-sm">
-              {["من نحن", "فريقنا", "معلومات السلامة", "سياسة الحجز"].map(
-                (link) => (
-                  <li key={link}>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {link}
-                    </a>
-                  </li>
-                ),
-              )}
+              {[
+                t("aboutUs"),
+                t("ourTeam"),
+                t("safetyInfo"),
+                t("bookingPolicy"),
+              ].map((link) => (
+                <li key={link}>
+                  <a href="#" className="hover:text-white transition-colors">
+                    {link}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Column 3: الخدمات */}
           <div>
-            <h4 className="text-base font-bold mb-6">الخدمات</h4>
+            <h4 className="text-base font-bold mb-6">{t("servicesTitle")}</h4>
             <ul className="space-y-3 text-white/70 text-sm">
               {[
-                "جولات الكاياك",
-                "الستاند اب",
-                "الواتر بايك",
-                "الجولات الخاصة",
+                t("kayakTours"),
+                t("sup"),
+                t("waterBike"),
+                t("privateTours"),
               ].map((link) => (
                 <li key={link}>
                   <a href="#" className="hover:text-white transition-colors">
@@ -114,11 +118,11 @@ export default function Footer() {
 
           {/* Column 4: الدعم & Contact */}
           <div>
-            <h4 className="text-base font-bold mb-6">الدعم</h4>
+            <h4 className="text-base font-bold mb-6">{t("support")}</h4>
             <ul className="space-y-3 text-white/70 text-sm mb-3">
               <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  الأسئلة الشائعة
+                  {t("faqLink")}
                 </a>
               </li>
               <li>
@@ -126,7 +130,7 @@ export default function Footer() {
                   href="/contact"
                   className="hover:text-white transition-colors"
                 >
-                  تواصل معنا
+                  {t("contactUs")}
                 </Link>
               </li>
             </ul>
@@ -171,7 +175,7 @@ export default function Footer() {
       {/* Footer Bottom */}
       <div className="bg-dark-bg-deeper py-6 px-4 md:px-10 border-t border-white/5">
         <div className="text-center text-sm text-white/50">
-          © {new Date().getFullYear()} Duck Entertainment. جميع الحقوق محفوظة.
+          {t("copyright", { year: new Date().getFullYear() })}
         </div>
       </div>
     </footer>

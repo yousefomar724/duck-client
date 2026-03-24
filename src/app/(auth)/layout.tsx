@@ -1,11 +1,13 @@
 import Logo from "@/components/shared/logo"
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const t = await getTranslations("auth")
   return (
     <div className="grid h-svh overflow-hidden bg-off-white lg:grid-cols-2">
       <div className="absolute top-8 bg-white p-2 flex items-center justify-center rounded-b-2xl left-1/2 -translate-1/2 z-50 shadow-lg">
@@ -20,7 +22,7 @@ export default function AuthLayout({
 
         <div className="text-center text-sm text-text-muted md:text-start">
           <p>
-            © {new Date().getFullYear()} Duck Entertainment. جميع الحقوق محفوظة.
+            {t("copyright", { year: new Date().getFullYear() })}
           </p>
         </div>
       </div>
@@ -49,7 +51,7 @@ export default function AuthLayout({
         <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-duck-cyan/20 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-duck-yellow/15 blur-3xl" />
         <div className="absolute inset-x-8 bottom-8 rounded-xl border border-white/20 bg-black/20 p-4 text-sm text-white/85 backdrop-blur-sm">
-          Explore, book, and manage unforgettable travel experiences.
+          {t("overlayText")}
         </div>
       </div>
     </div>

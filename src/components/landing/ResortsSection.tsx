@@ -5,6 +5,7 @@ import useEmblaCarousel from "embla-carousel-react"
 import { useCallback, useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react"
+import { useTranslations, useLocale } from "next-intl"
 import { getDestinations } from "@/lib/api/destinations"
 import type { Destination } from "@/lib/types"
 import { resolveImageUrl } from "@/lib/image-utils"
@@ -35,8 +36,11 @@ function getDisplayImages(destination: Destination | null): string[] {
 }
 
 export default function ResortsSection() {
+  const t = useTranslations("resorts")
+  const locale = useLocale()
+
   const getLocalizedText = (value: any, fallback = "") =>
-    typeof value === "string" ? value : value?.ar || value?.en || fallback
+    typeof value === "string" ? value : value?.[locale] || value?.ar || value?.en || fallback
 
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [selectedDestination, setSelectedDestination] =
@@ -51,7 +55,7 @@ export default function ResortsSection() {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: "center",
-    direction: "rtl",
+    direction: locale === "ar" ? "rtl" : "ltr",
     containScroll: "trimSnaps",
   })
 
@@ -64,7 +68,7 @@ export default function ResortsSection() {
     async function fetchDestinations() {
       setLoading(true)
       setError(null)
-      const { data, error: err } = await getDestinations("ar", "active")
+      const { data, error: err } = await getDestinations(locale, "active")
       if (cancelled) return
       setLoading(false)
       if (err) {
@@ -137,7 +141,7 @@ export default function ResortsSection() {
   const placeholderImage = "/resort.webp"
   const selectedDestinationName = getLocalizedText(
     selectedDestination?.name,
-    "وجهة سياحية",
+    t("defaultName"),
   )
   const selectedDestinationDescription = getLocalizedText(
     selectedDestination?.description,
@@ -161,14 +165,14 @@ export default function ResortsSection() {
     <section id="locations" className="bg-dark-bg py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
-        <span className="text-white/60 text-base block mb-3">الوجهات</span>
+        <span className="text-white/60 text-base block mb-3">{t("subtitle")}</span>
         <h2 className="text-white text-4xl md:text-5xl font-bold">
-          اكتشف وجهاتنا المميزة
+          {t("title")}
         </h2>
       </div>
 
       {/* Carousel */}
-      <div className="relative" dir="rtl">
+      <div className="relative" dir={locale === "ar" ? "rtl" : "ltr"}>
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex gap-6 touch-pan-y">
             {loading ? (
@@ -181,20 +185,20 @@ export default function ResortsSection() {
             ) : error ? (
               <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
                 <p className="text-white/80 text-center">
-                  حدث خطأ في تحميل الوجهات. يرجى المحاولة لاحقاً.
+                  {t("errorLoading")}
                 </p>
               </div>
             ) : destinations.length === 0 ? (
               <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
                 <p className="text-white/80 text-center">
-                  لا توجد وجهات متاحة حالياً.
+                  {t("noDestinations")}
                 </p>
               </div>
             ) : (
               destinations.map((destination) => {
                 const destinationName = getLocalizedText(
                   destination.name,
-                  "وجهة سياحية",
+                  t("defaultName"),
                 )
                 const destinationDescription = getLocalizedText(
                   destination.description,
@@ -231,7 +235,7 @@ export default function ResortsSection() {
                       {destination.trip_count != null &&
                         destination.trip_count > 0 && (
                           <span className="bg-duck-cyan-light/90 text-dark-bg text-xs font-medium px-3 py-1.5 rounded-lg backdrop-blur-sm">
-                            {destination.trip_count} رحلات
+                            {t("trips", { count: destination.trip_count })}
                           </span>
                         )}
                     </div>
@@ -243,7 +247,7 @@ export default function ResortsSection() {
                         onClick={() => setSelectedDestination(destination)}
                         className="text-duck-cyan text-sm font-medium mb-2 opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 hover:underline"
                       >
-                        لمعرفة المزيد
+                        {t("learnMore")}
                       </button>
                       <h3 className="text-white text-2xl font-bold mb-1">
                         {destinationName}
@@ -313,7 +317,7 @@ export default function ResortsSection() {
                     <div className="relative h-full w-full">
                       <Image
                         src={imageUrl}
-                        alt={`${selectedDestinationName} - صورة ${i + 1}`}
+                        alt={`${selectedDestinationName} - ${t("imageAlt", { index: i + 1 })}`}
                         fill
                         className="object-cover"
                         unoptimized={imageUrl.startsWith("http")}
@@ -328,7 +332,7 @@ export default function ResortsSection() {
                     variant="ghost"
                     size="icon"
                     className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                    aria-label="السابق"
+                    aria-label={t("prevImage")}
                   >
                     <ChevronLeft className="size-4" />
                   </CarouselPrevious>
@@ -336,7 +340,7 @@ export default function ResortsSection() {
                     variant="ghost"
                     size="icon"
                     className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                    aria-label="التالي"
+                    aria-label={t("nextImage")}
                   >
                     <ChevronRight className="size-4" />
                   </CarouselNext>
@@ -356,7 +360,7 @@ export default function ResortsSection() {
                         ? "bg-white"
                         : "bg-white/50 hover:bg-white/70",
                     )}
-                    aria-label={`صورة ${i + 1}`}
+                    aria-label={t("imageAlt", { index: i + 1 })}
                     aria-current={
                       i === dialogCarouselIndex ? "true" : undefined
                     }
@@ -380,17 +384,17 @@ export default function ResortsSection() {
                 <div className="flex flex-wrap items-center gap-2">
                   {selectedDestination?.public_status === "coming-soon" ? (
                     <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-yellow/20 text-duck-yellow animate-pulse">
-                      الافتتاح قريباً
+                      {t("comingSoon")}
                     </span>
                   ) : (
                     <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-cyan/20 text-duck-cyan">
-                      متاح الآن
+                      {t("availableNow")}
                     </span>
                   )}
                   {selectedDestination?.trip_count != null &&
                     selectedDestination.trip_count > 0 && (
                       <span className="text-sm text-white/70">
-                        عدد الرحلات المتاحة: {selectedDestination.trip_count}
+                        {t("availableTrips", { count: selectedDestination.trip_count })}
                       </span>
                     )}
                 </div>
@@ -416,7 +420,7 @@ export default function ResortsSection() {
                 <div className="flex items-center gap-2 text-white/70 text-xs">
                   <Clock className="size-3.5 shrink-0 text-duck-cyan/80" />
                   <span>
-                    ساعات العمل: {selectedDestination.operating_hours}
+                    {t("operatingHours", { hours: selectedDestination.operating_hours })}
                   </span>
                 </div>
               ) : null}
@@ -424,7 +428,7 @@ export default function ResortsSection() {
               {/* Description */}
               <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
                 <DialogDescription className="text-white/80 text-sm leading-relaxed whitespace-pre-line ps-1">
-                  {selectedDestinationDescription || "لا يوجد وصف متاح حالياً."}
+                  {selectedDestinationDescription || t("noDescription")}
                 </DialogDescription>
               </div>
             </div>

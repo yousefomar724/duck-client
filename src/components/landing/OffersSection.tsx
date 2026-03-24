@@ -6,6 +6,7 @@ import { useCallback, useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useTranslations, useLocale } from "next-intl"
 import { getTrips } from "@/lib/api/trips"
 import type { Trip } from "@/lib/types"
 import { getTripImage, getTripImages, resolveImageUrl } from "@/lib/image-utils"
@@ -19,8 +20,11 @@ import {
 } from "@/components/ui/carousel"
 
 export default function OffersSection() {
+  const t = useTranslations("offers")
+  const locale = useLocale()
+
   const getLocalizedText = (value: any, fallback = "") =>
-    typeof value === "string" ? value : value?.ar || value?.en || fallback
+    typeof value === "string" ? value : value?.[locale] || value?.ar || value?.en || fallback
 
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,7 +33,7 @@ export default function OffersSection() {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: "center",
-    direction: "rtl",
+    direction: locale === "ar" ? "rtl" : "ltr",
     containScroll: "trimSnaps",
   })
 
@@ -42,7 +46,7 @@ export default function OffersSection() {
     async function fetchTrips() {
       setLoading(true)
       setError(null)
-      const { data, error: err } = await getTrips("ar")
+      const { data, error: err } = await getTrips(locale)
       if (cancelled) return
       setLoading(false)
       if (err) {
@@ -87,17 +91,17 @@ export default function OffersSection() {
     <section id="experiences" className="bg-off-white py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
-        <span className="text-duck-cyan text-base block mb-3">الرحلات</span>
+        <span className="text-duck-cyan text-base block mb-3">{t("subtitle")}</span>
         <h2 className="text-text-dark text-4xl md:text-5xl font-bold">
-          رحلات مميزة من أفضل مزودي الخدمة
+          {t("title")}
         </h2>
         <p className="text-text-body mt-4 max-w-2xl mx-auto">
-          اكتشف أفضل الرحلات المائية من مزودي خدمة متعددين
+          {t("description")}
         </p>
       </div>
 
       {/* Carousel */}
-      <div className="relative mb-12" dir="rtl">
+      <div className="relative mb-12" dir={locale === "ar" ? "rtl" : "ltr"}>
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex gap-6 touch-pan-y py-10">
             {loading ? (
@@ -110,18 +114,18 @@ export default function OffersSection() {
             ) : error ? (
               <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
                 <p className="text-text-body text-center">
-                  حدث خطأ في تحميل الرحلات. يرجى المحاولة لاحقاً.
+                  {t("errorLoading")}
                 </p>
               </div>
             ) : trips.length === 0 ? (
               <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
                 <p className="text-text-body text-center">
-                  لا توجد رحلات متاحة حالياً.
+                  {t("noTrips")}
                 </p>
               </div>
             ) : (
               trips.map((trip) => {
-                const tripName = getLocalizedText(trip.name, "رحلة")
+                const tripName = getLocalizedText(trip.name, t("defaultName"))
                 const tripDescription = getLocalizedText(trip.description)
                 const rawImages = getTripImages(trip.images)
                 const fallbackImage = getTripImage(trip.images)
@@ -167,7 +171,7 @@ export default function OffersSection() {
                               <div className="relative h-full w-full">
                                 <Image
                                   src={imageUrl}
-                                  alt={`${tripName} - صورة ${i + 1}`}
+                                  alt={`${tripName} - ${t("imageAlt", { index: i + 1 })}`}
                                   fill
                                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                                   unoptimized={imageUrl.startsWith("http")}
@@ -182,7 +186,7 @@ export default function OffersSection() {
                               variant="ghost"
                               size="icon"
                               className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                              aria-label="السابق"
+                              aria-label={t("prevImage")}
                             >
                               <ChevronLeft className="size-4" />
                             </CarouselPrevious>
@@ -190,7 +194,7 @@ export default function OffersSection() {
                               variant="ghost"
                               size="icon"
                               className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                              aria-label="التالي"
+                              aria-label={t("nextImage")}
                             >
                               <ChevronRight className="size-4" />
                             </CarouselNext>
@@ -231,14 +235,14 @@ export default function OffersSection() {
                         </p>
                         <p className="text-text-muted text-sm mt-1">
                           {(trip.duration ?? 1)}{" "}
-                          {(trip.duration ?? 1) === 1 ? "يوم" : "أيام"}
+                          {(trip.duration ?? 1) === 1 ? t("day") : t("days")}
                         </p>
                       </div>
                       <Link
                         href={`/book?trip=${trip.id}`}
                         className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors"
                       >
-                        احجز الآن
+                        {t("bookNow")}
                       </Link>
                     </div>
                   </div>
@@ -283,7 +287,7 @@ export default function OffersSection() {
             href="/book"
             className="border border-text-dark text-text-dark px-8 py-3 rounded-full hover:bg-text-dark hover:text-white transition-colors"
           >
-            عرض جميع الرحلات
+            {t("viewAll")}
           </Link>
         </div>
       )}

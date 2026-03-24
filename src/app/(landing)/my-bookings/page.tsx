@@ -31,12 +31,7 @@ import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Booking, BookingStatus } from "@/lib/types"
 import { useToast } from "@/lib/toast/toast-context"
 import Footer from "@/components/landing/Footer"
-
-const resourceLabels: Record<string, string> = {
-  kayak: "كاياك",
-  water_cycle: "دراجة مائية",
-  sup: "سب",
-}
+import { useTranslations, useLocale } from "next-intl"
 
 function canCancelBooking(status: string): boolean {
   return status === "CONFIRMED" || status === "SUCCESS" || status === "PAID"
@@ -44,11 +39,19 @@ function canCancelBooking(status: string): boolean {
 
 function MyBookingsContent() {
   const { addToast } = useToast()
+  const t = useTranslations("myBookings")
+  const locale = useLocale()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [cancelId, setCancelId] = useState<number | null>(null)
   const [cancelling, setCancelling] = useState(false)
+
+  const resourceLabels: Record<string, string> = {
+    kayak: t("resourceKayak"),
+    water_cycle: t("resourceWaterCycle"),
+    sup: t("resourceSup"),
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -76,7 +79,7 @@ function MyBookingsContent() {
       addToast(err, "error")
       return
     }
-    addToast("تم إلغاء الحجز وطلب الاسترداد.", "success")
+    addToast(t("cancelSuccess"), "success")
     await load()
   }
 
@@ -84,7 +87,7 @@ function MyBookingsContent() {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4">
         <div className="max-w-5xl mx-auto space-y-6">
-          <PageHeader title="حجوزاتي" />
+          <PageHeader title={t("title")} />
           <TableSkeleton rows={5} columns={8} />
         </div>
       </div>
@@ -95,7 +98,7 @@ function MyBookingsContent() {
     return (
       <div className="min-h-screen pt-24 pb-16 px-4">
         <div className="max-w-5xl mx-auto space-y-6">
-          <PageHeader title="حجوزاتي" />
+          <PageHeader title={t("title")} />
           <ErrorDisplay error={error} onRetry={load} />
         </div>
       </div>
@@ -105,30 +108,30 @@ function MyBookingsContent() {
   return (
     <>
       <div className="min-h-screen pt-24 pb-16 px-4">
-        <div className="max-w-5xl mx-auto space-y-6" dir="rtl">
-          <PageHeader title="حجوزاتي" />
+        <div className="max-w-5xl mx-auto space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
+          <PageHeader title={t("title")} />
 
           <div className="rounded-lg border bg-white overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">#</TableHead>
-                  <TableHead className="text-right">الرحلة</TableHead>
-                  <TableHead className="text-right">تاريخ الحجز</TableHead>
-                  <TableHead className="text-right">المعدّات</TableHead>
-                  <TableHead className="text-right">الكمية</TableHead>
-                  <TableHead className="text-right">المبلغ</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
+                  <TableHead className="text-right">{t("colId")}</TableHead>
+                  <TableHead className="text-right">{t("colTrip")}</TableHead>
+                  <TableHead className="text-right">{t("colDate")}</TableHead>
+                  <TableHead className="text-right">{t("colResource")}</TableHead>
+                  <TableHead className="text-right">{t("colQuantity")}</TableHead>
+                  <TableHead className="text-right">{t("colAmount")}</TableHead>
+                  <TableHead className="text-right">{t("colStatus")}</TableHead>
+                  <TableHead className="text-right">{t("colActions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {bookings.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-12 text-text-muted">
-                      لا توجد حجوزات بعد.{" "}
+                      {t("noBookings")}{" "}
                       <Link href="/book" className="text-duck-cyan underline">
-                        احجز رحلة
+                        {t("bookTrip")}
                       </Link>
                     </TableCell>
                   </TableRow>
@@ -170,7 +173,7 @@ function MyBookingsContent() {
                               className="text-red-600 border-red-200 hover:bg-red-50"
                               onClick={() => setCancelId(b.id)}
                             >
-                              إلغاء
+                              {t("cancel")}
                             </Button>
                           ) : (
                             <span className="text-text-muted text-sm">—</span>
@@ -190,16 +193,15 @@ function MyBookingsContent() {
         open={cancelId != null}
         onOpenChange={(open) => !open && setCancelId(null)}
       >
-        <AlertDialogContent dir="rtl">
+        <AlertDialogContent dir={locale === "ar" ? "rtl" : "ltr"}>
           <AlertDialogHeader>
-            <AlertDialogTitle>إلغاء الحجز؟</AlertDialogTitle>
+            <AlertDialogTitle>{t("cancelTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              يُسمح بالإلغاء قبل 24 ساعة من موعد الرحلة. سيتم طلب استرداد المبلغ
-              من الإدارة.
+              {t("cancelDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={cancelling}>تراجع</AlertDialogCancel>
+            <AlertDialogCancel disabled={cancelling}>{t("cancelBack")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
@@ -208,7 +210,7 @@ function MyBookingsContent() {
               disabled={cancelling}
               className="bg-red-600 hover:bg-red-700"
             >
-              {cancelling ? "جاري..." : "تأكيد الإلغاء"}
+              {cancelling ? t("cancelling") : t("cancelConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

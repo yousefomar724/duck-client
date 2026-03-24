@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod/v3"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -24,27 +24,37 @@ import {
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import Footer from "@/components/landing/Footer"
+import { useTranslations, useLocale } from "next-intl"
 
-const schema = z.object({
-  companyName: z
-    .string()
-    .min(2, "اسم الشركة مطلوب ويجب أن يحتوي على حرفين على الأقل"),
-  phone: z.string().min(7, "رقم الهاتف مطلوب"),
-  email: z
-    .string()
-    .email("البريد الإلكتروني غير صالح")
-    .optional()
-    .or(z.literal("")),
-  message: z
-    .string()
-    .min(10, "يرجى إدخال تفاصيل الاستفسار (١٠ أحرف على الأقل)"),
-  cooperationType: z.string().optional(),
-})
-
-type FormValues = z.infer<typeof schema>
+type FormValues = {
+  companyName: string
+  phone: string
+  email?: string
+  message: string
+  cooperationType?: string
+}
 
 export default function ContactPage() {
+  const t = useTranslations("contact")
+  const tv = useTranslations("validation")
+  const locale = useLocale()
   const [submitted, setSubmitted] = useState(false)
+
+  const schema = useMemo(() => z.object({
+    companyName: z
+      .string()
+      .min(2, tv("companyNameRequired")),
+    phone: z.string().min(7, tv("phoneRequired")),
+    email: z
+      .string()
+      .email(tv("emailInvalid"))
+      .optional()
+      .or(z.literal("")),
+    message: z
+      .string()
+      .min(10, tv("messageMin")),
+    cooperationType: z.string().optional(),
+  }), [tv])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -68,14 +78,13 @@ export default function ContactPage() {
       <section className="bg-duck-navy pt-28 md:pt-44 pb-20 px-4 md:px-10 text-center">
         <div className="max-w-2xl mx-auto">
           <span className="text-duck-cyan text-base block mb-4">
-            شراكات وتعاون
+            {t("heroSubtitle")}
           </span>
           <h1 className="text-white text-4xl md:text-6xl font-bold mb-5">
-            تواصل معنا
+            {t("heroTitle")}
           </h1>
           <p className="text-white/70 text-base md:text-lg leading-relaxed">
-            هل تمثل شركة أو مؤسسة وتبحث عن شراكة استراتيجية أو حجوزات جماعية؟
-            نحن هنا لنبني معك تجربة فريدة تليق بضيوفك.
+            {t("heroDescription")}
           </p>
         </div>
       </section>
@@ -86,25 +95,25 @@ export default function ContactPage() {
           {submitted ? (
             <div
               className="bg-white rounded-3xl shadow-lg p-10 text-center"
-              dir="rtl"
+              dir={locale === "ar" ? "rtl" : "ltr"}
             >
               <div className="flex justify-center mb-6">
                 <CheckCircle className="w-16 h-16 text-duck-yellow" />
               </div>
               <h2 className="text-text-dark text-2xl font-bold mb-3">
-                تم إرسال رسالتك بنجاح!
+                {t("successTitle")}
               </h2>
               <p className="text-text-body">
-                شكراً على تواصلك معنا. سيتواصل معك فريقنا في أقرب وقت ممكن.
+                {t("successDescription")}
               </p>
             </div>
           ) : (
             <div
               className="bg-white rounded-3xl shadow-lg p-8 md:p-10"
-              dir="rtl"
+              dir={locale === "ar" ? "rtl" : "ltr"}
             >
               <h2 className="text-text-dark text-2xl font-bold mb-8">
-                أرسل استفسارك
+                {t("formTitle")}
               </h2>
 
               <Form {...form}>
@@ -119,11 +128,11 @@ export default function ContactPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
-                          اسم الشركة <span className="text-red-500">*</span>
+                          {t("companyName")} <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="مثال: شركة الأفق للسياحة"
+                            placeholder={t("companyNamePlaceholder")}
                             className="rounded-lg border-black/20 focus-visible:ring-duck-cyan focus-visible:border-duck-cyan"
                             {...field}
                           />
@@ -140,7 +149,7 @@ export default function ContactPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
-                          رقم الهاتف <span className="text-red-500">*</span>
+                          {t("phone")} <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -163,9 +172,9 @@ export default function ContactPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
-                          البريد الإلكتروني{" "}
+                          {t("email")}{" "}
                           <span className="text-text-muted text-sm font-normal">
-                            (اختياري)
+                            {t("emailOptional")}
                           </span>
                         </FormLabel>
                         <FormControl>
@@ -189,28 +198,28 @@ export default function ContactPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
-                          نوع التعاون{" "}
+                          {t("cooperationType")}{" "}
                           <span className="text-text-muted text-sm font-normal">
-                            (اختياري)
+                            {t("cooperationOptional")}
                           </span>
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          dir="rtl"
+                          dir={locale === "ar" ? "rtl" : "ltr"}
                         >
                           <FormControl>
                             <SelectTrigger className="rounded-lg border-black/20 focus:ring-duck-cyan">
-                              <SelectValue placeholder="اختر نوع التعاون" />
+                              <SelectValue placeholder={t("cooperationPlaceholder")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="partnership">
-                              شراكة استراتيجية
+                              {t("partnership")}
                             </SelectItem>
-                            <SelectItem value="group">حجوزات جماعية</SelectItem>
-                            <SelectItem value="media">تغطية إعلامية</SelectItem>
-                            <SelectItem value="other">أخرى</SelectItem>
+                            <SelectItem value="group">{t("groupBookings")}</SelectItem>
+                            <SelectItem value="media">{t("media")}</SelectItem>
+                            <SelectItem value="other">{t("other")}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -225,12 +234,12 @@ export default function ContactPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
-                          تفاصيل الاستفسار{" "}
+                          {t("message")}{" "}
                           <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="أخبرنا عن متطلباتك وكيف يمكننا مساعدتك..."
+                            placeholder={t("messagePlaceholder")}
                             rows={5}
                             className="rounded-lg border-black/20 focus-visible:ring-duck-cyan focus-visible:border-duck-cyan resize-none"
                             {...field}
@@ -246,7 +255,7 @@ export default function ContactPage() {
                     type="submit"
                     className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow/80 transition-colors w-full md:w-auto md:self-start text-base h-auto cursor-pointer"
                   >
-                    أرسل الاستفسار
+                    {t("submit")}
                   </Button>
                 </form>
               </Form>

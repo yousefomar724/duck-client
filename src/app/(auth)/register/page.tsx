@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { GoogleLogin } from "@react-oauth/google"
 import {
   Card,
@@ -21,6 +22,7 @@ import { useAuth } from "@/lib/auth/auth-context"
 type RegisterKind = "user" | "supplier"
 
 export default function RegisterPage() {
+  const t = useTranslations("auth.register")
   const { register, loginWithGoogle } = useAuth()
   const searchParams = useSearchParams()
   const initialType: RegisterKind =
@@ -42,18 +44,17 @@ export default function RegisterPage() {
 
   const content = useMemo(() => {
     const isSupplier = registerType === "supplier"
-    const role: 0 | 1 = isSupplier ? 1 : 0
     return {
-      role,
-      title: isSupplier ? "إنشاء حساب مزود خدمة" : "إنشاء حساب",
-      description: isSupplier
-        ? "أدخل معلوماتك لإنشاء حساب مزود جديد"
-        : "أدخل معلوماتك لإنشاء حساب جديد",
-      usernameLabel: isSupplier ? "اسم الشركة / المزود" : "اسم المستخدم",
-      usernamePlaceholder: isSupplier ? "دوك إنترتينمنت" : "yousef123",
+      role: isSupplier ? 1 : (0 as 0 | 1),
+      title: isSupplier ? t("titleSupplier") : t("titleUser"),
+      description: isSupplier ? t("descriptionSupplier") : t("descriptionUser"),
+      usernameLabel: isSupplier ? t("usernameSupplier") : t("usernameUser"),
+      usernamePlaceholder: isSupplier
+        ? t("usernamePlaceholderSupplier")
+        : t("usernamePlaceholderUser"),
       redirectPath: isSupplier ? "/supplier/my-trips" : "/",
     }
-  }, [registerType])
+  }, [registerType, t])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target
@@ -73,7 +74,7 @@ export default function RegisterPage() {
     setError(null)
 
     if (formData.password !== formData.confirmPassword) {
-      setError("كلمات المرور غير متطابقة")
+      setError(t("passwordMismatch"))
       return
     }
 
@@ -84,7 +85,7 @@ export default function RegisterPage() {
       !formData.email ||
       !formData.password
     ) {
-      setError("الرجاء ملء جميع الحقول المطلوبة")
+      setError(t("fillRequired"))
       return
     }
 
@@ -130,7 +131,7 @@ export default function RegisterPage() {
   }
 
   const handleGoogleError = () => {
-    setError("فشل التسجيل بحساب جوجل")
+    setError(t("googleError"))
     setIsGoogleLoading(false)
   }
 
@@ -138,13 +139,12 @@ export default function RegisterPage() {
     <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-3">
         <Tabs
-          dir="rtl"
           value={registerType}
           onValueChange={(v) => setRegisterType(v as RegisterKind)}
         >
           <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="user">حساب مستخدم</TabsTrigger>
-            <TabsTrigger value="supplier">حساب مزود</TabsTrigger>
+            <TabsTrigger value="user">{t("userTab")}</TabsTrigger>
+            <TabsTrigger value="supplier">{t("supplierTab")}</TabsTrigger>
           </TabsList>
         </Tabs>
         <CardTitle className="text-2xl text-center text-duck-navy">
@@ -163,10 +163,10 @@ export default function RegisterPage() {
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">الاسم الأول</Label>
+              <Label htmlFor="firstName">{t("firstName")}</Label>
               <Input
                 id="firstName"
-                placeholder="محمد"
+                placeholder={t("firstNamePlaceholder")}
                 value={formData.first_name}
                 onChange={handleChange}
                 required
@@ -174,10 +174,10 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">الاسم الأخير</Label>
+              <Label htmlFor="lastName">{t("lastName")}</Label>
               <Input
                 id="lastName"
-                placeholder="أحمد"
+                placeholder={t("lastNamePlaceholder")}
                 value={formData.last_name}
                 onChange={handleChange}
                 required
@@ -199,7 +199,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">البريد الإلكتروني</Label>
+            <Label htmlFor="email">{t("email")}</Label>
             <Input
               id="email"
               type="email"
@@ -213,7 +213,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">رقم الجوال</Label>
+            <Label htmlFor="phone">{t("phone")}</Label>
             <Input
               id="phone"
               type="tel"
@@ -226,7 +226,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">كلمة المرور</Label>
+            <Label htmlFor="password">{t("password")}</Label>
             <Input
               id="password"
               type="password"
@@ -239,7 +239,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+            <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -256,7 +256,7 @@ export default function RegisterPage() {
             disabled={isLoading}
             className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-bold shadow-md transition-all hover:shadow-lg"
           >
-            {isLoading ? "جاري الإنشاء..." : "إنشاء حساب"}
+            {isLoading ? t("loading") : t("submit")}
           </Button>
         </form>
 
@@ -268,7 +268,7 @@ export default function RegisterPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
-                  او التسجيل عبر
+                  {t("orRegisterWith")}
                 </span>
               </div>
             </div>
@@ -282,7 +282,7 @@ export default function RegisterPage() {
             >
               {isGoogleLoading && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 text-sm text-text-muted">
-                  جاري التحميل...
+                  {t("loading")}
                 </div>
               )}
               <GoogleLogin
@@ -299,12 +299,12 @@ export default function RegisterPage() {
         )}
 
         <p className="text-center text-sm text-text-muted mt-4">
-          لديك حساب بالفعل؟{" "}
+          {t("hasAccount")}{" "}
           <Link
             href="/login"
             className="text-duck-cyan hover:text-duck-cyan-light font-bold transition-colors"
           >
-            تسجيل الدخول
+            {t("loginLink")}
           </Link>
         </p>
       </CardContent>

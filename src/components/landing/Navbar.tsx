@@ -6,7 +6,7 @@ import Image from "next/image"
 import { User, Map, Globe, Sun, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
-import { useTranslations } from "next-intl"
+import { useTranslations, useLocale } from "next-intl"
 import {
   Sheet,
   SheetContent,
@@ -25,6 +25,7 @@ export default function Navbar() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const { scrollY } = useScroll()
   const t = useTranslations("navbar")
+  const locale = useLocale()
   const { isAuthenticated, effectiveRole } = useAuth()
 
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -117,7 +118,7 @@ export default function Navbar() {
                 dir="ltr"
                 className="w-full max-w-sm sm:max-w-sm flex flex-col text-start"
               >
-                <SheetHeader dir="rtl" className="border-b border-border pb-4">
+                <SheetHeader dir={locale === "ar" ? "rtl" : "ltr"} className="border-b border-border pb-4">
                   <SheetTitle className="sr-only">{t("settings")}</SheetTitle>
                   <Link
                     href="/"
@@ -133,7 +134,7 @@ export default function Navbar() {
                     />
                   </Link>
                 </SheetHeader>
-                <nav dir="rtl" className="flex flex-col gap-1 p-6">
+                <nav dir={locale === "ar" ? "rtl" : "ltr"} className="flex flex-col gap-1 p-6">
                   {navLinks.map(({ key, href }) => (
                     <Link
                       key={key}
@@ -147,7 +148,7 @@ export default function Navbar() {
                   ))}
                 </nav>
                 <div
-                  dir="rtl"
+                  dir={locale === "ar" ? "rtl" : "ltr"}
                   className="flex flex-col gap-2 mt-auto p-4 border-t border-border"
                 >
                   <Button
@@ -195,8 +196,8 @@ export default function Navbar() {
                         >
                           <User className="size-4" />
                           {effectiveRole === 2 || effectiveRole === 1
-                            ? "لوحة التحكم"
-                            : "الملف الشخصي"}
+                            ? t("dashboard")
+                            : t("profile")}
                         </Link>
                       </Button>
                     </>
@@ -212,7 +213,7 @@ export default function Navbar() {
                           className="cursor-pointer"
                           onClick={() => setSheetOpen(false)}
                         >
-                          تسجيل الدخول
+                          {t("login")}
                         </Link>
                       </Button>
                       <Button
@@ -224,7 +225,7 @@ export default function Navbar() {
                           className="cursor-pointer"
                           onClick={() => setSheetOpen(false)}
                         >
-                          انضم كمزود خدمة
+                          {t("joinAsSupplier")}
                         </Link>
                       </Button>
                     </>
@@ -319,10 +320,10 @@ export default function Navbar() {
                 <User className="w-4 h-4 shrink-0" />
                 <span>
                   {effectiveRole === 2
-                    ? "لوحة التحكم"
+                    ? t("dashboard")
                     : effectiveRole === 1
-                      ? "لوحة التحكم"
-                      : "الملف الشخصي"}
+                      ? t("dashboard")
+                      : t("profile")}
                 </span>
               </Link>
             ) : (
@@ -331,13 +332,13 @@ export default function Navbar() {
                   href="/login"
                   className={cn("hidden! md:flex!", actionButtonClass)}
                 >
-                  تسجيل الدخول
+                  {t("login")}
                 </Link>
                 <Link
                   href="/register?type=supplier"
                   className="hidden! md:inline-flex! bg-duck-cyan text-white font-medium rounded-full px-4 py-2 lg:px-6 hover:bg-duck-cyan-light transition-colors shrink-0 text-sm"
                 >
-                  انضم كمزود خدمة
+                  {t("joinAsSupplier")}
                 </Link>
               </>
             )}

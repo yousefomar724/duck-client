@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import { ArrowRight } from "lucide-react"
 import * as authApi from "@/lib/api/auth"
 
 function ResetPasswordContent() {
+  const t = useTranslations("auth.resetPassword")
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get("token")
@@ -29,7 +31,7 @@ function ResetPasswordContent() {
 
   useEffect(() => {
     if (!token) {
-      setError("رابط إعادة التعيين غير صالح أو انتهى")
+      setError(t("invalidLinkError"))
     }
   }, [token])
 
@@ -38,17 +40,17 @@ function ResetPasswordContent() {
     setError(null)
 
     if (!token) {
-      setError("رابط إعادة التعيين غير صالح")
+      setError(t("invalidToken"))
       return
     }
 
     if (password !== confirmPassword) {
-      setError("كلمات المرور غير متطابقة")
+      setError(t("passwordMismatch"))
       return
     }
 
     if (password.length < 6) {
-      setError("كلمة المرور يجب أن تكون 6 أحرف على الأقل")
+      setError(t("passwordTooShort"))
       return
     }
 
@@ -68,10 +70,10 @@ function ResetPasswordContent() {
       <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center text-duck-navy">
-            تم إعادة التعيين بنجاح
+            {t("successTitle")}
           </CardTitle>
           <CardDescription className="text-center text-text-muted">
-            تم تحديث كلمة المرور بنجاح، سيتم نقلك إلى صفحة تسجيل الدخول
+            {t("successDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -81,7 +83,7 @@ function ResetPasswordContent() {
               className="inline-flex items-center text-sm text-duck-cyan hover:text-duck-cyan-light font-medium transition-colors"
             >
               <ArrowRight className="w-4 h-4 ml-1" />
-              العودة إلى تسجيل الدخول
+              {t("backToLogin")}
             </Link>
           </div>
         </CardContent>
@@ -94,10 +96,10 @@ function ResetPasswordContent() {
       <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center text-duck-navy">
-            رابط غير صالح
+            {t("invalidLinkTitle")}
           </CardTitle>
           <CardDescription className="text-center text-text-muted">
-            رابط إعادة تعيين كلمة المرور غير صالح أو انتهى
+            {t("invalidLinkDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -107,7 +109,7 @@ function ResetPasswordContent() {
               className="inline-flex items-center text-sm text-duck-cyan hover:text-duck-cyan-light font-medium transition-colors"
             >
               <ArrowRight className="w-4 h-4 ml-1" />
-              طلب رابط جديد
+              {t("requestNewLink")}
             </Link>
           </div>
         </CardContent>
@@ -119,10 +121,10 @@ function ResetPasswordContent() {
     <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl text-center text-duck-navy">
-          إعادة تعيين كلمة المرور
+          {t("title")}
         </CardTitle>
         <CardDescription className="text-center text-text-muted">
-          أدخل كلمة المرور الجديدة لحسابك
+          {t("description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -133,7 +135,7 @@ function ResetPasswordContent() {
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="password">كلمة المرور الجديدة</Label>
+            <Label htmlFor="password">{t("newPassword")}</Label>
             <Input
               id="password"
               type="password"
@@ -146,7 +148,7 @@ function ResetPasswordContent() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+            <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -163,17 +165,17 @@ function ResetPasswordContent() {
             disabled={isLoading}
             className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-bold shadow-md transition-all hover:shadow-lg"
           >
-            {isLoading ? "جاري إعادة التعيين..." : "إعادة تعيين كلمة المرور"}
+            {isLoading ? t("loading") : t("submit")}
           </Button>
         </form>
 
         <p className="text-center text-sm text-text-muted mt-4">
-          هل لديك حساب؟{" "}
+          {t("hasAccount")}{" "}
           <Link
             href="/login"
             className="text-duck-cyan hover:text-duck-cyan-light font-medium transition-colors"
           >
-            تسجيل الدخول
+            {t("loginLink")}
           </Link>
         </p>
       </CardContent>
@@ -182,14 +184,15 @@ function ResetPasswordContent() {
 }
 
 function ResetPasswordFallback() {
+  const t = useTranslations("auth.resetPassword")
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl text-center text-duck-navy">
-          إعادة تعيين كلمة المرور
+          {t("title")}
         </CardTitle>
         <CardDescription className="text-center text-text-muted">
-          جاري التحميل...
+          {t("fallbackLoading")}
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import {
   Card,
   CardContent,
@@ -16,6 +17,7 @@ import { ArrowRight } from "lucide-react"
 import * as authApi from "@/lib/api/auth"
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations("auth.forgotPassword")
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -40,10 +42,10 @@ export default function ForgotPasswordPage() {
       <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center text-duck-navy">
-            تم الإرسال بنجاح
+            {t("successTitle")}
           </CardTitle>
           <CardDescription className="text-center text-text-muted">
-            تحقق من بريدك الإلكتروني لتلقي رابط إعادة تعيين كلمة المرور
+            {t("successDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -53,7 +55,7 @@ export default function ForgotPasswordPage() {
               className="inline-flex items-center text-sm text-duck-cyan hover:text-duck-cyan-light font-medium transition-colors"
             >
               <ArrowRight className="w-4 h-4 ml-1" />
-              العودة إلى تسجيل الدخول
+              {t("backToLogin")}
             </Link>
           </div>
         </CardContent>
@@ -65,10 +67,10 @@ export default function ForgotPasswordPage() {
     <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl text-center text-duck-navy">
-          نسيت كلمة المرور
+          {t("title")}
         </CardTitle>
         <CardDescription className="text-center text-text-muted">
-          أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور
+          {t("description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -79,7 +81,7 @@ export default function ForgotPasswordPage() {
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="email">البريد الإلكتروني</Label>
+            <Label htmlFor="email">{t("email")}</Label>
             <Input
               id="email"
               type="email"
@@ -97,7 +99,7 @@ export default function ForgotPasswordPage() {
             disabled={isLoading}
             className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-bold shadow-md transition-all hover:shadow-lg"
           >
-            {isLoading ? "جاري الإرسال..." : "إرسال رابط إعادة التعيين"}
+            {isLoading ? t("loading") : t("submit")}
           </Button>
         </form>
 
@@ -107,7 +109,7 @@ export default function ForgotPasswordPage() {
             className="inline-flex items-center text-sm text-duck-cyan hover:text-duck-cyan-light font-medium transition-colors"
           >
             <ArrowRight className="w-4 h-4 ml-1" />
-            العودة إلى تسجيل الدخول
+            {t("backToLogin")}
           </Link>
         </div>
       </CardContent>

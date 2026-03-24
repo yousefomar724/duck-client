@@ -1,8 +1,10 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { motion } from "framer-motion"
 
 export default function RedSeaSection() {
+  const t = useTranslations("redSea")
   return (
     <section
       id="redsea-section"
@@ -53,7 +55,7 @@ export default function RedSeaSection() {
             transition={{ duration: 0.6 }}
             className="text-5xl md:text-6xl font-bold mb-4"
           >
-            لماذا تختارنا لمغامرتك المائية؟
+            {t("title")}
           </motion.h2>
 
           <motion.p
@@ -62,9 +64,7 @@ export default function RedSeaSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-lg md:text-xl text-white/90 mb-8 font-light"
           >
-            استمتع بالنيل كما لم يحدث من قبل مع أفضل تجربة رياضات مائية في مصر.
-            نحن لسنا مجرد مكان لممارسة الرياضات المائية. نحن محليون متحمسون نريد
-            مشاركة السحر الذي يجمع النيل مع العالم.
+            {t("description")}
           </motion.p>
 
           <motion.button
@@ -73,7 +73,7 @@ export default function RedSeaSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="px-8 py-3 rounded-lg border-2 border-white text-white hover:bg-white/10 transition-colors"
           >
-            اكتشف المزيد
+            {t("discoverMore")}
           </motion.button>
         </div>
 
@@ -87,19 +87,19 @@ export default function RedSeaSection() {
           <div className="grid grid-cols-2 gap-4 text-white text-center">
             <div>
               <div className="text-2xl font-bold">180</div>
-              <div className="text-xs text-white/80">EGP يبدأ من</div>
+              <div className="text-xs text-white/80">{t("startsFrom")}</div>
             </div>
             <div>
               <div className="text-2xl font-bold">4</div>
-              <div className="text-xs text-white/80">مواقع خلابة</div>
+              <div className="text-xs text-white/80">{t("locations")}</div>
             </div>
             <div>
               <div className="text-2xl font-bold">4.9★</div>
-              <div className="text-xs text-white/80">التقييم</div>
+              <div className="text-xs text-white/80">{t("rating")}</div>
             </div>
             <div>
               <div className="text-2xl font-bold">5+</div>
-              <div className="text-xs text-white/80">سنوات الخبرة</div>
+              <div className="text-xs text-white/80">{t("yearsExperience")}</div>
             </div>
           </div>
         </motion.div>

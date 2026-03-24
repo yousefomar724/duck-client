@@ -254,8 +254,8 @@ export default function AdminBookings() {
                     (s) => s.id === booking.supplier_id,
                   )
                   const rt = booking.resource_type
-                    ? resourceLabels[booking.resource_type] ??
-                      booking.resource_type
+                    ? (resourceLabels[booking.resource_type] ??
+                      booking.resource_type)
                     : "—"
                   return (
                     <TableRow
@@ -340,7 +340,9 @@ export default function AdminBookings() {
             />
           </div>
           <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={refundLoading}>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel disabled={refundLoading}>
+              إلغاء
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()

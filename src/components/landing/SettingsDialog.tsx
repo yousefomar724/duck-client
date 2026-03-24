@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations, useLocale } from "next-intl"
 import {
   Dialog,
   DialogContent,
@@ -31,12 +31,20 @@ export default function SettingsDialog({
   onOpenChange,
 }: SettingsDialogProps) {
   const t = useTranslations("navbar")
-  const [language, setLanguage] = useState<string>("ar")
+  const locale = useLocale()
+  const [language, setLanguage] = useState<string>(locale)
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) setLanguage(locale)
+        onOpenChange(v)
+      }}
+    >
       <DialogContent
         showCloseButton
+        dir={locale === "ar" ? "rtl" : "ltr"}
         className="sm:max-w-md text-right border-duck-cyan/20"
       >
         <DialogHeader className="border-b border-duck-cyan/30 pb-3">
@@ -51,7 +59,7 @@ export default function SettingsDialog({
               {t("language")}
             </Label>
             <Select
-              dir="rtl"
+              dir={locale === "ar" ? "rtl" : "ltr"}
               value={language}
               onValueChange={(value) => setLanguage(value)}
             >
@@ -92,12 +100,22 @@ export default function SettingsDialog({
           <Button
             variant="outline"
             type="button"
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              setLanguage(locale)
+              onOpenChange(false)
+            }}
             className="rounded-lg border-2"
           >
             {t("cancel")}
           </Button>
-          <Button type="button" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            onClick={() => {
+              document.cookie = `locale=${language};path=/;max-age=31536000`
+              onOpenChange(false)
+              window.location.reload()
+            }}
+          >
             {t("save")}
           </Button>
         </DialogFooter>

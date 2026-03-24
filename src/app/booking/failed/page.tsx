@@ -4,8 +4,11 @@ import Link from "next/link"
 import { AlertCircle, ArrowRight, RefreshCw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { useTranslations } from "next-intl"
 
 export default function BookingFailedPage() {
+  const t = useTranslations("bookingFailed")
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-linear-to-br from-duck-cyan/5 to-duck-yellow/5">
       <div className="w-full max-w-md">
@@ -14,36 +17,36 @@ export default function BookingFailedPage() {
             <div className="flex justify-center mb-4">
               <AlertCircle className="w-16 h-16 text-destructive" />
             </div>
-            <CardTitle className="text-3xl text-duck-navy">فشل الحجز</CardTitle>
+            <CardTitle className="text-3xl text-duck-navy">{t("title")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center space-y-2">
               <p className="text-text-dark font-medium">
-                للأسف، لم يتمكن النظام من معالجة حجزك
+                {t("subtitle")}
               </p>
               <p className="text-text-body text-sm">
-                قد يكون هناك مشكلة في عملية الدفع أو انقطاع في الاتصال. يرجى المحاولة مرة أخرى.
+                {t("description")}
               </p>
             </div>
 
             <div className="bg-off-white rounded-lg p-4 border border-destructive/20 space-y-3">
-              <h3 className="font-semibold text-duck-navy">أسباب محتملة:</h3>
+              <h3 className="font-semibold text-duck-navy">{t("possibleReasons")}</h3>
               <ul className="space-y-2 text-sm text-text-body">
                 <li className="flex gap-2">
                   <span className="text-destructive">⚠</span>
-                  <span>بيانات بطاقة الائتمان غير صحيحة</span>
+                  <span>{t("reason1")}</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-destructive">⚠</span>
-                  <span>عدم توفر رصيد كافي</span>
+                  <span>{t("reason2")}</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-destructive">⚠</span>
-                  <span>انقطاع في الاتصال بالإنترنت</span>
+                  <span>{t("reason3")}</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-destructive">⚠</span>
-                  <span>انقضاء صلاحية الجلسة</span>
+                  <span>{t("reason4")}</span>
                 </li>
               </ul>
             </div>
@@ -55,7 +58,7 @@ export default function BookingFailedPage() {
               >
                 <Link href="/book">
                   <RefreshCw className="w-4 h-4 ms-1" />
-                  حاول مجددا
+                  {t("tryAgain")}
                 </Link>
               </Button>
               <Button
@@ -64,21 +67,21 @@ export default function BookingFailedPage() {
                 className="w-full border-duck-navy/30 text-duck-navy hover:bg-duck-navy/5 rounded-full"
               >
                 <Link href="/">
-                  العودة إلى الصفحة الرئيسية
+                  {t("backToHome")}
                   <ArrowRight className="w-4 h-4 ms-1" />
                 </Link>
               </Button>
             </div>
 
             <div className="text-center space-y-2 text-xs text-text-muted border-t border-border pt-4">
-              <p>هل تحتاج إلى مساعدة؟</p>
+              <p>{t("needHelp")}</p>
               <a
                 href="https://wa.me/201550061006"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-duck-cyan hover:text-duck-cyan-light font-medium"
               >
-                اتصل بنا عبر WhatsApp
+                {t("contactWhatsApp")}
               </a>
             </div>
           </CardContent>

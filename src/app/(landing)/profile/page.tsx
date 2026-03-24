@@ -14,18 +14,21 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth/auth-context"
+import { useTranslations } from "next-intl"
 
 function ProfileContent() {
   const { user, logout } = useAuth()
+  const t = useTranslations("profile")
   const fullName = user
-    ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
-    : "مستخدم"
+    ? [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+      user.username
+    : t("defaultUser")
 
   return (
     <>
       <div className="min-h-screen pt-24 pb-16 px-4">
-        <div className="max-w-3xl mx-auto space-y-6" dir="rtl">
-          <PageHeader title="الملف الشخصي" description="إدارة حسابك وإعداداتك الأساسية" />
+        <div className="max-w-3xl mx-auto space-y-6">
+          <PageHeader title={t("title")} description={t("description")} />
 
           <Card className="border border-black/5 shadow-xs">
             <CardHeader className="space-y-3">
@@ -35,40 +38,45 @@ function ProfileContent() {
                 </div>
                 <div>
                   <CardTitle className="text-xl">{fullName}</CardTitle>
-                  <CardDescription>حساب مستخدم</CardDescription>
+                  <CardDescription>{t("accountType")}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-xs text-text-muted">اسم المستخدم</p>
+                  <p className="text-xs text-text-muted">{t("username")}</p>
                   <p className="font-medium">{user?.username || "—"}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-text-muted">البريد الإلكتروني</p>
+                  <p className="text-xs text-text-muted">{t("email")}</p>
                   <p className="font-medium" dir="ltr">
                     {user?.email || "—"}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-text-muted">رقم الجوال</p>
+                  <p className="text-xs text-text-muted">{t("phone")}</p>
                   <p className="font-medium" dir="ltr">
                     {user?.phone_number || "—"}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-text-muted">نوع الحساب</p>
-                  <p className="font-medium">مستخدم</p>
+                  <p className="text-xs text-text-muted">
+                    {t("accountTypeLabel")}
+                  </p>
+                  <p className="font-medium">{t("userType")}</p>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">
-                <Button asChild className="bg-duck-cyan hover:bg-duck-cyan-light">
-                  <Link href="/my-bookings">حجوزاتي</Link>
+                <Button
+                  asChild
+                  className="bg-duck-cyan hover:bg-duck-cyan-light"
+                >
+                  <Link href="/my-bookings">{t("myBookings")}</Link>
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link href="/book">احجز الآن</Link>
+                  <Link href="/book">{t("bookNow")}</Link>
                 </Button>
                 <Button
                   variant="destructive"
@@ -77,7 +85,7 @@ function ProfileContent() {
                   className="gap-2"
                 >
                   <LogOut className="size-4" />
-                  تسجيل الخروج
+                  {t("logout")}
                 </Button>
               </div>
             </CardContent>

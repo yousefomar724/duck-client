@@ -1,9 +1,11 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { motion } from "framer-motion"
 import { ArrowLeft } from "lucide-react"
 
 export default function AmaalaSection() {
+  const t = useTranslations("amaala")
   return (
     <section
       id="amaala-section"
@@ -54,7 +56,7 @@ export default function AmaalaSection() {
             transition={{ duration: 0.6 }}
             className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4"
           >
-            هُنا تبدأ رحلتك إلى وجهات استثنائية
+            {t("title")}
           </motion.h2>
 
           <motion.p
@@ -63,8 +65,7 @@ export default function AmaalaSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-lg md:text-xl text-white/90 mb-8 font-light"
           >
-            من جولات الغروب الهادئة إلى المنحدرات المثيرة، لدينا المغامرة
-            المثالية للاستشفاء والاسترخاء.
+            {t("description")}
           </motion.p>
 
           <motion.button
@@ -73,7 +74,7 @@ export default function AmaalaSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="px-8 py-3 rounded-lg border-2 border-white text-white hover:bg-white/10 transition-colors"
           >
-            اكتشف خدماتنا
+            {t("discoverServices")}
           </motion.button>
         </div>
 
@@ -86,14 +87,14 @@ export default function AmaalaSection() {
         >
           <div className="relative h-40 w-full mb-4 rounded-xl overflow-hidden bg-white/10">
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4 text-center">
-              <span className="text-lg font-bold mb-2">السلامة أولاً</span>
+              <span className="text-lg font-bold mb-2">{t("safetyFirst")}</span>
               <span className="text-xs text-white/80">
-                جميع المعدات معتمدة ومُفحصة بانتظام. مرشدونا محترفون مدربون.
+                {t("safetyDescription")}
               </span>
             </div>
           </div>
           <div className="flex items-center justify-between text-white">
-            <span className="text-sm font-medium">اكتشف خدماتنا</span>
+            <span className="text-sm font-medium">{t("discoverServices")}</span>
             <ArrowLeft className="w-4 h-4" />
           </div>
         </motion.div>

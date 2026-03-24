@@ -9,8 +9,8 @@ import { z } from "zod/v3"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Check, ChevronLeft, ChevronDownIcon, User } from "lucide-react"
 import { format, formatISO, startOfDay } from "date-fns"
-import { arSA } from "date-fns/locale"
-import { arSA as arSADayPicker } from "react-day-picker/locale"
+import { arSA, enUS } from "date-fns/locale"
+import { arSA as arSADayPicker, enUS as enUSDayPicker } from "react-day-picker/locale"
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -42,43 +42,24 @@ import { formatCurrency } from "@/lib/constants"
 import { useAuth } from "@/lib/auth/auth-context"
 import { useToast } from "@/lib/toast/toast-context"
 import Footer from "@/components/landing/Footer"
+import { useTranslations, useLocale } from "next-intl"
 
 const PHONE_PREFIXES = ["010", "011", "012", "015"] as const
 
 const RESOURCE_TYPES = ["kayak", "water_cycle", "sup"] as const satisfies readonly ResourceType[]
 
-const resourceLabels: Record<ResourceType, string> = {
-  kayak: "كاياك",
-  water_cycle: "دراجة مائية",
-  sup: "سب",
+type ContactFormValues = {
+  full_name: string
+  phone_prefix: (typeof PHONE_PREFIXES)[number]
+  phone_suffix: string
+  booking_date: Date
+  resource_type: ResourceType
+  quantity: number
+  guests: number
 }
 
-const contactSchema = z.object({
-  full_name: z.string().min(2, "الاسم يجب أن يحتوي على حرفين على الأقل"),
-  phone_prefix: z.enum(PHONE_PREFIXES),
-  phone_suffix: z
-    .string()
-    .length(8, "رقم الهاتف يجب أن يكون 8 أرقام")
-    .regex(/^\d{8}$/, "أدخل 8 أرقام فقط"),
-  booking_date: z.date({
-    required_error: "اختر تاريخ الحجز",
-    invalid_type_error: "تاريخ غير صالح",
-  }),
-  resource_type: z.enum(RESOURCE_TYPES),
-  quantity: z.coerce
-    .number({ invalid_type_error: "أدخل عدداً صحيحاً" })
-    .int()
-    .min(1, "الحد الأدنى 1"),
-  guests: z.coerce
-    .number({ invalid_type_error: "أدخل عدداً صحيحاً" })
-    .int()
-    .min(1, "الحد الأدنى راكب واحد"),
-})
-
-type ContactFormValues = z.infer<typeof contactSchema>
-
-function getLocalizedText(value: any, fallback = ""): string {
-  return typeof value === "string" ? value : value?.ar || value?.en || fallback
+function getLocalizedText(value: any, locale: string, fallback = ""): string {
+  return typeof value === "string" ? value : value?.[locale] || value?.ar || value?.en || fallback
 }
 
 function BookPageContent() {
@@ -86,6 +67,9 @@ function BookPageContent() {
   const tripParam = searchParams.get("trip")
   const { user } = useAuth()
   const { addToast } = useToast()
+  const t = useTranslations("book")
+  const tv = useTranslations("validation")
+  const locale = useLocale()
 
   const [step, setStep] = useState(1)
   const [trips, setTrips] = useState<Trip[]>([])
@@ -93,6 +77,34 @@ function BookPageContent() {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [bookingDateOpen, setBookingDateOpen] = useState(false)
+
+  const resourceLabels: Record<ResourceType, string> = {
+    kayak: t("resourceKayak"),
+    water_cycle: t("resourceWaterCycle"),
+    sup: t("resourceSup"),
+  }
+
+  const contactSchema = useMemo(() => z.object({
+    full_name: z.string().min(2, tv("nameMin")),
+    phone_prefix: z.enum(PHONE_PREFIXES),
+    phone_suffix: z
+      .string()
+      .length(8, tv("phoneLength"))
+      .regex(/^\d{8}$/, tv("phoneDigits")),
+    booking_date: z.date({
+      required_error: tv("dateRequired"),
+      invalid_type_error: tv("dateInvalid"),
+    }),
+    resource_type: z.enum(RESOURCE_TYPES),
+    quantity: z.coerce
+      .number({ invalid_type_error: tv("numberInvalid") })
+      .int()
+      .min(1, tv("minOne")),
+    guests: z.coerce
+      .number({ invalid_type_error: tv("numberInvalid") })
+      .int()
+      .min(1, tv("minOneGuest")),
+  }), [tv])
 
   const formSchema = useMemo(
     () =>
@@ -103,12 +115,12 @@ function BookPageContent() {
         ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `الحد الأقصى للضيوف هو ${selectedTrip.max_guests}`,
+            message: t("maxGuestsError", { max: selectedTrip.max_guests }),
             path: ["guests"],
           })
         }
       }),
-    [selectedTrip],
+    [selectedTrip, contactSchema, t],
   )
 
   // Fetch trips
@@ -116,7 +128,7 @@ function BookPageContent() {
     let cancelled = false
     async function fetchTrips() {
       setTripsLoading(true)
-      const { data, error } = await getTrips("ar")
+      const { data, error } = await getTrips(locale)
       if (cancelled) return
       setTripsLoading(false)
       if (error || !data) return
@@ -131,7 +143,7 @@ function BookPageContent() {
     return () => {
       cancelled = true
     }
-  }, [tripParam])
+  }, [tripParam, locale])
 
   const defaultTomorrow = useMemo(() => {
     const t = new Date()
@@ -214,7 +226,7 @@ function BookPageContent() {
         error.includes("409")
       addToast(
         isConflict
-          ? "لا توجد أماكن كافية لهذا التاريخ أو نوع المعدات. جرّب تاريخاً آخر أو كمية أقل."
+          ? t("noAvailability")
           : error,
         "error",
       )
@@ -234,13 +246,13 @@ function BookPageContent() {
       <section className="bg-duck-navy pt-28 md:pt-44 pb-20 px-4 md:px-10 text-center">
         <div className="max-w-2xl mx-auto">
           <span className="text-duck-cyan text-base block mb-4">
-            احجز رحلتك
+            {t("heroSubtitle")}
           </span>
           <h1 className="text-white text-4xl md:text-6xl font-bold mb-5">
-            خطوات بسيطة لمغامرة لا تُنسى
+            {t("heroTitle")}
           </h1>
           <p className="text-white/70 text-base md:text-lg leading-relaxed">
-            اختر رحلتك، أدخل بياناتك، وادفع بأمان. استمتع بتجربة حجز سلسة.
+            {t("heroDescription")}
           </p>
 
           {/* Step indicator */}
@@ -277,12 +289,12 @@ function BookPageContent() {
       {/* Content */}
       <section className="bg-off-white py-20 px-4 md:px-10">
         <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-3xl shadow-lg p-8 md:p-10" dir="rtl">
+          <div className="bg-white rounded-3xl shadow-lg p-8 md:p-10" dir={locale === "ar" ? "rtl" : "ltr"}>
             {/* Step 1: Trip selection */}
             {step === 1 && (
               <div className="space-y-8">
                 <h2 className="text-text-dark text-2xl font-bold">
-                  اختر رحلتك
+                  {t("step1Title")}
                 </h2>
                 {tripsLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -295,12 +307,12 @@ function BookPageContent() {
                   </div>
                 ) : trips.length === 0 ? (
                   <p className="text-text-body text-center py-12">
-                    لا توجد رحلات متاحة حالياً.
+                    {t("noTrips")}
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-2 max-h-[500px] overflow-y-auto scrollbar-duck">
                     {trips.map((trip) => {
-                      const name = getLocalizedText(trip.name, "رحلة")
+                      const name = getLocalizedText(trip.name, locale, t("defaultTripName"))
                       const rawImage = getTripImage(trip.images)
                       const imageUrl =
                         resolveImageUrl(rawImage) ?? placeholderImage
@@ -348,7 +360,7 @@ function BookPageContent() {
                             </p>
                             <p className="text-text-muted text-sm mt-1">
                               {trip.duration ?? 1}{" "}
-                              {(trip.duration ?? 1) === 1 ? "يوم" : "أيام"}
+                              {(trip.duration ?? 1) === 1 ? t("day") : t("days")}
                             </p>
                           </div>
                         </button>
@@ -362,7 +374,7 @@ function BookPageContent() {
                   onClick={() => setStep(2)}
                   className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow-hover w-full sm:w-auto"
                 >
-                  التالي
+                  {t("next")}
                 </Button>
               </div>
             )}
@@ -372,7 +384,7 @@ function BookPageContent() {
               <Form {...form}>
                 <form className="space-y-8">
                   <h2 className="text-text-dark text-2xl font-bold">
-                    بيانات التواصل
+                    {t("step2Title")}
                   </h2>
                   {user && (
                     <Button
@@ -382,7 +394,7 @@ function BookPageContent() {
                       className="rounded-full gap-2 border-duck-cyan text-duck-cyan hover:bg-duck-cyan/10"
                     >
                       <User className="w-4 h-4" />
-                      استخدم بياناتي
+                      {t("useMyData")}
                     </Button>
                   )}
                   <FormField
@@ -391,11 +403,11 @@ function BookPageContent() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
-                          الاسم الكامل <span className="text-red-500">*</span>
+                          {t("fullName")} <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="مثال: أحمد محمد"
+                            placeholder={t("fullNamePlaceholder")}
                             className="rounded-lg border-black/20 focus-visible:ring-duck-cyan focus-visible:border-duck-cyan"
                             {...field}
                           />
@@ -411,7 +423,7 @@ function BookPageContent() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-text-dark font-medium">
-                            رقم الهاتف <span className="text-red-500">*</span>
+                            {t("phone")} <span className="text-red-500">*</span>
                           </FormLabel>
                           <FormControl>
                             <div dir="ltr" className="flex flex-wrap gap-3">
@@ -440,7 +452,7 @@ function BookPageContent() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-text-muted text-sm">
-                            الأرقام الثمانية
+                            {t("phoneSuffix")}
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -467,7 +479,7 @@ function BookPageContent() {
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel className="text-text-dark font-medium">
-                          تاريخ الحجز <span className="text-red-500">*</span>
+                          {t("bookingDate")} <span className="text-red-500">*</span>
                         </FormLabel>
                         <Popover
                           open={bookingDateOpen}
@@ -481,10 +493,10 @@ function BookPageContent() {
                                 className="w-full justify-between font-normal text-right"
                               >
                                 {field.value ? (
-                                  format(field.value, "PPP", { locale: arSA })
+                                  format(field.value, "PPP", { locale: locale === "ar" ? arSA : enUS })
                                 ) : (
                                   <span className="text-muted-foreground">
-                                    اختر التاريخ
+                                    {t("selectDate")}
                                   </span>
                                 )}
                                 <ChevronDownIcon className="ms-2 size-4 shrink-0 opacity-50" />
@@ -494,7 +506,7 @@ function BookPageContent() {
                           <PopoverContent
                             className="w-auto overflow-hidden p-0"
                             align="start"
-                            dir="rtl"
+                            dir={locale === "ar" ? "rtl" : "ltr"}
                           >
                             <Calendar
                               mode="single"
@@ -507,8 +519,8 @@ function BookPageContent() {
                                 startOfDay(date) < startOfDay(new Date())
                               }
                               defaultMonth={field.value}
-                              locale={arSADayPicker}
-                              dir="rtl"
+                              locale={locale === "ar" ? arSADayPicker : enUSDayPicker}
+                              dir={locale === "ar" ? "rtl" : "ltr"}
                             />
                           </PopoverContent>
                         </Popover>
@@ -523,16 +535,16 @@ function BookPageContent() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
-                          نوع المعدات <span className="text-red-500">*</span>
+                          {t("resourceType")} <span className="text-red-500">*</span>
                         </FormLabel>
                         <Select
-                          dir="rtl"
+                          dir={locale === "ar" ? "rtl" : "ltr"}
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className="rounded-lg border-black/20">
-                              <SelectValue placeholder="اختر النوع" />
+                              <SelectValue placeholder={t("selectType")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -555,7 +567,7 @@ function BookPageContent() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-text-dark font-medium">
-                            الكمية <span className="text-red-500">*</span>
+                            {t("quantity")} <span className="text-red-500">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -582,7 +594,7 @@ function BookPageContent() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-text-dark font-medium">
-                            عدد الضيوف <span className="text-red-500">*</span>
+                            {t("guests")} <span className="text-red-500">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -603,7 +615,7 @@ function BookPageContent() {
                           <FormMessage />
                           {selectedTrip ? (
                             <p className="text-xs text-text-muted">
-                              الحد الأقصى: {selectedTrip.max_guests} ضيف
+                              {t("maxGuests", { max: selectedTrip.max_guests })}
                             </p>
                           ) : null}
                         </FormItem>
@@ -619,7 +631,7 @@ function BookPageContent() {
                       className="rounded-full border-text-dark"
                     >
                       <ChevronLeft className="w-4 h-4 ms-1" />
-                      السابق
+                      {t("previous")}
                     </Button>
                     <Button
                       type="button"
@@ -628,7 +640,7 @@ function BookPageContent() {
                       }}
                       className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow-hover"
                     >
-                      التالي
+                      {t("next")}
                     </Button>
                   </div>
                 </form>
@@ -639,34 +651,34 @@ function BookPageContent() {
             {step === 3 && selectedTrip && (
               <div className="space-y-8">
                 <h2 className="text-text-dark text-2xl font-bold">
-                  تأكيد الحجز
+                  {t("step3Title")}
                 </h2>
                 <div className="bg-off-white rounded-2xl p-6 space-y-4">
                   <div className="flex justify-between items-start">
-                    <span className="text-text-muted">الرحلة</span>
+                    <span className="text-text-muted">{t("reviewTrip")}</span>
                     <span className="font-medium text-text-dark text-left">
-                      {getLocalizedText(selectedTrip.name, "رحلة")}
+                      {getLocalizedText(selectedTrip.name, locale, t("defaultTripName"))}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">المدة</span>
+                    <span className="text-text-muted">{t("reviewDuration")}</span>
                     <span>
                       {selectedTrip.duration ?? 1}{" "}
-                      {(selectedTrip.duration ?? 1) === 1 ? "يوم" : "أيام"}
+                      {(selectedTrip.duration ?? 1) === 1 ? t("day") : t("days")}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">تاريخ الحجز</span>
+                    <span className="text-text-muted">{t("reviewDate")}</span>
                     <span>
                       {watchedBookingDate
                         ? format(watchedBookingDate, "PPP", {
-                            locale: arSA,
+                            locale: locale === "ar" ? arSA : enUS,
                           })
                         : "—"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">نوع المعدات</span>
+                    <span className="text-text-muted">{t("reviewResourceType")}</span>
                     <span>
                       {resourceLabels[
                         (watchedResourceType || "kayak") as ResourceType
@@ -674,13 +686,13 @@ function BookPageContent() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">الكمية / الضيوف</span>
+                    <span className="text-text-muted">{t("reviewQuantityGuests")}</span>
                     <span>
-                      {watchedQuantity} × المعدات — {watchedGuests} ضيف
+                      {t("reviewQuantityGuestsValue", { quantity: watchedQuantity, guests: watchedGuests })}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">المبلغ الإجمالي</span>
+                    <span className="text-text-muted">{t("reviewTotal")}</span>
                     <span className="font-bold text-duck-cyan">
                       {formatCurrency(
                         selectedTrip.price * (Number(watchedQuantity) || 1),
@@ -689,11 +701,11 @@ function BookPageContent() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">الاسم</span>
+                    <span className="text-text-muted">{t("reviewName")}</span>
                     <span>{watchedFullName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">الهاتف</span>
+                    <span className="text-text-muted">{t("reviewPhone")}</span>
                     <span dir="ltr">
                       +20
                       {(watchedPhonePrefix || "010").replace(/^0/, "")}
@@ -712,14 +724,14 @@ function BookPageContent() {
                         className="rounded-full border-text-dark"
                       >
                         <ChevronLeft className="w-4 h-4 ms-1" />
-                        السابق
+                        {t("previous")}
                       </Button>
                       <Button
                         type="submit"
                         disabled={submitLoading}
                         className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow-hover"
                       >
-                        {submitLoading ? "جاري التحميل..." : "متابعة للدفع"}
+                        {submitLoading ? t("submitLoading") : t("proceedToPayment")}
                       </Button>
                     </div>
                   </form>
@@ -736,9 +748,11 @@ function BookPageContent() {
 }
 
 function BookPageFallback() {
+  const t = useTranslations("book")
+
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse text-text-muted">جاري التحميل...</div>
+      <div className="animate-pulse text-text-muted">{t("loading")}</div>
     </div>
   )
 }

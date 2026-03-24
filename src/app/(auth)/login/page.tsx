@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import { GoogleLogin } from "@react-oauth/google"
 import {
   Card,
@@ -33,6 +34,7 @@ function getRedirectPath(returnUrl: string | null, userRole?: unknown): string {
 }
 
 function LoginFormContent() {
+  const t = useTranslations("auth.login")
   const { login, loginWithGoogle } = useAuth()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
@@ -79,7 +81,7 @@ function LoginFormContent() {
   }
 
   const handleGoogleError = () => {
-    setError("فشل تسجيل الدخول بحساب جوجل")
+    setError(t("googleError"))
     setIsGoogleLoading(false)
   }
 
@@ -87,10 +89,10 @@ function LoginFormContent() {
     <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl text-center text-duck-navy">
-          تسجيل الدخول
+          {t("title")}
         </CardTitle>
         <CardDescription className="text-center text-text-muted">
-          أدخل بريدك الإلكتروني وكلمة المرور للدخول إلى حسابك
+          {t("description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -101,7 +103,7 @@ function LoginFormContent() {
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="email">البريد الإلكتروني</Label>
+            <Label htmlFor="email">{t("email")}</Label>
             <Input
               id="email"
               type="email"
@@ -115,12 +117,12 @@ function LoginFormContent() {
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">كلمة المرور</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <Link
                 href="/forgot-password"
                 className="text-sm text-duck-cyan hover:text-duck-cyan-light transition-colors"
               >
-                نسيت كلمة المرور؟
+                {t("forgotPassword")}
               </Link>
             </div>
             <Input
@@ -138,7 +140,7 @@ function LoginFormContent() {
             disabled={isLoading}
             className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-bold shadow-md transition-all hover:shadow-lg"
           >
-            {isLoading ? "جاري التحميل..." : "تسجيل الدخول"}
+            {isLoading ? t("loading") : t("submit")}
           </Button>
         </form>
 
@@ -148,7 +150,7 @@ function LoginFormContent() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
-              او المتابعة عبر
+              {t("orContinueWith")}
             </span>
           </div>
         </div>
@@ -161,7 +163,7 @@ function LoginFormContent() {
         >
           {isGoogleLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 text-sm text-text-muted">
-              جاري التحميل...
+              {t("loading")}
             </div>
           )}
           <GoogleLogin
@@ -176,19 +178,19 @@ function LoginFormContent() {
         </div>
 
         <p className="text-center text-sm text-text-muted mt-4">
-          ليس لديك حساب؟{" "}
+          {t("noAccount")}{" "}
           <Link
             href="/register"
             className="text-duck-cyan hover:text-duck-cyan-light font-bold transition-colors"
           >
-            إنشاء حساب
+            {t("createAccount")}
           </Link>{" "}
           |{" "}
           <Link
             href="/register?type=supplier"
             className="text-duck-cyan hover:text-duck-cyan-light font-bold transition-colors"
           >
-            سجل كمزود خدمة
+            {t("registerAsSupplier")}
           </Link>
         </p>
       </CardContent>

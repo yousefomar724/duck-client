@@ -2,29 +2,29 @@
 
 import Image from "next/image"
 import { useState } from "react"
+import { useTranslations } from "next-intl"
 
-const seasons = ["الربيع", "الصيف", "الخريف", "الشتاء"] as const
+const seasonKeys = ["spring", "summer", "autumn", "winter"] as const
+type SeasonKey = (typeof seasonKeys)[number]
 
-const seasonImages: Record<(typeof seasons)[number], string> = {
-  الربيع: "/resort.webp",
-  الصيف: "/weather-season-bg.webp",
-  الخريف: "/offer.webp",
-  الشتاء: "/resort.webp",
+const seasonImages: Record<SeasonKey, string> = {
+  spring: "/resort.webp",
+  summer: "/weather-season-bg.webp",
+  autumn: "/offer.webp",
+  winter: "/resort.webp",
 }
 
-const seasonWeather: Record<
-  (typeof seasons)[number],
-  { temp: number; wind: string }
-> = {
-  الربيع: { temp: 26, wind: "8-14" },
-  الصيف: { temp: 38, wind: "5-12" },
-  الخريف: { temp: 28, wind: "10-18" },
-  الشتاء: { temp: 18, wind: "12-20" },
+const seasonWeather: Record<SeasonKey, { temp: number; wind: string }> = {
+  spring: { temp: 26, wind: "8-14" },
+  summer: { temp: 38, wind: "5-12" },
+  autumn: { temp: 28, wind: "10-18" },
+  winter: { temp: 18, wind: "12-20" },
 }
 
 export default function WeatherSection() {
-  const [activeSeason, setActiveSeason] =
-    useState<(typeof seasons)[number]>("الربيع")
+  const t = useTranslations("weather")
+
+  const [activeSeason, setActiveSeason] = useState<SeasonKey>("spring")
   const [activeDest, setActiveDest] = useState("redsea")
 
   return (
@@ -33,10 +33,10 @@ export default function WeatherSection() {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <span className="text-teal-primary text-sm sm:text-base block mb-2 sm:mb-3">
-            الطقس
+            {t("subtitle")}
           </span>
           <h2 className="text-text-dark text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8">
-            أسوان على مدار العام
+            {t("title")}
           </h2>
 
           {/* Destination Toggle */}
@@ -49,7 +49,7 @@ export default function WeatherSection() {
                   : "bg-transparent text-text-dark hover:bg-gray-50"
               }`}
             >
-              أسوان
+              {t("aswan")}
             </button>
             <button
               onClick={() => setActiveDest("amaala")}
@@ -59,7 +59,7 @@ export default function WeatherSection() {
                   : "bg-transparent text-text-dark hover:bg-gray-50"
               }`}
             >
-              نهر النيل
+              {t("nile")}
             </button>
           </div>
         </div>
@@ -69,7 +69,7 @@ export default function WeatherSection() {
           <Image
             key={activeSeason}
             src={seasonImages[activeSeason]}
-            alt={`طقس ${activeSeason}`}
+            alt={t(activeSeason)}
             fill
             className="object-cover transition-opacity duration-300"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1920px"
@@ -87,28 +87,28 @@ export default function WeatherSection() {
                   <span className="text-2xl sm:text-3xl md:text-4xl font-bold">
                     {seasonWeather[activeSeason].temp}
                   </span>
-                  <span className="text-base sm:text-lg md:text-xl">°م</span>
+                  <span className="text-base sm:text-lg md:text-xl">{t("tempUnit")}</span>
                 </div>
                 <div className="text-[10px] sm:text-xs text-white/70">
-                  درجة الحرارة
+                  {t("temperature")}
                 </div>
               </div>
               <div className="bg-black/30 backdrop-blur-md rounded-lg sm:rounded-xl p-3 sm:p-5 text-white min-w-[100px] sm:min-w-[120px] md:min-w-[140px] text-right">
                 <div className="flex items-baseline justify-end gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
-                  <span className="text-sm sm:text-base md:text-lg">كم/س</span>
+                  <span className="text-sm sm:text-base md:text-lg">{t("windUnit")}</span>
                   <span className="text-xl sm:text-2xl md:text-3xl font-bold">
                     {seasonWeather[activeSeason].wind}
                   </span>
                 </div>
                 <div className="text-[10px] sm:text-xs text-white/70">
-                  سرعة الرياح
+                  {t("windSpeed")}
                 </div>
               </div>
             </div>
 
             {/* Season Tabs */}
             <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center md:justify-end rtl:md:justify-start bg-black/20 backdrop-blur-sm p-1 rounded-full w-fit mx-auto md:mx-0">
-              {seasons.map((season) => (
+              {seasonKeys.map((season) => (
                 <button
                   key={season}
                   onClick={() => setActiveSeason(season)}
@@ -118,7 +118,7 @@ export default function WeatherSection() {
                       : "bg-transparent text-white hover:bg-white/10"
                   }`}
                 >
-                  {season}
+                  {t(season)}
                 </button>
               ))}
             </div>

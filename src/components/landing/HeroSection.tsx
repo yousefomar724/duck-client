@@ -1,10 +1,12 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { motion } from "framer-motion"
 import { MessageCircleMore } from "lucide-react"
 import Link from "next/link"
 
 export default function HeroSection() {
+  const t = useTranslations("hero")
   return (
     <section
       id="hero-section"
@@ -49,7 +51,7 @@ export default function HeroSection() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-white text-5xl md:text-7xl font-bold leading-[1.2] drop-shadow-lg max-w-2xl"
             >
-              اصنع مغامرتك المائية <br /> التي لا تُنسى
+              {t("title").split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -57,8 +59,7 @@ export default function HeroSection() {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="text-white/90 text-lg md:text-xl mt-4 max-w-2xl drop-shadow-md"
             >
-              استمتع بنهر النيل الأسطوري في أسوان كما لم يحدث من قبل. تجديف
-              بالكاياك، وستاند اب، واستكشف مع أفضل تجربة رياضات مائية في مصر.
+              {t("description")}
             </motion.p>
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               {/* <motion.a
@@ -79,14 +80,14 @@ export default function HeroSection() {
                 transition={{ duration: 0.8, delay: 0.5 }}
                 className="inline-flex items-center justify-center rounded-2xl bg-duck-yellow text-neutral-900 font-bold text-xl px-10 py-3 shadow-xl hover:bg-duck-yellow-hover transition-all duration-200 drop-shadow-lg"
               >
-                <Link href="/book">احجز</Link>
+                <Link href="/book">{t("book")}</Link>
               </motion.div>
             </div>
           </div>
 
           {/* Scroll Indicator (Center) */}
           <div className="flex flex-col items-center gap-2 mb-4 text-white absolute -bottom-20 left-1/2 -translate-x-1/2">
-            <span className="text-sm font-medium">اكتشف المزيد</span>
+            <span className="text-sm font-medium">{t("discoverMore")}</span>
             <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center p-1">
               <motion.div
                 animate={{ y: [0, 6, 0] }}

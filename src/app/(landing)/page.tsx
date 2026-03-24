@@ -3,9 +3,7 @@ import RedSeaSection from "@/components/landing/RedSeaSection"
 import AmaalaSection from "@/components/landing/AmaalaSection"
 import ResortsSection from "@/components/landing/ResortsSection"
 import OffersSection from "@/components/landing/OffersSection"
-import ExperiencesSection from "@/components/landing/ExperiencesSection"
 import LocationSection from "@/components/landing/LocationSection"
-import WeatherSection from "@/components/landing/WeatherSection"
 import FAQSection from "@/components/landing/FAQSection"
 import Footer from "@/components/landing/Footer"
 
@@ -45,9 +43,7 @@ export default function Home() {
         <div className="bg-white">
           <ResortsSection />
           <OffersSection />
-          {/* <ExperiencesSection /> */}
           <LocationSection />
-          {/* <WeatherSection /> */}
           <FAQSection />
           <Footer />
         </div>
