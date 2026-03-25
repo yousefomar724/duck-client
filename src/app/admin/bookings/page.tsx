@@ -41,7 +41,7 @@ import { ErrorDisplay } from "@/components/shared/error-display"
 import StatCard from "@/components/shared/stat-card"
 import { CalendarCheck, CheckCircle, Clock } from "lucide-react"
 import type { BookingStatus, Booking, Trip, Supplier } from "@/lib/types"
-import { useToast } from "@/lib/toast/toast-context"
+import { useToast } from "@/lib/stores/toast-store"
 
 const ALL_STATUSES: BookingStatus[] = [
   "PENDING",

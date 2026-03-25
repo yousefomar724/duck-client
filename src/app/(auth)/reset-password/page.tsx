@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useEffect } from "react"
+import { Suspense, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -28,12 +28,6 @@ function ResetPasswordContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!token) {
-      setError(t("invalidLinkError"))
-    }
-  }, [token])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

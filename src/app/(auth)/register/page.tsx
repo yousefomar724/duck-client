@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useAuth } from "@/lib/auth/auth-context"
+import { useAuth } from "@/lib/stores/auth-store"
 
 type RegisterKind = "user" | "supplier"
 
@@ -52,7 +52,7 @@ export default function RegisterPage() {
       usernamePlaceholder: isSupplier
         ? t("usernamePlaceholderSupplier")
         : t("usernamePlaceholderUser"),
-      redirectPath: isSupplier ? "/supplier/my-trips" : "/",
+      redirectPath: isSupplier ? "/supplier/onboarding" : "/",
     }
   }, [registerType, t])
 
@@ -127,7 +127,7 @@ export default function RegisterPage() {
       return
     }
 
-    window.location.assign("/supplier/my-trips")
+    window.location.assign("/supplier/onboarding")
   }
 
   const handleGoogleError = () => {

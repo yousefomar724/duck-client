@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import * as supplierStorageApi from "@/lib/api/supplier-storage"
-import { useAuth } from "@/lib/auth/auth-context"
-import { useToast } from "@/lib/toast/toast-context"
+import { useAuth } from "@/lib/stores/auth-store"
+import { useToast } from "@/lib/stores/toast-store"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { ResourceType } from "@/lib/types"
 
@@ -33,7 +33,7 @@ function parseResources(raw: unknown): Record<string, number> {
 }
 
 export default function SupplierStoragePage() {
-  const { user } = useAuth()
+  const { user, refreshOnboardingStatus } = useAuth()
   const { addToast } = useToast()
   const supplierId = user?.supplier_id
 
@@ -98,6 +98,7 @@ export default function SupplierStoragePage() {
       return
     }
     addToast("تم حفظ سعة المعدات", "success")
+    await refreshOnboardingStatus()
     await load()
   }
 

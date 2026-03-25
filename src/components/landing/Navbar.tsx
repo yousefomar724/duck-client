@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import SettingsDialog from "@/components/landing/SettingsDialog"
-import { useAuth } from "@/lib/auth/auth-context"
+import { useAuth } from "@/lib/stores/auth-store"
 
 export default function Navbar() {
   const [isHidden, setIsHidden] = useState(false)

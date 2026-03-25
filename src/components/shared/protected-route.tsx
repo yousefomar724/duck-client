@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth/auth-context';
+import { useAuth } from "@/lib/stores/auth-store"
 import { Skeleton } from '@/components/ui/skeleton';
 import { getToken, decodeToken } from '@/lib/auth/token';
 

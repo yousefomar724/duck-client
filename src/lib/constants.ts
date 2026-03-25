@@ -6,6 +6,7 @@ import {
   Ship,
   Users,
   Package,
+  User,
   type LucideIcon,
 } from "lucide-react"
 import type { BookingStatus, PayoutStatus } from "./types"
@@ -59,6 +60,11 @@ export const supplierNavItems: NavItem[] = [
     title: "الحجوزات",
     href: "/supplier/bookings",
     icon: CalendarCheck,
+  },
+  {
+    title: "الملف الشخصي",
+    href: "/supplier/profile",
+    icon: User,
   },
   {
     title: "سعة المعدات",

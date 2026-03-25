@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LogOut, User } from "lucide-react"
-import { useAuth } from "@/lib/auth/auth-context"
+import { useAuth } from "@/lib/stores/auth-store"
 import {
   Sidebar,
   SidebarContent,

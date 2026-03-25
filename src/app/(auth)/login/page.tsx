@@ -16,9 +16,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { useAuth } from "@/lib/auth/auth-context"
+import { useAuth } from "@/lib/stores/auth-store"
 
-function getRedirectPath(returnUrl: string | null, userRole?: unknown): string {
+function getRedirectPath(
+  returnUrl: string | null,
+  userRole?: unknown,
+  onboardingComplete?: boolean | null,
+  onboardingSkipped?: boolean,
+): string {
   if (returnUrl) {
     try {
       const decoded = decodeURIComponent(returnUrl)
@@ -29,7 +34,11 @@ function getRedirectPath(returnUrl: string | null, userRole?: unknown): string {
   }
   const role = userRole != null ? Number(userRole) : NaN
   if (role === 2) return "/admin/dashboard"
-  if (role === 1) return "/supplier/my-trips"
+  if (role === 1) {
+    const needsOnboarding = onboardingComplete === false || onboardingComplete == null
+    if (needsOnboarding && !onboardingSkipped) return "/supplier/onboarding"
+    return "/supplier/my-trips"
+  }
   return "/"
 }
 
@@ -54,7 +63,8 @@ function LoginFormContent() {
       setIsLoading(false)
     } else {
       const returnUrl = searchParams.get("returnUrl")
-      const path = getRedirectPath(returnUrl, user?.role)
+      const { onboardingComplete, onboardingSkipped } = useAuth.getState()
+      const path = getRedirectPath(returnUrl, user?.role, onboardingComplete, onboardingSkipped)
       window.location.assign(path)
     }
   }
@@ -75,7 +85,8 @@ function LoginFormContent() {
       setIsGoogleLoading(false)
     } else {
       const returnUrl = searchParams.get("returnUrl")
-      const path = getRedirectPath(returnUrl, user?.role)
+      const { onboardingComplete, onboardingSkipped } = useAuth.getState()
+      const path = getRedirectPath(returnUrl, user?.role, onboardingComplete, onboardingSkipped)
       window.location.assign(path)
     }
   }

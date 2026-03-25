@@ -3,9 +3,9 @@ import localFont from "next/font/local"
 import "./globals.css"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale, getMessages } from "next-intl/server"
-import { AuthProvider } from "@/lib/auth/auth-context"
-import { ToastProvider } from "@/lib/toast/toast-context"
 import { ToastContainer } from "@/components/shared/toast-container"
+import { AuthHydrator } from "@/lib/auth/auth-hydrator"
+import { GoogleOAuthProviderWrapper } from "@/lib/auth/google-oauth-provider"
 
 const fedraSerif = localFont({
   src: [
@@ -49,12 +49,11 @@ export default async function RootLayout({
         className={`${fedraSerif.variable} font-serif antialiased`}
         suppressHydrationWarning
       >
-        <ToastProvider>
-          <AuthProvider>
-            <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
-          </AuthProvider>
+        <GoogleOAuthProviderWrapper>
+          <AuthHydrator />
+          <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
           <ToastContainer />
-        </ToastProvider>
+        </GoogleOAuthProviderWrapper>
       </body>
     </html>
   )

@@ -1,6 +1,6 @@
 'use client';
 
-import { useToast } from '@/lib/toast/toast-context';
+import { useToast } from '@/lib/stores/toast-store';
 import { AlertCircle, CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,7 +38,7 @@ export function ToastContainer() {
   };
 
   return (
-    <div className="fixed top-4 end-4 z-[9999] space-y-2 max-w-sm">
+    <div className="fixed top-4 end-4 z-9999 space-y-2 max-w-sm">
       {toasts.map((toast) => {
         const styles = getToastStyles(toast.type);
         return (

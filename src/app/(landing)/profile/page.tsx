@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { useAuth } from "@/lib/auth/auth-context"
+import { useAuth } from "@/lib/stores/auth-store"
 import { useTranslations } from "next-intl"
 
 function ProfileContent() {

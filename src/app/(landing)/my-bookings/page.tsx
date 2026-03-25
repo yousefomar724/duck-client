@@ -29,7 +29,7 @@ import { formatCurrency, formatDateTime } from "@/lib/constants"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Booking, BookingStatus } from "@/lib/types"
-import { useToast } from "@/lib/toast/toast-context"
+import { useToast } from "@/lib/stores/toast-store"
 import Footer from "@/components/landing/Footer"
 import { useTranslations, useLocale } from "next-intl"
 

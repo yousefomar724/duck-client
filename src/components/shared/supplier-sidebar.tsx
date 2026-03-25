@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LogOut, User } from "lucide-react"
-import { useAuth } from "@/lib/auth/auth-context"
+import { LogOut, Package, User } from "lucide-react"
+import { useAuth } from "@/lib/stores/auth-store"
 import {
   Sidebar,
   SidebarContent,
@@ -28,11 +28,13 @@ import { supplierNavItems } from "@/lib/constants"
 
 export default function SupplierSidebar() {
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user, logout, onboardingComplete } = useAuth()
   const displayName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(" ") ||
       user.username
     : "مزود خدمة"
+
+  const needsSetup = onboardingComplete === false
 
   return (
     <Sidebar collapsible="icon">
@@ -60,6 +62,21 @@ export default function SupplierSidebar() {
                   </SidebarMenuItem>
                 )
               })}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === "/supplier/onboarding"}
+                >
+                  <Link href="/supplier/onboarding">
+                    <Package className="w-4 h-4" />
+                    <span className="flex items-center gap-2">
+                      إكمال الإعداد
+                      {needsSetup && <span className="w-2 h-2 rounded-full bg-duck-yellow" />}
+                    </span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -83,9 +100,11 @@ export default function SupplierSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" side="top" className="w-56">
-                <DropdownMenuItem>
-                  <User className="w-4 h-4 ml-2" />
-                  <span>الملف الشخصي</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/supplier/profile">
+                    <User className="w-4 h-4 ml-2" />
+                    <span>الملف الشخصي</span>
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => logout()}>
                   <LogOut className="w-4 h-4 ml-2" />
