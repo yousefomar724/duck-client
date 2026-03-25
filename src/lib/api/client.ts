@@ -23,9 +23,7 @@ async function apiClient<T>(
 
     // Add language query parameter
     const lang = options.lang || (typeof window !== 'undefined' ? document.documentElement.lang : 'ar');
-    if (lang && !endpoint.includes('?')) {
-      url.searchParams.set('lang', lang);
-    } else if (lang && endpoint.includes('?')) {
+    if (lang) {
       url.searchParams.set('lang', lang);
     }
 
@@ -47,15 +45,14 @@ async function apiClient<T>(
       headers,
     });
 
-    // Handle unauthorized - clear token, notify auth, redirect to login
-    // if (response.status === 401) {
-    //   clearToken();
-    //   if (typeof window !== 'undefined') {
-    //     window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-    //     window.location.href = '/login';
-    //   }
-    //   return { data: null, error: 'Unauthorized' };
-    // }
+    if (response.status === 401) {
+      clearToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+        window.location.href = '/login';
+      }
+      return { data: null, error: 'Unauthorized' };
+    }
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -102,14 +99,14 @@ async function uploadFile<T>(
       body: formData,
     });
 
-    // if (response.status === 401) {
-    //   clearToken();
-    //   if (typeof window !== 'undefined') {
-    //     window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-    //     window.location.href = '/login';
-    //   }
-    //   return { data: null, error: 'Unauthorized' };
-    // }
+    if (response.status === 401) {
+      clearToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+        window.location.href = '/login';
+      }
+      return { data: null, error: 'Unauthorized' };
+    }
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));

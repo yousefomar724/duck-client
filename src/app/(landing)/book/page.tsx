@@ -203,6 +203,11 @@ function BookPageContent() {
 
   const handleSubmit = form.handleSubmit(async (values) => {
     if (!selectedTrip) return
+    if (!user) {
+      const returnUrl = encodeURIComponent("/book?trip=" + selectedTrip.id)
+      window.location.assign("/login?returnUrl=" + returnUrl)
+      return
+    }
     const prefixDigits = values.phone_prefix.startsWith("0")
       ? values.phone_prefix.slice(1)
       : values.phone_prefix
