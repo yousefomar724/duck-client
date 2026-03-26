@@ -92,6 +92,12 @@ function BookPageContent() {
     water_cycle: t("resourceWaterCycle"),
     sup: t("resourceSup"),
   }
+  const resourceCapacityHints: Record<ResourceType, string> = {
+    kayak: t("capacityNoteKayak"),
+    water_cycle: t("capacityNoteWaterCycle"),
+    sup: t("capacityNoteSup"),
+  }
+  const isNonArabicLocale = locale !== "ar"
 
   const contactSchema = useMemo(
     () =>
@@ -309,6 +315,11 @@ function BookPageContent() {
                 <h2 className="text-text-dark text-2xl font-bold">
                   {t("step1Title")}
                 </h2>
+                {isNonArabicLocale ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {t("priceEgyptiansOnlyNote")}
+                  </p>
+                ) : null}
                 {tripsLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {[1, 2, 3, 4].map((i) => (
@@ -585,6 +596,19 @@ function BookPageContent() {
                       </FormItem>
                     )}
                   />
+                  <div className="rounded-xl border border-duck-cyan/25 bg-duck-cyan/5 p-4 text-sm text-text-body">
+                    <p className="font-medium text-text-dark">
+                      {t("capacityNoteTitle")}
+                    </p>
+                    <p className="mt-1">{t("capacityNoteGeneral")}</p>
+                    <p className="mt-1">
+                      {
+                        resourceCapacityHints[
+                          (watchedResourceType || "kayak") as ResourceType
+                        ]
+                      }
+                    </p>
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <FormField
@@ -745,6 +769,11 @@ function BookPageContent() {
                       )}
                     </span>
                   </div>
+                  {isNonArabicLocale ? (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                      {t("priceEgyptiansOnlyNote")}
+                    </p>
+                  ) : null}
                   <div className="flex justify-between">
                     <span className="text-text-muted">{t("reviewName")}</span>
                     <span>{watchedFullName}</span>

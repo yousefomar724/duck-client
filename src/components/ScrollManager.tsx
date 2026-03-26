@@ -85,11 +85,6 @@ export default function ScrollManager() {
         )
       } else {
         // nextSection is 3 -> Go to Normal Content
-        // We want to scroll to normal content, but NOT hijack the scroll completely.
-        // We just animate the scroll to the start of normal content once.
-        // After that, the wheel handler's early return (scrollY >= normalContentStart - 5)
-        // will let native scroll take over.
-        
         isAnimating.current = true
 
         gsap.to(`#intro-section-${current} .section-content`, {
@@ -171,6 +166,13 @@ export default function ScrollManager() {
     const handleWheel = (e: WheelEvent) => {
       if (pathname !== "/") return
 
+      // Block ALL scroll events while animating to prevent native scroll
+      // from fighting the GSAP scroll animation
+      if (isAnimating.current) {
+        e.preventDefault()
+        return
+      }
+
       const scrollY = window.scrollY
       const normalContentStart = window.innerHeight
 
@@ -210,6 +212,12 @@ export default function ScrollManager() {
 
     const handleTouchMove = (e: TouchEvent) => {
       if (pathname !== "/") return
+
+      // Block ALL touch-scroll while animating
+      if (isAnimating.current) {
+        e.preventDefault()
+        return
+      }
 
       const scrollY = window.scrollY
       const normalContentStart = window.innerHeight

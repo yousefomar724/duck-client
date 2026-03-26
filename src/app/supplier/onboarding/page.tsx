@@ -407,6 +407,15 @@ export default function SupplierOnboardingPage() {
                     <div className="space-y-2">
                       <Label>{t("equipmentCapacity")}</Label>
                       <p className="text-sm text-text-muted">{t("equipmentCapacityHint")}</p>
+                      <div className="rounded-xl border border-duck-cyan/25 bg-duck-cyan/5 p-4 text-sm text-text-body">
+                        <p className="font-medium text-text-dark">
+                          {t("equipmentCapacityRelationTitle")}
+                        </p>
+                        <p className="mt-1">{t("equipmentCapacityRelationNote")}</p>
+                        <p className="mt-1">{t("equipmentCapacityKayakNote")}</p>
+                        <p className="mt-1">{t("equipmentCapacityWaterCycleNote")}</p>
+                        <p className="mt-1">{t("equipmentCapacitySupNote")}</p>
+                      </div>
 
                       <div className="space-y-4 rounded-xl border bg-white p-6">
                         <div className="space-y-2">

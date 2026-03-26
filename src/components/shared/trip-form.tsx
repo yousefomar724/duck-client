@@ -539,7 +539,7 @@ export default function TripForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="max_guests">عدد الضيوف الأقصى</Label>
+                  <Label htmlFor="max_guests">عدد الاشخاص الأقصى</Label>
                   <Input
                     id="max_guests"
                     type="number"

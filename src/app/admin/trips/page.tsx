@@ -208,7 +208,7 @@ export default function AdminTripsPage() {
                   <TableHead className="text-right">المورد</TableHead>
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">التاريخ</TableHead>
-                  <TableHead className="text-right">عدد الضيوف</TableHead>
+                  <TableHead className="text-right">عدد الاشخاص</TableHead>
                   <TableHead className="text-right">المدة</TableHead>
                   <TableHead className="text-right">الإجراءات</TableHead>
                 </TableRow>

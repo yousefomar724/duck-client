@@ -196,7 +196,7 @@ export default function MyTripsPage() {
                     {formatCurrency(trip.price, trip.currency)}
                   </p>
                   <p>
-                    <span className="font-medium">عدد الضيوف:</span>{" "}
+                    <span className="font-medium">عدد الاشخاص:</span>{" "}
                     {trip.max_guests}
                   </p>
                   <p>
