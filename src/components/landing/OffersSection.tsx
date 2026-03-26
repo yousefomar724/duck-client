@@ -24,7 +24,9 @@ export default function OffersSection() {
   const locale = useLocale()
 
   const getLocalizedText = (value: any, fallback = "") =>
-    typeof value === "string" ? value : value?.[locale] || value?.ar || value?.en || fallback
+    typeof value === "string"
+      ? value
+      : value?.[locale] || value?.ar || value?.en || fallback
 
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
@@ -91,7 +93,9 @@ export default function OffersSection() {
     <section id="experiences" className="bg-off-white py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
-        <span className="text-duck-cyan text-base block mb-3">{t("subtitle")}</span>
+        <span className="text-duck-cyan text-base block mb-3">
+          {t("subtitle")}
+        </span>
         <h2 className="text-text-dark text-4xl md:text-5xl font-bold">
           {t("title")}
         </h2>
@@ -119,9 +123,7 @@ export default function OffersSection() {
               </div>
             ) : trips.length === 0 ? (
               <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
-                <p className="text-text-body text-center">
-                  {t("noTrips")}
-                </p>
+                <p className="text-text-body text-center">{t("noTrips")}</p>
               </div>
             ) : (
               trips.map((trip) => {
@@ -173,7 +175,7 @@ export default function OffersSection() {
                                   src={imageUrl}
                                   alt={`${tripName} - ${t("imageAlt", { index: i + 1 })}`}
                                   fill
-                                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                  className="object-cover"
                                   unoptimized={imageUrl.startsWith("http")}
                                 />
                               </div>
@@ -234,7 +236,7 @@ export default function OffersSection() {
                           {formatCurrency(trip.price, trip.currency)}
                         </p>
                         <p className="text-text-muted text-sm mt-1">
-                          {(trip.duration ?? 1)}{" "}
+                          {trip.duration ?? 1}{" "}
                           {(trip.duration ?? 1) === 1 ? t("day") : t("days")}
                         </p>
                       </div>

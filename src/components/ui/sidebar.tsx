@@ -83,7 +83,20 @@ function SidebarProvider({
         _setOpen((prev) => {
           const openState = typeof value === "function" ? value(prev) : value
           // #region agent log
-          fetch('http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.tsx:setOpen',message:'_setOpen updater',data:{prev,openState},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+          fetch(
+            "http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                location: "sidebar.tsx:setOpen",
+                message: "_setOpen updater",
+                data: { prev, openState },
+                timestamp: Date.now(),
+                hypothesisId: "A",
+              }),
+            },
+          ).catch(() => {})
           // #endregion
           return openState
         })
@@ -100,7 +113,17 @@ function SidebarProvider({
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.tsx:toggleSidebar',message:'toggleSidebar',data:{isMobile},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+    fetch("http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "sidebar.tsx:toggleSidebar",
+        message: "toggleSidebar",
+        data: { isMobile },
+        timestamp: Date.now(),
+        hypothesisId: "C",
+      }),
+    }).catch(() => {})
     // #endregion
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
@@ -186,8 +209,18 @@ function Sidebar({
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
   // #region agent log
   React.useEffect(() => {
-    fetch('http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.tsx:Sidebar',message:'Sidebar state',data:{state,isMobile,collapsible},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
-  }, [state, isMobile, collapsible]);
+    fetch("http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "sidebar.tsx:Sidebar",
+        message: "Sidebar state",
+        data: { state, isMobile, collapsible },
+        timestamp: Date.now(),
+        hypothesisId: "D",
+      }),
+    }).catch(() => {})
+  }, [state, isMobile, collapsible])
   // #endregion
 
   if (collapsible === "none") {
@@ -300,7 +333,20 @@ function SidebarTrigger({
       className={cn("src:size-7", className)}
       onClick={(event) => {
         // #region agent log
-        fetch('http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.tsx:SidebarTrigger',message:'trigger click',data:{},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+        fetch(
+          "http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: "sidebar.tsx:SidebarTrigger",
+              message: "trigger click",
+              data: {},
+              timestamp: Date.now(),
+              hypothesisId: "B",
+            }),
+          },
+        ).catch(() => {})
         // #endregion
         onClick?.(event)
         toggleSidebar()

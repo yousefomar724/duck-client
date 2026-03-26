@@ -105,6 +105,45 @@
     "accessCar": "ساعات",
     "accessCarDesc": "بالسيارة من الأقصر"
   },
+  "mapPage": {
+    "metadata": {
+      "title": "خريطة الأنشطة المائية | Duck Entertainment",
+      "description": "اكتشف مواقع الأنشطة المائية في أسوان على الخريطة التفاعلية"
+    },
+    "filters": {
+      "all": "الكل",
+      "kayak": "كاياك",
+      "sup": "تجديف واقف",
+      "waterbike": "دراجة مائية"
+    },
+    "difficulty": {
+      "easy": "سهل",
+      "medium": "متوسط",
+      "hard": "صعب"
+    },
+    "controls": {
+      "lightMode": "الوضع الفاتح",
+      "darkMode": "الوضع الداكن",
+      "zoomIn": "تكبير",
+      "zoomOut": "تصغير"
+    },
+    "status": {
+      "comingSoon": "الافتتاح قريباً",
+      "availableNow": "متاح الآن"
+    },
+    "cta": {
+      "comingSoon": "قريباً",
+      "bookNow": "احجز الآن"
+    },
+    "carousel": {
+      "previous": "السابق",
+      "next": "التالي",
+      "imageDot": "صورة {index}"
+    },
+    "imageAlt": "{name} - صورة {index}",
+    "operatingHours": "ساعات العمل: {hours}",
+    "close": "إغلاق"
+  },
   "weather": {
     "subtitle": "الطقس",
     "title": "أسوان على مدار العام",
@@ -266,7 +305,7 @@
     "equipmentCapacityHint": "حدد الحد الأقصى المتاح للحجز يومياً",
     "kayak": "كاياك",
     "water_cycle": "دراجة مائية",
-    "sup": "سب",
+    "sup": "التجديف وقوفاً",
     "back": "رجوع",
     "finish": "إنهاء الإعداد",
     "storageSaved": "تم حفظ سعة المعدات",
@@ -337,7 +376,7 @@
     "maxGuestsError": "الحد الأقصى للضيوف هو {max}",
     "resourceKayak": "كاياك",
     "resourceWaterCycle": "دراجة مائية",
-    "resourceSup": "سب",
+    "resourceSup": "التجديف وقوفاً",
     "loading": "جاري التحميل..."
   },
   "contact": {
@@ -398,7 +437,7 @@
     "cancelSuccess": "تم إلغاء الحجز وطلب الاسترداد.",
     "resourceKayak": "كاياك",
     "resourceWaterCycle": "دراجة مائية",
-    "resourceSup": "سب"
+    "resourceSup": "التجديف وقوفاً"
   },
   "bookingSuccess": {
     "title": "تم الحجز بنجاح!",

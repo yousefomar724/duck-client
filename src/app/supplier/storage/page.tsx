@@ -14,7 +14,7 @@ import type { ResourceType } from "@/lib/types"
 const labels: Record<ResourceType, string> = {
   kayak: "كاياك",
   water_cycle: "دراجة مائية",
-  sup: "سب",
+  sup: "التجديف وقوفاً",
 }
 
 function parseResources(raw: unknown): Record<string, number> {
@@ -84,9 +84,7 @@ export default function SupplierStoragePage() {
       water_cycle: Math.max(0, parseInt(waterCycle, 10) || 0),
       sup: Math.max(0, parseInt(sup, 10) || 0),
     }
-    if (
-      resources.kayak + resources.water_cycle + resources.sup === 0
-    ) {
+    if (resources.kayak + resources.water_cycle + resources.sup === 0) {
       addToast("أدخل سعة واحدة على الأقل لنوع المعدات", "error")
       return
     }

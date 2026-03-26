@@ -395,7 +395,7 @@ export default function AdminDestinations() {
           return (
             <Card
               key={destination.id}
-              className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200 gap-2!"
+              className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200 gap-0!"
             >
               <div className="relative h-48 w-full bg-gray-200">
                 {fullImageUrl ? (

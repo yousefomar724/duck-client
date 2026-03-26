@@ -69,7 +69,7 @@ export default function AdminSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu dir="rtl">
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild className="h-full!">
                 <SidebarMenuButton className="w-full">
                   <Avatar className="w-8 h-8">
                     <AvatarFallback className="bg-duck-cyan text-white">

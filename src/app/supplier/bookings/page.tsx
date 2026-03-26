@@ -55,7 +55,7 @@ const filterLabels: Record<(typeof ALL_FILTER_VALUES)[number], string> = {
 const resourceLabels: Record<string, string> = {
   kayak: "كاياك",
   water_cycle: "دراجة مائية",
-  sup: "سب",
+  sup: "التجديف وقوفاً",
 }
 
 export default function SupplierBookingsPage() {
@@ -155,12 +155,16 @@ export default function SupplierBookingsPage() {
               <TableHead className="text-right font-bold">اسم العميل</TableHead>
               <TableHead className="text-right font-bold">رقم الهاتف</TableHead>
               <TableHead className="text-right font-bold">اسم الرحلة</TableHead>
-              <TableHead className="text-right font-bold">تاريخ الحجز</TableHead>
+              <TableHead className="text-right font-bold">
+                تاريخ الحجز
+              </TableHead>
               <TableHead className="text-right font-bold">المعدّات</TableHead>
               <TableHead className="text-right font-bold">الكمية</TableHead>
               <TableHead className="text-right font-bold">المبلغ</TableHead>
               <TableHead className="text-right font-bold">الحالة</TableHead>
-              <TableHead className="text-right font-bold">تاريخ الإنشاء</TableHead>
+              <TableHead className="text-right font-bold">
+                تاريخ الإنشاء
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -176,8 +180,8 @@ export default function SupplierBookingsPage() {
             ) : (
               filteredBookings.map((booking) => {
                 const rt = booking.resource_type
-                  ? resourceLabels[booking.resource_type] ??
-                    booking.resource_type
+                  ? (resourceLabels[booking.resource_type] ??
+                    booking.resource_type)
                   : "—"
                 return (
                   <TableRow key={booking.id} className="hover:bg-duck-cyan/5">

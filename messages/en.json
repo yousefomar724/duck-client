@@ -105,6 +105,45 @@
     "accessCar": "Hours",
     "accessCarDesc": "By car from Luxor"
   },
+  "mapPage": {
+    "metadata": {
+      "title": "Water Activities Map | Duck Entertainment",
+      "description": "Discover water activity locations in Aswan on the interactive map"
+    },
+    "filters": {
+      "all": "All",
+      "kayak": "Kayak",
+      "sup": "Stand Up Paddle",
+      "waterbike": "Water Bike"
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "controls": {
+      "lightMode": "Light mode",
+      "darkMode": "Dark mode",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out"
+    },
+    "status": {
+      "comingSoon": "Coming soon",
+      "availableNow": "Available now"
+    },
+    "cta": {
+      "comingSoon": "Coming soon",
+      "bookNow": "Book now"
+    },
+    "carousel": {
+      "previous": "Previous",
+      "next": "Next",
+      "imageDot": "Image {index}"
+    },
+    "imageAlt": "{name} - Image {index}",
+    "operatingHours": "Operating hours: {hours}",
+    "close": "Close"
+  },
   "weather": {
     "subtitle": "Weather",
     "title": "Aswan Year-Round",

@@ -6,6 +6,7 @@ import type L from "leaflet"
 import { Plus, Minus, Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getDestinations } from "@/lib/api/destinations"
+import { useLocale, useTranslations } from "next-intl"
 import ActivityFilters from "./ActivityFilters"
 import LocationDetailPopover from "./LocationDetailPopover"
 import type { MapStyle, MarkerClickEvent } from "./MapView"
@@ -44,6 +45,8 @@ const MapView = dynamic(() => import("./MapView"), {
 })
 
 export default function MapPageClient() {
+  const t = useTranslations("mapPage")
+  const locale = useLocale()
   const [locations, setLocations] = useState<WaterActivityLocation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<ActivityType | "all">("all")
@@ -64,7 +67,7 @@ export default function MapPageClient() {
         setLocations([])
       } else {
         setLocations(
-          destinationsToMapLocations(res.data, { resolveImageUrl }),
+          destinationsToMapLocations(res.data, { resolveImageUrl, locale }),
         )
       }
       setIsLoading(false)
@@ -73,7 +76,7 @@ export default function MapPageClient() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [locale])
 
   const filteredLocations = useMemo(() => {
     if (activeFilter === "all") return locations
@@ -148,7 +151,9 @@ export default function MapPageClient() {
               ? "bg-white/20 text-white hover:bg-white/30"
               : "bg-white text-duck-navy hover:bg-gray-100 border border-black/10",
           )}
-          aria-label={isDark ? "الوضع الفاتح" : "الوضع الداكن"}
+          aria-label={
+            isDark ? t("controls.lightMode") : t("controls.darkMode")
+          }
         >
           {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </button>
@@ -163,7 +168,7 @@ export default function MapPageClient() {
                 ? "bg-white/20 text-white hover:bg-white/30"
                 : "bg-white text-duck-navy hover:bg-gray-100 border border-black/10",
             )}
-            aria-label="تكبير"
+            aria-label={t("controls.zoomIn")}
           >
             <Plus className="size-4" />
           </button>
@@ -175,7 +180,7 @@ export default function MapPageClient() {
                 ? "bg-white/20 text-white hover:bg-white/30"
                 : "bg-white text-duck-navy hover:bg-gray-100 border border-black/10 border-t-0",
             )}
-            aria-label="تصغير"
+            aria-label={t("controls.zoomOut")}
           >
             <Minus className="size-4" />
           </button>

@@ -200,6 +200,7 @@ export default function SupplierOnboardingPage() {
     }
 
     addToast(t("profileSaved"), "success")
+    window.dispatchEvent(new Event("duck:supplier-profile-updated"))
     setStep(2)
   }
 
@@ -241,6 +242,14 @@ export default function SupplierOnboardingPage() {
   }
 
   if (loading) {
+    return (
+      <div className="min-h-screen px-4 py-10 max-w-2xl mx-auto">
+        <PageHeader title={t("title")} description={t("loading")} />
+      </div>
+    )
+  }
+
+  if (onboardingComplete === true) {
     return (
       <div className="min-h-screen px-4 py-10 max-w-2xl mx-auto">
         <PageHeader title={t("title")} description={t("loading")} />

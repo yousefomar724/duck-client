@@ -3,7 +3,8 @@
 import { Ship, Sailboat, Bike, Waves } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { ACTIVITY_FILTERS, type ActivityType } from "./map-data"
+import { useTranslations } from "next-intl"
+import type { ActivityFilter, ActivityType } from "./map-data"
 import type { MapStyle } from "./MapView"
 
 const FILTER_ICONS: Record<string, React.ElementType> = {
@@ -24,7 +25,14 @@ export default function ActivityFilters({
   onFilterChange,
   mapStyle,
 }: ActivityFiltersProps) {
+  const t = useTranslations("mapPage")
   const isDark = mapStyle === "dark"
+  const filters: ActivityFilter[] = [
+    { id: "all", label: t("filters.all") },
+    { id: "kayak", label: t("filters.kayak") },
+    { id: "sup", label: t("filters.sup") },
+    { id: "waterbike", label: t("filters.waterbike") },
+  ]
 
   return (
     <motion.div
@@ -39,7 +47,7 @@ export default function ActivityFilters({
       )}
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
-      {ACTIVITY_FILTERS.map((filter) => {
+      {filters.map((filter) => {
         const Icon = FILTER_ICONS[filter.id]
         const isActive = activeFilter === filter.id
         return (

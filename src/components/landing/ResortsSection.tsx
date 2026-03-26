@@ -25,7 +25,6 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel"
 import { cn } from "@/lib/utils"
-import { ACTIVITY_LABELS } from "@/components/map/map-data"
 import type { DestinationActivity } from "@/lib/types"
 
 function getDisplayImages(destination: Destination | null): string[] {
@@ -37,7 +36,14 @@ function getDisplayImages(destination: Destination | null): string[] {
 
 export default function ResortsSection() {
   const t = useTranslations("resorts")
+  const tMap = useTranslations("mapPage")
   const locale = useLocale()
+  const activityLabels: Record<string, string> = {
+    kayak: tMap("filters.kayak"),
+    sup: tMap("filters.sup"),
+    waterbike: tMap("filters.waterbike"),
+    water_cycle: tMap("filters.waterbike"),
+  }
 
   const getLocalizedText = (value: any, fallback = "") =>
     typeof value === "string" ? value : value?.[locale] || value?.ar || value?.en || fallback
@@ -81,7 +87,7 @@ export default function ResortsSection() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [locale])
 
   const scrollPrev = useCallback(
     () => emblaApi && emblaApi.scrollPrev(),
@@ -408,8 +414,7 @@ export default function ResortsSection() {
                       key={activity}
                       className="px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold"
                     >
-                      {ACTIVITY_LABELS[activity as DestinationActivity] ??
-                        activity}
+                      {activityLabels[activity as DestinationActivity] ?? activity}
                     </span>
                   ))}
                 </div>

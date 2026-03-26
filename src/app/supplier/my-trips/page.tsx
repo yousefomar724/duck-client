@@ -22,6 +22,7 @@ import * as tripsApi from "@/lib/api/trips"
 import { CardGridSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import { Trip } from "@/lib/types"
+import Image from "next/image"
 
 export default function MyTripsPage() {
   const [trips, setTrips] = useState<Trip[]>([])
@@ -141,7 +142,10 @@ export default function MyTripsPage() {
           })()
 
           return (
-            <Card key={trip.id} className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200">
+            <Card
+              key={trip.id}
+              className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200 gap-0!"
+            >
               <div className="relative h-48 w-full">
                 {fullImageUrl ? (
                   fullImageUrl.endsWith(".mp4") ? (
@@ -153,8 +157,9 @@ export default function MyTripsPage() {
                       autoPlay
                     />
                   ) : (
-                    <img
+                    <Image
                       src={fullImageUrl}
+                      fill
                       alt={
                         typeof trip.name === "string"
                           ? trip.name
@@ -196,7 +201,7 @@ export default function MyTripsPage() {
                   </p>
                   <p>
                     <span className="font-medium">المدة:</span>{" "}
-                    {(trip.duration ?? 1)}{" "}
+                    {trip.duration ?? 1}{" "}
                     {(trip.duration ?? 1) === 1 ? "يوم" : "أيام"}
                   </p>
                 </div>
@@ -220,7 +225,7 @@ export default function MyTripsPage() {
                     <Button
                       variant="outline"
                       onClick={() => setDeleteId(trip.id)}
-                      className="flex-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                      className="flex-1 border-red-500 text-red-500 hover:bg-red-500! hover:text-white!"
                       disabled={isDeleting}
                     >
                       <Trash2 className="w-4 h-4 ms-2" />

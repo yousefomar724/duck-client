@@ -35,7 +35,7 @@ const parseResources = (raw: unknown): Record<string, number> => {
 const labels: Record<"kayak" | "water_cycle" | "sup", string> = {
   kayak: "كاياك",
   water_cycle: "دراجة مائية",
-  sup: "سب",
+  sup: "التجديف وقوفاً",
 }
 
 export default function SupplierProfilePage() {
@@ -84,7 +84,8 @@ export default function SupplierProfilePage() {
       setAboutEn(enRes.data.about as string)
     }
 
-    const { data: storageData } = await supplierStorageApi.getStorage(supplierId)
+    const { data: storageData } =
+      await supplierStorageApi.getStorage(supplierId)
     if (storageData?.resources) {
       const r = parseResources(storageData.resources)
       setKayak(String(r.kayak ?? 0))
@@ -135,6 +136,7 @@ export default function SupplierProfilePage() {
 
     addToast(t("profileSaved"), "success")
     await auth.refreshOnboardingStatus()
+    window.dispatchEvent(new Event("duck:supplier-profile-updated"))
   }
 
   const handleSaveStorage = async () => {
@@ -183,7 +185,9 @@ export default function SupplierProfilePage() {
               </div>
               <div>
                 <div className="font-bold">{t("businessProfileTitle")}</div>
-                <div className="text-sm text-text-muted">{t("businessProfileHint")}</div>
+                <div className="text-sm text-text-muted">
+                  {t("businessProfileHint")}
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -192,12 +196,23 @@ export default function SupplierProfilePage() {
               <Label>{t("businessName")}</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-text-muted">{t("nameAr")}</Label>
-                  <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
+                  <Label className="text-xs text-text-muted">
+                    {t("nameAr")}
+                  </Label>
+                  <Input
+                    value={nameAr}
+                    onChange={(e) => setNameAr(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-text-muted">{t("nameEn")}</Label>
-                  <Input dir="ltr" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+                  <Label className="text-xs text-text-muted">
+                    {t("nameEn")}
+                  </Label>
+                  <Input
+                    dir="ltr"
+                    value={nameEn}
+                    onChange={(e) => setNameEn(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
@@ -206,12 +221,23 @@ export default function SupplierProfilePage() {
               <Label>{t("about")}</Label>
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-text-muted">{t("aboutAr")}</Label>
-                  <Textarea value={aboutAr} onChange={(e) => setAboutAr(e.target.value)} />
+                  <Label className="text-xs text-text-muted">
+                    {t("aboutAr")}
+                  </Label>
+                  <Textarea
+                    value={aboutAr}
+                    onChange={(e) => setAboutAr(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-text-muted">{t("aboutEn")}</Label>
-                  <Textarea dir="ltr" value={aboutEn} onChange={(e) => setAboutEn(e.target.value)} />
+                  <Label className="text-xs text-text-muted">
+                    {t("aboutEn")}
+                  </Label>
+                  <Textarea
+                    dir="ltr"
+                    value={aboutEn}
+                    onChange={(e) => setAboutEn(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
@@ -234,9 +260,13 @@ export default function SupplierProfilePage() {
                     type="file"
                     accept="image/*"
                     disabled={iconUploading}
-                    onChange={(e) => void handleUploadIcon(e.target.files?.[0] ?? null)}
+                    onChange={(e) =>
+                      void handleUploadIcon(e.target.files?.[0] ?? null)
+                    }
                   />
-                  <p className="text-xs text-text-muted">{t("iconUploadHint")}</p>
+                  <p className="text-xs text-text-muted">
+                    {t("iconUploadHint")}
+                  </p>
                 </div>
               </div>
             </div>
@@ -260,7 +290,9 @@ export default function SupplierProfilePage() {
               </div>
               <div>
                 <div className="font-bold">{t("storageTitle")}</div>
-                <div className="text-sm text-text-muted">{t("storageHint")}</div>
+                <div className="text-sm text-text-muted">
+                  {t("storageHint")}
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -315,4 +347,3 @@ export default function SupplierProfilePage() {
     </div>
   )
 }
-

@@ -21,9 +21,7 @@ export default async function AuthLayout({
         </div>
 
         <div className="text-center text-sm text-text-muted md:text-start">
-          <p>
-            {t("copyright", { year: new Date().getFullYear() })}
-          </p>
+          <p>{t("copyright", { year: new Date().getFullYear() })}</p>
         </div>
       </div>
 
@@ -31,7 +29,7 @@ export default async function AuthLayout({
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: "url('/kayak2.webp'), url('/resort.webp')",
+            backgroundImage: "url('/kayak4.jpg'), url('/resort.webp')",
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
@@ -50,9 +48,6 @@ export default async function AuthLayout({
         <div className="absolute inset-0 bg-duck-navy/35" />
         <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-duck-cyan/20 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-duck-yellow/15 blur-3xl" />
-        <div className="absolute inset-x-8 bottom-8 rounded-xl border border-white/20 bg-black/20 p-4 text-sm text-white/85 backdrop-blur-sm">
-          {t("overlayText")}
-        </div>
       </div>
     </div>
   )

@@ -7,7 +7,7 @@ import { MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getDestinations } from "@/lib/api/destinations"
 import {
-  ACTIVITY_FILTERS,
+  type ActivityFilter,
   destinationsToMapLocations,
   type ActivityType,
 } from "@/components/map/map-data"
@@ -40,7 +40,17 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
 
 export default function LocationSection() {
   const t = useTranslations("location")
+  const tMap = useTranslations("mapPage")
   const locale = useLocale()
+  const activityFilters: ActivityFilter[] = useMemo(
+    () => [
+      { id: "all", label: tMap("filters.all") },
+      { id: "kayak", label: tMap("filters.kayak") },
+      { id: "sup", label: tMap("filters.sup") },
+      { id: "waterbike", label: tMap("filters.waterbike") },
+    ],
+    [tMap],
+  )
 
   const accessInfo = [
     { time: "4", unit: t("accessLocations"), desc: t("accessLocationsDesc") },
@@ -50,7 +60,7 @@ export default function LocationSection() {
   ]
 
   const [locations, setLocations] = useState(
-    destinationsToMapLocations([], { resolveImageUrl }),
+    destinationsToMapLocations([], { resolveImageUrl, locale }),
   )
   const [activeFilter, setActiveFilter] = useState<ActivityType | "all">("all")
 
@@ -59,13 +69,15 @@ export default function LocationSection() {
     getDestinations(undefined, "active").then((res) => {
       if (cancelled) return
       if (res.data) {
-        setLocations(destinationsToMapLocations(res.data, { resolveImageUrl }))
+        setLocations(
+          destinationsToMapLocations(res.data, { resolveImageUrl, locale }),
+        )
       }
     })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [locale])
 
   const filteredLocations = useMemo(() => {
     if (activeFilter === "all") return locations
@@ -77,7 +89,9 @@ export default function LocationSection() {
       <div className="max-w-[1920px] mx-auto px-4 md:px-10">
         {/* Header */}
         <div className="text-center mb-12">
-          <span className="text-teal-primary text-base block mb-3">{t("subtitle")}</span>
+          <span className="text-teal-primary text-base block mb-3">
+            {t("subtitle")}
+          </span>
           <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-4">
             {t("title")}
           </h2>
@@ -87,7 +101,7 @@ export default function LocationSection() {
 
           {/* Tabs */}
           <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-12">
-            {ACTIVITY_FILTERS.map((filter) => (
+            {activityFilters.map((filter) => (
               <button
                 key={filter.id}
                 onClick={() => setActiveFilter(filter.id)}
@@ -124,7 +138,10 @@ export default function LocationSection() {
         </div>
 
         {/* Access Info */}
-        <div className="flex flex-wrap justify-center gap-4 mb-8" dir={locale === "ar" ? "rtl" : "ltr"}>
+        <div
+          className="flex flex-wrap justify-center gap-4 mb-8"
+          dir={locale === "ar" ? "rtl" : "ltr"}
+        >
           {accessInfo.map((item, index) => (
             <div
               key={index}

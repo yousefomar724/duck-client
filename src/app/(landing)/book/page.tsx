@@ -10,7 +10,10 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Check, ChevronLeft, ChevronDownIcon, User } from "lucide-react"
 import { format, formatISO, startOfDay } from "date-fns"
 import { arSA, enUS } from "date-fns/locale"
-import { arSA as arSADayPicker, enUS as enUSDayPicker } from "react-day-picker/locale"
+import {
+  arSA as arSADayPicker,
+  enUS as enUSDayPicker,
+} from "react-day-picker/locale"
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -46,7 +49,11 @@ import { useTranslations, useLocale } from "next-intl"
 
 const PHONE_PREFIXES = ["010", "011", "012", "015"] as const
 
-const RESOURCE_TYPES = ["kayak", "water_cycle", "sup"] as const satisfies readonly ResourceType[]
+const RESOURCE_TYPES = [
+  "kayak",
+  "water_cycle",
+  "sup",
+] as const satisfies readonly ResourceType[]
 
 type ContactFormValues = {
   full_name: string
@@ -59,7 +66,9 @@ type ContactFormValues = {
 }
 
 function getLocalizedText(value: any, locale: string, fallback = ""): string {
-  return typeof value === "string" ? value : value?.[locale] || value?.ar || value?.en || fallback
+  return typeof value === "string"
+    ? value
+    : value?.[locale] || value?.ar || value?.en || fallback
 }
 
 function BookPageContent() {
@@ -84,35 +93,36 @@ function BookPageContent() {
     sup: t("resourceSup"),
   }
 
-  const contactSchema = useMemo(() => z.object({
-    full_name: z.string().min(2, tv("nameMin")),
-    phone_prefix: z.enum(PHONE_PREFIXES),
-    phone_suffix: z
-      .string()
-      .length(8, tv("phoneLength"))
-      .regex(/^\d{8}$/, tv("phoneDigits")),
-    booking_date: z.date({
-      required_error: tv("dateRequired"),
-      invalid_type_error: tv("dateInvalid"),
-    }),
-    resource_type: z.enum(RESOURCE_TYPES),
-    quantity: z.coerce
-      .number({ invalid_type_error: tv("numberInvalid") })
-      .int()
-      .min(1, tv("minOne")),
-    guests: z.coerce
-      .number({ invalid_type_error: tv("numberInvalid") })
-      .int()
-      .min(1, tv("minOneGuest")),
-  }), [tv])
+  const contactSchema = useMemo(
+    () =>
+      z.object({
+        full_name: z.string().min(2, tv("nameMin")),
+        phone_prefix: z.enum(PHONE_PREFIXES),
+        phone_suffix: z
+          .string()
+          .length(8, tv("phoneLength"))
+          .regex(/^\d{8}$/, tv("phoneDigits")),
+        booking_date: z.date({
+          required_error: tv("dateRequired"),
+          invalid_type_error: tv("dateInvalid"),
+        }),
+        resource_type: z.enum(RESOURCE_TYPES),
+        quantity: z.coerce
+          .number({ invalid_type_error: tv("numberInvalid") })
+          .int()
+          .min(1, tv("minOne")),
+        guests: z.coerce
+          .number({ invalid_type_error: tv("numberInvalid") })
+          .int()
+          .min(1, tv("minOneGuest")),
+      }),
+    [tv],
+  )
 
   const formSchema = useMemo(
     () =>
       contactSchema.superRefine((data, ctx) => {
-        if (
-          selectedTrip &&
-          data.guests > selectedTrip.max_guests
-        ) {
+        if (selectedTrip && data.guests > selectedTrip.max_guests) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: t("maxGuestsError", { max: selectedTrip.max_guests }),
@@ -229,12 +239,7 @@ function BookPageContent() {
         error.toLowerCase().includes("availability") ||
         error.toLowerCase().includes("no availability") ||
         error.includes("409")
-      addToast(
-        isConflict
-          ? t("noAvailability")
-          : error,
-        "error",
-      )
+      addToast(isConflict ? t("noAvailability") : error, "error")
       return
     }
     if (data?.payment_url) {
@@ -294,7 +299,10 @@ function BookPageContent() {
       {/* Content */}
       <section className="bg-off-white py-20 px-4 md:px-10">
         <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-3xl shadow-lg p-8 md:p-10" dir={locale === "ar" ? "rtl" : "ltr"}>
+          <div
+            className="bg-white rounded-3xl shadow-lg p-8 md:p-10"
+            dir={locale === "ar" ? "rtl" : "ltr"}
+          >
             {/* Step 1: Trip selection */}
             {step === 1 && (
               <div className="space-y-8">
@@ -317,7 +325,11 @@ function BookPageContent() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-2 max-h-[500px] overflow-y-auto scrollbar-duck">
                     {trips.map((trip) => {
-                      const name = getLocalizedText(trip.name, locale, t("defaultTripName"))
+                      const name = getLocalizedText(
+                        trip.name,
+                        locale,
+                        t("defaultTripName"),
+                      )
                       const rawImage = getTripImage(trip.images)
                       const imageUrl =
                         resolveImageUrl(rawImage) ?? placeholderImage
@@ -365,7 +377,9 @@ function BookPageContent() {
                             </p>
                             <p className="text-text-muted text-sm mt-1">
                               {trip.duration ?? 1}{" "}
-                              {(trip.duration ?? 1) === 1 ? t("day") : t("days")}
+                              {(trip.duration ?? 1) === 1
+                                ? t("day")
+                                : t("days")}
                             </p>
                           </div>
                         </button>
@@ -408,7 +422,8 @@ function BookPageContent() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
-                          {t("fullName")} <span className="text-red-500">*</span>
+                          {t("fullName")}{" "}
+                          <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -484,7 +499,8 @@ function BookPageContent() {
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel className="text-text-dark font-medium">
-                          {t("bookingDate")} <span className="text-red-500">*</span>
+                          {t("bookingDate")}{" "}
+                          <span className="text-red-500">*</span>
                         </FormLabel>
                         <Popover
                           open={bookingDateOpen}
@@ -498,7 +514,9 @@ function BookPageContent() {
                                 className="w-full justify-between font-normal text-right"
                               >
                                 {field.value ? (
-                                  format(field.value, "PPP", { locale: locale === "ar" ? arSA : enUS })
+                                  format(field.value, "PPP", {
+                                    locale: locale === "ar" ? arSA : enUS,
+                                  })
                                 ) : (
                                   <span className="text-muted-foreground">
                                     {t("selectDate")}
@@ -524,7 +542,9 @@ function BookPageContent() {
                                 startOfDay(date) < startOfDay(new Date())
                               }
                               defaultMonth={field.value}
-                              locale={locale === "ar" ? arSADayPicker : enUSDayPicker}
+                              locale={
+                                locale === "ar" ? arSADayPicker : enUSDayPicker
+                              }
                               dir={locale === "ar" ? "rtl" : "ltr"}
                             />
                           </PopoverContent>
@@ -540,7 +560,8 @@ function BookPageContent() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
-                          {t("resourceType")} <span className="text-red-500">*</span>
+                          {t("resourceType")}{" "}
+                          <span className="text-red-500">*</span>
                         </FormLabel>
                         <Select
                           dir={locale === "ar" ? "rtl" : "ltr"}
@@ -572,7 +593,8 @@ function BookPageContent() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-text-dark font-medium">
-                            {t("quantity")} <span className="text-red-500">*</span>
+                            {t("quantity")}{" "}
+                            <span className="text-red-500">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -599,7 +621,8 @@ function BookPageContent() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-text-dark font-medium">
-                            {t("guests")} <span className="text-red-500">*</span>
+                            {t("guests")}{" "}
+                            <span className="text-red-500">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -661,15 +684,23 @@ function BookPageContent() {
                 <div className="bg-off-white rounded-2xl p-6 space-y-4">
                   <div className="flex justify-between items-start">
                     <span className="text-text-muted">{t("reviewTrip")}</span>
-                    <span className="font-medium text-text-dark text-left">
-                      {getLocalizedText(selectedTrip.name, locale, t("defaultTripName"))}
+                    <span className="font-medium text-text-dark text-end">
+                      {getLocalizedText(
+                        selectedTrip.name,
+                        locale,
+                        t("defaultTripName"),
+                      )}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">{t("reviewDuration")}</span>
+                    <span className="text-text-muted">
+                      {t("reviewDuration")}
+                    </span>
                     <span>
                       {selectedTrip.duration ?? 1}{" "}
-                      {(selectedTrip.duration ?? 1) === 1 ? t("day") : t("days")}
+                      {(selectedTrip.duration ?? 1) === 1
+                        ? t("day")
+                        : t("days")}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -683,17 +714,26 @@ function BookPageContent() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">{t("reviewResourceType")}</span>
+                    <span className="text-text-muted">
+                      {t("reviewResourceType")}
+                    </span>
                     <span>
-                      {resourceLabels[
-                        (watchedResourceType || "kayak") as ResourceType
-                      ]}
+                      {
+                        resourceLabels[
+                          (watchedResourceType || "kayak") as ResourceType
+                        ]
+                      }
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">{t("reviewQuantityGuests")}</span>
+                    <span className="text-text-muted">
+                      {t("reviewQuantityGuests")}
+                    </span>
                     <span>
-                      {t("reviewQuantityGuestsValue", { quantity: watchedQuantity, guests: watchedGuests })}
+                      {t("reviewQuantityGuestsValue", {
+                        quantity: watchedQuantity,
+                        guests: watchedGuests,
+                      })}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -736,7 +776,9 @@ function BookPageContent() {
                         disabled={submitLoading}
                         className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow-hover"
                       >
-                        {submitLoading ? t("submitLoading") : t("proceedToPayment")}
+                        {submitLoading
+                          ? t("submitLoading")
+                          : t("proceedToPayment")}
                       </Button>
                     </div>
                   </form>

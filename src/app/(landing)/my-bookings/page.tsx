@@ -108,7 +108,10 @@ function MyBookingsContent() {
   return (
     <>
       <div className="min-h-screen pt-24 pb-16 px-4">
-        <div className="max-w-5xl mx-auto space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
+        <div
+          className="max-w-5xl mx-auto space-y-6"
+          dir={locale === "ar" ? "rtl" : "ltr"}
+        >
           <PageHeader title={t("title")} />
 
           <div className="rounded-lg border bg-white overflow-hidden">
@@ -118,17 +121,26 @@ function MyBookingsContent() {
                   <TableHead className="text-right">{t("colId")}</TableHead>
                   <TableHead className="text-right">{t("colTrip")}</TableHead>
                   <TableHead className="text-right">{t("colDate")}</TableHead>
-                  <TableHead className="text-right">{t("colResource")}</TableHead>
-                  <TableHead className="text-right">{t("colQuantity")}</TableHead>
+                  <TableHead className="text-right">
+                    {t("colResource")}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t("colQuantity")}
+                  </TableHead>
                   <TableHead className="text-right">{t("colAmount")}</TableHead>
                   <TableHead className="text-right">{t("colStatus")}</TableHead>
-                  <TableHead className="text-right">{t("colActions")}</TableHead>
+                  <TableHead className="text-right">
+                    {t("colActions")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {bookings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-12 text-text-muted">
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-12! text-text-muted"
+                    >
                       {t("noBookings")}{" "}
                       <Link href="/book" className="text-duck-cyan underline">
                         {t("bookTrip")}
@@ -140,9 +152,9 @@ function MyBookingsContent() {
                     const tripName =
                       typeof b.trip?.name === "string"
                         ? b.trip.name
-                        : b.trip?.name?.ar ?? "—"
+                        : (b.trip?.name?.ar ?? "—")
                     const rt = b.resource_type
-                      ? resourceLabels[b.resource_type] ?? b.resource_type
+                      ? (resourceLabels[b.resource_type] ?? b.resource_type)
                       : "—"
                     return (
                       <TableRow key={b.id}>
@@ -201,7 +213,9 @@ function MyBookingsContent() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={cancelling}>{t("cancelBack")}</AlertDialogCancel>
+            <AlertDialogCancel disabled={cancelling}>
+              {t("cancelBack")}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()

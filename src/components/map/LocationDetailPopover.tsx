@@ -13,7 +13,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
 import {
   Carousel,
   CarouselContent,
@@ -23,11 +22,11 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel"
 import {
-  ACTIVITY_LABELS,
-  DIFFICULTY_LABELS,
   type WaterActivityLocation,
   type DifficultyLevel,
 } from "./map-data"
+import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 interface LocationDetailPopoverProps {
   location: WaterActivityLocation | null
@@ -47,6 +46,7 @@ export default function LocationDetailPopover({
   onOpenChange,
   anchorPoint,
 }: LocationDetailPopoverProps) {
+  const t = useTranslations("mapPage")
   const [side, setSide] = useState<"right" | "bottom">("right")
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -101,6 +101,16 @@ export default function LocationDetailPopover({
 
   const images = getDisplayImages(location)
   const hasMultipleImages = images.length > 1
+  const activityLabels = {
+    kayak: t("filters.kayak"),
+    sup: t("filters.sup"),
+    waterbike: t("filters.waterbike"),
+  } as const
+  const difficultyLabels: Record<DifficultyLevel, string> = {
+    easy: t("difficulty.easy"),
+    medium: t("difficulty.medium"),
+    hard: t("difficulty.hard"),
+  }
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -140,7 +150,7 @@ export default function LocationDetailPopover({
                   <div className="relative h-full w-full">
                     <Image
                       src={src}
-                      alt={`${location.name} - صورة ${i + 1}`}
+                      alt={t("imageAlt", { name: location.name, index: i + 1 })}
                       fill
                       className="object-cover"
                     />
@@ -154,7 +164,7 @@ export default function LocationDetailPopover({
                   variant="ghost"
                   size="icon"
                   className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                  aria-label="السابق"
+                  aria-label={t("carousel.previous")}
                 >
                   <ChevronLeft className="size-4" />
                 </CarouselPrevious>
@@ -162,7 +172,7 @@ export default function LocationDetailPopover({
                   variant="ghost"
                   size="icon"
                   className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                  aria-label="التالي"
+                  aria-label={t("carousel.next")}
                 >
                   <ChevronRight className="size-4" />
                 </CarouselNext>
@@ -182,7 +192,7 @@ export default function LocationDetailPopover({
                       ? "bg-white"
                       : "bg-white/50 hover:bg-white/70",
                   )}
-                  aria-label={`صورة ${i + 1}`}
+                  aria-label={t("carousel.imageDot", { index: i + 1 })}
                   aria-current={i === selectedIndex ? "true" : undefined}
                 />
               ))}
@@ -194,7 +204,7 @@ export default function LocationDetailPopover({
           <button
             onClick={() => handleOpenChange(false)}
             className="absolute top-3 start-3 z-10 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 transition-colors cursor-pointer"
-            aria-label="إغلاق"
+            aria-label={t("close")}
           >
             <X className="size-4" />
           </button>
@@ -217,8 +227,8 @@ export default function LocationDetailPopover({
                 )}
               >
                 {location.status === "coming_soon"
-                  ? "الافتتاح قريباً"
-                  : "متاح الآن"}
+                  ? t("status.comingSoon")
+                  : t("status.availableNow")}
               </span>
             </div>
 
@@ -233,7 +243,7 @@ export default function LocationDetailPopover({
               {location.difficulty && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-white/90 text-xs">
                   <Gauge className="size-3.5 shrink-0" />
-                  {DIFFICULTY_LABELS[location.difficulty as DifficultyLevel]}
+                  {difficultyLabels[location.difficulty as DifficultyLevel]}
                 </span>
               )}
               {location.price && (
@@ -258,7 +268,7 @@ export default function LocationDetailPopover({
                   key={activity}
                   className="px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold"
                 >
-                  {ACTIVITY_LABELS[activity]}
+                  {activityLabels[activity]}
                 </span>
               ))}
             </div>
@@ -267,7 +277,7 @@ export default function LocationDetailPopover({
             {location.operatingHours && (
               <div className="flex items-center gap-2 text-white/70 text-xs">
                 <Clock className="size-3.5 shrink-0 text-duck-cyan/80" />
-                <span>ساعات العمل: {location.operatingHours}</span>
+                <span>{t("operatingHours", { hours: location.operatingHours })}</span>
               </div>
             )}
 
@@ -288,17 +298,23 @@ export default function LocationDetailPopover({
 
             {/* CTA */}
             <div className="pt-2 pb-4">
-              <Button
+              <Link
                 className={cn(
-                  "w-full rounded-full font-medium text-sm py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 touch-manipulation",
+                  "inline-flex w-full items-center justify-center rounded-full font-medium text-sm py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 touch-manipulation",
                   location.status === "coming_soon"
-                    ? "bg-white/10 text-white/50 cursor-not-allowed hover:bg-white/10"
+                    ? "bg-white/10 text-white/50 cursor-not-allowed pointer-events-none"
                     : "bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover",
                 )}
-                disabled={location.status === "coming_soon"}
+                href={
+                  location.status === "coming_soon"
+                    ? "#"
+                    : `/book?location=${location.id}`
+                }
               >
-                {location.status === "coming_soon" ? "قريباً" : "احجز الآن"}
-              </Button>
+                {location.status === "coming_soon"
+                  ? t("cta.comingSoon")
+                  : t("cta.bookNow")}
+              </Link>
             </div>
           </div>
         </div>

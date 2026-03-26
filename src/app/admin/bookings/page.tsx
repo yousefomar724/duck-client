@@ -75,7 +75,7 @@ const statusFilterLabels: Partial<Record<BookingStatus, string>> & {
 const resourceLabels: Record<string, string> = {
   kayak: "كاياك",
   water_cycle: "دراجة مائية",
-  sup: "سب",
+  sup: "التجديف وقوفاً",
 }
 
 export default function AdminBookings() {

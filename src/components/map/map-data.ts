@@ -26,25 +26,6 @@ export interface ActivityFilter {
   label: string
 }
 
-export const ACTIVITY_FILTERS: ActivityFilter[] = [
-  { id: "all", label: "الكل" },
-  { id: "kayak", label: "كاياك" },
-  { id: "sup", label: "تجديف واقف" },
-  { id: "waterbike", label: "دراجة مائية" },
-]
-
-export const ACTIVITY_LABELS: Record<ActivityType, string> = {
-  kayak: "كاياك",
-  sup: "تجديف واقف",
-  waterbike: "دراجة مائية",
-}
-
-export const DIFFICULTY_LABELS: Record<DifficultyLevel, string> = {
-  easy: "سهل",
-  medium: "متوسط",
-  hard: "صعب",
-}
-
 export const ASWAN_CENTER: [number, number] = [24.0889, 32.8998]
 export const DEFAULT_ZOOM = 13
 /** Zoom level when a pin is selected (zoom in to focus on the location) */
@@ -56,17 +37,25 @@ export const FOCUSED_ZOOM = 15
  */
 export function destinationToMapLocation(
   destination: Destination,
-  options?: { resolveImageUrl?: (url: string) => string },
+  options?: {
+    resolveImageUrl?: (url: string) => string
+    locale?: string
+  },
 ): WaterActivityLocation {
   const resolve = options?.resolveImageUrl ?? ((u: string) => u)
+  const locale = options?.locale === "en" ? "en" : "ar"
   const name =
     typeof destination.name === "string"
       ? destination.name
-      : destination.name?.ar ?? destination.name?.en ?? ""
+      : locale === "en"
+        ? destination.name?.en ?? destination.name?.ar ?? ""
+        : destination.name?.ar ?? destination.name?.en ?? ""
   const description =
     typeof destination.description === "string"
       ? destination.description
-      : destination.description?.ar ?? destination.description?.en ?? ""
+      : locale === "en"
+        ? destination.description?.en ?? destination.description?.ar ?? ""
+        : destination.description?.ar ?? destination.description?.en ?? ""
   const image =
     destination.images?.[0] ?? destination.image ?? ""
   const images = destination.images?.length
@@ -95,7 +84,10 @@ export function destinationToMapLocation(
  */
 export function destinationsToMapLocations(
   destinations: Destination[],
-  options?: { resolveImageUrl?: (url: string) => string },
+  options?: {
+    resolveImageUrl?: (url: string) => string
+    locale?: string
+  },
 ): WaterActivityLocation[] {
   return destinations
     .filter((d) => d.lat != null && d.lng != null)
