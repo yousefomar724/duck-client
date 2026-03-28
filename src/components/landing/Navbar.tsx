@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { User, Map, Globe, Sun, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -18,15 +19,24 @@ import { Button } from "@/components/ui/button"
 import SettingsDialog from "@/components/landing/SettingsDialog"
 import { useAuth } from "@/lib/stores/auth-store"
 
+const SOLID_NAVBAR_PATHS = ["/profile", "/my-bookings", "/map"]
+
 export default function Navbar() {
+  const pathname = usePathname()
+  const forceSolid = SOLID_NAVBAR_PATHS.includes(pathname)
+
   const [isHidden, setIsHidden] = useState(false)
-  const [isSolid, setIsSolid] = useState(false)
+  const [isSolid, setIsSolid] = useState(forceSolid)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const { scrollY } = useScroll()
   const t = useTranslations("navbar")
   const locale = useLocale()
   const { isAuthenticated, effectiveRole } = useAuth()
+
+  useEffect(() => {
+    if (forceSolid) setIsSolid(true)
+  }, [forceSolid])
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() ?? 0
@@ -37,6 +47,11 @@ export default function Navbar() {
       setIsHidden(true)
     } else {
       setIsHidden(false)
+    }
+
+    if (forceSolid) {
+      setIsSolid(true)
+      return
     }
 
     const threshold = typeof window !== "undefined" ? window.innerHeight : 800

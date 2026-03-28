@@ -26,7 +26,7 @@ function ProfileContent() {
 
   return (
     <>
-      <div className="min-h-screen pt-24 pb-16 px-4">
+      <div className="min-h-screen pt-24 md:pt-36 pb-16 px-4">
         <div className="max-w-3xl mx-auto space-y-6">
           <PageHeader title={t("title")} description={t("description")} />
 

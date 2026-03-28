@@ -45,14 +45,14 @@ async function apiClient<T>(
       headers,
     });
 
-    if (response.status === 401) {
-      clearToken();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-        window.location.href = '/login';
-      }
-      return { data: null, error: 'Unauthorized' };
-    }
+    // if (response.status === 401) {
+    //   clearToken();
+    //   if (typeof window !== 'undefined') {
+    //     window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    //     window.location.href = '/login';
+    //   }
+    //   return { data: null, error: 'Unauthorized' };
+    // }
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -99,14 +99,14 @@ async function uploadFile<T>(
       body: formData,
     });
 
-    if (response.status === 401) {
-      clearToken();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-        window.location.href = '/login';
-      }
-      return { data: null, error: 'Unauthorized' };
-    }
+    // if (response.status === 401) {
+    //   clearToken();
+    //   if (typeof window !== 'undefined') {
+    //     window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    //     window.location.href = '/login';
+    //   }
+    //   return { data: null, error: 'Unauthorized' };
+    // }
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));

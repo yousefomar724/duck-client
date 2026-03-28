@@ -117,6 +117,8 @@ export default function RegisterPage() {
     setIsGoogleLoading(true)
     setError(null)
 
+    console.log(credentialResponse.credential)
+
     const { error: googleError } = await loginWithGoogle(
       credentialResponse.credential,
     )

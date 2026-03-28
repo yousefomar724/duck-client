@@ -85,7 +85,7 @@ function MyBookingsContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-24 pb-16 px-4">
+      <div className="min-h-screen pt-24 md:pt-36 pb-16 px-4">
         <div className="max-w-5xl mx-auto space-y-6">
           <PageHeader title={t("title")} />
           <TableSkeleton rows={5} columns={8} />
@@ -96,7 +96,7 @@ function MyBookingsContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen pt-24 pb-16 px-4">
+      <div className="min-h-screen pt-24 md:pt-36 pb-16 px-4">
         <div className="max-w-5xl mx-auto space-y-6">
           <PageHeader title={t("title")} />
           <ErrorDisplay error={error} onRetry={load} />
@@ -107,7 +107,7 @@ function MyBookingsContent() {
 
   return (
     <>
-      <div className="min-h-screen pt-24 pb-16 px-4">
+      <div className="min-h-screen pt-24 md:pt-36 pb-16 px-4">
         <div
           className="max-w-5xl mx-auto space-y-6"
           dir={locale === "ar" ? "rtl" : "ltr"}
