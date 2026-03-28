@@ -117,9 +117,7 @@ export default function RegisterPage() {
     setIsGoogleLoading(true)
     setError(null)
 
-    console.log(credentialResponse.credential)
-
-    const { error: googleError } = await loginWithGoogle(
+    const { error: googleError, user } = await loginWithGoogle(
       credentialResponse.credential,
     )
 
@@ -129,7 +127,15 @@ export default function RegisterPage() {
       return
     }
 
-    window.location.assign("/supplier/onboarding")
+    const role = user?.role != null ? Number(user.role) : NaN
+    if (!user || role !== 1) {
+      useAuth.getState().clearSession()
+      setError(t("googleNotSupplier"))
+      setIsGoogleLoading(false)
+      return
+    }
+
+    window.location.assign(content.redirectPath)
   }
 
   const handleGoogleError = () => {

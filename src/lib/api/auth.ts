@@ -7,6 +7,24 @@ export interface LoginResponse {
   token: string;
 }
 
+/** Body for POST /auth/login when using Google Sign-In (ID token JWT). */
+export type GoogleLoginBody = {
+  google_token: string;
+};
+
+/**
+ * Trims and validates that the value looks like a JWT (Google ID token from CredentialResponse).
+ * Returns null if invalid so callers can fail fast without hitting the API.
+ */
+export function normalizeGoogleIdToken(token: unknown): string | null {
+  if (typeof token !== 'string') return null;
+  const trimmed = token.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split('.');
+  if (parts.length !== 3) return null;
+  return trimmed;
+}
+
 export async function login(
   email: string,
   password: string,
@@ -20,9 +38,14 @@ export async function login(
 export async function loginWithGoogle(
   googleToken: string,
 ): Promise<ApiResponse<LoginResponse>> {
+  const google_token = normalizeGoogleIdToken(googleToken);
+  if (!google_token) {
+    return { data: null, error: 'Invalid Google credential' };
+  }
+  const body: GoogleLoginBody = { google_token };
   return apiClient<LoginResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ google_token: googleToken }),
+    body: JSON.stringify(body),
   });
 }
 

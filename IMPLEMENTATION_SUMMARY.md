@@ -74,11 +74,12 @@
   - Token encoding/decoding with expiration check
   - Helper functions: setToken, getToken, clearToken, decodeToken, isTokenExpired
 
-- ✅ **Auth Context Provider** (`src/lib/auth/auth-context.tsx`)
+- ✅ **Auth store (Zustand)** (`src/lib/stores/auth-store.ts`)
   - Global `useAuth()` hook for accessing auth state
-  - Automatic user profile fetch from `/auth/me` on mount
-  - Methods: login, loginWithGoogle, register, logout
-  - State: user, token, isLoading, isAuthenticated
+  - Initialized via `AuthHydrator` + `/auth/me` when a valid token exists
+  - Methods: login, loginWithGoogle, register, logout, clearSession, onboarding helpers
+  - State: user, token, isLoading, isAuthenticated, effectiveRole, onboarding flags
+- ✅ **Google OAuth wrapper** (`src/lib/auth/google-oauth-provider.tsx`) used in root layout
 
 - ✅ **Protected Routes** (`src/components/shared/protected-route.tsx`)
   - Role-based access control wrapper component
@@ -143,7 +144,9 @@ Frontend (Next.js 16 + React 19 + TypeScript)
 │   └── index.ts (barrel export)
 ├── src/lib/auth/
 │   ├── token.ts (JWT utilities)
-│   └── auth-context.tsx (React Context)
+│   └── google-oauth-provider.tsx (GoogleOAuthProvider wrapper)
+├── src/lib/stores/
+│   └── auth-store.ts (Zustand auth state)
 ├── src/components/shared/
 │   └── protected-route.tsx (route protection)
 └── src/app/

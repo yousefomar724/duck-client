@@ -16,7 +16,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/stores/auth-store"
+
+type LoginKind = "user" | "supplier"
 
 function getRedirectPath(
   returnUrl: string | null,
@@ -35,7 +38,8 @@ function getRedirectPath(
   const role = userRole != null ? Number(userRole) : NaN
   if (role === 2) return "/admin/dashboard"
   if (role === 1) {
-    const needsOnboarding = onboardingComplete === false || onboardingComplete == null
+    const needsOnboarding =
+      onboardingComplete === false || onboardingComplete == null
     if (needsOnboarding && !onboardingSkipped) return "/supplier/onboarding"
     return "/supplier/my-trips"
   }
@@ -46,6 +50,9 @@ function LoginFormContent() {
   const t = useTranslations("auth.login")
   const { login, loginWithGoogle } = useAuth()
   const searchParams = useSearchParams()
+  const initialKind: LoginKind =
+    searchParams.get("type") === "supplier" ? "supplier" : "user"
+  const [loginKind, setLoginKind] = useState<LoginKind>(initialKind)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -64,7 +71,12 @@ function LoginFormContent() {
     } else {
       const returnUrl = searchParams.get("returnUrl")
       const { onboardingComplete, onboardingSkipped } = useAuth.getState()
-      const path = getRedirectPath(returnUrl, user?.role, onboardingComplete, onboardingSkipped)
+      const path = getRedirectPath(
+        returnUrl,
+        user?.role,
+        onboardingComplete,
+        onboardingSkipped,
+      )
       window.location.assign(path)
     }
   }
@@ -72,6 +84,7 @@ function LoginFormContent() {
   const handleGoogleSuccess = async (credentialResponse: {
     credential?: string
   }) => {
+    console.log("credentialResponse", credentialResponse)
     if (!credentialResponse.credential) return
     setIsGoogleLoading(true)
     setError(null)
@@ -83,12 +96,26 @@ function LoginFormContent() {
     if (googleError) {
       setError(googleError)
       setIsGoogleLoading(false)
-    } else {
-      const returnUrl = searchParams.get("returnUrl")
-      const { onboardingComplete, onboardingSkipped } = useAuth.getState()
-      const path = getRedirectPath(returnUrl, user?.role, onboardingComplete, onboardingSkipped)
-      window.location.assign(path)
+      return
     }
+
+    const role = user?.role != null ? Number(user.role) : NaN
+    if (!user || role !== 1) {
+      useAuth.getState().clearSession()
+      setError(t("googleNotSupplier"))
+      setIsGoogleLoading(false)
+      return
+    }
+
+    const returnUrl = searchParams.get("returnUrl")
+    const { onboardingComplete, onboardingSkipped } = useAuth.getState()
+    const path = getRedirectPath(
+      returnUrl,
+      user.role,
+      onboardingComplete,
+      onboardingSkipped,
+    )
+    window.location.assign(path)
   }
 
   const handleGoogleError = () => {
@@ -98,12 +125,26 @@ function LoginFormContent() {
 
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-white/20 shadow-xl">
-      <CardHeader className="space-y-1">
+      <CardHeader className="space-y-3">
+        <Tabs
+          value={loginKind}
+          onValueChange={(v) => {
+            setLoginKind(v as LoginKind)
+            setError(null)
+          }}
+        >
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="user">{t("userTab")}</TabsTrigger>
+            <TabsTrigger value="supplier">{t("supplierTab")}</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <CardTitle className="text-2xl text-center text-duck-navy">
           {t("title")}
         </CardTitle>
         <CardDescription className="text-center text-text-muted">
-          {t("description")}
+          {loginKind === "supplier"
+            ? t("descriptionSupplier")
+            : t("description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -155,38 +196,43 @@ function LoginFormContent() {
           </Button>
         </form>
 
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <Separator className="bg-gray-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
-              {t("orContinueWith")}
-            </span>
-          </div>
-        </div>
-
-        <div
-          className="relative flex justify-center [&_iframe]:max-w-full!"
-          style={{
-            pointerEvents: isGoogleLoading || isLoading ? "none" : undefined,
-          }}
-        >
-          {isGoogleLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 text-sm text-text-muted">
-              {t("loading")}
+        {loginKind === "supplier" && (
+          <>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="bg-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
+                  {t("orContinueWith")}
+                </span>
+              </div>
             </div>
-          )}
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            theme="outline"
-            size="large"
-            text="signin_with"
-            shape="rectangular"
-            width="320"
-          />
-        </div>
+
+            <div
+              className="relative flex justify-center [&_iframe]:max-w-full!"
+              style={{
+                pointerEvents:
+                  isGoogleLoading || isLoading ? "none" : undefined,
+              }}
+            >
+              {isGoogleLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 text-sm text-text-muted">
+                  {t("loading")}
+                </div>
+              )}
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                theme="outline"
+                size="large"
+                text="signin_with"
+                shape="rectangular"
+                width="320"
+              />
+            </div>
+          </>
+        )}
 
         <p className="text-center text-sm text-text-muted mt-4">
           {t("noAccount")}{" "}

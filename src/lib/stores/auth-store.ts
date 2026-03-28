@@ -73,11 +73,14 @@ type AuthStore = {
     email: string,
     password: string,
   ) => Promise<{ error?: string; user?: User }>
+  /** Google Sign-In (supplier flows only in UI). Sends Google ID token as `google_token` to the API. */
   loginWithGoogle: (
     googleToken: string,
   ) => Promise<{ error?: string; user?: User }>
   register: (input: RegisterInput) => Promise<{ error?: string }>
   logout: () => void
+  /** Clear stored token and user state without navigating (e.g. wrong role after Google). */
+  clearSession: () => void
 
   markOnboardingSkipped: () => void
 }
@@ -252,8 +255,13 @@ export const useAuth = create<AuthStore>((set, get) => ({
   },
 
   loginWithGoogle: async (googleToken) => {
+    const normalized = authApi.normalizeGoogleIdToken(googleToken)
+    if (!normalized) {
+      return { error: "Invalid Google sign-in. Please try again." }
+    }
+
     set({ isLoading: true })
-    const { data, error } = await authApi.loginWithGoogle(googleToken)
+    const { data, error } = await authApi.loginWithGoogle(normalized)
     if (error) {
       set({ isLoading: false })
       return { error }
@@ -307,6 +315,19 @@ export const useAuth = create<AuthStore>((set, get) => ({
     if (typeof window !== "undefined") {
       window.location.href = "/login"
     }
+  },
+
+  clearSession: () => {
+    clearToken()
+    set({
+      user: null,
+      token: null,
+      effectiveRole: null,
+      isAuthenticated: false,
+      onboardingComplete: null,
+      onboardingSkipped: false,
+      isLoading: false,
+    })
   },
 
   markOnboardingSkipped: () => {
