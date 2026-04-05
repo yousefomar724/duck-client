@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Info, DollarSign, Calendar, ImageIcon, Users } from "lucide-react"
+import { Info, DollarSign, Calendar, ImageIcon, Users, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -21,9 +21,10 @@ import { currencies } from "@/lib/constants"
 import * as tripsApi from "@/lib/api/trips"
 import * as imagesApi from "@/lib/api/images"
 import * as destinationsApi from "@/lib/api/destinations"
+import * as tourGuidesApi from "@/lib/api/tour-guides"
 import { DateTimePicker } from "@/components/shared/date-time-picker"
 import { ErrorDisplay } from "@/components/shared/error-display"
-import type { Trip, Destination, Supplier } from "@/lib/types"
+import type { Trip, Destination, Supplier, TourGuide } from "@/lib/types"
 
 interface TripFormProps {
   mode: "create" | "edit"
@@ -63,12 +64,15 @@ export default function TripForm({
     duration: "1",
     max_guests: "",
     supplier_id: "",
+    is_tour: false,
+    tour_guide_id: "",
   })
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined)
   const [toDate, setToDate] = useState<Date | undefined>(undefined)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([])
   const [destinations, setDestinations] = useState<Destination[]>([])
+  const [tourGuides, setTourGuides] = useState<TourGuide[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingDestinations, setIsLoadingDestinations] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -116,6 +120,8 @@ export default function TripForm({
       duration: (tripData.duration ?? 1).toString(),
       max_guests: tripData.max_guests.toString(),
       supplier_id: tripData.supplier_id?.toString() || "",
+      is_tour: tripData.is_tour ?? false,
+      tour_guide_id: tripData.tour_guide_id?.toString() || "",
     })
     setFromDate(tripData.from ? new Date(tripData.from) : undefined)
     setToDate(tripData.to ? new Date(tripData.to) : undefined)
@@ -137,7 +143,12 @@ export default function TripForm({
       }
       setIsLoadingDestinations(false)
     }
+    const fetchTourGuides = async () => {
+      const { data } = await tourGuidesApi.getTourGuides()
+      if (data) setTourGuides(data)
+    }
     fetchDestinations()
+    fetchTourGuides()
   }, [])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,6 +202,7 @@ export default function TripForm({
         },
         destination: formData.destination_ids.length > 0,
         location: false,
+        is_tour: formData.is_tour,
         price: parseFloat(formData.price),
         currency: formData.currency,
         refundable: formData.refundable,
@@ -200,10 +212,14 @@ export default function TripForm({
         },
         from: fromDate?.toISOString(),
         to: toDate?.toISOString() ?? undefined,
-        duration: parseInt(formData.duration, 10) || 1,
+        duration: parseInt(formData.duration, 10) || (formData.is_tour ? 0 : 1),
         max_guests: parseInt(formData.max_guests, 10),
         images: allImageUrls,
         destination_ids: formData.destination_ids,
+      }
+
+      if (formData.tour_guide_id) {
+        payload.tour_guide_id = parseInt(formData.tour_guide_id, 10)
       }
 
       if (showSupplierField && formData.supplier_id) {
@@ -274,6 +290,31 @@ export default function TripForm({
               </div>
             </div>
           )}
+
+          {/* Type Toggle */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              نوع العرض
+            </h2>
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="is_tour"
+                checked={formData.is_tour}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, is_tour: checked === true })
+                }
+              />
+              <Label htmlFor="is_tour" className="cursor-pointer font-normal">
+                جولة سياحية (Tour)
+              </Label>
+            </div>
+            <p className="text-xs text-text-muted">
+              {formData.is_tour
+                ? "الجولة: يتم حساب السعر بناءً على عدد الأشخاص × عدد الساعات"
+                : "الرحلة: يتم حساب السعر بناءً على الكمية"}
+            </p>
+          </div>
 
           {/* Basic Info Section */}
           <div className="space-y-4">
@@ -393,6 +434,30 @@ export default function TripForm({
                   <p className="text-sm text-text-muted">لا توجد وجهات متاحة</p>
                 )}
               </div>
+
+              {/* Tour Guide */}
+              <div className="space-y-2">
+                <Label htmlFor="tour_guide_id">المرشد السياحي (اختياري)</Label>
+                <Select
+                  dir="rtl"
+                  value={formData.tour_guide_id}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, tour_guide_id: value === "none" ? "" : value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر المرشد السياحي" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">بدون مرشد</SelectItem>
+                    {tourGuides.map((guide) => (
+                      <SelectItem key={guide.id} value={guide.id.toString()}>
+                        {guide.name} — {guide.price} ج.م
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -417,6 +482,11 @@ export default function TripForm({
                     placeholder="180"
                     required
                   />
+                  {formData.is_tour && (
+                    <p className="text-xs text-duck-cyan">
+                      السعر لكل ضيف في الساعة
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">العملة</Label>
@@ -525,18 +595,24 @@ export default function TripForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="duration">المدة (أيام)</Label>
+                  <Label htmlFor="duration">
+                    {formData.is_tour ? "المدة الافتراضية (ساعات)" : "المدة (أيام)"}
+                  </Label>
                   <Input
                     id="duration"
                     type="number"
-                    min={1}
+                    min={formData.is_tour ? 0 : 1}
                     value={formData.duration}
                     onChange={(e) =>
                       setFormData({ ...formData, duration: e.target.value })
                     }
-                    placeholder="1"
-                    required
+                    placeholder={formData.is_tour ? "0" : "1"}
                   />
+                  {formData.is_tour && (
+                    <p className="text-xs text-text-muted">
+                      العميل يحدد عدد الساعات عند الحجز
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="max_guests">عدد الاشخاص الأقصى</Label>
@@ -663,7 +739,9 @@ export default function TripForm({
                 ? "جاري الحفظ..."
                 : mode === "edit"
                   ? "حفظ التغييرات"
-                  : "حفظ الرحلة"}
+                  : formData.is_tour
+                    ? "حفظ الجولة"
+                    : "حفظ الرحلة"}
             </Button>
             <Button
               type="button"

@@ -119,6 +119,7 @@ function MyBookingsContent() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">{t("colId")}</TableHead>
+                  <TableHead className="text-right">{t("colType")}</TableHead>
                   <TableHead className="text-right">{t("colTrip")}</TableHead>
                   <TableHead className="text-right">{t("colDate")}</TableHead>
                   <TableHead className="text-right">
@@ -138,7 +139,7 @@ function MyBookingsContent() {
                 {bookings.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={9}
                       className="text-center py-12! text-text-muted"
                     >
                       {t("noBookings")}{" "}
@@ -159,6 +160,17 @@ function MyBookingsContent() {
                     return (
                       <TableRow key={b.id}>
                         <TableCell className="font-medium">#{b.id}</TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
+                              b.trip?.is_tour
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {b.trip?.is_tour ? t("tour") : t("trip")}
+                          </span>
+                        </TableCell>
                         <TableCell>{tripName}</TableCell>
                         <TableCell className="text-sm text-text-muted">
                           {b.booking_date

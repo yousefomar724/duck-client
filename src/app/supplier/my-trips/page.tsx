@@ -63,12 +63,12 @@ export default function MyTripsPage() {
   if (isLoading) {
     return (
       <div className="p-6">
-        <PageHeader title="رحلاتي">
+        <PageHeader title="رحلاتي وجولاتي">
           <Button
             asChild
             className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
           >
-            <Link href="/supplier/my-trips/create">+ اضافة رحلة</Link>
+            <Link href="/supplier/my-trips/create">+ اضافة رحلة / جولة</Link>
           </Button>
         </PageHeader>
         <CardGridSkeleton count={6} />
@@ -79,12 +79,12 @@ export default function MyTripsPage() {
   if (error) {
     return (
       <div className="p-6">
-        <PageHeader title="رحلاتي">
+        <PageHeader title="رحلاتي وجولاتي">
           <Button
             asChild
             className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
           >
-            <Link href="/supplier/my-trips/create">+ اضافة رحلة</Link>
+            <Link href="/supplier/my-trips/create">+ اضافة رحلة / جولة</Link>
           </Button>
         </PageHeader>
         <ErrorDisplay error={error} onRetry={fetchTrips} />
@@ -94,12 +94,12 @@ export default function MyTripsPage() {
 
   return (
     <div className="p-6">
-      <PageHeader title="رحلاتي">
+      <PageHeader title="رحلاتي وجولاتي">
         <Button
           asChild
           className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
         >
-          <Link href="/supplier/my-trips/create">+ اضافة رحلة</Link>
+          <Link href="/supplier/my-trips/create">+ اضافة رحلة / جولة</Link>
         </Button>
       </PageHeader>
 
@@ -147,6 +147,15 @@ export default function MyTripsPage() {
               className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200 gap-0!"
             >
               <div className="relative h-48 w-full">
+                <span
+                  className={`absolute top-2 start-2 z-10 text-xs font-medium px-2 py-0.5 rounded-full ${
+                    trip.is_tour
+                      ? "bg-purple-100 text-purple-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}
+                >
+                  {trip.is_tour ? "جولة" : "رحلة"}
+                </span>
                 {fullImageUrl ? (
                   fullImageUrl.endsWith(".mp4") ? (
                     <video
@@ -204,6 +213,12 @@ export default function MyTripsPage() {
                     {trip.duration ?? 1}{" "}
                     {(trip.duration ?? 1) === 1 ? "يوم" : "أيام"}
                   </p>
+                  {trip.tour_guide && (
+                    <p>
+                      <span className="font-medium">المرشد:</span>{" "}
+                      {trip.tour_guide.name}
+                    </p>
+                  )}
                 </div>
               </CardContent>
               <CardFooter className="p-4 pt-0 flex gap-2">
@@ -262,12 +277,12 @@ export default function MyTripsPage() {
 
       {trips.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-text-muted mb-4">لا توجد رحلات حالياً</p>
+          <p className="text-text-muted mb-4">لا توجد رحلات أو جولات حالياً</p>
           <Button
             asChild
             className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
           >
-            <Link href="/supplier/my-trips/create">اضافة رحلة جديدة</Link>
+            <Link href="/supplier/my-trips/create">اضافة رحلة / جولة جديدة</Link>
           </Button>
         </div>
       )}

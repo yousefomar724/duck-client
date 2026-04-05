@@ -63,6 +63,7 @@ type ContactFormValues = {
   resource_type: ResourceType
   quantity: number
   guests: number
+  duration: number
 }
 
 function getLocalizedText(value: any, locale: string, fallback = ""): string {
@@ -121,6 +122,10 @@ function BookPageContent() {
           .number({ invalid_type_error: tv("numberInvalid") })
           .int()
           .min(1, tv("minOneGuest")),
+        duration: z.coerce
+          .number({ invalid_type_error: tv("numberInvalid") })
+          .int()
+          .min(1, tv("minOne")),
       }),
     [tv],
   )
@@ -177,6 +182,7 @@ function BookPageContent() {
       resource_type: "kayak",
       quantity: 1,
       guests: 1,
+      duration: 1,
     },
   })
 
@@ -190,6 +196,7 @@ function BookPageContent() {
   })
   const watchedQuantity = useWatch({ control: form.control, name: "quantity" })
   const watchedGuests = useWatch({ control: form.control, name: "guests" })
+  const watchedDuration = useWatch({ control: form.control, name: "duration" })
   const watchedFullName = useWatch({ control: form.control, name: "full_name" })
   const watchedPhonePrefix = useWatch({
     control: form.control,
@@ -238,6 +245,7 @@ function BookPageContent() {
       guests: values.guests,
       resource_type: values.resource_type,
       quantity: values.quantity,
+      duration: values.duration,
     })
     setSubmitLoading(false)
     if (error) {
@@ -378,6 +386,15 @@ function BookPageContent() {
                                 <Check className="w-4 h-4 text-duck-navy" />
                               </div>
                             )}
+                            <span
+                              className={`absolute top-3 start-3 text-xs font-medium px-2 py-0.5 rounded-full ${
+                                trip.is_tour
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {trip.is_tour ? t("tour") : t("trip")}
+                            </span>
                           </div>
                           <div className="p-4">
                             <h3 className="text-text-dark font-bold text-lg mb-1">
@@ -675,6 +692,45 @@ function BookPageContent() {
                     />
                   </div>
 
+                  {selectedTrip?.is_tour && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="duration"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-text-dark font-medium">
+                              {t("duration")}{" "}
+                              <span className="text-red-500">*</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={1}
+                                className="rounded-lg border-black/20 w-40"
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value === ""
+                                      ? ""
+                                      : Number(e.target.value),
+                                  )
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                            <p className="text-xs text-text-muted">
+                              {t("durationHint")}
+                            </p>
+                          </FormItem>
+                        )}
+                      />
+                      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                        {t("guideRecommendation")}
+                      </div>
+                    </>
+                  )}
+
                   <div className="flex gap-4">
                     <Button
                       type="button"
@@ -721,10 +777,9 @@ function BookPageContent() {
                       {t("reviewDuration")}
                     </span>
                     <span>
-                      {selectedTrip.duration ?? 1}{" "}
-                      {(selectedTrip.duration ?? 1) === 1
-                        ? t("day")
-                        : t("days")}
+                      {selectedTrip.is_tour
+                        ? `${Number(watchedDuration) || 1} ${(Number(watchedDuration) || 1) === 1 ? t("hour") : t("hours")}`
+                        : `${selectedTrip.duration ?? 1} ${(selectedTrip.duration ?? 1) === 1 ? t("day") : t("days")}`}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -764,7 +819,11 @@ function BookPageContent() {
                     <span className="text-text-muted">{t("reviewTotal")}</span>
                     <span className="font-bold text-duck-cyan">
                       {formatCurrency(
-                        selectedTrip.price * (Number(watchedQuantity) || 1),
+                        selectedTrip.is_tour
+                          ? selectedTrip.price *
+                              (Number(watchedGuests) || 1) *
+                              (Number(watchedDuration) || 1)
+                          : selectedTrip.price * (Number(watchedQuantity) || 1),
                         selectedTrip.currency,
                       )}
                     </span>

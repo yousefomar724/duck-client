@@ -35,12 +35,13 @@ import { Label } from "@/components/ui/label"
 import * as bookingsApi from "@/lib/api/bookings"
 import * as tripsApi from "@/lib/api/trips"
 import * as suppliersApi from "@/lib/api/suppliers"
+import * as tourGuidesApi from "@/lib/api/tour-guides"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import StatCard from "@/components/shared/stat-card"
 import { CalendarCheck, CheckCircle, Clock } from "lucide-react"
-import type { BookingStatus, Booking, Trip, Supplier } from "@/lib/types"
+import type { BookingStatus, Booking, Trip, Supplier, TourGuide } from "@/lib/types"
 import { useToast } from "@/lib/stores/toast-store"
 
 const ALL_STATUSES: BookingStatus[] = [
@@ -90,12 +91,14 @@ export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [trips, setTrips] = useState<Trip[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [tourGuides, setTourGuides] = useState<TourGuide[]>([])
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refundId, setRefundId] = useState<number | null>(null)
   const [refundReason, setRefundReason] = useState("")
   const [refundLoading, setRefundLoading] = useState(false)
+  const [guideUpdating, setGuideUpdating] = useState<number | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -106,10 +109,11 @@ export default function AdminBookings() {
       setIsLoading(true)
       setError(null)
 
-      const [bookingsRes, tripsRes, suppliersRes] = await Promise.all([
+      const [bookingsRes, tripsRes, suppliersRes, guidesRes] = await Promise.all([
         bookingsApi.getBookings(),
         tripsApi.getTrips(),
         suppliersApi.getSuppliers(),
+        tourGuidesApi.getTourGuides(),
       ])
 
       if (bookingsRes.error || tripsRes.error || suppliersRes.error) {
@@ -120,6 +124,7 @@ export default function AdminBookings() {
       setBookings(bookingsRes.data || [])
       setTrips(tripsRes.data || [])
       setSuppliers(suppliersRes.data || [])
+      setTourGuides(guidesRes.data || [])
     } catch (err) {
       setError("حدث خطأ أثناء تحميل البيانات")
       console.error(err)
@@ -137,6 +142,21 @@ export default function AdminBookings() {
   const totalCount = bookings.length
   const confirmedCount = bookings.filter((b) => b.status === "CONFIRMED").length
   const pendingCount = bookings.filter((b) => b.status === "PENDING").length
+
+  const handleGuideChange = async (tripId: number, guideId: string) => {
+    setGuideUpdating(tripId)
+    const payload: Record<string, unknown> = {
+      tour_guide_id: guideId === "none" ? 0 : parseInt(guideId, 10),
+    }
+    const { error: err } = await tripsApi.updateTrip(tripId, payload as any)
+    setGuideUpdating(null)
+    if (err) {
+      addToast(err, "error")
+      return
+    }
+    addToast("تم تحديث المرشد", "success")
+    await fetchData()
+  }
 
   const processRefund = async () => {
     if (refundId == null) return
@@ -160,7 +180,7 @@ export default function AdminBookings() {
     return (
       <div className="space-y-6">
         <PageHeader title="الحجوزات" />
-        <TableSkeleton rows={5} columns={11} />
+        <TableSkeleton rows={5} columns={12} />
       </div>
     )
   }
@@ -236,12 +256,14 @@ export default function AdminBookings() {
                   <TableHead className="text-right">رقم الحجز</TableHead>
                   <TableHead className="text-right">اسم العميل</TableHead>
                   <TableHead className="text-right">رقم الهاتف</TableHead>
-                  <TableHead className="text-right">اسم الرحلة</TableHead>
+                  <TableHead className="text-right">النوع</TableHead>
+                  <TableHead className="text-right">الاسم</TableHead>
                   <TableHead className="text-right">المورد</TableHead>
                   <TableHead className="text-right">تاريخ الحجز</TableHead>
                   <TableHead className="text-right">المعدّات</TableHead>
                   <TableHead className="text-right">الكمية</TableHead>
                   <TableHead className="text-right">المبلغ</TableHead>
+                  <TableHead className="text-right">المرشد</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">تاريخ الإنشاء</TableHead>
                   <TableHead className="text-right">إجراءات</TableHead>
@@ -269,6 +291,17 @@ export default function AdminBookings() {
                       <TableCell className="text-text-muted">
                         {booking.phone_number}
                       </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
+                            trip?.is_tour
+                              ? "bg-purple-100 text-purple-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {trip?.is_tour ? "جولة" : "رحلة"}
+                        </span>
+                      </TableCell>
                       <TableCell>{trip?.name.ar || "-"}</TableCell>
                       <TableCell>{getSupplierName(supplier)}</TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
@@ -280,6 +313,35 @@ export default function AdminBookings() {
                       <TableCell>{booking.quantity ?? "—"}</TableCell>
                       <TableCell>
                         {formatCurrency(booking.amount, booking.currency)}
+                      </TableCell>
+                      <TableCell>
+                        {trip?.is_tour ? (
+                          <Select
+                            dir="rtl"
+                            value={trip.tour_guide_id?.toString() || "none"}
+                            onValueChange={(v) =>
+                              handleGuideChange(trip.id, v)
+                            }
+                            disabled={guideUpdating === trip.id}
+                          >
+                            <SelectTrigger className="w-[140px] h-8 text-xs">
+                              <SelectValue placeholder="اختر مرشد" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">بدون مرشد</SelectItem>
+                              {tourGuides.map((g) => (
+                                <SelectItem
+                                  key={g.id}
+                                  value={g.id.toString()}
+                                >
+                                  {g.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell>
                         <StatusBadge

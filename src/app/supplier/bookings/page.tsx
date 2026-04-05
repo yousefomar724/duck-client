@@ -20,9 +20,12 @@ import {
 } from "@/components/ui/select"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
 import * as bookingsApi from "@/lib/api/bookings"
+import * as tripsApi from "@/lib/api/trips"
+import * as tourGuidesApi from "@/lib/api/tour-guides"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
-import type { Booking, BookingStatus } from "@/lib/types"
+import type { Booking, BookingStatus, TourGuide } from "@/lib/types"
+import { useToast } from "@/lib/stores/toast-store"
 
 const ALL_FILTER_VALUES = [
   "all",
@@ -59,20 +62,27 @@ const resourceLabels: Record<string, string> = {
 }
 
 export default function SupplierBookingsPage() {
+  const { addToast } = useToast()
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [tourGuides, setTourGuides] = useState<TourGuide[]>([])
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [guideUpdating, setGuideUpdating] = useState<number | null>(null)
 
   const fetchBookings = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-    const { data, error: fetchError } = await bookingsApi.getMyBookings()
-    if (fetchError) {
-      setError(fetchError)
+    const [bookingsRes, guidesRes] = await Promise.all([
+      bookingsApi.getMyBookings(),
+      tourGuidesApi.getTourGuides(),
+    ])
+    if (bookingsRes.error) {
+      setError(bookingsRes.error)
     } else {
-      setBookings(data || [])
+      setBookings(bookingsRes.data || [])
     }
+    setTourGuides(guidesRes.data || [])
     setIsLoading(false)
   }, [])
 
@@ -89,6 +99,21 @@ export default function SupplierBookingsPage() {
     )
   }
 
+  const handleGuideChange = async (tripId: number, guideId: string) => {
+    setGuideUpdating(tripId)
+    const payload: Record<string, unknown> = {
+      tour_guide_id: guideId === "none" ? 0 : parseInt(guideId, 10),
+    }
+    const { error: err } = await tripsApi.updateTrip(tripId, payload as any)
+    setGuideUpdating(null)
+    if (err) {
+      addToast(err, "error")
+      return
+    }
+    addToast("تم تحديث المرشد", "success")
+    await fetchBookings()
+  }
+
   // Get trip name for a booking
   const getTripName = (booking: Booking) => {
     if (booking.trip) {
@@ -103,7 +128,7 @@ export default function SupplierBookingsPage() {
     return (
       <div className="p-6">
         <PageHeader title="الحجوزات" />
-        <TableSkeleton rows={5} columns={10} />
+        <TableSkeleton rows={5} columns={12} />
       </div>
     )
   }
@@ -154,13 +179,15 @@ export default function SupplierBookingsPage() {
               <TableHead className="text-right font-bold">رقم الحجز</TableHead>
               <TableHead className="text-right font-bold">اسم العميل</TableHead>
               <TableHead className="text-right font-bold">رقم الهاتف</TableHead>
-              <TableHead className="text-right font-bold">اسم الرحلة</TableHead>
+              <TableHead className="text-right font-bold">النوع</TableHead>
+              <TableHead className="text-right font-bold">الاسم</TableHead>
               <TableHead className="text-right font-bold">
                 تاريخ الحجز
               </TableHead>
               <TableHead className="text-right font-bold">المعدّات</TableHead>
               <TableHead className="text-right font-bold">الكمية</TableHead>
               <TableHead className="text-right font-bold">المبلغ</TableHead>
+              <TableHead className="text-right font-bold">المرشد</TableHead>
               <TableHead className="text-right font-bold">الحالة</TableHead>
               <TableHead className="text-right font-bold">
                 تاريخ الإنشاء
@@ -171,7 +198,7 @@ export default function SupplierBookingsPage() {
             {filteredBookings.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={10}
+                  colSpan={12}
                   className="text-center py-8 h-44 text-text-muted"
                 >
                   لا توجد حجوزات
@@ -190,6 +217,17 @@ export default function SupplierBookingsPage() {
                     <TableCell className="font-mono text-sm">
                       {booking.phone_number}
                     </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
+                          booking.trip?.is_tour
+                            ? "bg-purple-100 text-purple-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {booking.trip?.is_tour ? "جولة" : "رحلة"}
+                      </span>
+                    </TableCell>
                     <TableCell>{getTripName(booking)}</TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {booking.booking_date
@@ -200,6 +238,35 @@ export default function SupplierBookingsPage() {
                     <TableCell>{booking.quantity ?? "—"}</TableCell>
                     <TableCell className="font-bold text-duck-navy">
                       {formatCurrency(booking.amount, booking.currency)}
+                    </TableCell>
+                    <TableCell>
+                      {booking.trip?.is_tour ? (
+                        <Select
+                          dir="rtl"
+                          value={booking.trip.tour_guide_id?.toString() || "none"}
+                          onValueChange={(v) =>
+                            handleGuideChange(booking.trip_id, v)
+                          }
+                          disabled={guideUpdating === booking.trip_id}
+                        >
+                          <SelectTrigger className="w-[140px] h-8 text-xs">
+                            <SelectValue placeholder="اختر مرشد" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">بدون مرشد</SelectItem>
+                            {tourGuides.map((g) => (
+                              <SelectItem
+                                key={g.id}
+                                value={g.id.toString()}
+                              >
+                                {g.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                     <TableCell>
                       <StatusBadge

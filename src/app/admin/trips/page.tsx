@@ -55,6 +55,7 @@ export default function AdminTripsPage() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [supplierFilter, setSupplierFilter] = useState<string>("all")
+  const [typeFilter, setTypeFilter] = useState<string>("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
@@ -109,26 +110,30 @@ export default function AdminTripsPage() {
     }
   }
 
-  const filteredTrips =
-    supplierFilter === "all"
-      ? trips
-      : trips.filter((t) => t.supplier_id === parseInt(supplierFilter))
+  const filteredTrips = trips.filter((t) => {
+    if (supplierFilter !== "all" && t.supplier_id !== parseInt(supplierFilter))
+      return false
+    if (typeFilter === "trip" && t.is_tour) return false
+    if (typeFilter === "tour" && !t.is_tour) return false
+    return true
+  })
 
   const totalTrips = trips.length
-  const activeTrips = trips.length
+  const totalTours = trips.filter((t) => t.is_tour).length
+  const totalRegularTrips = trips.filter((t) => !t.is_tour).length
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="الرحلات">
-          <Button disabled>+ اضافة رحلة</Button>
+        <PageHeader title="الرحلات والجولات">
+          <Button disabled>+ اضافة رحلة / جولة</Button>
         </PageHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Array.from({ length: 2 }).map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="border rounded-lg p-4 h-24" />
           ))}
         </div>
-        <TableSkeleton rows={5} columns={7} />
+        <TableSkeleton rows={5} columns={10} />
       </div>
     )
   }
@@ -136,12 +141,12 @@ export default function AdminTripsPage() {
   if (error && !isDeleting) {
     return (
       <div className="space-y-6">
-        <PageHeader title="الرحلات">
+        <PageHeader title="الرحلات والجولات">
           <Button
             asChild
             className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
           >
-            <Link href="/admin/trips/create">+ اضافة رحلة</Link>
+            <Link href="/admin/trips/create">+ اضافة رحلة / جولة</Link>
           </Button>
         </PageHeader>
         <ErrorDisplay error={error} onRetry={fetchData} />
@@ -151,23 +156,24 @@ export default function AdminTripsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="الرحلات">
+      <PageHeader title="الرحلات والجولات">
         <Button
           asChild
           className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
         >
-          <Link href="/admin/trips/create">+ اضافة رحلة</Link>
+          <Link href="/admin/trips/create">+ اضافة رحلة / جولة</Link>
         </Button>
       </PageHeader>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <StatCard title="إجمالي الرحلات" value={totalTrips} icon={Ship} />
-        <StatCard title="الرحلات النشطة" value={activeTrips} icon={Ship} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard title="الإجمالي" value={totalTrips} icon={Ship} />
+        <StatCard title="الرحلات" value={totalRegularTrips} icon={Ship} />
+        <StatCard title="الجولات" value={totalTours} icon={Ship} />
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap">
         <Select
           dir="rtl"
           value={supplierFilter}
@@ -183,6 +189,16 @@ export default function AdminTripsPage() {
                 {getSupplierName(supplier)}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select dir="rtl" value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="تصفية حسب النوع" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">الكل</SelectItem>
+            <SelectItem value="trip">رحلات فقط</SelectItem>
+            <SelectItem value="tour">جولات فقط</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -203,12 +219,14 @@ export default function AdminTripsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="text-right">رقم الرحلة</TableHead>
-                  <TableHead className="text-right">اسم الرحلة</TableHead>
+                  <TableHead className="text-right">رقم</TableHead>
+                  <TableHead className="text-right">النوع</TableHead>
+                  <TableHead className="text-right">الاسم</TableHead>
                   <TableHead className="text-right">المورد</TableHead>
+                  <TableHead className="text-right">المرشد</TableHead>
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">التاريخ</TableHead>
-                  <TableHead className="text-right">عدد الاشخاص</TableHead>
+                  <TableHead className="text-right">الأشخاص</TableHead>
                   <TableHead className="text-right">المدة</TableHead>
                   <TableHead className="text-right">الإجراءات</TableHead>
                 </TableRow>
@@ -226,11 +244,25 @@ export default function AdminTripsPage() {
                     >
                       <TableCell className="font-medium">#{trip.id}</TableCell>
                       <TableCell>
+                        <span
+                          className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
+                            trip.is_tour
+                              ? "bg-purple-100 text-purple-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {trip.is_tour ? "جولة" : "رحلة"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         {typeof trip.name === "string"
                           ? trip.name
                           : trip.name?.ar || "-"}
                       </TableCell>
                       <TableCell>{getSupplierName(supplier)}</TableCell>
+                      <TableCell className="text-text-muted">
+                        {trip.tour_guide?.name || "-"}
+                      </TableCell>
                       <TableCell>
                         {formatCurrency(trip.price, trip.currency)}
                       </TableCell>

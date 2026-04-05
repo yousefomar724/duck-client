@@ -25,6 +25,7 @@ export interface Trip {
   id: number
   supplier_id: number
   supplier?: Supplier
+  is_tour?: boolean
   price: number
   currency: string
   rate: number
@@ -170,10 +171,12 @@ export interface CreateBookingRequest {
   guests: number
   resource_type: ResourceType
   quantity: number
+  duration?: number
 }
 
 export interface CreateTripRequest {
   supplier_id?: number
+  is_tour?: boolean
   name: { ar: string; en: string }
   description: { ar: string; en: string }
   price: number
