@@ -9,6 +9,7 @@
 ### 🔧 Backend (duck-api) - Phase 1-2: COMPLETE ✅
 
 #### Bug Fixes
+
 1. **AdminAuth Middleware** - Fixed role check from `role != 1` to `role != 2`
    - Now correctly restricts admin routes to Admin users (role=2)
 
@@ -23,18 +24,21 @@
 #### New Models & Endpoints
 
 **Destination Model**
+
 - Multilingual name/description (JSON with {ar, en})
 - Many-to-many relationship with Trip
 - CRUD endpoints: GET /destinations, POST /destinations, PATCH /destinations/:id, DELETE /destinations/:id
 - Admin-only (role=2) for write operations
 
 **Payout Model**
+
 - Admin-managed payments to suppliers
 - Manual creation (not auto-generated from bookings yet)
 - CRUD endpoints: GET /payouts, POST /payouts, PATCH /payouts/:id, DELETE /payouts/:id
 - Admin-only (role=2) access
 
 **New Endpoints**
+
 - `GET /auth/me` - Returns authenticated user profile (JWT required)
 - `GET /bookings` - List all bookings (Admin only)
 - `GET /bookings/my-bookings` - List supplier's bookings (JWT required)
@@ -44,12 +48,14 @@
 ### 🎨 Frontend (duck-web) - Phase 3-5: IN PROGRESS 🚀
 
 #### Environment & Configuration
+
 - ✅ Created `.env.local` with API_URL and Google Client ID
 - ✅ Updated `next.config.ts` with:
   - API proxy rewrites (`/api/:path*` → `http://localhost:8080/api/:path*`)
   - Image remote patterns for uploads from backend
 
 #### API Integration Layer
+
 - ✅ **API Client** (`src/lib/api/client.ts`)
   - Fetch-based HTTP wrapper with automatic Authorization header
   - Auto-appends `?lang=` query parameter from locale
@@ -69,6 +75,7 @@
   - `tour-guides.ts` - getTourGuides, getTourGuide, createTourGuide, updateTourGuide, deleteTourGuide
 
 #### Authentication System
+
 - ✅ **Token Management** (`src/lib/auth/token.ts`)
   - localStorage-based JWT storage (client-side only)
   - Token encoding/decoding with expiration check
@@ -92,6 +99,7 @@
   - Supplier routes (`/supplier/*`) - ProtectedRoute with allowedRoles={[1]}
 
 #### Type Definitions
+
 - ✅ Updated `src/lib/types.ts` with:
   - New interfaces: TourGuide, ImageStorage, RegisterInput, CreateBookingRequest, CreateTripRequest
   - Corrected Trip fields: destination/location as boolean (flags), added destinations array
@@ -99,6 +107,7 @@
   - Destination enhancements: added trips array, optional trip_count
 
 #### Connected Pages (Authentication)
+
 - ✅ **Login Page** (`/login`)
   - Email + password form with validation
   - Real API integration via useAuth().login()
@@ -119,6 +128,7 @@
   - Confirmation message after submission
 
 #### Pending Pages (Not Yet Wired)
+
 - ⏳ Reset Password Page (`/reset-password`) - API method exists, UI not wired
 - ⏳ Supplier pages:
   - My Trips (`/supplier/my-trips`) - needs getMyTrips() call, delete handler
@@ -176,6 +186,7 @@ Backend (Go + Echo + PostgreSQL + GORM)
 ## API Endpoints Reference
 
 ### Authentication
+
 - `POST /auth/register` - Create supplier account
 - `POST /auth/login` - Login with email/password or Google token
 - `GET /auth/me` - Get authenticated user profile
@@ -183,6 +194,7 @@ Backend (Go + Echo + PostgreSQL + GORM)
 - `POST /auth/reset-password` - Confirm password reset
 
 ### Trips (Multilingual)
+
 - `GET /trips?lang=ar&supplier_id=1` - List trips
 - `GET /trips/:id?lang=ar` - Get trip details
 - `GET /trips/my-trips?lang=ar` - Supplier's trips (JWT)
@@ -191,18 +203,21 @@ Backend (Go + Echo + PostgreSQL + GORM)
 - `DELETE /trips/:id` - Delete trip (JWT)
 
 ### Suppliers (Multilingual)
+
 - `GET /suppliers?lang=ar` - List suppliers
 - `GET /suppliers/:id?lang=ar` - Get supplier
 - `PATCH /suppliers/:id` - Update supplier (JWT)
 - `DELETE /suppliers/:id` - Delete supplier (JWT)
 
 ### Bookings
+
 - `POST /bookings` - Create booking + get payment link (JWT)
 - `GET /bookings` - List all bookings (Admin)
 - `GET /bookings/my-bookings` - Supplier's bookings (JWT)
 - `GET /bookings/callback?session_id=...&booking_id=...` - Payment webhook
 
 ### Destinations (Multilingual, Admin)
+
 - `GET /destinations?lang=ar&status=active` - List destinations
 - `GET /destinations/:id?lang=ar` - Get destination
 - `POST /destinations` - Create destination (Admin)
@@ -210,6 +225,7 @@ Backend (Go + Echo + PostgreSQL + GORM)
 - `DELETE /destinations/:id` - Delete destination (Admin)
 
 ### Payouts (Admin)
+
 - `GET /payouts?status=pending&supplier_id=1` - List payouts
 - `GET /payouts/:id` - Get payout
 - `POST /payouts` - Create payout (Admin)
@@ -217,17 +233,20 @@ Backend (Go + Echo + PostgreSQL + GORM)
 - `DELETE /payouts/:id` - Delete payout (Admin)
 
 ### Wallet (Admin)
+
 - `GET /wallet/:user_id` - Get wallet balance (JWT)
 - `GET /wallet` - List all wallets (Admin)
 - `PATCH /wallet/:user_id/:amount` - Update balance (Admin)
 
 ### Images (JWT)
+
 - `POST /images` - Upload image (multipart/form-data)
 - `GET /images` - List supplier's images
 - `GET /images/:id` - Get image
 - `DELETE /images/:id` - Delete image
 
 ### Tour Guides
+
 - `GET /tour-guides` - List all
 - `GET /tour-guides/:id` - Get one
 - `POST /tour-guides` - Create (Admin)
@@ -239,6 +258,7 @@ Backend (Go + Echo + PostgreSQL + GORM)
 ## Key Features Implemented
 
 ### Authentication & Authorization
+
 - ✅ JWT-based authentication with 72-hour expiry
 - ✅ Google OAuth support (on both ends)
 - ✅ Role-based access control (User=0, Supplier=1, Admin=2)
@@ -246,6 +266,7 @@ Backend (Go + Echo + PostgreSQL + GORM)
 - ✅ Protected routes with automatic redirects
 
 ### API Integration
+
 - ✅ Type-safe API calls with TypeScript
 - ✅ Automatic Authorization header injection
 - ✅ Language-aware requests (sends `?lang=ar` or `?lang=en`)
@@ -253,11 +274,13 @@ Backend (Go + Echo + PostgreSQL + GORM)
 - ✅ File upload support for images
 
 ### Internationalization
+
 - ✅ Multilingual API endpoints with language fallback
 - ✅ Arabic-first configuration (RTL layout)
 - ✅ next-intl integration
 
 ### User Experience
+
 - ✅ Loading states on auth buttons
 - ✅ Error messages displayed to users
 - ✅ Success confirmations
@@ -268,6 +291,7 @@ Backend (Go + Echo + PostgreSQL + GORM)
 ## What's Left to Do
 
 ### High Priority (Critical for MVP)
+
 1. **Wire Remaining Data Pages** (30% of remaining work)
    - Supplier my-trips list with getMyTrips()
    - Supplier create/edit trip forms with image uploads
@@ -283,6 +307,7 @@ Backend (Go + Echo + PostgreSQL + GORM)
    - Retry buttons on errors
 
 ### Medium Priority
+
 4. **Landing Page Updates** (5% of remaining work)
    - Add "Join as Supplier" button
    - Conditional rendering based on auth state
@@ -293,6 +318,7 @@ Backend (Go + Echo + PostgreSQL + GORM)
    - Configure Kashier callback URL
 
 ### Low Priority (Post-MVP)
+
 6. **Toast Notifications** - Success/error feedback
 7. **Form Validation** - Client-side validation with Zod
 8. **Optimistic Updates** - Reduce UI latency
@@ -303,6 +329,7 @@ Backend (Go + Echo + PostgreSQL + GORM)
 ## Quick Start (Testing)
 
 ### Backend
+
 ```bash
 cd ~/Desktop/work/duck-api
 go run main.go
@@ -310,6 +337,7 @@ go run main.go
 ```
 
 ### Frontend
+
 ```bash
 cd ~/Desktop/work/duck-web
 npm install  # if needed
@@ -318,6 +346,7 @@ npm run dev
 ```
 
 ### Test Flow
+
 1. Go to http://localhost:3000
 2. Click "Register" or navigate to /register
 3. Fill in details (email must be unique)
@@ -325,6 +354,7 @@ npm run dev
 5. If redirect works, auth is connected! ✅
 
 ### Example Test Credentials
+
 - Email: `test@example.com`
 - Password: `password123`
 - First Name: Test

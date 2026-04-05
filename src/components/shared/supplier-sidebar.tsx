@@ -148,7 +148,7 @@ export default function SupplierSidebar() {
             <DropdownMenu dir="rtl">
               <DropdownMenuTrigger
                 asChild
-                className="h-full! bg-gray-200 cursor-pointer"
+                className="h-full! bg-gray-100 cursor-pointer"
               >
                 <SidebarMenuButton className="w-full">
                   <Avatar className="w-8 h-8">

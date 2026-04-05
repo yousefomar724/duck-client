@@ -73,9 +73,10 @@ type AuthStore = {
     email: string,
     password: string,
   ) => Promise<{ error?: string; user?: User }>
-  /** Google Sign-In (supplier flows only in UI). Sends Google ID token as `google_token` to the API. */
+  /** Google Sign-In. Sends Google ID token as `google_token` with the selected role to the API. */
   loginWithGoogle: (
     googleToken: string,
+    role: 0 | 1,
   ) => Promise<{ error?: string; user?: User }>
   register: (input: RegisterInput) => Promise<{ error?: string }>
   logout: () => void
@@ -254,14 +255,14 @@ export const useAuth = create<AuthStore>((set, get) => ({
     return { user: userData }
   },
 
-  loginWithGoogle: async (googleToken) => {
+  loginWithGoogle: async (googleToken, role) => {
     const normalized = authApi.normalizeGoogleIdToken(googleToken)
     if (!normalized) {
       return { error: "Invalid Google sign-in. Please try again." }
     }
 
     set({ isLoading: true })
-    const { data, error } = await authApi.loginWithGoogle(normalized)
+    const { data, error } = await authApi.loginWithGoogle(normalized, role)
     if (error) {
       set({ isLoading: false })
       return { error }

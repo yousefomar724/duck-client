@@ -10,6 +10,7 @@ export interface LoginResponse {
 /** Body for POST /auth/login when using Google Sign-In (ID token JWT). */
 export type GoogleLoginBody = {
   google_token: string;
+  role: 0 | 1;
 };
 
 /**
@@ -37,12 +38,13 @@ export async function login(
 
 export async function loginWithGoogle(
   googleToken: string,
+  role: 0 | 1,
 ): Promise<ApiResponse<LoginResponse>> {
   const google_token = normalizeGoogleIdToken(googleToken);
   if (!google_token) {
     return { data: null, error: 'Invalid Google credential' };
   }
-  const body: GoogleLoginBody = { google_token };
+  const body: GoogleLoginBody = { google_token, role };
   return apiClient<LoginResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(body),

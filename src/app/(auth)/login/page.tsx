@@ -84,13 +84,14 @@ function LoginFormContent() {
   const handleGoogleSuccess = async (credentialResponse: {
     credential?: string
   }) => {
-    console.log("credentialResponse", credentialResponse)
     if (!credentialResponse.credential) return
     setIsGoogleLoading(true)
     setError(null)
 
+    const roleNum = loginKind === "supplier" ? (1 as const) : (0 as const)
     const { error: googleError, user } = await loginWithGoogle(
       credentialResponse.credential,
+      roleNum,
     )
 
     if (googleError) {
@@ -99,10 +100,8 @@ function LoginFormContent() {
       return
     }
 
-    const role = user?.role != null ? Number(user.role) : NaN
-    if (!user || role !== 1) {
-      useAuth.getState().clearSession()
-      setError(t("googleNotSupplier"))
+    if (!user) {
+      setError(t("googleError"))
       setIsGoogleLoading(false)
       return
     }
@@ -196,43 +195,38 @@ function LoginFormContent() {
           </Button>
         </form>
 
-        {loginKind === "supplier" && (
-          <>
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="bg-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
-                  {t("orContinueWith")}
-                </span>
-              </div>
-            </div>
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="bg-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-text-muted rounded-full border border-gray-100">
+              {t("orContinueWith")}
+            </span>
+          </div>
+        </div>
 
-            <div
-              className="relative flex justify-center [&_iframe]:max-w-full!"
-              style={{
-                pointerEvents:
-                  isGoogleLoading || isLoading ? "none" : undefined,
-              }}
-            >
-              {isGoogleLoading && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 text-sm text-text-muted">
-                  {t("loading")}
-                </div>
-              )}
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                theme="outline"
-                size="large"
-                text="signin_with"
-                shape="rectangular"
-                width="320"
-              />
+        <div
+          className="relative flex justify-center [&_iframe]:max-w-full!"
+          style={{
+            pointerEvents: isGoogleLoading || isLoading ? "none" : undefined,
+          }}
+        >
+          {isGoogleLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 text-sm text-text-muted">
+              {t("loading")}
             </div>
-          </>
-        )}
+          )}
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            size="large"
+            text="signin_with"
+            shape="rectangular"
+            width="320"
+          />
+        </div>
 
         <p className="text-center text-sm text-text-muted mt-4">
           {t("noAccount")}{" "}
