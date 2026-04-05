@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl"
 import { motion } from "framer-motion"
-import { MessageCircleMore } from "lucide-react"
 import Link from "next/link"
 
 export default function HeroSection() {
@@ -18,7 +17,7 @@ export default function HeroSection() {
         muted
         loop
         playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0"
+        className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
       >
         <source src="/videos/hero1.mp4" type="video/mp4" />
       </video>

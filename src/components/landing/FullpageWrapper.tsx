@@ -10,9 +10,9 @@ export default function FullpageWrapper({ children }: FullpageWrapperProps) {
   return (
     <ReactFullpage
       licenseKey=""
+      credits={{ enabled: false }}
       scrollingSpeed={1000}
       css3={true}
-      scrollOverflow={true}
       autoScrolling={true}
       fitToSection={true}
       touchSensitivity={3}
