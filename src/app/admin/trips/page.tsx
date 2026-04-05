@@ -271,7 +271,7 @@ export default function AdminTripsPage() {
                       </TableCell>
                       <TableCell>{trip.max_guests}</TableCell>
                       <TableCell>
-                        {duration} {duration === 1 ? "يوم" : "أيام"}
+                        {duration} {duration === 1 ? "ساعة" : "ساعات"}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu dir="rtl">
