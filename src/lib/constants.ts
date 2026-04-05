@@ -164,19 +164,23 @@ export function formatCurrency(amount: number, currency: string = "EGP"): string
 }
 
 export function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "-"
   return new Intl.DateTimeFormat("ar-EG", {
     year: "numeric",
     month: "long",
     day: "numeric",
-  }).format(new Date(dateString))
+  }).format(date)
 }
 
 export function formatDateTime(dateString: string): string {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "-"
   return new Intl.DateTimeFormat("ar-EG", {
     year: "numeric",
     month: "long",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(dateString))
+  }).format(date)
 }
