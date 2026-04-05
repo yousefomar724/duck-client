@@ -9,7 +9,7 @@ interface FullpageWrapperProps {
 export default function FullpageWrapper({ children }: FullpageWrapperProps) {
   return (
     <ReactFullpage
-      licenseKey=""
+      licenseKey="gplv3-license"
       credits={{ enabled: false }}
       scrollingSpeed={1000}
       css3={true}

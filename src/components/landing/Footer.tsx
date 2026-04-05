@@ -9,7 +9,6 @@ import {
   Instagram,
   Twitter,
   Facebook,
-  Linkedin,
   MapPin,
 } from "lucide-react"
 import Image from "next/image"
@@ -37,7 +36,7 @@ export default function Footer() {
 
       {/* Main Footer Content */}
       <div className="py-16 px-4 md:px-10 max-w-[1920px] mx-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Column 1: Logo & Brand */}
           <div>
             <div className="mb-8">
@@ -146,7 +145,7 @@ export default function Footer() {
                 +201550061006
               </span>
             </a>
-            <div className="flex items-center gap-3 mb-2 text-sm">
+            <div className="grid grid-cols-[auto_1fr] items-center gap-3 mb-2 text-sm">
               <Mail className="w-4 h-4 text-white/60" />
               <a
                 href="mailto:duck.aswan@gmail.com"
@@ -157,7 +156,7 @@ export default function Footer() {
                 duck.aswan@gmail.com
               </a>
             </div>
-            <div className="flex items-center gap-3 text-sm text-white/70">
+            <div className="grid grid-cols-[auto_1fr] items-center gap-3 text-sm text-white/70">
               <MapPin className="w-4 h-4 text-white/60" />
               <a
                 href="https://maps.app.goo.gl/FPt8JJ8VgaTTzBir6"
