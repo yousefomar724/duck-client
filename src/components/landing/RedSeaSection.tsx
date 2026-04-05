@@ -8,7 +8,7 @@ export default function RedSeaSection() {
   return (
     <section
       id="redsea-section"
-      className="fullpage-section relative flex items-center w-full h-full"
+      className="relative flex items-center w-full h-screen"
     >
       {/* Background Video */}
       <video
@@ -46,7 +46,7 @@ export default function RedSeaSection() {
         }}
       />
 
-      <div className="section-content relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex items-center justify-between">
+      <div className="relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex items-center justify-between">
         {/* Right Content (Start) */}
         <div className="flex flex-col items-start text-white max-w-xl pt-20">
           <motion.h2
@@ -99,7 +99,9 @@ export default function RedSeaSection() {
             </div>
             <div>
               <div className="text-2xl font-bold">5+</div>
-              <div className="text-xs text-white/80">{t("yearsExperience")}</div>
+              <div className="text-xs text-white/80">
+                {t("yearsExperience")}
+              </div>
             </div>
           </div>
         </motion.div>

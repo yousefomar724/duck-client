@@ -10,7 +10,7 @@ export default function HeroSection() {
   return (
     <section
       id="hero-section"
-      className="fullpage-section relative flex items-end justify-center pb-20 w-full h-full"
+      className="relative flex items-end justify-center pb-20 w-full h-screen"
     >
       {/* Background Video */}
       <video
@@ -41,7 +41,7 @@ export default function HeroSection() {
       />
 
       {/* Content */}
-      <div className="section-content relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex flex-col justify-end">
+      <div className="relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex flex-col justify-end">
         <div className="flex items-end justify-between w-full pb-10">
           {/* Headline */}
           <div className="w-full md:w-auto">
@@ -51,7 +51,14 @@ export default function HeroSection() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-white text-5xl md:text-7xl font-bold leading-[1.2] drop-shadow-lg max-w-2xl"
             >
-              {t("title").split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}
+              {t("title")
+                .split("\n")
+                .map((line, i) => (
+                  <span key={i}>
+                    {line}
+                    {i === 0 && <br />}
+                  </span>
+                ))}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -98,16 +105,6 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
-
-      {/* Floating Search Button (Bottom End) */}
-      <a
-        href="https://wa.me/201550061006"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 end-6 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all"
-      >
-        <MessageCircleMore className="w-5 h-5" />
-      </a>
     </section>
   )
 }

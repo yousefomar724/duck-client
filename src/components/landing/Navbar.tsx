@@ -38,7 +38,23 @@ export default function Navbar() {
     if (forceSolid) setIsSolid(true)
   }, [forceSolid])
 
+  useEffect(() => {
+    if (pathname !== "/") return
+
+    const handleSectionChange = (e: Event) => {
+      const { index } = (e as CustomEvent).detail
+      setIsSolid(index >= 3)
+      setIsHidden(false)
+    }
+
+    window.addEventListener("fullpage:sectionchange", handleSectionChange)
+    return () =>
+      window.removeEventListener("fullpage:sectionchange", handleSectionChange)
+  }, [pathname])
+
   useMotionValueEvent(scrollY, "change", (latest) => {
+    if (pathname === "/") return
+
     const previous = scrollY.getPrevious() ?? 0
     const diff = latest - previous
     const isScrollingDown = diff > 0

@@ -127,31 +127,12 @@
   }
 
   html {
-    /* scroll-snap-type: y mandatory; */
-    /* scroll-behavior: smooth; */
     overflow-x: hidden;
   }
 
-  /* Fullpage Scroll Snap */
-  .fullpage-container {
-    width: 100%;
-  }
-
-  .fullpage-section {
-    height: 100vh;
-    /* scroll-snap-align: start; */
-    /* scroll-snap-stop: always; */
-    position: relative;
-    overflow: hidden;
-    width: 100%;
-  }
-
-  .normal-scroll {
-    position: relative;
-    z-index: 10;
-    background: var(--white);
-    /* scroll-snap-align: start; */
-    min-height: 100vh;
+  #fullpage,
+  .fp-section {
+    touch-action: none;
   }
 }
 
