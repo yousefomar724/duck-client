@@ -131,8 +131,8 @@ export default function SupplierStoragePage() {
     <div className="space-y-8 max-w-lg" dir="rtl">
       <PageHeader title="سعة المعدات" />
       <p className="text-text-muted text-sm leading-relaxed">
-        حدد الحد الأقصى لكل نوع معدات متاح للحجز يومياً (كاياك، دراجة مائية،
-        سب). يُستخدم ذلك لاحتساب التوفر عند الحجز.
+        حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة (كاياك، دراجة مائية،
+        SUP). يُستخدم ذلك لاحتساب التوفر عند الحجز.
       </p>
 
       <div className="space-y-4 rounded-xl border bg-white p-6">

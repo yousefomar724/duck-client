@@ -237,7 +237,7 @@ export default function OffersSection() {
                         </p>
                         <p className="text-text-muted text-sm mt-1">
                           {trip.duration ?? 1}{" "}
-                          {(trip.duration ?? 1) === 1 ? t("day") : t("days")}
+                          {(trip.duration ?? 1) === 1 ? t("hour") : t("hours")}
                         </p>
                       </div>
                       <Link

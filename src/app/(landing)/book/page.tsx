@@ -47,7 +47,24 @@ import { useToast } from "@/lib/stores/toast-store"
 import Footer from "@/components/landing/Footer"
 import { useTranslations, useLocale } from "next-intl"
 
-const PHONE_PREFIXES = ["010", "011", "012", "015"] as const
+/** Local Egyptian mobile: 0 + (10|11|12|15) + 8 digits */
+const EGYPT_MOBILE_LOCAL_REGEX = /^0(10|11|12|15)\d{8}$/
+
+function parseStoredPhoneToLocal(p: string): string | null {
+  const d = p.replace(/\D/g, "")
+  if (d.startsWith("20") && d.length === 12) {
+    const rest = d.slice(2)
+    if (/^1[0125]\d{8}$/.test(rest)) return `0${rest}`
+  }
+  if (EGYPT_MOBILE_LOCAL_REGEX.test(d)) return d
+  if (d.length === 10 && /^1[0125]/.test(d)) return `0${d}`
+  return null
+}
+
+function localEgyptMobileToE164(localDigits: string): string {
+  const d = localDigits.replace(/\D/g, "")
+  return `+20${d.slice(1)}`
+}
 
 const RESOURCE_TYPES = [
   "kayak",
@@ -57,8 +74,7 @@ const RESOURCE_TYPES = [
 
 type ContactFormValues = {
   full_name: string
-  phone_prefix: (typeof PHONE_PREFIXES)[number]
-  phone_suffix: string
+  phone: string
   booking_date: Date
   resource_type: ResourceType
   quantity: number
@@ -104,11 +120,10 @@ function BookPageContent() {
     () =>
       z.object({
         full_name: z.string().min(2, tv("nameMin")),
-        phone_prefix: z.enum(PHONE_PREFIXES),
-        phone_suffix: z
+        phone: z
           .string()
-          .length(8, tv("phoneLength"))
-          .regex(/^\d{8}$/, tv("phoneDigits")),
+          .min(1, tv("phoneRequired"))
+          .regex(EGYPT_MOBILE_LOCAL_REGEX, tv("phoneMobileEgypt")),
         booking_date: z.date({
           required_error: tv("dateRequired"),
           invalid_type_error: tv("dateInvalid"),
@@ -176,8 +191,7 @@ function BookPageContent() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: "",
-      phone_prefix: "010",
-      phone_suffix: "",
+      phone: "",
       booking_date: defaultTomorrow,
       resource_type: "kayak",
       quantity: 1,
@@ -198,29 +212,15 @@ function BookPageContent() {
   const watchedGuests = useWatch({ control: form.control, name: "guests" })
   const watchedDuration = useWatch({ control: form.control, name: "duration" })
   const watchedFullName = useWatch({ control: form.control, name: "full_name" })
-  const watchedPhonePrefix = useWatch({
-    control: form.control,
-    name: "phone_prefix",
-  })
-  const watchedPhoneSuffix = useWatch({
-    control: form.control,
-    name: "phone_suffix",
-  })
+  const watchedPhone = useWatch({ control: form.control, name: "phone" })
 
   const handleUseMyData = () => {
     if (!user) return
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ")
     form.setValue("full_name", fullName)
     if (user.phone_number) {
-      const p = user.phone_number.replace(/\s/g, "")
-      const match = p.match(/(10|11|12|15)(\d{8})$/)
-      if (match) {
-        const prefix = `0${match[1]}` as (typeof PHONE_PREFIXES)[number]
-        if (PHONE_PREFIXES.includes(prefix)) {
-          form.setValue("phone_prefix", prefix)
-          form.setValue("phone_suffix", match[2])
-        }
-      }
+      const local = parseStoredPhoneToLocal(user.phone_number)
+      if (local) form.setValue("phone", local)
     }
   }
 
@@ -231,10 +231,7 @@ function BookPageContent() {
       window.location.assign("/login?returnUrl=" + returnUrl)
       return
     }
-    const prefixDigits = values.phone_prefix.startsWith("0")
-      ? values.phone_prefix.slice(1)
-      : values.phone_prefix
-    const phoneNumber = `+20${prefixDigits}${values.phone_suffix}`
+    const phoneNumber = localEgyptMobileToE164(values.phone)
     setSubmitLoading(true)
     const booking_date = formatISO(startOfDay(values.booking_date))
     const { data, error } = await bookingsApi.createBooking({
@@ -406,8 +403,8 @@ function BookPageContent() {
                             <p className="text-text-muted text-sm mt-1">
                               {trip.duration ?? 1}{" "}
                               {(trip.duration ?? 1) === 1
-                                ? t("day")
-                                : t("days")}
+                                ? t("hour")
+                                : t("hours")}
                             </p>
                           </div>
                         </button>
@@ -464,62 +461,36 @@ function BookPageContent() {
                       </FormItem>
                     )}
                   />
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="phone_prefix"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-text-dark font-medium">
-                            {t("phone")} <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <div dir="ltr" className="flex flex-wrap gap-3">
-                              {PHONE_PREFIXES.map((prefix) => (
-                                <button
-                                  key={prefix}
-                                  type="button"
-                                  onClick={() => field.onChange(prefix)}
-                                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                                    field.value === prefix
-                                      ? "bg-duck-cyan text-white border-duck-cyan"
-                                      : "border-gray-300 hover:border-duck-cyan"
-                                  }`}
-                                >
-                                  {prefix}
-                                </button>
-                              ))}
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="phone_suffix"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-text-muted text-sm">
-                            {t("phoneSuffix")}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="12345678"
-                              dir="ltr"
-                              maxLength={8}
-                              className="rounded-lg border-black/20 focus-visible:ring-duck-cyan focus-visible:border-duck-cyan w-40"
-                              {...field}
-                              onChange={(e) => {
-                                const v = e.target.value.replace(/\D/g, "")
-                                field.onChange(v)
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-text-dark font-medium">
+                          {t("phone")} <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="tel"
+                            inputMode="numeric"
+                            autoComplete="tel"
+                            placeholder={t("phonePlaceholder")}
+                            dir="ltr"
+                            maxLength={11}
+                            className="rounded-lg border-black/20 focus-visible:ring-duck-cyan focus-visible:border-duck-cyan"
+                            {...field}
+                            onChange={(e) => {
+                              const v = e.target.value
+                                .replace(/\D/g, "")
+                                .slice(0, 11)
+                              field.onChange(v)
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={form.control}
@@ -779,7 +750,7 @@ function BookPageContent() {
                     <span>
                       {selectedTrip.is_tour
                         ? `${Number(watchedDuration) || 1} ${(Number(watchedDuration) || 1) === 1 ? t("hour") : t("hours")}`
-                        : `${selectedTrip.duration ?? 1} ${(selectedTrip.duration ?? 1) === 1 ? t("day") : t("days")}`}
+                        : `${selectedTrip.duration ?? 1} ${(selectedTrip.duration ?? 1) === 1 ? t("hour") : t("hours")}`}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -840,9 +811,9 @@ function BookPageContent() {
                   <div className="flex justify-between">
                     <span className="text-text-muted">{t("reviewPhone")}</span>
                     <span dir="ltr">
-                      +20
-                      {(watchedPhonePrefix || "010").replace(/^0/, "")}
-                      {watchedPhoneSuffix}
+                      {watchedPhone
+                        ? localEgyptMobileToE164(watchedPhone)
+                        : "—"}
                     </span>
                   </div>
                 </div>

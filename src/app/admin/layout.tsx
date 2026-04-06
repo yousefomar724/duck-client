@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import AdminSidebar from "@/components/shared/admin-sidebar"
-import { ProtectedRoute } from "@/components/shared/protected-route"
 
 export default function AdminLayout({
   children,

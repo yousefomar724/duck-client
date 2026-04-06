@@ -41,7 +41,13 @@ import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import StatCard from "@/components/shared/stat-card"
 import { CalendarCheck, CheckCircle, Clock } from "lucide-react"
-import type { BookingStatus, Booking, Trip, Supplier, TourGuide } from "@/lib/types"
+import type {
+  BookingStatus,
+  Booking,
+  Trip,
+  Supplier,
+  TourGuide,
+} from "@/lib/types"
 import { useToast } from "@/lib/stores/toast-store"
 
 const ALL_STATUSES: BookingStatus[] = [
@@ -109,12 +115,13 @@ export default function AdminBookings() {
       setIsLoading(true)
       setError(null)
 
-      const [bookingsRes, tripsRes, suppliersRes, guidesRes] = await Promise.all([
-        bookingsApi.getBookings(),
-        tripsApi.getTrips(),
-        suppliersApi.getSuppliers(),
-        tourGuidesApi.getTourGuides(),
-      ])
+      const [bookingsRes, tripsRes, suppliersRes, guidesRes] =
+        await Promise.all([
+          bookingsApi.getBookings(),
+          tripsApi.getTrips(),
+          suppliersApi.getSuppliers(),
+          tourGuidesApi.getTourGuides(),
+        ])
 
       if (bookingsRes.error || tripsRes.error || suppliersRes.error) {
         setError("فشل في تحميل البيانات")
@@ -148,6 +155,7 @@ export default function AdminBookings() {
     const payload: Record<string, unknown> = {
       tour_guide_id: guideId === "none" ? 0 : parseInt(guideId, 10),
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: err } = await tripsApi.updateTrip(tripId, payload as any)
     setGuideUpdating(null)
     if (err) {
@@ -319,9 +327,7 @@ export default function AdminBookings() {
                           <Select
                             dir="rtl"
                             value={trip.tour_guide_id?.toString() || "none"}
-                            onValueChange={(v) =>
-                              handleGuideChange(trip.id, v)
-                            }
+                            onValueChange={(v) => handleGuideChange(trip.id, v)}
                             disabled={guideUpdating === trip.id}
                           >
                             <SelectTrigger className="w-[140px] h-8 text-xs">
@@ -330,10 +336,7 @@ export default function AdminBookings() {
                             <SelectContent>
                               <SelectItem value="none">بدون مرشد</SelectItem>
                               {tourGuides.map((g) => (
-                                <SelectItem
-                                  key={g.id}
-                                  value={g.id.toString()}
-                                >
+                                <SelectItem key={g.ID} value={g.ID.toString()}>
                                   {g.name}
                                 </SelectItem>
                               ))}

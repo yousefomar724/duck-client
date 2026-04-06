@@ -211,7 +211,7 @@ export default function MyTripsPage() {
                   <p>
                     <span className="font-medium">المدة:</span>{" "}
                     {trip.duration ?? 1}{" "}
-                    {(trip.duration ?? 1) === 1 ? "يوم" : "أيام"}
+                    {(trip.duration ?? 1) === 1 ? "ساعة" : "ساعات"}
                   </p>
                   {trip.tour_guide && (
                     <p>
@@ -282,7 +282,9 @@ export default function MyTripsPage() {
             asChild
             className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
           >
-            <Link href="/supplier/my-trips/create">اضافة رحلة / جولة جديدة</Link>
+            <Link href="/supplier/my-trips/create">
+              اضافة رحلة / جولة جديدة
+            </Link>
           </Button>
         </div>
       )}
