@@ -51,7 +51,7 @@ export interface Trip {
 export type ResourceType = "kayak" | "water_cycle" | "sup"
 
 export interface Booking {
-  id: number
+  ID: number
   session_id: string
   user_id: number
   user?: User
@@ -71,6 +71,7 @@ export interface Booking {
   resource_type?: string
   order_ref?: string
   order_id?: string
+  wants_guide?: boolean
 }
 
 export interface Wallet {
@@ -172,6 +173,8 @@ export interface CreateBookingRequest {
   resource_type: ResourceType
   quantity: number
   duration?: number
+  /** User preference for a tour guide (tour trips only; ignored or false otherwise) */
+  wants_guide?: boolean
 }
 
 export interface CreateTripRequest {

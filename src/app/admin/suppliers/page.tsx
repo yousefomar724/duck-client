@@ -47,7 +47,9 @@ function getSupplierAbout(supplier: Supplier): string {
 
 export default function AdminSuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [activeTab, setActiveTab] = useState<"all" | "active" | "inactive">("all")
+  const [activeTab, setActiveTab] = useState<"all" | "active" | "inactive">(
+    "all",
+  )
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updatingId, setUpdatingId] = useState<number | null>(null)
@@ -157,21 +159,9 @@ export default function AdminSuppliersPage() {
       <PageHeader title="الموردين" />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          title="إجمالي الموردين"
-          value={totalCount}
-          icon={Users}
-        />
-        <StatCard
-          title="موردين نشطين"
-          value={activeCount}
-          icon={Users}
-        />
-        <StatCard
-          title="موردين غير نشطين"
-          value={inactiveCount}
-          icon={Users}
-        />
+        <StatCard title="إجمالي الموردين" value={totalCount} icon={Users} />
+        <StatCard title="موردين نشطين" value={activeCount} icon={Users} />
+        <StatCard title="موردين غير نشطين" value={inactiveCount} icon={Users} />
       </div>
 
       <Card>
@@ -280,7 +270,8 @@ export default function AdminSuppliersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>حذف المورد</AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من حذف هذا المورد؟ سيتم حذف الحساب والبيانات المرتبطة به ولا يمكن التراجع عن هذه العملية.
+              هل أنت متأكد من حذف هذا المورد؟ سيتم حذف الحساب والبيانات المرتبطة
+              به ولا يمكن التراجع عن هذه العملية.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-3 justify-end">

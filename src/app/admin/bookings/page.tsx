@@ -224,13 +224,13 @@ export default function AdminBookings() {
         />
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         <Select
           dir="rtl"
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
         >
-          <SelectTrigger className="w-[240px]">
+          <SelectTrigger className="w-full sm:w-[240px]">
             <SelectValue placeholder="تصفية حسب الحالة" />
           </SelectTrigger>
           <SelectContent>
@@ -244,7 +244,7 @@ export default function AdminBookings() {
         </Select>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle>
             {statusFilter === "all"
@@ -252,20 +252,19 @@ export default function AdminBookings() {
               : `الحجوزات - ${statusFilterLabels[statusFilter] ?? statusFilter}`}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 overflow-x-auto">
+        <CardContent className="p-3 sm:p-6">
           {filteredBookings.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-text-muted">لا توجد حجوزات متاحة</p>
             </div>
           ) : (
-            <Table>
+            <Table className="min-w-[1200px] overflow-x-auto max-w-full text-xs sm:text-sm">
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="text-right">رقم الحجز</TableHead>
                   <TableHead className="text-right">اسم العميل</TableHead>
                   <TableHead className="text-right">رقم الهاتف</TableHead>
                   <TableHead className="text-right">النوع</TableHead>
-                  <TableHead className="text-right">الاسم</TableHead>
                   <TableHead className="text-right">المورد</TableHead>
                   <TableHead className="text-right">تاريخ الحجز</TableHead>
                   <TableHead className="text-right">المعدّات</TableHead>
@@ -273,8 +272,6 @@ export default function AdminBookings() {
                   <TableHead className="text-right">المبلغ</TableHead>
                   <TableHead className="text-right">المرشد</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">تاريخ الإنشاء</TableHead>
-                  <TableHead className="text-right">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -289,11 +286,11 @@ export default function AdminBookings() {
                     : "—"
                   return (
                     <TableRow
-                      key={booking.id}
+                      key={booking.ID}
                       className="hover:bg-duck-cyan/5 transition-colors"
                     >
                       <TableCell className="font-medium">
-                        #{booking.id}
+                        #{booking.ID}
                       </TableCell>
                       <TableCell>{booking.full_name}</TableCell>
                       <TableCell className="text-text-muted">
@@ -310,7 +307,6 @@ export default function AdminBookings() {
                           {trip?.is_tour ? "جولة" : "رحلة"}
                         </span>
                       </TableCell>
-                      <TableCell>{trip?.name.ar || "-"}</TableCell>
                       <TableCell>{getSupplierName(supplier)}</TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         {booking.booking_date
@@ -330,7 +326,7 @@ export default function AdminBookings() {
                             onValueChange={(v) => handleGuideChange(trip.id, v)}
                             disabled={guideUpdating === trip.id}
                           >
-                            <SelectTrigger className="w-[140px] h-8 text-xs">
+                            <SelectTrigger className="w-[120px] sm:w-[140px] h-8 text-xs">
                               <SelectValue placeholder="اختر مرشد" />
                             </SelectTrigger>
                             <SelectContent>
@@ -355,13 +351,13 @@ export default function AdminBookings() {
                       <TableCell className="text-text-muted whitespace-nowrap">
                         {formatDateTime(booking.created_at)}
                       </TableCell>
-                      <TableCell>
+                      {/* <TableCell>
                         {booking.status === "REFUND_PENDING" ? (
                           <Button
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="border-amber-300 text-amber-900"
+                            className="border-amber-300 text-amber-900 whitespace-nowrap"
                             onClick={() => setRefundId(booking.id)}
                           >
                             استرداد
@@ -369,7 +365,7 @@ export default function AdminBookings() {
                         ) : (
                           "—"
                         )}
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   )
                 })}

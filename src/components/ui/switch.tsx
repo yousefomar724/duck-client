@@ -16,7 +16,7 @@ function Switch({
     <SwitchPrimitive.Root
       data-slot="switch"
       data-size={size}
-      dir="ltr"
+      // dir="rtl"
       className={cn(
         "src:peer src:data-[state=checked]:bg-duck-yellow src:data-[state=unchecked]:bg-input src:focus-visible:border-ring src:focus-visible:ring-ring/50 src:dark:data-[state=unchecked]:bg-input/80 src:group/switch src:inline-flex src:shrink-0 src:items-center src:rounded-full src:border src:border-transparent src:shadow-xs src:transition-all src:outline-none src:focus-visible:ring-[3px] src:disabled:cursor-not-allowed src:disabled:opacity-50 src:data-[size=default]:h-[1.15rem] src:data-[size=default]:w-8 src:data-[size=sm]:h-3.5 src:data-[size=sm]:w-6",
         className,

@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { getTrips } from "@/lib/api/trips"
 import * as bookingsApi from "@/lib/api/bookings"
 import type { ResourceType, Trip } from "@/lib/types"
@@ -80,6 +81,7 @@ type ContactFormValues = {
   quantity: number
   guests: number
   duration: number
+  wants_guide: boolean
 }
 
 function getLocalizedText(value: any, locale: string, fallback = ""): string {
@@ -141,6 +143,7 @@ function BookPageContent() {
           .number({ invalid_type_error: tv("numberInvalid") })
           .int()
           .min(1, tv("minOne")),
+        wants_guide: z.boolean(),
       }),
     [tv],
   )
@@ -197,8 +200,15 @@ function BookPageContent() {
       quantity: 1,
       guests: 1,
       duration: 1,
+      wants_guide: false,
     },
   })
+
+  useEffect(() => {
+    if (!selectedTrip?.is_tour) {
+      form.setValue("wants_guide", false)
+    }
+  }, [selectedTrip?.is_tour, form])
 
   const watchedBookingDate = useWatch({
     control: form.control,
@@ -213,6 +223,10 @@ function BookPageContent() {
   const watchedDuration = useWatch({ control: form.control, name: "duration" })
   const watchedFullName = useWatch({ control: form.control, name: "full_name" })
   const watchedPhone = useWatch({ control: form.control, name: "phone" })
+  const watchedWantsGuide = useWatch({
+    control: form.control,
+    name: "wants_guide",
+  })
 
   const handleUseMyData = () => {
     if (!user) return
@@ -243,6 +257,7 @@ function BookPageContent() {
       resource_type: values.resource_type,
       quantity: values.quantity,
       duration: values.duration,
+      wants_guide: selectedTrip.is_tour ? values.wants_guide : false,
     })
     setSubmitLoading(false)
     if (error) {
@@ -696,9 +711,35 @@ function BookPageContent() {
                           </FormItem>
                         )}
                       />
-                      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                        {t("guideRecommendation")}
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name="wants_guide"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start gap-3 space-y-0 rounded-xl border border-duck-cyan/20 bg-duck-cyan/5 p-4">
+                            <FormControl>
+                              <Checkbox
+                                id="wants_guide"
+                                checked={field.value}
+                                onCheckedChange={(c) =>
+                                  field.onChange(c === true)
+                                }
+                                className="mt-0.5"
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel
+                                htmlFor="wants_guide"
+                                className="cursor-pointer font-medium text-text-dark"
+                              >
+                                {t("wantsGuide")}
+                              </FormLabel>
+                              <p className="text-sm font-normal text-text-muted">
+                                {t("guideRecommendation")}
+                              </p>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
                     </>
                   )}
 
@@ -816,6 +857,18 @@ function BookPageContent() {
                         : "—"}
                     </span>
                   </div>
+                  {selectedTrip.is_tour ? (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">
+                        {t("reviewWantsGuide")}
+                      </span>
+                      <span>
+                        {watchedWantsGuide
+                          ? t("reviewWantsGuideYes")
+                          : t("reviewWantsGuideNo")}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
                 <Form {...form}>
                   <form onSubmit={handleSubmit} className="space-y-6">

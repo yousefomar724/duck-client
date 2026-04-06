@@ -161,19 +161,11 @@ function SidebarProvider({
     [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
   )
 
-  // Ensure RTL is applied so sidebar appears on the right when dir="rtl" (start = right).
-  const [dir, setDir] = React.useState<"ltr" | "rtl">("ltr")
-  React.useEffect(() => {
-    const d = document.documentElement.getAttribute("dir")
-    setDir(d === "rtl" ? "rtl" : "ltr")
-  }, [])
-
   return (
     <SidebarContext.Provider value={contextValue}>
       <TooltipProvider delayDuration={0}>
         <div
           data-slot="sidebar-wrapper"
-          dir={dir}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH,

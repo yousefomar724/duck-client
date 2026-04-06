@@ -398,7 +398,11 @@
     "durationHint": "Specify the number of hours for the tour",
     "hour": "hour",
     "hours": "hours",
-    "guideRecommendation": "If this is your first time trying kayaking, SUP, or water biking, we recommend booking the tour with a guide for a better and safer experience."
+    "guideRecommendation": "If this is your first time trying kayaking, SUP, or water biking, we recommend booking the tour with a guide for a better and safer experience.",
+    "wantsGuide": "I want a tour guide",
+    "reviewWantsGuide": "Tour guide",
+    "reviewWantsGuideYes": "Yes",
+    "reviewWantsGuideNo": "No"
   },
   "contact": {
     "heroSubtitle": "Partnerships & Collaboration",

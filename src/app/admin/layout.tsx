@@ -19,7 +19,7 @@ export default function AdminLayout({
 }) {
   return (
     // <ProtectedRoute allowedRoles={[2]}>
-    <SidebarProvider>
+    <SidebarProvider dir="rtl">
       <AdminSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
