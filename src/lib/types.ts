@@ -125,7 +125,7 @@ export type UserRole = 0 | 1 | 2
 
 // Additional types for API integration
 export interface TourGuide {
-  id: number
+  ID: number
   name: string
   price: number
   phone_number: string

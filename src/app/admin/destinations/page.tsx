@@ -69,6 +69,39 @@ const emptyForm = {
   operating_hours: "",
 }
 
+function destinationToFormState(destination: Destination) {
+  const name =
+    typeof destination.name === "string"
+      ? { ar: destination.name, en: "" }
+      : destination.name
+  const description =
+    typeof destination.description === "string"
+      ? { ar: destination.description, en: "" }
+      : destination.description
+  const images =
+    destination.images && destination.images.length > 0
+      ? destination.images
+      : destination.image
+        ? [destination.image]
+        : []
+  return {
+    name_ar: name?.ar ?? "",
+    name_en: name?.en ?? "",
+    description_ar: description?.ar ?? "",
+    description_en: description?.en ?? "",
+    image: destination.image ?? "",
+    images,
+    status: destination.status ?? "active",
+    lat: destination.lat ?? ("" as number | ""),
+    lng: destination.lng ?? ("" as number | ""),
+    activities: destination.activities ?? [],
+    public_status: (destination.public_status ?? "") as
+      | ""
+      | DestinationPublicStatus,
+    operating_hours: destination.operating_hours ?? "",
+  }
+}
+
 export default function AdminDestinations() {
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -85,6 +118,8 @@ export default function AdminDestinations() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
+  const [openingEditId, setOpeningEditId] = useState<number | null>(null)
+  const [editLoadError, setEditLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!imageFile) {
@@ -157,45 +192,34 @@ export default function AdminDestinations() {
     setImageFile(null)
     setImageFiles([])
     setDialogError(null)
+    setEditLoadError(null)
     setDialogOpen(true)
   }
 
-  const openEditDialog = (destination: Destination) => {
-    const name =
-      typeof destination.name === "string"
-        ? { ar: destination.name, en: "" }
-        : destination.name
-    const description =
-      typeof destination.description === "string"
-        ? { ar: destination.description, en: "" }
-        : destination.description
-    const images =
-      destination.images && destination.images.length > 0
-        ? destination.images
-        : destination.image
-          ? [destination.image]
-          : []
-    setEditingDestination(destination)
-    setFormData({
-      name_ar: name?.ar ?? "",
-      name_en: name?.en ?? "",
-      description_ar: description?.ar ?? "",
-      description_en: description?.en ?? "",
-      image: destination.image ?? "",
-      images,
-      status: destination.status ?? "active",
-      lat: destination.lat ?? ("" as number | ""),
-      lng: destination.lng ?? ("" as number | ""),
-      activities: destination.activities ?? [],
-      public_status: (destination.public_status ?? "") as
-        | ""
-        | DestinationPublicStatus,
-      operating_hours: destination.operating_hours ?? "",
-    })
-    setImageFile(null)
-    setImageFiles([])
+  const openEditDialog = async (destination: Destination) => {
+    setOpeningEditId(destination.id)
+    setEditLoadError(null)
     setDialogError(null)
-    setDialogOpen(true)
+    try {
+      const res = await destinationsApi.getDestination(destination.id, {
+        omitLang: true,
+      })
+      if (res.error || !res.data) {
+        setEditLoadError(res.error || "فشل في تحميل بيانات الوجهة")
+        return
+      }
+      const full = res.data
+      setEditingDestination(full)
+      setFormData(destinationToFormState(full))
+      setImageFile(null)
+      setImageFiles([])
+      setDialogOpen(true)
+    } catch (err) {
+      setEditLoadError("حدث خطأ أثناء تحميل بيانات الوجهة")
+      console.error(err)
+    } finally {
+      setOpeningEditId(null)
+    }
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,6 +273,7 @@ export default function AdminDestinations() {
       setImageFile(null)
       setImageFiles([])
       setDialogError(null)
+      setEditLoadError(null)
     }
   }
 
@@ -385,6 +410,12 @@ export default function AdminDestinations() {
         </Button>
       </PageHeader>
 
+      {editLoadError && (
+        <p className="text-sm text-red-600" role="alert">
+          {editLoadError}
+        </p>
+      )}
+
       {/* Destinations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {destinations.map((destination) => {
@@ -464,10 +495,15 @@ export default function AdminDestinations() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => openEditDialog(destination)}
+                        disabled={
+                          isDeleting || openingEditId === destination.id
+                        }
+                        onClick={() => void openEditDialog(destination)}
                       >
                         <Pencil className="me-2 h-4 w-4" />
-                        تعديل
+                        {openingEditId === destination.id
+                          ? "جاري التحميل..."
+                          : "تعديل"}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-red-600"

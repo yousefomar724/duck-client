@@ -28,7 +28,7 @@ export default function AdminEditTripPage({ params }: EditTripPageProps) {
     setError(null)
 
     const [tripRes, suppliersRes] = await Promise.all([
-      tripsApi.getTrip(id),
+      tripsApi.getTrip(id, { omitLang: true }),
       suppliersApi.getSuppliers(),
     ])
 

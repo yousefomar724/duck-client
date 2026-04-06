@@ -3,7 +3,14 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Info, DollarSign, Calendar, ImageIcon, Users, MapPin } from "lucide-react"
+import {
+  Info,
+  DollarSign,
+  Calendar,
+  ImageIcon,
+  Users,
+  MapPin,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -25,6 +32,18 @@ import * as tourGuidesApi from "@/lib/api/tour-guides"
 import { DateTimePicker } from "@/components/shared/date-time-picker"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Trip, Destination, Supplier, TourGuide } from "@/lib/types"
+
+/** Go gorm.Model serializes primary key as `ID`; normalize to `id` for the UI. */
+function normalizeTourGuides(list: TourGuide[]): TourGuide[] {
+  return list
+    .map((g) => {
+      const raw = g as TourGuide & { ID?: number }
+      const id = g.ID ?? raw.ID
+      if (id == null) return null
+      return { ...g, ID: id }
+    })
+    .filter((g): g is TourGuide => g != null)
+}
 
 interface TripFormProps {
   mode: "create" | "edit"
@@ -64,7 +83,7 @@ export default function TripForm({
     duration: "1",
     max_guests: "",
     supplier_id: "",
-    is_tour: false,
+    is_tour: true,
     tour_guide_id: "",
   })
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined)
@@ -145,7 +164,7 @@ export default function TripForm({
     }
     const fetchTourGuides = async () => {
       const { data } = await tourGuidesApi.getTourGuides()
-      if (data) setTourGuides(data)
+      if (data) setTourGuides(normalizeTourGuides(data))
     }
     fetchDestinations()
     fetchTourGuides()
@@ -437,21 +456,24 @@ export default function TripForm({
 
               {/* Tour Guide */}
               <div className="space-y-2">
-                <Label htmlFor="tour_guide_id">المرشد السياحي (اختياري)</Label>
+                <Label htmlFor="tour_guide_id">المرشد (اختياري)</Label>
                 <Select
                   dir="rtl"
                   value={formData.tour_guide_id}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, tour_guide_id: value === "none" ? "" : value })
+                    setFormData({
+                      ...formData,
+                      tour_guide_id: value === "none" ? "" : value,
+                    })
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر المرشد السياحي" />
+                    <SelectValue placeholder="اختر المرشد" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">بدون مرشد</SelectItem>
                     {tourGuides.map((guide) => (
-                      <SelectItem key={guide.id} value={guide.id.toString()}>
+                      <SelectItem key={guide.ID} value={String(guide.ID)}>
                         {guide.name} — {guide.price} ج.م
                       </SelectItem>
                     ))}
@@ -596,7 +618,9 @@ export default function TripForm({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="duration">
-                    {formData.is_tour ? "المدة الافتراضية (ساعات)" : "المدة (أيام)"}
+                    {formData.is_tour
+                      ? "المدة الافتراضية (ساعات)"
+                      : "المدة (أيام)"}
                   </Label>
                   <Input
                     id="duration"

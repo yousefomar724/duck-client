@@ -10,6 +10,8 @@ export type ApiResponse<T> =
 
 interface RequestOptions extends Omit<RequestInit, 'headers'> {
   lang?: string;
+  /** When true, do not send `lang` (use for admin/edit payloads with full `{ ar, en }` fields). */
+  omitLang?: boolean;
   headers?: HeadersInit;
 }
 
@@ -21,10 +23,17 @@ async function apiClient<T>(
     const token = getToken();
     const url = new URL(`${API_BASE}${endpoint}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
 
-    // Add language query parameter
-    const lang = options.lang || (typeof window !== 'undefined' ? document.documentElement.lang : 'ar');
-    if (lang) {
-      url.searchParams.set('lang', lang);
+    // Language query (optional; omit for full bilingual JSON from Go)
+    if (!options.omitLang) {
+      const lang =
+        options.lang !== undefined
+          ? options.lang
+          : typeof window !== 'undefined'
+            ? document.documentElement.lang
+            : 'ar';
+      if (lang) {
+        url.searchParams.set('lang', lang);
+      }
     }
 
     const baseHeaders: Record<string, string> = {

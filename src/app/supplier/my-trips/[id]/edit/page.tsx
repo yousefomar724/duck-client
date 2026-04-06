@@ -24,7 +24,9 @@ export default function EditTripPage({ params }: EditTripPageProps) {
   const fetchTrip = useCallback(async (id: number) => {
     setIsLoading(true)
     setError(null)
-    const { data, error: fetchError } = await tripsApi.getTrip(id)
+    const { data, error: fetchError } = await tripsApi.getTrip(id, {
+      omitLang: true,
+    })
     if (fetchError) {
       setError(fetchError)
     } else if (data) {

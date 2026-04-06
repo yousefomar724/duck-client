@@ -48,6 +48,11 @@ export const adminNavItems: NavItem[] = [
     href: "/admin/suppliers",
     icon: Users,
   },
+  {
+    title: "المرشدين",
+    href: "/admin/tour-guides",
+    icon: User,
+  },
 ]
 
 export const supplierNavItems: NavItem[] = [
