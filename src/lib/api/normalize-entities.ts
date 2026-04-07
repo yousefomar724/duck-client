@@ -31,7 +31,7 @@ function normalizeTourGuideNested(raw: unknown): TourGuide | undefined {
   if (raw == null || typeof raw !== "object") return undefined
   const g = raw as Record<string, unknown> & GoId
   const id = pickId(g)
-  return { ...(g as object), id: id ?? 0 } as TourGuide
+  return { ...(g as object), ID: id ?? 0 } as TourGuide
 }
 
 export function normalizeTrip(raw: unknown): Trip {
@@ -59,9 +59,9 @@ export function normalizeTrip(raw: unknown): Trip {
   const normalizedGuide = out.tour_guide as TourGuide | undefined
   if (
     (tgId == null || tgId === 0) &&
-    normalizedGuide?.id
+    normalizedGuide?.ID
   ) {
-    out.tour_guide_id = normalizedGuide.id
+    out.tour_guide_id = normalizedGuide.ID
   }
 
   return out as unknown as Trip

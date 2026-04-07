@@ -158,8 +158,8 @@ function MyBookingsContent() {
                       ? (resourceLabels[b.resource_type] ?? b.resource_type)
                       : "—"
                     return (
-                      <TableRow key={b.id}>
-                        <TableCell className="font-medium">#{b.id}</TableCell>
+                      <TableRow key={b.ID}>
+                        <TableCell className="font-medium">#{b.ID}</TableCell>
                         <TableCell>
                           <span
                             className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -195,7 +195,7 @@ function MyBookingsContent() {
                               variant="outline"
                               size="sm"
                               className="text-red-600 border-red-200 hover:bg-red-50"
-                              onClick={() => setCancelId(b.id)}
+                              onClick={() => setCancelId(b.ID)}
                             >
                               {t("cancel")}
                             </Button>
