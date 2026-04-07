@@ -29,6 +29,7 @@ import Logo from "./logo"
 import { supplierNavItems } from "@/lib/constants"
 import * as suppliersApi from "@/lib/api/suppliers"
 import { resolveImageUrl } from "@/lib/image-utils"
+import { useLocale } from "next-intl"
 
 function getLocalizedName(value: unknown): string {
   if (typeof value === "string") return value.trim()
@@ -41,6 +42,7 @@ function getLocalizedName(value: unknown): string {
 }
 
 export default function SupplierSidebar() {
+  const locale = useLocale()
   const pathname = usePathname()
   const { user, logout, onboardingComplete } = useAuth()
   const { isMobile, setOpenMobile } = useSidebar()
@@ -99,7 +101,7 @@ export default function SupplierSidebar() {
   }, [])
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar side={locale === "ar" ? "right" : "left"} collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center justify-center py-4">
           <Logo width={100} height={50} />

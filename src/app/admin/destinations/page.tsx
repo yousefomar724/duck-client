@@ -467,7 +467,8 @@ export default function AdminDestinations() {
                         ? destination.description
                         : (destination.description?.ar ?? "")}
                     </p>
-                    {destination.activities &&
+                    {destination.operating_hours?.trim() &&
+                      destination.activities &&
                       destination.activities.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {destination.activities.map((a) => (
@@ -515,12 +516,39 @@ export default function AdminDestinations() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-300">
-                  <span className="text-sm text-text-muted">عدد الرحلات</span>
-                  <span className="text-lg font-bold text-duck-cyan">
-                    {destination.trip_count || 0}
-                  </span>
-                </div>
+                {(destination.operating_hours?.trim() ||
+                  (destination.activities &&
+                    destination.activities.length > 0)) && (
+                  <div className="mt-4 pt-4 border-t border-gray-300">
+                    {destination.operating_hours?.trim() ? (
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                        <span className="text-sm text-text-muted shrink-0">
+                          ساعات العمل
+                        </span>
+                        <span className="text-sm font-medium text-text-dark text-start sm:text-end sm:max-w-[70%]">
+                          {destination.operating_hours.trim()}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-sm text-text-muted shrink-0">
+                          الأنشطة
+                        </span>
+                        <div className="flex flex-wrap gap-1 justify-start sm:justify-end">
+                          {(destination.activities ?? []).map((a) => (
+                            <span
+                              key={a}
+                              className="text-xs px-2 py-0.5 rounded-full bg-duck-cyan/20 text-duck-navy"
+                            >
+                              {ACTIVITY_OPTIONS.find((o) => o.id === a)
+                                ?.label ?? a}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )

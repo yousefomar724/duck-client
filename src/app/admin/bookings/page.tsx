@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Fragment, useState, useEffect } from "react"
 import PageHeader from "@/components/shared/page-header"
 import StatusBadge from "@/components/shared/status-badge"
 import {
@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +39,8 @@ import { formatCurrency, formatDateTime } from "@/lib/constants"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import StatCard from "@/components/shared/stat-card"
-import { CalendarCheck, CheckCircle, Clock } from "lucide-react"
+import { CalendarCheck, CheckCircle, ChevronDown, Clock } from "lucide-react"
+import { cn } from "@/lib/utils"
 import type {
   BookingStatus,
   Booking,
@@ -85,6 +85,26 @@ const resourceLabels: Record<string, string> = {
   sup: "التجديف وقوفاً",
 }
 
+/** Chevron + 4 summary columns */
+const TABLE_COL_COUNT = 5
+
+function localizedTripName(trip?: Trip) {
+  if (!trip) return "—"
+  const n = trip.name
+  if (typeof n === "string") return n
+  return n.ar || n.en || "—"
+}
+
+function localizedText(
+  value: string | { ar: string; en: string } | undefined,
+  maxLen = 200,
+) {
+  if (!value) return "—"
+  const s = typeof value === "string" ? value : value.ar || value.en || ""
+  if (!s) return "—"
+  return s.length > maxLen ? `${s.slice(0, maxLen)}…` : s
+}
+
 export default function AdminBookings() {
   const { addToast } = useToast()
   const getSupplierName = (supplier?: Supplier) => {
@@ -105,6 +125,13 @@ export default function AdminBookings() {
   const [refundReason, setRefundReason] = useState("")
   const [refundLoading, setRefundLoading] = useState(false)
   const [guideUpdating, setGuideUpdating] = useState<number | null>(null)
+  const [expandedBookingId, setExpandedBookingId] = useState<number | null>(
+    null,
+  )
+
+  const toggleExpanded = (id: number) => {
+    setExpandedBookingId((prev) => (prev === id ? null : id))
+  }
 
   useEffect(() => {
     fetchData()
@@ -188,7 +215,7 @@ export default function AdminBookings() {
     return (
       <div className="space-y-6">
         <PageHeader title="الحجوزات" />
-        <TableSkeleton rows={5} columns={12} />
+        <TableSkeleton rows={5} columns={TABLE_COL_COUNT} />
       </div>
     )
   }
@@ -258,19 +285,13 @@ export default function AdminBookings() {
               <p className="text-text-muted">لا توجد حجوزات متاحة</p>
             </div>
           ) : (
-            <Table className="min-w-[1200px] overflow-x-auto max-w-full text-xs sm:text-sm">
+            <Table className="min-w-[520px] overflow-x-auto max-w-full text-xs sm:text-sm">
               <TableHeader>
                 <TableRow className="bg-muted/50">
+                  <TableHead className="w-10 text-right p-2" aria-hidden />
                   <TableHead className="text-right">رقم الحجز</TableHead>
                   <TableHead className="text-right">اسم العميل</TableHead>
-                  <TableHead className="text-right">رقم الهاتف</TableHead>
-                  <TableHead className="text-right">النوع</TableHead>
-                  <TableHead className="text-right">المورد</TableHead>
-                  <TableHead className="text-right">تاريخ الحجز</TableHead>
-                  <TableHead className="text-right">المعدّات</TableHead>
-                  <TableHead className="text-right">الكمية</TableHead>
                   <TableHead className="text-right">المبلغ</TableHead>
-                  <TableHead className="text-right">المرشد</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
@@ -284,89 +305,323 @@ export default function AdminBookings() {
                     ? (resourceLabels[booking.resource_type] ??
                       booking.resource_type)
                     : "—"
+                  const isExpanded = expandedBookingId === booking.ID
                   return (
-                    <TableRow
-                      key={booking.ID}
-                      className="hover:bg-duck-cyan/5 transition-colors"
-                    >
-                      <TableCell className="font-medium">
-                        #{booking.ID}
-                      </TableCell>
-                      <TableCell>{booking.full_name}</TableCell>
-                      <TableCell className="text-text-muted">
-                        {booking.phone_number}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
-                            trip?.is_tour
-                              ? "bg-purple-100 text-purple-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {trip?.is_tour ? "جولة" : "رحلة"}
-                        </span>
-                      </TableCell>
-                      <TableCell>{getSupplierName(supplier)}</TableCell>
-                      <TableCell className="text-sm whitespace-nowrap">
-                        {booking.booking_date
-                          ? formatDateTime(booking.booking_date)
-                          : "—"}
-                      </TableCell>
-                      <TableCell>{rt}</TableCell>
-                      <TableCell>{booking.quantity ?? "—"}</TableCell>
-                      <TableCell>
-                        {formatCurrency(booking.amount, booking.currency)}
-                      </TableCell>
-                      <TableCell>
-                        {trip?.is_tour ? (
-                          <Select
-                            dir="rtl"
-                            value={trip.tour_guide_id?.toString() || "none"}
-                            onValueChange={(v) => handleGuideChange(trip.id, v)}
-                            disabled={guideUpdating === trip.id}
-                          >
-                            <SelectTrigger className="w-[120px] sm:w-[140px] h-8 text-xs">
-                              <SelectValue placeholder="اختر مرشد" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">بدون مرشد</SelectItem>
-                              {tourGuides.map((g) => (
-                                <SelectItem key={g.ID} value={g.ID.toString()}>
-                                  {g.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          "—"
+                    <Fragment key={booking.ID}>
+                      <TableRow
+                        className={cn(
+                          "hover:bg-duck-cyan/5 transition-colors cursor-pointer",
+                          isExpanded && "bg-duck-cyan/10",
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge
-                          status={booking.status as BookingStatus}
-                          type="booking"
-                        />
-                      </TableCell>
-                      {/*<TableCell className="text-text-muted whitespace-nowrap">
-                        {formatDateTime(booking.created_at)}
-                      </TableCell>*/}
-                      {/* <TableCell>
-                        {booking.status === "REFUND_PENDING" ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="border-amber-300 text-amber-900 whitespace-nowrap"
-                            onClick={() => setRefundId(booking.id)}
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isExpanded}
+                        aria-label={`تفاصيل الحجز رقم ${booking.ID}`}
+                        onClick={() => toggleExpanded(booking.ID)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            toggleExpanded(booking.ID)
+                          }
+                        }}
+                      >
+                        <TableCell className="w-10 p-2 align-middle">
+                          <ChevronDown
+                            className={cn(
+                              "size-4 text-text-muted transition-transform",
+                              isExpanded && "rotate-180",
+                            )}
+                            aria-hidden
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          #{booking.ID}
+                        </TableCell>
+                        <TableCell>{booking.full_name}</TableCell>
+                        <TableCell className="font-medium whitespace-nowrap">
+                          {formatCurrency(booking.amount, booking.currency)}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge
+                            status={booking.status as BookingStatus}
+                            type="booking"
+                          />
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell
+                            colSpan={TABLE_COL_COUNT}
+                            className="p-0 border-t-0"
                           >
-                            استرداد
-                          </Button>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell> */}
-                    </TableRow>
+                            <div
+                              className="border-t border-border bg-muted/20 px-3 py-4 sm:px-5"
+                              dir="rtl"
+                            >
+                              <p className="text-sm font-semibold text-duck-navy mb-3">
+                                تفاصيل الحجز
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 text-sm">
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    رقم الهاتف
+                                  </div>
+                                  <div className="font-mono text-sm">
+                                    {booking.phone_number || "—"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    النوع
+                                  </div>
+                                  <div>
+                                    <span
+                                      className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
+                                        trip?.is_tour
+                                          ? "bg-purple-100 text-purple-700"
+                                          : "bg-blue-100 text-blue-700"
+                                      }`}
+                                    >
+                                      {trip?.is_tour ? "جولة" : "رحلة"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    المورد
+                                  </div>
+                                  <div>{getSupplierName(supplier)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    تاريخ الحجز
+                                  </div>
+                                  <div>
+                                    {booking.booking_date
+                                      ? formatDateTime(booking.booking_date)
+                                      : "—"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    المعدّات
+                                  </div>
+                                  <div>{rt}</div>
+                                </div>
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    الكمية
+                                  </div>
+                                  <div>{booking.quantity ?? "—"}</div>
+                                </div>
+                                <div
+                                  className="sm:col-span-2 lg:col-span-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                >
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    المرشد
+                                  </div>
+                                  <div>
+                                    {trip?.is_tour ? (
+                                      <Select
+                                        dir="rtl"
+                                        value={
+                                          trip.tour_guide_id?.toString() ||
+                                          "none"
+                                        }
+                                        onValueChange={(v) =>
+                                          handleGuideChange(trip.id, v)
+                                        }
+                                        disabled={guideUpdating === trip.id}
+                                      >
+                                        <SelectTrigger className="w-full max-w-[220px] h-9 text-xs">
+                                          <SelectValue placeholder="اختر مرشد" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="none">
+                                            بدون مرشد
+                                          </SelectItem>
+                                          {tourGuides.map((g) => (
+                                            <SelectItem
+                                              key={g.ID}
+                                              value={g.ID.toString()}
+                                            >
+                                              {g.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    ) : (
+                                      "—"
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <p className="text-sm font-semibold text-duck-navy mt-6 mb-3">
+                                بيانات إضافية
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 text-sm">
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    تاريخ الإنشاء
+                                  </div>
+                                  <div>
+                                    {booking.created_at
+                                      ? formatDateTime(booking.created_at)
+                                      : "—"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    معرف الجلسة
+                                  </div>
+                                  <div className="font-mono break-all">
+                                    {booking.session_id || "—"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    رقم الطلب / المرجع
+                                  </div>
+                                  <div className="font-mono break-all">
+                                    {[booking.order_id, booking.order_ref]
+                                      .filter(Boolean)
+                                      .join(" · ") || "—"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    معرف المستخدم
+                                  </div>
+                                  <div>{booking.user_id ?? "—"}</div>
+                                </div>
+                                <div>
+                                  <div className="text-text-muted text-xs mb-0.5">
+                                    طلب مرشد
+                                  </div>
+                                  <div>
+                                    {booking.wants_guide === undefined
+                                      ? "—"
+                                      : booking.wants_guide
+                                        ? "نعم"
+                                        : "لا"}
+                                  </div>
+                                </div>
+                                {booking.user && (
+                                  <div className="sm:col-span-2">
+                                    <div className="text-text-muted text-xs mb-0.5">
+                                      حساب العميل
+                                    </div>
+                                    <div>
+                                      {[
+                                        booking.user.first_name,
+                                        booking.user.last_name,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" ")}{" "}
+                                      {booking.user.email
+                                        ? `· ${booking.user.email}`
+                                        : ""}
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="sm:col-span-2 lg:col-span-3 border-t border-border/60 pt-3 mt-1">
+                                  <div className="text-text-muted text-xs mb-1">
+                                    الرحلة
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                      <span className="text-text-muted">
+                                        الاسم:{" "}
+                                      </span>
+                                      {localizedTripName(trip)}
+                                    </div>
+                                    <div>
+                                      <span className="text-text-muted">
+                                        معرف الرحلة:{" "}
+                                      </span>
+                                      {booking.trip_id}
+                                    </div>
+                                    {trip && (
+                                      <>
+                                        <div>
+                                          <span className="text-text-muted">
+                                            من:{" "}
+                                          </span>
+                                          {trip.from
+                                            ? formatDateTime(trip.from)
+                                            : "—"}
+                                        </div>
+                                        <div>
+                                          <span className="text-text-muted">
+                                            إلى:{" "}
+                                          </span>
+                                          {trip.to
+                                            ? formatDateTime(trip.to)
+                                            : "—"}
+                                        </div>
+                                        <div>
+                                          <span className="text-text-muted">
+                                            المدة:{" "}
+                                          </span>
+                                          {trip.duration ?? "—"}
+                                        </div>
+                                        <div>
+                                          <span className="text-text-muted">
+                                            الحد الأقصى للضيوف:{" "}
+                                          </span>
+                                          {trip.max_guests ?? "—"}
+                                        </div>
+                                        <div>
+                                          <span className="text-text-muted">
+                                            قابل للاسترداد:{" "}
+                                          </span>
+                                          {trip.refundable ? "نعم" : "لا"}
+                                        </div>
+                                        <div className="sm:col-span-2 whitespace-pre">
+                                          <span className="text-text-muted">
+                                            الوصف:{" "}
+                                          </span>
+                                          {localizedText(trip.description)}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                {supplier && (
+                                  <div className="sm:col-span-2 lg:col-span-3 border-t border-border/60 pt-3 mt-1">
+                                    <div className="text-text-muted text-xs mb-1">
+                                      المورد
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <div>
+                                        <span className="text-text-muted">
+                                          المعرف:{" "}
+                                        </span>
+                                        {supplier.id}
+                                      </div>
+                                      <div>
+                                        <span className="text-text-muted">
+                                          التقييم:{" "}
+                                        </span>
+                                        {supplier.rate ?? "—"}
+                                      </div>
+                                      <div className="sm:col-span-2">
+                                        <span className="text-text-muted">
+                                          نبذة:{" "}
+                                        </span>
+                                        {localizedText(supplier.about, 300)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
                   )
                 })}
               </TableBody>

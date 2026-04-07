@@ -120,7 +120,7 @@ export default function AdminDashboard() {
                 <TableHead className="text-right">اسم الرحلة</TableHead>
                 <TableHead className="text-right">المبلغ</TableHead>
                 <TableHead className="text-right">الحالة</TableHead>
-                <TableHead className="text-right">التاريخ</TableHead>
+                <TableHead className="text-right">موعد الحجز</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -137,12 +137,18 @@ export default function AdminDashboard() {
                 recentBookings.map((booking) => {
                   const trip = trips.find((t) => t.id === booking.trip_id)
                   return (
-                    <TableRow key={booking.id} className="hover:bg-duck-cyan/5 transition-colors">
+                    <TableRow
+                      key={booking.ID}
+                      className="hover:bg-duck-cyan/5 transition-colors"
+                    >
                       <TableCell className="font-medium">
-                        #{booking.id}
+                        #{booking.ID}
                       </TableCell>
                       <TableCell>{booking.full_name}</TableCell>
-                      <TableCell>{trip?.name?.ar ?? "-"}</TableCell>
+                      <TableCell>
+                        {(booking.trip?.name?.ar || booking.trip?.name?.en) ??
+                          "-"}
+                      </TableCell>
                       <TableCell>
                         {formatCurrency(booking.amount, booking.currency)}
                       </TableCell>
@@ -150,7 +156,7 @@ export default function AdminDashboard() {
                         <StatusBadge status={booking.status} type="booking" />
                       </TableCell>
                       <TableCell className="text-text-muted">
-                        {formatDateTime(booking.created_at)}
+                        {formatDateTime(booking.booking_date ?? "")}
                       </TableCell>
                     </TableRow>
                   )

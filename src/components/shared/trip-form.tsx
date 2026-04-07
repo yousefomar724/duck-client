@@ -596,13 +596,13 @@ export default function TripForm({
               الجدول الزمني
             </h2>
             <div className="grid gap-4">
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label>من تاريخ</Label>
                   <DateTimePicker
                     value={fromDate}
                     onChange={setFromDate}
-                    placeholder="اختر تاريخ البدء"
+                    placeholder="تاريخ البدء"
                     required
                     id="from"
                   />
@@ -612,7 +612,7 @@ export default function TripForm({
                   <DateTimePicker
                     value={toDate}
                     onChange={setToDate}
-                    placeholder="اختر تاريخ الانتهاء"
+                    placeholder="تاريخ الانتهاء"
                     id="to"
                   />
                 </div>
@@ -620,7 +620,7 @@ export default function TripForm({
                   <Label htmlFor="duration">
                     {formData.is_tour
                       ? "المدة الافتراضية (ساعات)"
-                      : "المدة (أيام)"}
+                      : "المدة (ساعات)"}
                   </Label>
                   <Input
                     id="duration"

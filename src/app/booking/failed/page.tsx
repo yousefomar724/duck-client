@@ -17,20 +17,20 @@ export default function BookingFailedPage() {
             <div className="flex justify-center mb-4">
               <AlertCircle className="w-16 h-16 text-destructive" />
             </div>
-            <CardTitle className="text-3xl text-duck-navy">{t("title")}</CardTitle>
+            <CardTitle className="text-3xl text-duck-navy">
+              {t("title")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center space-y-2">
-              <p className="text-text-dark font-medium">
-                {t("subtitle")}
-              </p>
-              <p className="text-text-body text-sm">
-                {t("description")}
-              </p>
+              <p className="text-text-dark font-medium">{t("subtitle")}</p>
+              <p className="text-text-body text-sm">{t("description")}</p>
             </div>
 
             <div className="bg-off-white rounded-lg p-4 border border-destructive/20 space-y-3">
-              <h3 className="font-semibold text-duck-navy">{t("possibleReasons")}</h3>
+              <h3 className="font-semibold text-duck-navy">
+                {t("possibleReasons")}
+              </h3>
               <ul className="space-y-2 text-sm text-text-body">
                 <li className="flex gap-2">
                   <span className="text-destructive">⚠</span>
@@ -68,7 +68,7 @@ export default function BookingFailedPage() {
               >
                 <Link href="/">
                   {t("backToHome")}
-                  <ArrowRight className="w-4 h-4 ms-1" />
+                  <ArrowRight className="w-4 h-4 ms-1 rtl:rotate-180" />
                 </Link>
               </Button>
             </div>

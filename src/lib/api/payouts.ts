@@ -20,11 +20,11 @@ export async function getPayouts(
   if (supplierId) params.append('supplier_id', supplierId.toString());
   if (params.toString()) endpoint += `?${params.toString()}`;
 
-  return apiClient<Payout[]>(endpoint, { method: 'GET' });
+  return apiClient<Payout[]>(endpoint, { method: 'GET', omitLang: true });
 }
 
 export async function getPayout(id: number): Promise<ApiResponse<Payout>> {
-  return apiClient<Payout>(`/payouts/${id}`, { method: 'GET' });
+  return apiClient<Payout>(`/payouts/${id}`, { method: 'GET', omitLang: true });
 }
 
 export async function createPayout(data: CreatePayoutInput): Promise<ApiResponse<Payout>> {
@@ -41,11 +41,13 @@ export async function updatePayout(
   return apiClient<Payout>(`/payouts/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
+    omitLang: true,
   });
 }
 
 export async function deletePayout(id: number): Promise<ApiResponse<{ message: string }>> {
   return apiClient<{ message: string }>(`/payouts/${id}`, {
     method: 'DELETE',
+    omitLang: true,
   });
 }

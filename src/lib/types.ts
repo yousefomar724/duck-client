@@ -101,13 +101,17 @@ export interface Destination {
 }
 
 export interface Payout {
-  id: number
+  ID: number
   supplier_id: number
   supplier?: Supplier
   amount: number
   currency: string
-  status: PayoutStatus
-  date: string
+  /** Backend may return additional string statuses (e.g. success, confirmed). */
+  status: PayoutStatus | string
+  /** Legacy/mock field; API uses GORM `CreatedAt` / `created_at`. */
+  date?: string
+  CreatedAt?: string
+  created_at?: string
 }
 
 export type BookingStatus =
@@ -121,7 +125,12 @@ export type BookingStatus =
   | "REFUND_FAILED"
   | "COMPLETED"
   | "PAID"
-export type PayoutStatus = "pending" | "paid" | "failed"
+export type PayoutStatus =
+  | "pending"
+  | "paid"
+  | "failed"
+  | "success"
+  | "confirmed"
 export type UserRole = 0 | 1 | 2
 
 // Additional types for API integration

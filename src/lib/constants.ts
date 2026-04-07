@@ -9,7 +9,7 @@ import {
   User,
   type LucideIcon,
 } from "lucide-react"
-import type { BookingStatus, PayoutStatus } from "./types"
+import type { BookingStatus, Payout, PayoutStatus } from "./types"
 
 export interface NavItem {
   title: string
@@ -153,6 +153,16 @@ export const payoutStatusColors: Record<
     text: "text-red-800",
     label: "فشل",
   },
+  success: {
+    bg: "bg-emerald-100",
+    text: "text-emerald-800",
+    label: "نجح",
+  },
+  confirmed: {
+    bg: "bg-teal-100",
+    text: "text-teal-800",
+    label: "مؤكد",
+  },
 }
 
 export const currencies = [
@@ -166,6 +176,18 @@ export function formatCurrency(amount: number, currency: string = "EGP"): string
     style: "currency",
     currency: currency,
   }).format(amount)
+}
+
+/** Statuses treated as “paid” for totals and the مدفوع tab (matches backend wallet debit). */
+export const PAID_PAYOUT_STATUSES = ["paid", "success", "confirmed"] as const
+
+export function isPaidPayoutStatus(status: string): boolean {
+  return (PAID_PAYOUT_STATUSES as readonly string[]).includes(status)
+}
+
+/** Resolve display date from payout (mock `date`, or API `CreatedAt` / `created_at`). */
+export function getPayoutDateString(p: Payout): string {
+  return p.date ?? p.CreatedAt ?? p.created_at ?? ""
 }
 
 export function formatDate(dateString: string): string {

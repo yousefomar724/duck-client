@@ -17,16 +17,14 @@ export default function BookingSuccessPage() {
             <div className="flex justify-center mb-4">
               <CheckCircle className="w-16 h-16 text-duck-cyan" />
             </div>
-            <CardTitle className="text-3xl text-duck-navy">{t("title")}</CardTitle>
+            <CardTitle className="text-3xl text-duck-navy">
+              {t("title")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center space-y-2">
-              <p className="text-text-dark font-medium">
-                {t("thankYou")}
-              </p>
-              <p className="text-text-body text-sm">
-                {t("description")}
-              </p>
+              <p className="text-text-dark font-medium">{t("thankYou")}</p>
+              <p className="text-text-body text-sm">{t("description")}</p>
             </div>
 
             <div className="bg-off-white rounded-lg p-4 border border-duck-cyan/20 space-y-3">
@@ -54,7 +52,7 @@ export default function BookingSuccessPage() {
               >
                 <Link href="/">
                   {t("backToHome")}
-                  <ArrowRight className="w-4 h-4 ms-1" />
+                  <ArrowRight className="w-4 h-4 ms-1 rtl:rotate-180" />
                 </Link>
               </Button>
               <Button
