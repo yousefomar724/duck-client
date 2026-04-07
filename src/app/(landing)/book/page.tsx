@@ -614,7 +614,7 @@ function BookPageContent() {
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="rounded-lg border-black/20 max-w-full">
+                            <SelectTrigger className="rounded-lg border-black/20 max-w-full!">
                               <SelectValue placeholder={t("selectType")} />
                             </SelectTrigger>
                           </FormControl>
@@ -662,7 +662,7 @@ function BookPageContent() {
                               }}
                             >
                               <FormControl>
-                                <SelectTrigger className="rounded-lg border-black/20 max-w-full">
+                                <SelectTrigger className="rounded-lg border-black/20 max-w-full!">
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
@@ -747,7 +747,7 @@ function BookPageContent() {
                               }
                             >
                               <FormControl>
-                                <SelectTrigger className="rounded-lg border-black/20 max-w-full">
+                                <SelectTrigger className="rounded-lg border-black/20 max-w-full!">
                                   <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
@@ -806,7 +806,7 @@ function BookPageContent() {
                       onClick={() => setStep(1)}
                       className="rounded-full border-text-dark"
                     >
-                      <ChevronLeft className="w-4 h-4 ms-1" />
+                      <ChevronLeft className="w-4 h-4 ms-1 rtl:rotate-180" />
                       {t("previous")}
                     </Button>
                     <Button

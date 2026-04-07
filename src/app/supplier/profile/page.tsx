@@ -282,7 +282,7 @@ export default function SupplierProfilePage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-xs">
+        <Card className="shadow-xs h-fit">
           <CardHeader className="space-y-2">
             <div className="flex items-center gap-3">
               <div className="size-10 rounded-full bg-duck-yellow/20 text-duck-yellow flex items-center justify-center border border-duck-yellow/20">

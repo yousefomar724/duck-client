@@ -34,9 +34,7 @@ export default function Navbar() {
   const locale = useLocale()
   const { isAuthenticated, effectiveRole } = useAuth()
 
-  useEffect(() => {
-    if (forceSolid) setIsSolid(true)
-  }, [forceSolid])
+  const isNavbarSolid = forceSolid || isSolid
 
   useEffect(() => {
     if (pathname !== "/") return
@@ -65,13 +63,18 @@ export default function Navbar() {
       setIsHidden(false)
     }
 
-    if (forceSolid) {
+    if (forceSolid) return
+
+    const threshold = typeof window !== "undefined" ? window.innerHeight : 800
+
+    if (latest > threshold) {
       setIsSolid(true)
       return
     }
 
-    const threshold = typeof window !== "undefined" ? window.innerHeight : 800
-    setIsSolid(latest > threshold)
+    if (isScrollingDown) {
+      setIsSolid(false)
+    }
   })
 
   const navLinks = [
@@ -83,7 +86,7 @@ export default function Navbar() {
 
   const actionButtonClass = cn(
     "flex items-center gap-2 border rounded-full px-4 py-2 transition-colors text-sm font-medium",
-    isSolid
+    isNavbarSolid
       ? "text-text-dark border-black/20 hover:bg-black/5"
       : "text-white border-white/30 hover:bg-white/10",
   )
@@ -94,7 +97,7 @@ export default function Navbar() {
       isSheet
         ? "text-foreground py-2 text-base"
         : "text-[15px] font-medium transition-colors duration-500",
-      !isSheet && (isSolid ? "text-text-body" : "text-white"),
+      !isSheet && (isNavbarSolid ? "text-text-body" : "text-white"),
     )
 
   return (
@@ -108,7 +111,7 @@ export default function Navbar() {
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className={cn(
           "fixed top-0 left-0 right-0 z-50 px-4 md:px-10 transition-colors duration-500 h-24 md:h-28",
-          isSolid
+          isNavbarSolid
             ? "bg-white/90 backdrop-blur-md shadow-sm py-3 border-b border-black/5"
             : "bg-transparent py-6",
         )}
@@ -117,7 +120,7 @@ export default function Navbar() {
         <div
           className={cn(
             "absolute inset-0 z-0 pointer-events-none transition-opacity duration-500",
-            isSolid
+            isNavbarSolid
               ? "opacity-0"
               : "bg-linear-to-b from-black/50 via-black/20 to-transparent",
           )}
@@ -135,7 +138,7 @@ export default function Navbar() {
                   size="icon"
                   className={cn(
                     "md:hidden! shrink-0 rounded-full w-10 h-10",
-                    isSolid
+                    isNavbarSolid
                       ? "text-text-dark hover:bg-black/5"
                       : "text-white hover:bg-white/10",
                   )}
@@ -271,7 +274,7 @@ export default function Navbar() {
               onClick={() => setSettingsOpen(true)}
               className={cn(
                 "hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-colors cursor-pointer",
-                isSolid
+                isNavbarSolid
                   ? "text-text-dark bg-black/5 border-black/10 hover:bg-black/10"
                   : "text-white bg-white/10 border-white/20 hover:bg-white/20",
               )}
@@ -282,13 +285,13 @@ export default function Navbar() {
             <div
               className={cn(
                 "hidden md:flex items-center gap-2 text-sm shrink-0",
-                isSolid ? "text-text-dark" : "text-white",
+                isNavbarSolid ? "text-text-dark" : "text-white",
               )}
             >
               <Sun
                 className={cn(
                   "w-4 h-4",
-                  isSolid ? "text-orange-500" : "text-yellow-400",
+                  isNavbarSolid ? "text-orange-500" : "text-yellow-400",
                 )}
               />
               <span>{t("temperature")} 20.8°C</span>
@@ -316,7 +319,7 @@ export default function Navbar() {
             <div
               className={cn(
                 "hidden md:flex items-center gap-6 lg:gap-8 font-medium transition-colors duration-500",
-                isSolid ? "text-text-body" : "text-white",
+                isNavbarSolid ? "text-text-body" : "text-white",
               )}
             >
               {navLinks.map(({ key, href }) => (
