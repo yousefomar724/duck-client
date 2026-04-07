@@ -76,7 +76,22 @@
     "viewAll": "View All Trips",
     "prevImage": "Previous",
     "nextImage": "Next",
-    "imageAlt": "Image {index}"
+    "imageAlt": "Image {index}",
+    "hours": "Hours",
+    "hour": "Hour",
+    "perHour": "/ hour",
+    "minDuration": "Starting from {count} {unit}",
+    "fixedDuration": "Fixed: {count} {unit}",
+    "tour": "Tour",
+    "trip": "Trip",
+    "details": "Details",
+    "itinerary": "Itinerary",
+    "cancelationPolicy": "Cancellation Policy",
+    "refundable": "Refundable",
+    "nonRefundable": "Non-refundable",
+    "maxGuests": "Up to {count} guests",
+    "noDescription": "No description available.",
+    "destinations": "Destinations"
   },
   "experiences": {
     "subtitle": "Our Services",

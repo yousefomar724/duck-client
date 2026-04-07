@@ -66,7 +66,7 @@ export default function SettingsDialog({
               <SelectTrigger
                 id="language"
                 className={cn(
-                  "w-full justify-between rounded-lg border-2 transition-colors",
+                  "w-full max-w-full! justify-between rounded-lg border-2 transition-colors",
                   "focus-visible:border-duck-cyan focus-visible:ring-duck-cyan/30",
                 )}
               >

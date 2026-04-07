@@ -76,7 +76,22 @@
     "viewAll": "عرض جميع الرحلات",
     "prevImage": "السابق",
     "nextImage": "التالي",
-    "imageAlt": "صورة {index}"
+    "imageAlt": "صورة {index}",
+    "hours": "ساعات",
+    "hour": "ساعة",
+    "perHour": "/ الساعة",
+    "minDuration": "تبدأ من {count} {unit}",
+    "fixedDuration": "ثابتة: {count} {unit}",
+    "tour": "جولة",
+    "trip": "رحلة",
+    "details": "التفاصيل",
+    "itinerary": "خط السير",
+    "cancelationPolicy": "سياسة الإلغاء",
+    "refundable": "قابل للاسترداد",
+    "nonRefundable": "غير قابل للاسترداد",
+    "maxGuests": "حتى {count} ضيوف",
+    "noDescription": "لا يوجد وصف متاح.",
+    "destinations": "الوجهات"
   },
   "experiences": {
     "subtitle": "خدماتنا",
