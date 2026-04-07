@@ -348,9 +348,9 @@ export default function AdminBookings() {
                           type="booking"
                         />
                       </TableCell>
-                      <TableCell className="text-text-muted whitespace-nowrap">
+                      {/*<TableCell className="text-text-muted whitespace-nowrap">
                         {formatDateTime(booking.created_at)}
-                      </TableCell>
+                      </TableCell>*/}
                       {/* <TableCell>
                         {booking.status === "REFUND_PENDING" ? (
                           <Button

@@ -287,8 +287,8 @@ function Sidebar({
         className={cn(
           "src:fixed src:inset-y-0 src:z-10 src:hidden src:h-svh src:w-(--sidebar-width) src:transition-[left,right,width] src:duration-200 src:ease-linear src:md:flex",
           side === "left"
-            ? "src:start-0 src:data-[collapsible=offcanvas]:start-[calc(var(--sidebar-width)*-1)]"
-            : "src:end-0 src:data-[collapsible=offcanvas]:end-[calc(var(--sidebar-width)*-1)]",
+            ? "src:left-0 src:data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
+            : "src:right-0 src:data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "src:p-2 src:data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
@@ -363,12 +363,12 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        "src:hover:after:bg-sidebar-border src:absolute src:inset-y-0 src:z-20 src:hidden src:w-4 src:-translate-x-1/2 src:transition-all src:ease-linear src:group-data-[side=left]:-right-4 src:group-data-[side=right]:left-0 src:after:absolute src:after:inset-y-0 src:after:start-1/2 src:after:w-[2px] src:sm:flex",
+        "src:hover:after:bg-sidebar-border src:absolute src:inset-y-0 src:z-20 src:hidden src:w-4 src:-translate-x-1/2 src:transition-all src:ease-linear src:group-data-[side=left]:-right-4 src:group-data-[side=right]:left-0 src:after:absolute src:after:inset-y-0 src:after:left-1/2 src:after:w-[2px] src:sm:flex",
         "src:in-data-[side=left]:cursor-w-resize src:in-data-[side=right]:cursor-e-resize",
         "src:[[data-side=left][data-state=collapsed]_&]:cursor-e-resize src:[[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
-        "src:hover:group-data-[collapsible=offcanvas]:bg-sidebar src:group-data-[collapsible=offcanvas]:translate-x-0 src:group-data-[collapsible=offcanvas]:after:start-full",
-        "src:[[data-side=left][data-collapsible=offcanvas]_&]:-end-2",
-        "src:[[data-side=right][data-collapsible=offcanvas]_&]:-start-2",
+        "src:hover:group-data-[collapsible=offcanvas]:bg-sidebar src:group-data-[collapsible=offcanvas]:translate-x-0 src:group-data-[collapsible=offcanvas]:after:left-full",
+        "src:[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
+        "src:[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
         className,
       )}
       {...props}
@@ -504,7 +504,7 @@ function SidebarGroupAction({
       data-slot="sidebar-group-action"
       data-sidebar="group-action"
       className={cn(
-        "src:text-sidebar-foreground src:ring-sidebar-ring src:hover:bg-sidebar-accent src:hover:text-sidebar-accent-foreground src:absolute src:top-3.5 src:end-3 src:flex src:aspect-square src:w-5 src:items-center src:justify-center src:rounded-md src:p-0 src:outline-hidden src:transition-transform src:focus-visible:ring-2 src:[&>svg]:size-4 src:[&>svg]:shrink-0",
+        "src:text-sidebar-foreground src:ring-sidebar-ring src:hover:bg-sidebar-accent src:hover:text-sidebar-accent-foreground src:absolute src:top-3.5 src:right-3 src:flex src:aspect-square src:w-5 src:items-center src:justify-center src:rounded-md src:p-0 src:outline-hidden src:transition-transform src:focus-visible:ring-2 src:[&>svg]:size-4 src:[&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
         "src:after:absolute src:after:-inset-2 src:md:after:hidden",
         "src:group-data-[collapsible=icon]:hidden",
@@ -555,7 +555,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "src:peer/menu-button src:flex src:w-full src:items-center src:gap-2 src:overflow-hidden src:rounded-md src:p-2 src:text-start src:text-sm src:outline-hidden src:ring-sidebar-ring src:transition-[width,height,padding] src:hover:bg-sidebar-accent src:hover:text-sidebar-accent-foreground src:focus-visible:ring-2 src:active:bg-sidebar-accent src:active:text-sidebar-accent-foreground src:disabled:pointer-events-none src:disabled:opacity-50 src:group-has-data-[sidebar=menu-action]/menu-item:pe-8 src:aria-disabled:pointer-events-none src:aria-disabled:opacity-50 src:data-[active=true]:bg-sidebar-accent src:data-[active=true]:font-medium src:data-[active=true]:text-sidebar-accent-foreground src:data-[state=open]:hover:bg-sidebar-accent src:data-[state=open]:hover:text-sidebar-accent-foreground src:group-data-[collapsible=icon]:size-8! src:group-data-[collapsible=icon]:p-2! src:[&>span:last-child]:truncate src:[&>svg]:size-4 src:[&>svg]:shrink-0",
+  "src:peer/menu-button src:flex src:w-full src:items-center src:gap-2 src:overflow-hidden src:rounded-md src:p-2 src:text-left src:text-sm src:outline-hidden src:ring-sidebar-ring src:transition-[width,height,padding] src:hover:bg-sidebar-accent src:hover:text-sidebar-accent-foreground src:focus-visible:ring-2 src:active:bg-sidebar-accent src:active:text-sidebar-accent-foreground src:disabled:pointer-events-none src:disabled:opacity-50 src:group-has-data-[sidebar=menu-action]/menu-item:pe-8 src:aria-disabled:pointer-events-none src:aria-disabled:opacity-50 src:data-[active=true]:bg-sidebar-accent src:data-[active=true]:font-medium src:data-[active=true]:text-sidebar-accent-foreground src:data-[state=open]:hover:bg-sidebar-accent src:data-[state=open]:hover:text-sidebar-accent-foreground src:group-data-[collapsible=icon]:size-8! src:group-data-[collapsible=icon]:p-2! src:[&>span:last-child]:truncate src:[&>svg]:size-4 src:[&>svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -643,7 +643,7 @@ function SidebarMenuAction({
       data-slot="sidebar-menu-action"
       data-sidebar="menu-action"
       className={cn(
-        "src:text-sidebar-foreground src:ring-sidebar-ring src:hover:bg-sidebar-accent src:hover:text-sidebar-accent-foreground src:peer-hover/menu-button:text-sidebar-accent-foreground src:absolute src:top-1.5 src:end-1 src:flex src:aspect-square src:w-5 src:items-center src:justify-center src:rounded-md src:p-0 src:outline-hidden src:transition-transform src:focus-visible:ring-2 src:[&>svg]:size-4 src:[&>svg]:shrink-0",
+        "src:text-sidebar-foreground src:ring-sidebar-ring src:hover:bg-sidebar-accent src:hover:text-sidebar-accent-foreground src:peer-hover/menu-button:text-sidebar-accent-foreground src:absolute src:top-1.5 src:right-1 src:flex src:aspect-square src:w-5 src:items-center src:justify-center src:rounded-md src:p-0 src:outline-hidden src:transition-transform src:focus-visible:ring-2 src:[&>svg]:size-4 src:[&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
         "src:after:absolute src:after:-inset-2 src:md:after:hidden",
         "src:peer-data-[size=sm]/menu-button:top-1",
@@ -668,7 +668,7 @@ function SidebarMenuBadge({
       data-slot="sidebar-menu-badge"
       data-sidebar="menu-badge"
       className={cn(
-        "src:text-sidebar-foreground src:pointer-events-none src:absolute src:end-1 src:flex src:h-5 src:min-w-5 src:items-center src:justify-center src:rounded-md src:px-1 src:text-xs src:font-medium src:tabular-nums src:select-none",
+        "src:text-sidebar-foreground src:pointer-events-none src:absolute src:right-1 src:flex src:h-5 src:min-w-5 src:items-center src:justify-center src:rounded-md src:px-1 src:text-xs src:font-medium src:tabular-nums src:select-none",
         "src:peer-hover/menu-button:text-sidebar-accent-foreground src:peer-data-[active=true]/menu-button:text-sidebar-accent-foreground",
         "src:peer-data-[size=sm]/menu-button:top-1",
         "src:peer-data-[size=default]/menu-button:top-1.5",

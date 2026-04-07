@@ -16,6 +16,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ function getLocalizedName(value: unknown): string {
 export default function SupplierSidebar() {
   const pathname = usePathname()
   const { user, logout, onboardingComplete } = useAuth()
+  const { isMobile, setOpenMobile } = useSidebar()
   const supplierId = user?.supplier_id
   const [supplierName, setSupplierName] = useState("")
   const [supplierIcon, setSupplierIcon] = useState("")
@@ -59,6 +61,10 @@ export default function SupplierSidebar() {
   )
 
   const needsSetup = onboardingComplete === false
+
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -110,7 +116,7 @@ export default function SupplierSidebar() {
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild isActive={isActive}>
-                      <Link href={item.href}>
+                      <Link href={item.href} onClick={handleNavClick}>
                         <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>
                       </Link>
@@ -125,7 +131,7 @@ export default function SupplierSidebar() {
                     asChild
                     isActive={pathname === "/supplier/onboarding"}
                   >
-                    <Link href="/supplier/onboarding">
+                    <Link href="/supplier/onboarding" onClick={handleNavClick}>
                       <Package className="w-4 h-4" />
                       <span className="flex items-center gap-2">
                         إكمال الإعداد
@@ -167,7 +173,7 @@ export default function SupplierSidebar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" side="top" className="w-56">
                 <DropdownMenuItem asChild>
-                  <Link href="/supplier/profile">
+                  <Link href="/supplier/profile" onClick={handleNavClick}>
                     <User className="w-4 h-4 ml-2" />
                     <span>الملف الشخصي</span>
                   </Link>

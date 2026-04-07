@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { Suspense, useState, useEffect, useMemo } from "react"
+import { Suspense, useState, useEffect, useMemo, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { useForm, useWatch } from "react-hook-form"
@@ -78,7 +78,6 @@ type ContactFormValues = {
   phone: string
   booking_date: Date
   resource_type: ResourceType
-  quantity: number
   guests: number
   duration: number
   wants_guide: boolean
@@ -105,18 +104,26 @@ function BookPageContent() {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [bookingDateOpen, setBookingDateOpen] = useState(false)
+  const [guestsMode, setGuestsMode] = useState<"preset" | "custom">("preset")
+
+  // --- NEW: useRef to store previous trip id ---
+  const prevTripIdRef = useRef<number | null>(null)
 
   const resourceLabels: Record<ResourceType, string> = {
     kayak: t("resourceKayak"),
     water_cycle: t("resourceWaterCycle"),
     sup: t("resourceSup"),
   }
-  const resourceCapacityHints: Record<ResourceType, string> = {
-    kayak: t("capacityNoteKayak"),
-    water_cycle: t("capacityNoteWaterCycle"),
-    sup: t("capacityNoteSup"),
-  }
   const isNonArabicLocale = locale !== "ar"
+
+  const durationLabels: Record<number, string> = {
+    1: t("duration1h"),
+    2: t("duration2h"),
+    3: t("duration3h"),
+    4: t("duration4h"),
+    5: t("duration5h"),
+    6: t("duration6h"),
+  }
 
   const contactSchema = useMemo(
     () =>
@@ -131,10 +138,6 @@ function BookPageContent() {
           invalid_type_error: tv("dateInvalid"),
         }),
         resource_type: z.enum(RESOURCE_TYPES),
-        quantity: z.coerce
-          .number({ invalid_type_error: tv("numberInvalid") })
-          .int()
-          .min(1, tv("minOne")),
         guests: z.coerce
           .number({ invalid_type_error: tv("numberInvalid") })
           .int()
@@ -197,7 +200,6 @@ function BookPageContent() {
       phone: "",
       booking_date: defaultTomorrow,
       resource_type: "kayak",
-      quantity: 1,
       guests: 1,
       duration: 1,
       wants_guide: false,
@@ -210,6 +212,36 @@ function BookPageContent() {
     }
   }, [selectedTrip?.is_tour, form])
 
+  // --- FIX: Avoid calling setState synchronously in effect ---
+  // Move logic for guestsMode ("preset"/"custom") determination and guest form value capping
+  // out of effect and derive it from selectedTrip via state and useMemo, updating state only when necessary
+
+  // Determine what guestsMode should be for new selectedTrip
+  useEffect(() => {
+    if (!selectedTrip) return
+
+    // Guests mode logic: only update if changed to avoid cascade renders
+    const maxG = selectedTrip.max_guests
+    // Only update if necessary, to avoid unnecessary renders
+    setGuestsMode((prevMode) => {
+      if (maxG <= 5) {
+        // Only switch to "preset" if not already
+        return prevMode !== "preset" ? "preset" : prevMode
+      } else {
+        // Do not force mode for >5 guests, the component logic handles switching to "custom" as needed
+        return prevMode
+      }
+    })
+
+    // Cap guests value if it exceeds max_guests
+    const currentGuests = form.getValues("guests")
+    if (currentGuests > maxG) form.setValue("guests", maxG)
+
+    // Update previous trip id
+    prevTripIdRef.current = selectedTrip.id
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTrip?.id, form])
+
   const watchedBookingDate = useWatch({
     control: form.control,
     name: "booking_date",
@@ -218,7 +250,6 @@ function BookPageContent() {
     control: form.control,
     name: "resource_type",
   })
-  const watchedQuantity = useWatch({ control: form.control, name: "quantity" })
   const watchedGuests = useWatch({ control: form.control, name: "guests" })
   const watchedDuration = useWatch({ control: form.control, name: "duration" })
   const watchedFullName = useWatch({ control: form.control, name: "full_name" })
@@ -255,7 +286,7 @@ function BookPageContent() {
       booking_date,
       guests: values.guests,
       resource_type: values.resource_type,
-      quantity: values.quantity,
+      quantity: values.guests,
       duration: values.duration,
       wants_guide: selectedTrip.is_tour ? values.wants_guide : false,
     })
@@ -583,7 +614,7 @@ function BookPageContent() {
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="rounded-lg border-black/20">
+                            <SelectTrigger className="rounded-lg border-black/20 max-w-full">
                               <SelectValue placeholder={t("selectType")} />
                             </SelectTrigger>
                           </FormControl>
@@ -599,74 +630,93 @@ function BookPageContent() {
                       </FormItem>
                     )}
                   />
-                  <div className="rounded-xl border border-duck-cyan/25 bg-duck-cyan/5 p-4 text-sm text-text-body">
-                    <p className="font-medium text-text-dark">
-                      {t("capacityNoteTitle")}
-                    </p>
-                    <p className="mt-1">{t("capacityNoteGeneral")}</p>
-                    <p className="mt-1">
-                      {
-                        resourceCapacityHints[
-                          (watchedResourceType || "kayak") as ResourceType
-                        ]
-                      }
-                    </p>
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="guests"
+                    render={({ field }) => {
+                      const maxG = selectedTrip?.max_guests ?? 5
+                      const presetMax = Math.min(5, maxG)
+                      const guestOptions = Array.from(
+                        { length: presetMax },
+                        (_, i) => i + 1,
+                      )
+                      const showMoreOption = maxG > 5
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
-                    <FormField
-                      control={form.control}
-                      name="quantity"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-text-dark font-medium">
-                            {t("quantity")}{" "}
-                            <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min={1}
-                              className="rounded-lg border-black/20"
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value === ""
-                                    ? ""
-                                    : Number(e.target.value),
-                                )
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="guests"
-                      render={({ field }) => (
+                      return (
                         <FormItem>
                           <FormLabel className="text-text-dark font-medium">
                             {t("guests")}{" "}
                             <span className="text-red-500">*</span>
                           </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={selectedTrip?.max_guests ?? undefined}
-                              className="rounded-lg border-black/20"
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value === ""
-                                    ? ""
-                                    : Number(e.target.value),
-                                )
-                              }
-                            />
-                          </FormControl>
+                          {guestsMode === "preset" ? (
+                            <Select
+                              dir={locale === "ar" ? "rtl" : "ltr"}
+                              value={String(field.value)}
+                              onValueChange={(val) => {
+                                if (val === "more") {
+                                  setGuestsMode("custom")
+                                  field.onChange(6)
+                                } else {
+                                  field.onChange(Number(val))
+                                }
+                              }}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="rounded-lg border-black/20 max-w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {guestOptions.map((n) => (
+                                  <SelectItem
+                                    key={n}
+                                    value={String(n)}
+                                    className="py-3"
+                                  >
+                                    {n}
+                                  </SelectItem>
+                                ))}
+                                {showMoreOption && (
+                                  <SelectItem
+                                    value="more"
+                                    className="py-3 text-duck-cyan font-medium"
+                                  >
+                                    {t("guestsMore")}
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  inputMode="numeric"
+                                  min={6}
+                                  max={maxG}
+                                  placeholder={t("guestsCustomPlaceholder")}
+                                  className="rounded-lg border-black/20 flex-1"
+                                  value={field.value}
+                                  onChange={(e) => {
+                                    const v = e.target.value
+                                    field.onChange(v === "" ? "" : Number(v))
+                                  }}
+                                />
+                              </FormControl>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setGuestsMode("preset")
+                                  field.onChange(
+                                    Math.min(field.value, presetMax),
+                                  )
+                                }}
+                                className="text-sm text-duck-cyan whitespace-nowrap hover:underline"
+                              >
+                                {t("guestsBackToSelect")}
+                              </button>
+                            </div>
+                          )}
                           <FormMessage />
                           {selectedTrip ? (
                             <p className="text-xs text-text-muted">
@@ -674,9 +724,9 @@ function BookPageContent() {
                             </p>
                           ) : null}
                         </FormItem>
-                      )}
-                    />
-                  </div>
+                      )
+                    }}
+                  />
 
                   {selectedTrip?.is_tour && (
                     <>
@@ -689,25 +739,31 @@ function BookPageContent() {
                               {t("duration")}{" "}
                               <span className="text-red-500">*</span>
                             </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min={1}
-                                className="rounded-lg border-black/20 w-40"
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(
-                                    e.target.value === ""
-                                      ? ""
-                                      : Number(e.target.value),
-                                  )
-                                }
-                              />
-                            </FormControl>
+                            <Select
+                              dir={locale === "ar" ? "rtl" : "ltr"}
+                              value={String(field.value)}
+                              onValueChange={(val) =>
+                                field.onChange(Number(val))
+                              }
+                            >
+                              <FormControl>
+                                <SelectTrigger className="rounded-lg border-black/20 max-w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {[1, 2, 3, 4, 5, 6].map((h) => (
+                                  <SelectItem
+                                    key={h}
+                                    value={String(h)}
+                                    className="py-3"
+                                  >
+                                    {durationLabels[h]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
-                            <p className="text-xs text-text-muted">
-                              {t("durationHint")}
-                            </p>
                           </FormItem>
                         )}
                       />
@@ -817,12 +873,9 @@ function BookPageContent() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">
-                      {t("reviewQuantityGuests")}
-                    </span>
+                    <span className="text-text-muted">{t("reviewGuests")}</span>
                     <span>
-                      {t("reviewQuantityGuestsValue", {
-                        quantity: watchedQuantity,
+                      {t("reviewGuestsValue", {
                         guests: watchedGuests,
                       })}
                     </span>
@@ -835,7 +888,7 @@ function BookPageContent() {
                           ? selectedTrip.price *
                               (Number(watchedGuests) || 1) *
                               (Number(watchedDuration) || 1)
-                          : selectedTrip.price * (Number(watchedQuantity) || 1),
+                          : selectedTrip.price * (Number(watchedGuests) || 1),
                         selectedTrip.currency,
                       )}
                     </span>

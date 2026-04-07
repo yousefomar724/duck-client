@@ -15,6 +15,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   DropdownMenu,
@@ -25,17 +26,24 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Logo from "./logo"
 import { adminNavItems } from "@/lib/constants"
+import { useLocale } from "next-intl"
 
 export default function AdminSidebar() {
+  const locale = useLocale()
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const { isMobile, setOpenMobile } = useSidebar()
   const displayName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(" ") ||
       user.username
     : "مدير"
 
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false)
+  }
+
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar side={locale === "ar" ? "right" : "left"} collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center justify-center py-4">
           <Logo width={100} height={50} />
@@ -52,7 +60,7 @@ export default function AdminSidebar() {
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild isActive={isActive}>
-                      <Link href={item.href}>
+                      <Link href={item.href} onClick={handleNavClick}>
                         <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>
                       </Link>
