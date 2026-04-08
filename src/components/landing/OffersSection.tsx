@@ -194,7 +194,7 @@ export default function OffersSection() {
               Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex-[0_0_90%] md:max-w-280 min-w-0 h-[500px] rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row animate-pulse first:ms-6"
+                  className="flex-[0_0_90%] md:max-w-280 min-w-0 md:h-[500px] rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row animate-pulse first:ms-6"
                 />
               ))
             ) : error ? (
@@ -235,12 +235,12 @@ export default function OffersSection() {
                 return (
                   <div
                     key={trip.id}
-                    className="flex-[0_0_90%] md:max-w-280 min-w-0 relative h-[500px] rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row first:ms-6 group"
+                    className="flex-[0_0_90%] md:max-w-280 min-w-0 relative md:h-[500px] rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row first:ms-6 group"
                   >
                     {/* Image Side */}
                     <div
                       dir="ltr"
-                      className="w-full md:w-2/3 relative h-full overflow-hidden **:data-[slot=carousel-content]:h-full"
+                      className="w-full md:w-2/3 relative h-72 md:h-full overflow-hidden **:data-[slot=carousel-content]:h-full"
                     >
                       <Carousel
                         opts={{
@@ -412,7 +412,7 @@ export default function OffersSection() {
           {/* Image carousel */}
           <div
             dir="ltr"
-            className="relative w-full aspect-2/1 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
+            className="relative w-full aspect-4/3 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
           >
             <Carousel
               setApi={setDialogCarouselApi}

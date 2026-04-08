@@ -215,6 +215,7 @@ export default function ResortsSection() {
                 return (
                   <div
                     key={destination.id}
+                    onClick={() => setSelectedDestination(destination)}
                     className="flex-[0_0_280px] md:flex-[0_0_300px] min-w-0 relative h-[500px] rounded-2xl overflow-hidden group cursor-pointer first:ms-6"
                   >
                     {isExternal ? (
@@ -251,7 +252,7 @@ export default function ResortsSection() {
                       <button
                         type="button"
                         onClick={() => setSelectedDestination(destination)}
-                        className="text-duck-cyan text-sm font-medium mb-2 opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 hover:underline"
+                        className="text-duck-cyan text-sm font-medium mb-2 max-md:opacity-100 max-md:translate-y-0 md:opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 hover:underline"
                       >
                         {t("learnMore")}
                       </button>
