@@ -35,7 +35,11 @@ export default function MyTripsPage() {
     setIsLoading(true)
     setError(null)
     const { data, error: fetchError } = await tripsApi.getMyTrips("ar")
-    if (fetchError) {
+    // The API can return HTTP 200 with `data: null` when the supplier has no trips yet.
+    // In that case we should show the empty state, not an error.
+    if (fetchError && data == null) {
+      setTrips([])
+    } else if (fetchError) {
       setError(fetchError)
     } else {
       setTrips(data || [])

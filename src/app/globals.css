@@ -135,6 +135,10 @@
     touch-action: none;
   }
 
+  html:not(.fp-enabled) #fullpage {
+    visibility: hidden;
+  }
+
   .fp-section:not(.fp-auto-height),
   .fp-section:not(.fp-auto-height) .fp-overflow {
     overflow: hidden !important;
