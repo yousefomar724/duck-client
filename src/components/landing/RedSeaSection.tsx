@@ -8,7 +8,7 @@ export default function RedSeaSection() {
   return (
     <section
       id="redsea-section"
-      className="relative flex items-center w-full h-screen"
+      className="relative flex items-center w-full h-full"
     >
       {/* Background Video */}
       <video
@@ -48,7 +48,7 @@ export default function RedSeaSection() {
 
       <div className="relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex items-center justify-between">
         {/* Right Content (Start) */}
-        <div className="flex flex-col items-start text-white max-w-xl pt-20">
+        <div className="flex flex-col items-start text-white max-w-xl pt-10 md:pt-20">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

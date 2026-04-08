@@ -61,7 +61,7 @@ function SheetContent({
         dir={side === "left" ? "ltr" : "rtl"}
         data-slot="sheet-content"
         className={cn(
-          "src:bg-background src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:fixed src:z-50 src:flex src:flex-col src:gap-4 src:shadow-lg src:transition src:ease-in-out src:data-[state=closed]:duration-300 src:data-[state=open]:duration-500",
+          "src:bg-background src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:fixed src:z-999 src:flex src:flex-col src:gap-4 src:shadow-lg src:transition src:ease-in-out src:data-[state=closed]:duration-300 src:data-[state=open]:duration-500",
           side === "right" &&
             "src:data-[state=closed]:slide-out-to-right src:data-[state=open]:slide-in-from-right src:inset-y-0 src:right-0 src:h-full src:w-3/4 src:border-s src:sm:max-w-sm",
           side === "left" &&

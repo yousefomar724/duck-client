@@ -110,9 +110,9 @@ export default function Navbar() {
         animate={isHidden ? "hidden" : "visible"}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 px-4 md:px-10 transition-colors duration-500 h-24 md:h-28",
+          "fixed top-0 left-0 right-0 z-999 px-4 md:px-10 transition-colors duration-500 h-20 md:h-28",
           isNavbarSolid
-            ? "bg-white/90 backdrop-blur-md shadow-sm py-3 border-b border-black/5"
+            ? "bg-white/90 backdrop-blur-md shadow-sm py-0 md:py-3 border-b border-black/5"
             : "bg-transparent py-6",
         )}
       >
@@ -152,7 +152,10 @@ export default function Navbar() {
                 dir="ltr"
                 className="w-full max-w-sm sm:max-w-sm flex flex-col text-start"
               >
-                <SheetHeader dir={locale === "ar" ? "rtl" : "ltr"} className="border-b border-border pb-4">
+                <SheetHeader
+                  dir={locale === "ar" ? "rtl" : "ltr"}
+                  className="border-b border-border pb-4"
+                >
                   <SheetTitle className="sr-only">{t("settings")}</SheetTitle>
                   <Link
                     href="/"
@@ -168,7 +171,10 @@ export default function Navbar() {
                     />
                   </Link>
                 </SheetHeader>
-                <nav dir={locale === "ar" ? "rtl" : "ltr"} className="flex flex-col gap-1 p-6">
+                <nav
+                  dir={locale === "ar" ? "rtl" : "ltr"}
+                  className="flex flex-col gap-1 p-6"
+                >
                   {navLinks.map(({ key, href }) => (
                     <Link
                       key={key}
@@ -302,7 +308,7 @@ export default function Navbar() {
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none md:pointer-events-auto">
             <Link
               href="/"
-              className="mb-2 -translate-y-2 group pointer-events-auto"
+              className="md:mb-2 md:-translate-y-2 group pointer-events-auto"
             >
               <Image
                 src="/logo-transparent.png"

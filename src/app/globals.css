@@ -134,6 +134,13 @@
   .fp-section {
     touch-action: none;
   }
+
+  .fp-section:not(.fp-auto-height),
+  .fp-section:not(.fp-auto-height) .fp-overflow {
+    overflow: hidden !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
 }
 
 @layer utilities {

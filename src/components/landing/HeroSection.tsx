@@ -9,7 +9,7 @@ export default function HeroSection() {
   return (
     <section
       id="hero-section"
-      className="relative flex items-end justify-center pb-20 w-full h-screen"
+      className="relative flex items-end justify-center pb-10 md:pb-20 w-full h-full"
     >
       {/* Background Video */}
       <video
@@ -41,7 +41,7 @@ export default function HeroSection() {
 
       {/* Content */}
       <div className="relative z-20 w-full max-w-[1920px] mx-auto px-4 md:px-10 h-full flex flex-col justify-end">
-        <div className="flex items-end justify-between w-full pb-10">
+        <div className="flex items-end justify-between w-full pb-4 md:pb-10">
           {/* Headline */}
           <div className="w-full md:w-auto">
             <motion.h1
@@ -92,7 +92,7 @@ export default function HeroSection() {
           </div>
 
           {/* Scroll Indicator (Center) */}
-          <div className="flex flex-col items-center gap-2 mb-4 text-white absolute -bottom-20 left-1/2 -translate-x-1/2">
+          <div className="hidden md:flex flex-col items-center gap-2 mb-4 text-white absolute -bottom-20 left-1/2 -translate-x-1/2">
             <span className="text-sm font-medium">{t("discoverMore")}</span>
             <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center p-1">
               <motion.div

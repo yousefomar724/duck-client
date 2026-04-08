@@ -14,6 +14,7 @@ export default function FullpageWrapper({ children }: FullpageWrapperProps) {
       scrollingSpeed={1000}
       css3={true}
       autoScrolling={true}
+      scrollOverflow={true}
       fitToSection={true}
       touchSensitivity={3}
       bigSectionsDestination={"top"}
