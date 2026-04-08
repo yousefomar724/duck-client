@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {
   Carousel,
   CarouselContent,
@@ -26,6 +27,7 @@ import {
 } from "@/components/ui/carousel"
 import { cn } from "@/lib/utils"
 import type { DestinationActivity } from "@/lib/types"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 function getDisplayImages(destination: Destination | null): string[] {
   if (!destination) return []
@@ -38,6 +40,7 @@ export default function ResortsSection() {
   const t = useTranslations("resorts")
   const tMap = useTranslations("mapPage")
   const locale = useLocale()
+  const isMobile = useIsMobile()
   const activityLabels: Record<string, string> = {
     kayak: tMap("filters.kayak"),
     sup: tMap("filters.sup"),
@@ -46,7 +49,9 @@ export default function ResortsSection() {
   }
 
   const getLocalizedText = (value: any, fallback = "") =>
-    typeof value === "string" ? value : value?.[locale] || value?.ar || value?.en || fallback
+    typeof value === "string"
+      ? value
+      : value?.[locale] || value?.ar || value?.en || fallback
 
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [selectedDestination, setSelectedDestination] =
@@ -171,7 +176,9 @@ export default function ResortsSection() {
     <section id="locations" className="bg-dark-bg py-20 overflow-hidden">
       {/* Header */}
       <div className="text-center mb-12 max-w-[1920px] mx-auto px-4 md:px-10">
-        <span className="text-white/60 text-base block mb-3">{t("subtitle")}</span>
+        <span className="text-white/60 text-base block mb-3">
+          {t("subtitle")}
+        </span>
         <h2 className="text-white text-4xl md:text-5xl font-bold">
           {t("title")}
         </h2>
@@ -190,9 +197,7 @@ export default function ResortsSection() {
               ))
             ) : error ? (
               <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
-                <p className="text-white/80 text-center">
-                  {t("errorLoading")}
-                </p>
+                <p className="text-white/80 text-center">{t("errorLoading")}</p>
               </div>
             ) : destinations.length === 0 ? (
               <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
@@ -301,146 +306,302 @@ export default function ResortsSection() {
         </div>
       )}
 
-      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
-        <DialogContent
-          className={cn(
-            "sm:max-w-2xl! p-0! overflow-hidden text-right",
-            "bg-duck-navy-deep! text-white border-none",
-          )}
-        >
-          {/* Image carousel - structure matches LocationDetailPopover */}
-          <div
-            dir="ltr"
-            className="relative w-full aspect-2/1 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
-          >
-            <Carousel
-              setApi={setDialogCarouselApi}
-              opts={{ align: "start", loop: true, direction: "ltr" }}
-              className="h-full w-full relative"
-            >
-              <CarouselContent className="h-full ms-0 min-h-full">
-                {displayImages.map((imageUrl, i) => (
-                  <CarouselItem key={i} className="h-full ps-0">
-                    <div className="relative h-full w-full">
-                      <Image
-                        src={imageUrl}
-                        alt={`${selectedDestinationName} - ${t("imageAlt", { index: i + 1 })}`}
-                        fill
-                        className="object-cover"
-                        unoptimized={imageUrl.startsWith("http")}
-                      />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              {hasMultipleImages && (
-                <>
-                  <CarouselPrevious
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                    aria-label={t("prevImage")}
-                  >
-                    <ChevronLeft className="size-4" />
-                  </CarouselPrevious>
-                  <CarouselNext
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                    aria-label={t("nextImage")}
-                  >
-                    <ChevronRight className="size-4" />
-                  </CarouselNext>
-                </>
-              )}
-            </Carousel>
-            {hasMultipleImages && (
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-                {displayImages.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => dialogCarouselApi?.scrollTo(i)}
-                    className={cn(
-                      "w-2 h-2 rounded-full transition-colors cursor-pointer",
-                      i === dialogCarouselIndex
-                        ? "bg-white"
-                        : "bg-white/50 hover:bg-white/70",
-                    )}
-                    aria-label={t("imageAlt", { index: i + 1 })}
-                    aria-current={
-                      i === dialogCarouselIndex ? "true" : undefined
-                    }
-                  />
-                ))}
-              </div>
+      {/* Details (mobile: bottom sheet, desktop: dialog) */}
+      {isMobile ? (
+        <Sheet open={isDialogOpen} onOpenChange={handleDialogClose}>
+          <SheetContent
+            side="bottom"
+            className={cn(
+              "p-0 gap-0 overflow-hidden text-right",
+              "bg-duck-navy-deep text-white border-none",
+              "rounded-t-2xl max-h-[90vh]",
             )}
-            <div className="absolute inset-0 bg-linear-to-t from-duck-navy-deep via-transparent to-transparent pointer-events-none" />
-          </div>
-
-          {/* Content section */}
-          <div className="flex flex-col min-h-0 flex-1">
-            <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
-              {/* Name + Status badge */}
-              <div className="flex flex-col gap-2">
-                <DialogHeader className="mb-0">
-                  <DialogTitle className="text-white text-xl font-bold leading-tight">
-                    {selectedDestinationName}
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="flex flex-wrap items-center gap-2">
-                  {selectedDestination?.public_status === "coming-soon" ? (
-                    <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-yellow/20 text-duck-yellow animate-pulse">
-                      {t("comingSoon")}
-                    </span>
-                  ) : (
-                    <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-cyan/20 text-duck-cyan">
-                      {t("availableNow")}
-                    </span>
+          >
+            <div className="max-h-[90vh] overflow-y-auto">
+              {/* Image carousel - structure matches LocationDetailPopover */}
+              <div
+                dir="ltr"
+                className="relative w-full aspect-2/1 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
+              >
+                <Carousel
+                  setApi={setDialogCarouselApi}
+                  opts={{ align: "start", loop: true, direction: "ltr" }}
+                  className="h-full w-full relative"
+                >
+                  <CarouselContent className="h-full ms-0 min-h-full">
+                    {displayImages.map((imageUrl, i) => (
+                      <CarouselItem key={i} className="h-full ps-0">
+                        <div className="relative h-full w-full">
+                          <Image
+                            src={imageUrl}
+                            alt={`${selectedDestinationName} - ${t("imageAlt", { index: i + 1 })}`}
+                            fill
+                            className="object-cover"
+                            unoptimized={imageUrl.startsWith("http")}
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  {hasMultipleImages && (
+                    <>
+                      <CarouselPrevious
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                        aria-label={t("prevImage")}
+                      >
+                        <ChevronLeft className="size-4" />
+                      </CarouselPrevious>
+                      <CarouselNext
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                        aria-label={t("nextImage")}
+                      >
+                        <ChevronRight className="size-4" />
+                      </CarouselNext>
+                    </>
                   )}
-                  {selectedDestination?.trip_count != null &&
-                    selectedDestination.trip_count > 0 && (
-                      <span className="text-sm text-white/70">
-                        {t("availableTrips", { count: selectedDestination.trip_count })}
-                      </span>
-                    )}
-                </div>
+                </Carousel>
+                {hasMultipleImages && (
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+                    {displayImages.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => dialogCarouselApi?.scrollTo(i)}
+                        className={cn(
+                          "w-2 h-2 rounded-full transition-colors cursor-pointer",
+                          i === dialogCarouselIndex
+                            ? "bg-white"
+                            : "bg-white/50 hover:bg-white/70",
+                        )}
+                        aria-label={t("imageAlt", { index: i + 1 })}
+                        aria-current={
+                          i === dialogCarouselIndex ? "true" : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-linear-to-t from-duck-navy-deep via-transparent to-transparent pointer-events-none" />
               </div>
 
-              {/* Activities */}
-              {selectedDestination?.activities?.length ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedDestination.activities.map((activity) => (
-                    <span
-                      key={activity}
-                      className="px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold"
-                    >
-                      {activityLabels[activity as DestinationActivity] ?? activity}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
+              {/* Content section */}
+              <div className="flex flex-col min-h-0 flex-1 bg-duck-navy-deep text-white">
+                <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
+                  {/* Name + Status badge */}
+                  <div className="flex flex-col gap-2">
+                    <div className="text-white text-xl font-bold leading-tight">
+                      {selectedDestinationName}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {selectedDestination?.public_status === "coming-soon" ? (
+                        <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-yellow/20 text-duck-yellow animate-pulse">
+                          {t("comingSoon")}
+                        </span>
+                      ) : (
+                        <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-cyan/20 text-duck-cyan">
+                          {t("availableNow")}
+                        </span>
+                      )}
+                      {selectedDestination?.trip_count != null &&
+                        selectedDestination.trip_count > 0 && (
+                          <span className="text-sm text-white/70">
+                            {t("availableTrips", {
+                              count: selectedDestination.trip_count,
+                            })}
+                          </span>
+                        )}
+                    </div>
+                  </div>
 
-              {/* Operating hours */}
-              {selectedDestination?.operating_hours ? (
-                <div className="flex items-center gap-2 text-white/70 text-xs">
-                  <Clock className="size-3.5 shrink-0 text-duck-cyan/80" />
-                  <span>
-                    {t("operatingHours", { hours: selectedDestination.operating_hours })}
-                  </span>
-                </div>
-              ) : null}
+                  {/* Activities */}
+                  {selectedDestination?.activities?.length ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedDestination.activities.map((activity) => (
+                        <span
+                          key={activity}
+                          className="px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold"
+                        >
+                          {activityLabels[activity as DestinationActivity] ??
+                            activity}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
 
-              {/* Description */}
-              <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
-                <DialogDescription className="text-white/80 text-sm leading-relaxed whitespace-pre-line ps-1">
-                  {selectedDestinationDescription || t("noDescription")}
-                </DialogDescription>
+                  {/* Operating hours */}
+                  {selectedDestination?.operating_hours ? (
+                    <div className="flex items-center gap-2 text-white/70 text-xs">
+                      <Clock className="size-3.5 shrink-0 text-duck-cyan/80" />
+                      <span>
+                        {t("operatingHours", {
+                          hours: selectedDestination.operating_hours,
+                        })}
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {/* Description */}
+                  <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                    <div className="text-white/80 text-sm leading-relaxed whitespace-pre-line ps-1">
+                      {selectedDestinationDescription || t("noDescription")}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+          <DialogContent
+            className={cn(
+              "sm:max-w-2xl! p-0! overflow-hidden text-right",
+              "bg-duck-navy-deep! text-white border-none",
+            )}
+          >
+            {/* Image carousel - structure matches LocationDetailPopover */}
+            <div
+              dir="ltr"
+              className="relative w-full aspect-2/1 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
+            >
+              <Carousel
+                setApi={setDialogCarouselApi}
+                opts={{ align: "start", loop: true, direction: "ltr" }}
+                className="h-full w-full relative"
+              >
+                <CarouselContent className="h-full ms-0 min-h-full">
+                  {displayImages.map((imageUrl, i) => (
+                    <CarouselItem key={i} className="h-full ps-0">
+                      <div className="relative h-full w-full">
+                        <Image
+                          src={imageUrl}
+                          alt={`${selectedDestinationName} - ${t("imageAlt", { index: i + 1 })}`}
+                          fill
+                          className="object-cover"
+                          unoptimized={imageUrl.startsWith("http")}
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                {hasMultipleImages && (
+                  <>
+                    <CarouselPrevious
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                      aria-label={t("prevImage")}
+                    >
+                      <ChevronLeft className="size-4" />
+                    </CarouselPrevious>
+                    <CarouselNext
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                      aria-label={t("nextImage")}
+                    >
+                      <ChevronRight className="size-4" />
+                    </CarouselNext>
+                  </>
+                )}
+              </Carousel>
+              {hasMultipleImages && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+                  {displayImages.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => dialogCarouselApi?.scrollTo(i)}
+                      className={cn(
+                        "w-2 h-2 rounded-full transition-colors cursor-pointer",
+                        i === dialogCarouselIndex
+                          ? "bg-white"
+                          : "bg-white/50 hover:bg-white/70",
+                      )}
+                      aria-label={t("imageAlt", { index: i + 1 })}
+                      aria-current={
+                        i === dialogCarouselIndex ? "true" : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-linear-to-t from-duck-navy-deep via-transparent to-transparent pointer-events-none" />
+            </div>
+
+            {/* Content section */}
+            <div className="flex flex-col min-h-0 flex-1">
+              <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
+                {/* Name + Status badge */}
+                <div className="flex flex-col gap-2">
+                  <DialogHeader className="mb-0">
+                    <DialogTitle className="text-white text-xl font-bold leading-tight">
+                      {selectedDestinationName}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selectedDestination?.public_status === "coming-soon" ? (
+                      <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-yellow/20 text-duck-yellow animate-pulse">
+                        {t("comingSoon")}
+                      </span>
+                    ) : (
+                      <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-cyan/20 text-duck-cyan">
+                        {t("availableNow")}
+                      </span>
+                    )}
+                    {selectedDestination?.trip_count != null &&
+                      selectedDestination.trip_count > 0 && (
+                        <span className="text-sm text-white/70">
+                          {t("availableTrips", {
+                            count: selectedDestination.trip_count,
+                          })}
+                        </span>
+                      )}
+                  </div>
+                </div>
+
+                {/* Activities */}
+                {selectedDestination?.activities?.length ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedDestination.activities.map((activity) => (
+                      <span
+                        key={activity}
+                        className="px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold"
+                      >
+                        {activityLabels[activity as DestinationActivity] ??
+                          activity}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+
+                {/* Operating hours */}
+                {selectedDestination?.operating_hours ? (
+                  <div className="flex items-center gap-2 text-white/70 text-xs">
+                    <Clock className="size-3.5 shrink-0 text-duck-cyan/80" />
+                    <span>
+                      {t("operatingHours", {
+                        hours: selectedDestination.operating_hours,
+                      })}
+                    </span>
+                  </div>
+                ) : null}
+
+                {/* Description */}
+                <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                  <DialogDescription className="text-white/80 text-sm leading-relaxed whitespace-pre-line ps-1">
+                    {selectedDestinationDescription || t("noDescription")}
+                  </DialogDescription>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </section>
   )
 }

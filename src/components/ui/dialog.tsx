@@ -61,7 +61,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "src:bg-background src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:fixed src:top-[50%] src:start-[50%] src:z-50 src:grid src:w-full src:max-w-[calc(100%-2rem)] src:max-h-[85vh] src:overflow-y-auto src:translate-x-[-50%] rtl:src:translate-x-[50%] src:translate-y-[-50%] src:gap-4 src:rounded-lg src:border src:p-6 src:shadow-lg src:duration-200 src:outline-none src:sm:max-w-lg",
+          "src:bg-background src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:fixed src:top-[50%] src:start-[50%] src:z-999 src:grid src:w-full src:max-w-[calc(100%-2rem)] src:max-h-[85vh] src:overflow-y-auto src:translate-x-[-50%] rtl:src:translate-x-[50%] src:translate-y-[-50%] src:gap-4 src:rounded-lg src:border src:p-6 src:shadow-lg src:duration-200 src:outline-none src:sm:max-w-lg",
           className,
         )}
         {...props}
