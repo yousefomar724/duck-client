@@ -21,10 +21,7 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel"
-import {
-  type WaterActivityLocation,
-  type DifficultyLevel,
-} from "./map-data"
+import { type WaterActivityLocation, type DifficultyLevel } from "./map-data"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 
@@ -35,9 +32,12 @@ interface LocationDetailPopoverProps {
   anchorPoint: { x: number; y: number }
 }
 
+const FALLBACK_IMAGE = "/logo-transparent.png"
+
 function getDisplayImages(location: WaterActivityLocation): string[] {
   if (location.images?.length) return location.images
-  return [location.image]
+  if (location.image) return [location.image]
+  return [FALLBACK_IMAGE]
 }
 
 export default function LocationDetailPopover({
@@ -128,10 +128,10 @@ export default function LocationDetailPopover({
         collisionPadding={16}
         className={cn(
           "bg-duck-navy-deep! text-white border-none p-0! overflow-hidden rounded-xl shadow-2xl z-40 flex flex-col",
-          "w-[380px] max-w-[min(380px,calc(100vw-2rem))]",
+          "w-[340px] max-w-[min(340px,calc(100vw-2rem))]",
           side === "bottom"
-            ? "max-h-[65vh] w-[calc(100vw-1rem)] max-w-[380px] pb-[env(safe-area-inset-bottom)] mx-2"
-            : "max-h-[85vh]",
+            ? "max-h-[65vh] w-[calc(100vw-1rem)] max-w-[340px] pb-[env(safe-area-inset-bottom)] mx-2"
+            : "max-h-[80vh]",
         )}
       >
         {/* Full-bleed image carousel — shorter aspect on mobile so popover fits */}
@@ -212,7 +212,7 @@ export default function LocationDetailPopover({
 
         {/* Content — only description scrolls when long */}
         <div className="flex flex-col min-h-0 flex-1">
-          <div className="px-4 pt-4 flex flex-col gap-3">
+          <div className="px-4 pt-2 flex flex-col gap-3">
             {/* Name + Status badge */}
             <div className="flex flex-col gap-2">
               <h3 className="text-white text-xl font-bold leading-tight">
@@ -255,7 +255,7 @@ export default function LocationDetailPopover({
             </div>
 
             {/* Description — scrolls only when height exceeds max */}
-            <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+            <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
               <p className="text-white/80 text-sm leading-relaxed ps-1">
                 {location.description}
               </p>
@@ -277,7 +277,9 @@ export default function LocationDetailPopover({
             {location.operatingHours && (
               <div className="flex items-center gap-2 text-white/70 text-xs">
                 <Clock className="size-3.5 shrink-0 text-duck-cyan/80" />
-                <span>{t("operatingHours", { hours: location.operatingHours })}</span>
+                <span>
+                  {t("operatingHours", { hours: location.operatingHours })}
+                </span>
               </div>
             )}
 

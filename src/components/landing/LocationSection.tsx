@@ -119,7 +119,7 @@ export default function LocationSection() {
         </div>
 
         {/* Map Container */}
-        <div className="relative w-full aspect-video max-h-[600px] mb-12 rounded-3xl shadow-sm overflow-hidden max-w-5xl mx-auto">
+        <div className="relative w-full aspect-video max-h-[600px] mb-4 rounded-3xl shadow-sm overflow-hidden max-w-5xl mx-auto">
           <MapView
             locations={filteredLocations}
             selectedLocation={null}
@@ -133,6 +133,16 @@ export default function LocationSection() {
             className="absolute bottom-4 start-4 z-10 flex items-center gap-2 bg-duck-navy/80 backdrop-blur-sm text-white text-sm px-4 py-2.5 rounded-full hover:bg-duck-navy transition-colors shadow-lg"
           >
             <MapPin className="size-4" />
+            <span>{t("viewInteractiveMap")}</span>
+          </Link>
+        </div>
+
+        <div className="flex justify-center mt-0 mb-4">
+          <Link
+            href="/map"
+            className="inline-flex items-center gap-2 bg-duck-navy text-white px-8 py-3 rounded-full font-medium hover:bg-duck-navy/90 transition-colors shadow-lg text-base"
+          >
+            <MapPin className="size-5" />
             <span>{t("viewInteractiveMap")}</span>
           </Link>
         </div>

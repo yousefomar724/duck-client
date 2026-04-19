@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl"
 import { motion } from "framer-motion"
 import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 export default function AmaalaSection() {
   const t = useTranslations("amaala")
@@ -68,14 +69,18 @@ export default function AmaalaSection() {
             {t("description")}
           </motion.p>
 
-          <motion.button
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="px-8 py-3 rounded-lg border-2 border-white text-white hover:bg-white/10 transition-colors"
           >
-            {t("discoverServices")}
-          </motion.button>
+            <Link
+              href="/book"
+              className="inline-block px-8 py-3 rounded-lg border-2 border-white text-white hover:bg-white/10 transition-colors"
+            >
+              {t("discoverServices")}
+            </Link>
+          </motion.div>
         </div>
 
         {/* Left Content (End) - Benefit Card */}

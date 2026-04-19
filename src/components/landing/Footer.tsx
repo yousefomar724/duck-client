@@ -17,7 +17,11 @@ import Link from "next/link"
 export default function Footer() {
   const t = useTranslations("footer")
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" })
+    if (typeof window !== "undefined" && (window as any).fullpage_api) {
+      ;(window as any).fullpage_api.moveTo(1)
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }
   }
 
   return (

@@ -149,7 +149,7 @@ export default function ResortsSection() {
     }
   }, [selectedDestination, dialogCarouselApi])
 
-  const placeholderImage = "/resort.webp"
+  const placeholderImage = "/logo-transparent.png"
   const selectedDestinationName = getLocalizedText(
     selectedDestination?.name,
     t("defaultName"),
@@ -390,7 +390,7 @@ export default function ResortsSection() {
 
               {/* Content section */}
               <div className="flex flex-col min-h-0 flex-1 bg-duck-navy-deep text-white">
-                <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
+                <div className="px-4 py-2 flex flex-col gap-3">
                   {/* Name + Status badge */}
                   <div className="flex flex-col gap-2">
                     <div className="text-white text-xl font-bold leading-tight">
@@ -445,7 +445,7 @@ export default function ResortsSection() {
                   ) : null}
 
                   {/* Description */}
-                  <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                  <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
                     <div className="text-white/80 text-sm leading-relaxed whitespace-pre-line ps-1">
                       {selectedDestinationDescription || t("noDescription")}
                     </div>
@@ -535,7 +535,7 @@ export default function ResortsSection() {
 
             {/* Content section */}
             <div className="flex flex-col min-h-0 flex-1">
-              <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
+              <div className="px-4 py-2 flex flex-col gap-3">
                 {/* Name + Status badge */}
                 <div className="flex flex-col gap-2">
                   <DialogHeader className="mb-0">
@@ -592,7 +592,7 @@ export default function ResortsSection() {
                 ) : null}
 
                 {/* Description */}
-                <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
                   <DialogDescription className="text-white/80 text-sm leading-relaxed whitespace-pre-line ps-1">
                     {selectedDestinationDescription || t("noDescription")}
                   </DialogDescription>

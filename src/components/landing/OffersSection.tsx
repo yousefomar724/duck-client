@@ -138,7 +138,7 @@ export default function OffersSection() {
     }
   }, [selectedTrip, dialogCarouselApi])
 
-  const placeholderImage = "/offer.webp"
+  const placeholderImage = "/logo-transparent.png"
 
   // Dialog computed values
   const isDialogOpen = selectedTrip !== null
@@ -487,7 +487,7 @@ export default function OffersSection() {
 
               {/* Content section */}
               <div className="flex flex-col min-h-0 flex-1">
-                <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
+                <div className="px-4 py-2 flex flex-col gap-3">
                   {/* Title */}
                   <div className="mb-0">
                     <div className="text-text-dark text-xl font-bold leading-tight">
@@ -526,7 +526,9 @@ export default function OffersSection() {
                         resolveImageUrl(selectedTrip.supplier.icon) && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={resolveImageUrl(selectedTrip.supplier.icon) ?? ""}
+                            src={
+                              resolveImageUrl(selectedTrip.supplier.icon) ?? ""
+                            }
                             alt=""
                             className="w-5 h-5 rounded-full object-cover"
                           />
@@ -541,7 +543,10 @@ export default function OffersSection() {
                   <div className="flex items-center gap-4 text-sm">
                     <span className="text-duck-cyan font-semibold">
                       {selectedTrip &&
-                        formatCurrency(selectedTrip.price, selectedTrip.currency)}
+                        formatCurrency(
+                          selectedTrip.price,
+                          selectedTrip.currency,
+                        )}
                       {selectedTrip?.is_tour && (
                         <span className="font-normal text-duck-cyan/70">
                           {" "}
@@ -554,11 +559,15 @@ export default function OffersSection() {
                       {selectedTrip?.is_tour
                         ? t("minDuration", {
                             count: selectedTrip.duration ?? 1,
-                            unit: renderDurationUnit(selectedTrip.duration ?? 1),
+                            unit: renderDurationUnit(
+                              selectedTrip.duration ?? 1,
+                            ),
                           })
                         : t("fixedDuration", {
                             count: selectedTrip?.duration ?? 1,
-                            unit: renderDurationUnit(selectedTrip?.duration ?? 1),
+                            unit: renderDurationUnit(
+                              selectedTrip?.duration ?? 1,
+                            ),
                           })}
                     </span>
                   </div>
@@ -567,12 +576,14 @@ export default function OffersSection() {
                   {selectedTrip?.max_guests != null && (
                     <div className="flex items-center gap-1.5 text-text-muted text-xs">
                       <Users className="size-3.5" />
-                      <span>{t("maxGuests", { count: selectedTrip.max_guests })}</span>
+                      <span>
+                        {t("maxGuests", { count: selectedTrip.max_guests })}
+                      </span>
                     </div>
                   )}
 
                   {/* Description */}
-                  <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                  <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
                     <div className="text-text-body text-sm leading-relaxed whitespace-pre-line ps-1">
                       {selectedTripDescription || t("noDescription")}
                     </div>
@@ -650,231 +661,233 @@ export default function OffersSection() {
               "bg-white! text-text-dark border-none",
             )}
           >
-          {/* Image carousel */}
-          <div
-            dir="ltr"
-            className="relative w-full aspect-4/3 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
-          >
-            <Carousel
-              setApi={setDialogCarouselApi}
-              opts={{ align: "start", loop: true, direction: "ltr" }}
-              className="h-full w-full relative"
+            {/* Image carousel */}
+            <div
+              dir="ltr"
+              className="relative w-full aspect-4/3 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
             >
-              <CarouselContent className="h-full ms-0 min-h-full">
-                {dialogDisplayUrls.map((imageUrl, i) => (
-                  <CarouselItem key={i} className="h-full ps-0">
-                    <div className="relative h-full w-full">
-                      <Image
-                        src={imageUrl}
-                        alt={`${selectedTripName} - ${t("imageAlt", { index: i + 1 })}`}
-                        fill
-                        className="object-cover"
-                        unoptimized={imageUrl.startsWith("http")}
-                      />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
+              <Carousel
+                setApi={setDialogCarouselApi}
+                opts={{ align: "start", loop: true, direction: "ltr" }}
+                className="h-full w-full relative"
+              >
+                <CarouselContent className="h-full ms-0 min-h-full">
+                  {dialogDisplayUrls.map((imageUrl, i) => (
+                    <CarouselItem key={i} className="h-full ps-0">
+                      <div className="relative h-full w-full">
+                        <Image
+                          src={imageUrl}
+                          alt={`${selectedTripName} - ${t("imageAlt", { index: i + 1 })}`}
+                          fill
+                          className="object-cover"
+                          unoptimized={imageUrl.startsWith("http")}
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                {dialogHasMultipleImages && (
+                  <>
+                    <CarouselPrevious
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                      aria-label={t("prevImage")}
+                    >
+                      <ChevronLeft className="size-4" />
+                    </CarouselPrevious>
+                    <CarouselNext
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                      aria-label={t("nextImage")}
+                    >
+                      <ChevronRight className="size-4" />
+                    </CarouselNext>
+                  </>
+                )}
+              </Carousel>
               {dialogHasMultipleImages && (
-                <>
-                  <CarouselPrevious
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                    aria-label={t("prevImage")}
-                  >
-                    <ChevronLeft className="size-4" />
-                  </CarouselPrevious>
-                  <CarouselNext
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                    aria-label={t("nextImage")}
-                  >
-                    <ChevronRight className="size-4" />
-                  </CarouselNext>
-                </>
-              )}
-            </Carousel>
-            {dialogHasMultipleImages && (
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-                {dialogDisplayUrls.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => dialogCarouselApi?.scrollTo(i)}
-                    className={cn(
-                      "w-2 h-2 rounded-full transition-colors cursor-pointer",
-                      i === dialogCarouselIndex
-                        ? "bg-white"
-                        : "bg-white/50 hover:bg-white/70",
-                    )}
-                    aria-label={t("imageAlt", { index: i + 1 })}
-                    aria-current={
-                      i === dialogCarouselIndex ? "true" : undefined
-                    }
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Content section */}
-          <div className="flex flex-col min-h-0 flex-1">
-            <div className="px-4 pt-4 pb-6 flex flex-col gap-3">
-              {/* Title */}
-              <DialogHeader className="mb-0">
-                <DialogTitle className="text-text-dark text-xl font-bold leading-tight">
-                  {selectedTripName}
-                </DialogTitle>
-              </DialogHeader>
-
-              {/* Badges */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={cn(
-                    "text-xs font-medium px-2.5 py-1 rounded-full",
-                    selectedTrip?.is_tour
-                      ? "bg-purple-100 text-purple-700"
-                      : "bg-blue-100 text-blue-700",
-                  )}
-                >
-                  {selectedTrip?.is_tour ? t("tour") : t("trip")}
-                </span>
-                {selectedTrip?.refundable === true && (
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700">
-                    {t("refundable")}
-                  </span>
-                )}
-                {selectedTrip?.refundable === false && (
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-700">
-                    {t("nonRefundable")}
-                  </span>
-                )}
-              </div>
-
-              {/* Supplier */}
-              {selectedTrip?.supplier && (
-                <div className="flex items-center gap-2">
-                  {selectedTrip.supplier.icon &&
-                    resolveImageUrl(selectedTrip.supplier.icon) && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={resolveImageUrl(selectedTrip.supplier.icon) ?? ""}
-                        alt=""
-                        className="w-5 h-5 rounded-full object-cover"
-                      />
-                    )}
-                  <span className="text-text-muted text-sm">
-                    {getLocalizedText(selectedTrip.supplier.name)}
-                  </span>
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+                  {dialogDisplayUrls.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => dialogCarouselApi?.scrollTo(i)}
+                      className={cn(
+                        "w-2 h-2 rounded-full transition-colors cursor-pointer",
+                        i === dialogCarouselIndex
+                          ? "bg-white"
+                          : "bg-white/50 hover:bg-white/70",
+                      )}
+                      aria-label={t("imageAlt", { index: i + 1 })}
+                      aria-current={
+                        i === dialogCarouselIndex ? "true" : undefined
+                      }
+                    />
+                  ))}
                 </div>
               )}
+            </div>
 
-              {/* Price + Duration */}
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-duck-cyan font-semibold">
-                  {selectedTrip &&
-                    formatCurrency(selectedTrip.price, selectedTrip.currency)}
-                  {selectedTrip?.is_tour && (
-                    <span className="font-normal text-duck-cyan/70">
-                      {" "}
-                      {t("perHour")}
+            {/* Content section */}
+            <div className="flex flex-col min-h-0 flex-1">
+              <div className="px-4 py-2 flex flex-col gap-3">
+                {/* Title */}
+                <DialogHeader className="mb-0">
+                  <DialogTitle className="text-text-dark text-xl font-bold leading-tight">
+                    {selectedTripName}
+                  </DialogTitle>
+                </DialogHeader>
+
+                {/* Badges */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      "text-xs font-medium px-2.5 py-1 rounded-full",
+                      selectedTrip?.is_tour
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-blue-100 text-blue-700",
+                    )}
+                  >
+                    {selectedTrip?.is_tour ? t("tour") : t("trip")}
+                  </span>
+                  {selectedTrip?.refundable === true && (
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700">
+                      {t("refundable")}
                     </span>
                   )}
-                </span>
-                <span className="text-text-muted flex items-center gap-1">
-                  <Clock className="size-3.5" />
-                  {selectedTrip?.is_tour
-                    ? t("minDuration", {
-                        count: selectedTrip.duration ?? 1,
-                        unit: renderDurationUnit(selectedTrip.duration ?? 1),
-                      })
-                    : t("fixedDuration", {
-                        count: selectedTrip?.duration ?? 1,
-                        unit: renderDurationUnit(selectedTrip?.duration ?? 1),
-                      })}
-                </span>
-              </div>
-
-              {/* Max guests */}
-              {selectedTrip?.max_guests != null && (
-                <div className="flex items-center gap-1.5 text-text-muted text-xs">
-                  <Users className="size-3.5" />
-                  <span>
-                    {t("maxGuests", { count: selectedTrip.max_guests })}
-                  </span>
-                </div>
-              )}
-
-              {/* Description */}
-              <div className="max-h-30 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
-                <DialogDescription className="text-text-body text-sm leading-relaxed whitespace-pre-line ps-1">
-                  {selectedTripDescription || t("noDescription")}
-                </DialogDescription>
-              </div>
-
-              {/* Itinerary */}
-              {selectedTrip?.itinerary && (
-                <div>
-                  <h4 className="text-sm font-semibold text-text-dark mb-1">
-                    {t("itinerary")}
-                  </h4>
-                  {Array.isArray(selectedTrip.itinerary) ? (
-                    <ol className="list-decimal list-inside text-text-body text-sm space-y-1 ps-1">
-                      {selectedTrip.itinerary.map((step, i) => (
-                        <li key={i}>{getLocalizedText(step)}</li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <p className="text-text-body text-sm ps-1">
-                      {getLocalizedText(selectedTrip.itinerary)}
-                    </p>
+                  {selectedTrip?.refundable === false && (
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-700">
+                      {t("nonRefundable")}
+                    </span>
                   )}
                 </div>
-              )}
 
-              {/* Destinations */}
-              {selectedTrip?.destinations &&
-                selectedTrip.destinations.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-text-dark mb-1">
-                      {t("destinations")}
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedTrip.destinations.map((dest) => (
-                        <span
-                          key={dest.id}
-                          className="px-3 py-1 rounded-full bg-gray-100 text-text-body text-xs font-medium"
-                        >
-                          {getLocalizedText(dest.name)}
-                        </span>
-                      ))}
-                    </div>
+                {/* Supplier */}
+                {selectedTrip?.supplier && (
+                  <div className="flex items-center gap-2">
+                    {selectedTrip.supplier.icon &&
+                      resolveImageUrl(selectedTrip.supplier.icon) && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={
+                            resolveImageUrl(selectedTrip.supplier.icon) ?? ""
+                          }
+                          alt=""
+                          className="w-5 h-5 rounded-full object-cover"
+                        />
+                      )}
+                    <span className="text-text-muted text-sm">
+                      {getLocalizedText(selectedTrip.supplier.name)}
+                    </span>
                   </div>
                 )}
 
-              {/* Cancellation Policy */}
-              {selectedTrip?.cancelation_policy && (
-                <div>
-                  <h4 className="text-sm font-semibold text-text-dark mb-1">
-                    {t("cancelationPolicy")}
-                  </h4>
-                  <p className="text-text-body text-sm ps-1">
-                    {getLocalizedText(selectedTrip.cancelation_policy)}
-                  </p>
+                {/* Price + Duration */}
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-duck-cyan font-semibold">
+                    {selectedTrip &&
+                      formatCurrency(selectedTrip.price, selectedTrip.currency)}
+                    {selectedTrip?.is_tour && (
+                      <span className="font-normal text-duck-cyan/70">
+                        {" "}
+                        {t("perHour")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-text-muted flex items-center gap-1">
+                    <Clock className="size-3.5" />
+                    {selectedTrip?.is_tour
+                      ? t("minDuration", {
+                          count: selectedTrip.duration ?? 1,
+                          unit: renderDurationUnit(selectedTrip.duration ?? 1),
+                        })
+                      : t("fixedDuration", {
+                          count: selectedTrip?.duration ?? 1,
+                          unit: renderDurationUnit(selectedTrip?.duration ?? 1),
+                        })}
+                  </span>
                 </div>
-              )}
 
-              {/* Book Now CTA */}
-              <Link
-                href={`/book?trip=${selectedTrip?.id}`}
-                className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors text-center mt-2"
-              >
-                {t("bookNow")}
-              </Link>
+                {/* Max guests */}
+                {selectedTrip?.max_guests != null && (
+                  <div className="flex items-center gap-1.5 text-text-muted text-xs">
+                    <Users className="size-3.5" />
+                    <span>
+                      {t("maxGuests", { count: selectedTrip.max_guests })}
+                    </span>
+                  </div>
+                )}
+
+                {/* Description */}
+                <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                  <DialogDescription className="text-text-body text-sm leading-relaxed whitespace-pre-line ps-1">
+                    {selectedTripDescription || t("noDescription")}
+                  </DialogDescription>
+                </div>
+
+                {/* Itinerary */}
+                {selectedTrip?.itinerary && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-text-dark mb-1">
+                      {t("itinerary")}
+                    </h4>
+                    {Array.isArray(selectedTrip.itinerary) ? (
+                      <ol className="list-decimal list-inside text-text-body text-sm space-y-1 ps-1">
+                        {selectedTrip.itinerary.map((step, i) => (
+                          <li key={i}>{getLocalizedText(step)}</li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="text-text-body text-sm ps-1">
+                        {getLocalizedText(selectedTrip.itinerary)}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Destinations */}
+                {selectedTrip?.destinations &&
+                  selectedTrip.destinations.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-text-dark mb-1">
+                        {t("destinations")}
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedTrip.destinations.map((dest) => (
+                          <span
+                            key={dest.id}
+                            className="px-3 py-1 rounded-full bg-gray-100 text-text-body text-xs font-medium"
+                          >
+                            {getLocalizedText(dest.name)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Cancellation Policy */}
+                {selectedTrip?.cancelation_policy && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-text-dark mb-1">
+                      {t("cancelationPolicy")}
+                    </h4>
+                    <p className="text-text-body text-sm ps-1">
+                      {getLocalizedText(selectedTrip.cancelation_policy)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Book Now CTA */}
+                <Link
+                  href={`/book?trip=${selectedTrip?.id}`}
+                  className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors text-center mt-2"
+                >
+                  {t("bookNow")}
+                </Link>
+              </div>
             </div>
-          </div>
           </DialogContent>
         </Dialog>
       )}

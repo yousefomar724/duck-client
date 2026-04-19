@@ -419,7 +419,8 @@
     "wantsGuide": "أريد مرشداً للجولة",
     "reviewWantsGuide": "المرشد",
     "reviewWantsGuideYes": "نعم",
-    "reviewWantsGuideNo": "لا"
+    "reviewWantsGuideNo": "لا",
+    "validationFailed": "الرجاء ملء جميع الحقول المطلوبة بشكل صحيح"
   },
   "contact": {
     "heroSubtitle": "شراكات وتعاون",

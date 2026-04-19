@@ -419,7 +419,8 @@
     "wantsGuide": "I want a tour guide",
     "reviewWantsGuide": "Tour guide",
     "reviewWantsGuideYes": "Yes",
-    "reviewWantsGuideNo": "No"
+    "reviewWantsGuideNo": "No",
+    "validationFailed": "Please fill in all required fields correctly"
   },
   "contact": {
     "heroSubtitle": "Partnerships & Collaboration",

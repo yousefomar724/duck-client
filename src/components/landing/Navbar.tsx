@@ -78,9 +78,9 @@ export default function Navbar() {
   })
 
   const navLinks = [
-    { key: "locations", href: "#locations" },
-    { key: "experiences", href: "#experiences" },
-    { key: "faq", href: "#faq" },
+    { key: "locations", href: "/#locations" },
+    { key: "experiences", href: "/#experiences" },
+    { key: "faq", href: "/#faq" },
     { key: "contact", href: "/contact" },
   ] as const
 

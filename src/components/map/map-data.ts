@@ -56,13 +56,14 @@ export function destinationToMapLocation(
       : locale === "en"
         ? destination.description?.en ?? destination.description?.ar ?? ""
         : destination.description?.ar ?? destination.description?.en ?? ""
+  const FALLBACK_IMAGE = "/logo-transparent.png"
   const image =
-    destination.images?.[0] ?? destination.image ?? ""
+    destination.images?.[0] ?? destination.image ?? FALLBACK_IMAGE
   const images = destination.images?.length
     ? destination.images
     : destination.image
       ? [destination.image]
-      : undefined
+      : [FALLBACK_IMAGE]
   const status: "open" | "coming_soon" =
     destination.public_status === "coming-soon" ? "coming_soon" : "open"
 

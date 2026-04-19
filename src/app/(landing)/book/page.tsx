@@ -305,7 +305,7 @@ function BookPageContent() {
     }
   })
 
-  const placeholderImage = "/offer.webp"
+  const placeholderImage = "/logo-transparent.png"
 
   return (
     <>
@@ -812,7 +812,26 @@ function BookPageContent() {
                     <Button
                       type="button"
                       onClick={() => {
-                        form.trigger().then((ok) => ok && setStep(3))
+                        form.trigger().then((ok) => {
+                          if (ok) {
+                            setStep(3)
+                          } else {
+                            addToast(t("validationFailed"), "error")
+                            const firstErrorKey = Object.keys(
+                              form.formState.errors,
+                            )[0]
+                            if (firstErrorKey) {
+                              const el =
+                                document.querySelector(
+                                  `[name="${firstErrorKey}"]`,
+                                ) ?? document.getElementById(firstErrorKey)
+                              el?.scrollIntoView({
+                                behavior: "smooth",
+                                block: "center",
+                              })
+                            }
+                          }
+                        })
                       }}
                       className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow-hover"
                     >
