@@ -1,6 +1,7 @@
 "use client"
 
 import { create } from "zustand"
+import { AUTH_API_ERROR } from "@/lib/auth/error-messages"
 import {
   clearToken,
   decodeToken,
@@ -235,7 +236,7 @@ export const useAuth = create<AuthStore>((set, get) => ({
     }
     if (!data?.token) {
       set({ isLoading: false })
-      return { error: "Login failed" }
+      return { error: AUTH_API_ERROR.loginFailed }
     }
 
     setToken(data.token)
@@ -244,7 +245,7 @@ export const useAuth = create<AuthStore>((set, get) => ({
     if (userError || !userData) {
       clearToken()
       set({ token: null, user: null, isLoading: false })
-      return { error: userError ?? "Login failed" }
+      return { error: userError ?? AUTH_API_ERROR.loginFailed }
     }
 
     const effectiveRole = getEffectiveRole(userData, data.token)
@@ -258,7 +259,7 @@ export const useAuth = create<AuthStore>((set, get) => ({
   loginWithGoogle: async (googleToken, role) => {
     const normalized = authApi.normalizeGoogleIdToken(googleToken)
     if (!normalized) {
-      return { error: "Invalid Google sign-in. Please try again." }
+      return { error: AUTH_API_ERROR.invalidGoogleSignIn }
     }
 
     set({ isLoading: true })
@@ -269,7 +270,7 @@ export const useAuth = create<AuthStore>((set, get) => ({
     }
     if (!data?.token) {
       set({ isLoading: false })
-      return { error: "Login failed" }
+      return { error: AUTH_API_ERROR.loginFailed }
     }
 
     setToken(data.token)
@@ -278,7 +279,7 @@ export const useAuth = create<AuthStore>((set, get) => ({
     if (userError || !userData) {
       clearToken()
       set({ token: null, user: null, isLoading: false })
-      return { error: userError ?? "Login failed" }
+      return { error: userError ?? AUTH_API_ERROR.loginFailed }
     }
 
     const effectiveRole = getEffectiveRole(userData, data.token)

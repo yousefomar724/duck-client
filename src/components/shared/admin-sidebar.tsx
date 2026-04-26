@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LogOut, User } from "lucide-react"
+import { Home, LogOut, User } from "lucide-react"
 import { useAuth } from "@/lib/stores/auth-store"
 import {
   Sidebar,
@@ -26,9 +26,10 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Logo from "./logo"
 import { adminNavItems } from "@/lib/constants"
-import { useLocale } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 export default function AdminSidebar() {
+  const t = useTranslations("common")
   const locale = useLocale()
   const pathname = usePathname()
   const { user, logout } = useAuth()
@@ -51,6 +52,23 @@ export default function AdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        <SidebarGroup className="pb-0">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  className="bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-semibold"
+                >
+                  <Link href="/" onClick={handleNavClick}>
+                    <Home className="w-4 h-4" />
+                    <span>{t("backToHome")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>لوحة الإدارة</SidebarGroupLabel>
           <SidebarGroupContent>

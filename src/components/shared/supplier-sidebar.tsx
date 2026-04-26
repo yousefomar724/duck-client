@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LogOut, Package, User } from "lucide-react"
+import { Home, LogOut, Package, User } from "lucide-react"
 import { useAuth } from "@/lib/stores/auth-store"
 import {
   Sidebar,
@@ -29,7 +29,7 @@ import Logo from "./logo"
 import { supplierNavItems } from "@/lib/constants"
 import * as suppliersApi from "@/lib/api/suppliers"
 import { resolveImageUrl } from "@/lib/image-utils"
-import { useLocale } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 function getLocalizedName(value: unknown): string {
   if (typeof value === "string") return value.trim()
@@ -42,6 +42,7 @@ function getLocalizedName(value: unknown): string {
 }
 
 export default function SupplierSidebar() {
+  const t = useTranslations("common")
   const locale = useLocale()
   const pathname = usePathname()
   const { user, logout, onboardingComplete } = useAuth()
@@ -109,6 +110,23 @@ export default function SupplierSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        <SidebarGroup className="pb-0">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  className="bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover font-semibold"
+                >
+                  <Link href="/" onClick={handleNavClick}>
+                    <Home className="w-4 h-4" />
+                    <span>{t("backToHome")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>لوحة المزود</SidebarGroupLabel>
           <SidebarGroupContent>

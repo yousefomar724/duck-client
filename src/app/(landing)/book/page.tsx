@@ -40,6 +40,10 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { getTrips } from "@/lib/api/trips"
 import * as bookingsApi from "@/lib/api/bookings"
+import {
+  type SuccessCache,
+  SUCCESS_CACHE_KEY,
+} from "@/lib/booking-success-cache"
 import type { ResourceType, Trip } from "@/lib/types"
 import { getTripImage, resolveImageUrl } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
@@ -446,6 +450,45 @@ function BookPageContent() {
       return
     }
     if (data?.payment_url) {
+      const b = data.booking
+      const orderRef = b?.order_ref
+      if (orderRef && b) {
+        const policy = selectedTrip.cancelation_policy
+        const cache: SuccessCache = {
+          order_ref: orderRef,
+          trip: {
+            id: selectedTrip.id,
+            name: selectedTrip.name,
+            currency: selectedTrip.currency,
+            refundable: selectedTrip.refundable,
+            cancelation_policy:
+              typeof policy === "object" && policy !== null
+                ? (policy as { ar: string; en: string })
+                : undefined,
+            destinations: (selectedTrip.destinations ?? []).map((d) => ({
+              id: d.id,
+              name: d.name,
+              lat: d.lat,
+              lng: d.lng,
+              image: d.image,
+              operating_hours: d.operating_hours,
+            })),
+          },
+          summary: {
+            full_name: values.full_name.trim(),
+            booking_date,
+            quantity: b.quantity ?? totalGuests,
+            local_guests: localGuests,
+            foreigner_guests: foreignerGuests,
+            amount: b.amount ?? 0,
+          },
+        }
+        try {
+          sessionStorage.setItem(SUCCESS_CACHE_KEY, JSON.stringify(cache))
+        } catch {
+          /* storage full or disabled */
+        }
+      }
       // Navigate to payment gateway (full page redirect)
       window.location.assign(data.payment_url)
     }

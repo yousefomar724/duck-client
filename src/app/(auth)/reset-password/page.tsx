@@ -15,10 +15,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowRight } from "lucide-react"
+import { useAuthErrorMessage } from "@/lib/auth/error-messages"
 import * as authApi from "@/lib/api/auth"
 
 function ResetPasswordContent() {
   const t = useTranslations("auth.resetPassword")
+  const toMessage = useAuthErrorMessage()
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get("token")
@@ -51,7 +53,7 @@ function ResetPasswordContent() {
     setIsLoading(true)
     const { error: resetError } = await authApi.resetPassword(token, password)
     if (resetError) {
-      setError(resetError)
+      setError(toMessage(resetError))
     } else {
       setSuccess(true)
       setTimeout(() => router.push("/login"), 2000)

@@ -68,26 +68,20 @@ export default function HeroSection() {
               {t("description")}
             </motion.p>
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              {/* <motion.a
-                href="https://wa.me/201550061006"
-                target="_blank"
-                rel="noopener noreferrer"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.7 }}
-                // Use a more subtle CTA color than yellow: cyan with low opacity and good contrast
-                className="inline-flex items-center justify-center rounded-2xl bg-duck-cyan/80 text-white font-bold text-xl px-8 py-3 shadow-md hover:bg-duck-cyan transition-all duration-200"
-              >
-                تحدث مع فريقنا
-              </motion.a> */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
+              <Link
+                href="/book"
                 className="inline-flex items-center justify-center rounded-2xl bg-duck-yellow text-neutral-900 font-bold text-xl px-10 py-3 shadow-xl hover:bg-duck-yellow-hover transition-all duration-200 drop-shadow-lg"
+                passHref
               >
-                <Link href="/book">{t("book")}</Link>
-              </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.5 }}
+                  className="w-full h-full flex items-center justify-center"
+                >
+                  {t("book")}
+                </motion.div>
+              </Link>
             </div>
           </div>
 

@@ -14,10 +14,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowRight } from "lucide-react"
+import { useAuthErrorMessage } from "@/lib/auth/error-messages"
 import * as authApi from "@/lib/api/auth"
 
 export default function ForgotPasswordPage() {
   const t = useTranslations("auth.forgotPassword")
+  const toMessage = useAuthErrorMessage()
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -30,7 +32,7 @@ export default function ForgotPasswordPage() {
 
     const { error: forgotError } = await authApi.forgotPassword(email)
     if (forgotError) {
-      setError(forgotError)
+      setError(toMessage(forgotError))
     } else {
       setSuccess(true)
     }

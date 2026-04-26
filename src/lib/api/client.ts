@@ -54,6 +54,22 @@ async function apiClient<T>(
       headers,
     });
 
+    const requestMethod = (options.method || 'GET').toString().toUpperCase();
+    // Login 401s mean wrong credentials (or similar) — not an expired session. Read body, no redirect.
+    if (
+      response.status === 401 &&
+      endpoint === '/auth/login' &&
+      requestMethod === 'POST'
+    ) {
+      clearToken();
+      const body = await response.json().catch(() => ({}));
+      const errorMessage =
+        typeof (body as { error?: string }).error === 'string'
+          ? (body as { error: string }).error
+          : 'invalid credentials';
+      return { data: null, error: errorMessage };
+    }
+
     if (response.status === 401) {
       clearToken();
       if (typeof window !== 'undefined') {

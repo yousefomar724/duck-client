@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuthErrorMessage } from "@/lib/auth/error-messages"
 import { useAuth } from "@/lib/stores/auth-store"
 
 type LoginKind = "user" | "supplier"
@@ -48,6 +49,7 @@ function getRedirectPath(
 
 function LoginFormContent() {
   const t = useTranslations("auth.login")
+  const toMessage = useAuthErrorMessage()
   const { login, loginWithGoogle } = useAuth()
   const searchParams = useSearchParams()
   const initialKind: LoginKind =
@@ -66,7 +68,7 @@ function LoginFormContent() {
 
     const { error: loginError, user } = await login(email, password)
     if (loginError) {
-      setError(loginError)
+      setError(toMessage(loginError))
       setIsLoading(false)
     } else {
       const returnUrl = searchParams.get("returnUrl")
@@ -95,7 +97,7 @@ function LoginFormContent() {
     )
 
     if (googleError) {
-      setError(googleError)
+      setError(toMessage(googleError))
       setIsGoogleLoading(false)
       return
     }

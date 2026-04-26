@@ -1,3 +1,5 @@
+import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 import {
   SidebarProvider,
   SidebarInset,
@@ -10,13 +12,16 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
 import AdminSidebar from "@/components/shared/admin-sidebar"
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const t = await getTranslations("common")
+
   return (
     // <ProtectedRoute allowedRoles={[2]}>
     <SidebarProvider dir="rtl">
@@ -32,6 +37,11 @@ export default function AdminLayout({
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+          <div className="ms-auto shrink-0">
+            <Button asChild size="sm" className="font-semibold shadow-sm">
+              <Link href="/">{t("backToHome")}</Link>
+            </Button>
+          </div>
         </header>
         <main className="flex-1 p-6">{children}</main>
       </SidebarInset>

@@ -12,16 +12,20 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
 import SupplierSidebar from "@/components/shared/supplier-sidebar"
 import { ProtectedRoute } from "@/components/shared/protected-route"
 import { usePathname } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
+import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 export default function SupplierLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const t = useTranslations("common")
   const pathname = usePathname()
   const isOnboarding = pathname?.startsWith("/supplier/onboarding")
   const loadingContent = (
@@ -46,6 +50,11 @@ export default function SupplierLayout({
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+          <div className="ms-auto shrink-0">
+            <Button asChild size="sm" className="font-semibold shadow-sm">
+              <Link href="/">{t("backToHome")}</Link>
+            </Button>
+          </div>
         </header>
         <main className="flex-1 p-6">{content}</main>
       </SidebarInset>

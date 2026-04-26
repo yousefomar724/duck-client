@@ -1,6 +1,7 @@
 'use client';
 
 import { apiClient, ApiResponse } from './client';
+import { AUTH_API_ERROR } from '@/lib/auth/error-messages';
 import type { User, RegisterInput } from '@/lib/types';
 
 export interface LoginResponse {
@@ -42,7 +43,7 @@ export async function loginWithGoogle(
 ): Promise<ApiResponse<LoginResponse>> {
   const google_token = normalizeGoogleIdToken(googleToken);
   if (!google_token) {
-    return { data: null, error: 'Invalid Google credential' };
+    return { data: null, error: AUTH_API_ERROR.invalidGoogleCredential };
   }
   const body: GoogleLoginBody = { google_token, role };
   return apiClient<LoginResponse>('/auth/login', {
