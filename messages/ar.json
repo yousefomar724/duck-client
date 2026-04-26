@@ -391,9 +391,6 @@
     "saveStorage": "حفظ السعة"
   },
   "book": {
-    "heroSubtitle": "احجز رحلتك",
-    "heroTitle": "خطوات بسيطة لمغامرة لا تُنسى",
-    "heroDescription": "اختر رحلتك، أدخل بياناتك، وادفع بأمان. استمتع بتجربة حجز سلسة.",
     "step1Title": "اختر رحلتك",
     "noTrips": "لا توجد رحلات متاحة حالياً.",
     "defaultTripName": "رحلة",
@@ -612,7 +609,10 @@
   "common": {
     "loading": "جاري التحميل...",
     "required": "*",
-    "backToHome": "العودة إلى الصفحة الرئيسية"
+    "backToHome": "العودة إلى الصفحة الرئيسية",
+    "supportWhatsappAriaLabel": "التواصل مع الدعم عبر واتساب",
+    "supportWhatsappPrefill": "مرحباً، لدي سؤال عن خدمات Duck Entertainment.",
+    "supportWhatsappShortLabel": "دعم"
   },
   "validation": {
     "nameMin": "الاسم يجب أن يحتوي على حرفين على الأقل",

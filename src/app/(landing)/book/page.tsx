@@ -506,57 +506,45 @@ function BookPageContent() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="bg-duck-navy pt-28 md:pt-44 pb-20 px-4 md:px-10 text-center">
-        <div className="max-w-2xl mx-auto">
-          <span className="text-duck-cyan text-base block mb-4">
-            {t("heroSubtitle")}
-          </span>
-          <h1 className="text-white text-4xl md:text-6xl font-bold mb-5">
-            {t("heroTitle")}
-          </h1>
-          <p className="text-white/70 text-base md:text-lg leading-relaxed">
-            {t("heroDescription")}
-          </p>
-
-          {/* Step indicator */}
-          <div className="flex justify-center gap-3 mt-8" dir="ltr">
-            {[1, 2, 3].map((s) => (
-              <div
-                key={s}
-                className={`flex items-center gap-1 ${
-                  step === s
-                    ? "text-duck-cyan font-semibold"
-                    : step > s
-                      ? "text-duck-cyan/80"
-                      : "text-white/50"
-                }`}
-              >
-                <span
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                    step === s
-                      ? "bg-duck-cyan text-duck-navy"
-                      : step > s
-                        ? "bg-duck-cyan/30 text-white"
-                        : "bg-white/20 text-white"
-                  }`}
-                >
-                  {step > s ? <Check className="w-4 h-4" /> : s}
-                </span>
-                {s < 3 && <span className="w-6 h-0.5 bg-white/30" />}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Content */}
-      <section className="bg-off-white py-20 px-4 md:px-10">
+      <section className="bg-off-white pt-24 md:pt-32 pb-20 px-4 md:px-10">
         <div className="max-w-3xl mx-auto">
           <div
             className="bg-white rounded-3xl shadow-lg p-8 md:p-10"
             dir={locale === "ar" ? "rtl" : "ltr"}
           >
+            {/* Step indicator */}
+            <div
+              className="flex justify-center gap-2 sm:gap-3 mb-8 pb-8 border-b border-border/60"
+              dir="ltr"
+            >
+              {[1, 2, 3].map((s) => (
+                <div
+                  key={s}
+                  className={`flex items-center gap-1 ${
+                    step === s
+                      ? "text-duck-cyan font-semibold"
+                      : step > s
+                        ? "text-duck-cyan/90"
+                        : "text-text-muted"
+                  }`}
+                >
+                  <span
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                      step === s
+                        ? "bg-duck-cyan text-duck-navy"
+                        : step > s
+                          ? "bg-duck-cyan/15 text-duck-cyan"
+                          : "bg-muted text-text-muted"
+                    }`}
+                  >
+                    {step > s ? <Check className="w-4 h-4" /> : s}
+                  </span>
+                  {s < 3 && <span className="w-4 sm:w-6 h-0.5 bg-duck-cyan/20" />}
+                </div>
+              ))}
+            </div>
+
             {/* Step 1: Trip selection */}
             {step === 1 && (
               <div className="space-y-8">

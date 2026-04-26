@@ -35,12 +35,12 @@ import { resolveImageUrl } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
 import { useToast } from "@/lib/stores/toast-store"
 import { cn } from "@/lib/utils"
+import { buildWhatsAppHref } from "@/lib/support-contact"
 
 const OFFICE_MAPS_URL = "https://maps.app.goo.gl/FPt8JJ8VgaTTzBir6"
 const SUPPORT_PHONE_DISPLAY = "+20 15 5006 1006"
 const SUPPORT_PHONE_TEL = "tel:+201550061006"
 const SUPPORT_EMAIL = "mailto:duck.aswan@gmail.com"
-const SUPPORT_WHATSAPP_NUMBER = "201550061006"
 
 function getLocalizedBilingual(
   value: { ar: string; en: string } | undefined,
@@ -116,9 +116,9 @@ function BookingSuccessContent() {
       )
     : null
 
-  const whatsappHref = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  const whatsappHref = buildWhatsAppHref(
     t("whatsappPrefill", { ref: orderRef || "—" }),
-  )}`
+  )
 
   const destinations = validCache?.trip.destinations ?? []
   const showOfficeOnly = !validCache || destinations.length === 0

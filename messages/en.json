@@ -391,9 +391,6 @@
     "saveStorage": "Save capacity"
   },
   "book": {
-    "heroSubtitle": "Book Your Trip",
-    "heroTitle": "Simple Steps to an Unforgettable Adventure",
-    "heroDescription": "Choose your trip, enter your details, and pay securely. Enjoy a seamless booking experience.",
     "step1Title": "Choose Your Trip",
     "noTrips": "No trips available at the moment.",
     "defaultTripName": "Trip",
@@ -612,7 +609,10 @@
   "common": {
     "loading": "Loading...",
     "required": "*",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "supportWhatsappAriaLabel": "Contact support on WhatsApp",
+    "supportWhatsappPrefill": "Hi, I have a question about Duck Entertainment services.",
+    "supportWhatsappShortLabel": "Support"
   },
   "validation": {
     "nameMin": "Name must be at least 2 characters",

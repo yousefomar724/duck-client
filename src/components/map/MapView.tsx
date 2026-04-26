@@ -1,71 +1,77 @@
 "use client"
 
-import { useEffect, useRef, useCallback, useState } from "react"
-import L from "leaflet"
-import "leaflet/dist/leaflet.css"
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet"
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  useState,
+  type MutableRefObject,
+} from "react"
+import {
+  APIProvider,
+  Map,
+  AdvancedMarker,
+  AdvancedMarkerAnchorPoint,
+  ColorScheme,
+  useMap,
+} from "@vis.gl/react-google-maps"
 import type { WaterActivityLocation } from "./map-data"
 import { ASWAN_CENTER, DEFAULT_ZOOM } from "./map-data"
 
 export type MapStyle = "light" | "dark"
 
-const TILE_URLS: Record<MapStyle, string> = {
-  light:
-    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-}
-
 const LOGO_PIN_URL = "/duck.png"
 
-function createMarkerIcon(
-  isSelected: boolean,
-  isComingSoon: boolean,
-  mapStyle: MapStyle,
-) {
-  const size = isSelected ? 44 : 32
-  const dropShadow =
-    mapStyle === "dark"
-      ? "drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 1px 3px rgba(0,0,0,0.5))"
-      : "none"
-  const opacity = isComingSoon && !isSelected ? "0.7" : "1"
-  const pulseAnimation =
-    isComingSoon && !isSelected
-      ? `<style>.pulse-ring{animation:pulse-ring 2s ease-out infinite}@keyframes pulse-ring{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.5);opacity:0}}</style><div class="pulse-ring" style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin-left:-${size / 2}px;margin-top:-${size / 2}px;border-radius:50%;background:#2bbbc5;opacity:0.4"></div>`
-      : ""
+function ProjectionUpdater({
+  projectionRef,
+}: {
+  projectionRef: MutableRefObject<google.maps.MapCanvasProjection | null>
+}) {
+  const map = useMap()
 
-  return L.divIcon({
-    className: "",
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size],
-    html: `
-      <div style="position:relative;width:${size}px;height:${size}px;cursor:pointer;">
-        ${pulseAnimation}
-        <img
-          src="${LOGO_PIN_URL}"
-          alt=""
-          style="
-            width:100%;height:100%;object-fit:contain;position:relative;z-index:1;
-            filter:${dropShadow};
-            opacity:${opacity};
-            transition:transform 0.2s;
-          "
-        />
-      </div>
-    `,
-  })
+  useEffect(() => {
+    if (!map) return
+
+    const overlay = new google.maps.OverlayView()
+    overlay.onAdd = () => {}
+    overlay.draw = () => {
+      projectionRef.current = overlay.getProjection()
+    }
+    overlay.onRemove = () => {
+      projectionRef.current = null
+    }
+    overlay.setMap(map)
+    return () => {
+      overlay.setMap(null)
+      projectionRef.current = null
+    }
+  }, [map, projectionRef])
+
+  return null
+}
+
+function latLngToAnchorPoint(
+  projection: google.maps.MapCanvasProjection | null,
+  lat: number,
+  lng: number,
+): { x: number; y: number } {
+  if (!projection) return { x: 0, y: 0 }
+  const pt = projection.fromLatLngToContainerPixel({ lat, lng })
+  if (!pt) return { x: 0, y: 0 }
+  return { x: pt.x, y: pt.y }
 }
 
 function FitBounds({ locations }: { locations: WaterActivityLocation[] }) {
   const map = useMap()
   const prevLengthRef = useRef(locations.length)
-  const [padding, setPadding] = useState([60, 60] as [number, number])
+  const [padding, setPadding] = useState({ v: 60, h: 60 })
 
   useEffect(() => {
     const updatePadding = () => {
       setPadding(
         typeof window !== "undefined" && window.innerWidth < 640
-          ? [24, 24]
-          : [60, 60],
+          ? { v: 24, h: 24 }
+          : { v: 60, h: 60 },
       )
     }
     updatePadding()
@@ -74,15 +80,29 @@ function FitBounds({ locations }: { locations: WaterActivityLocation[] }) {
   }, [])
 
   useEffect(() => {
+    if (!map) return
+
     if (locations.length === 0) {
-      map.flyTo(ASWAN_CENTER, DEFAULT_ZOOM, { duration: 0.8 })
+      map.panTo({ lat: ASWAN_CENTER[0], lng: ASWAN_CENTER[1] })
+      map.setZoom(DEFAULT_ZOOM)
       prevLengthRef.current = 0
       return
     }
 
     if (locations.length !== prevLengthRef.current) {
-      const bounds = L.latLngBounds(locations.map((loc) => loc.coordinates))
-      map.flyToBounds(bounds, { padding, duration: 0.8 })
+      const bounds = new google.maps.LatLngBounds()
+      for (const loc of locations) {
+        bounds.extend({
+          lat: loc.coordinates[0],
+          lng: loc.coordinates[1],
+        })
+      }
+      map.fitBounds(bounds, {
+        top: padding.v,
+        bottom: padding.v,
+        left: padding.h,
+        right: padding.h,
+      })
       prevLengthRef.current = locations.length
     }
   }, [locations, map, padding])
@@ -90,15 +110,18 @@ function FitBounds({ locations }: { locations: WaterActivityLocation[] }) {
   return null
 }
 
-function MapReadyBridge({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
+function MapReadyBridge({
+  onMapReady,
+}: {
+  onMapReady: (map: google.maps.Map) => void
+}) {
   const map = useMap()
   const calledRef = useRef(false)
 
   useEffect(() => {
-    if (!calledRef.current) {
-      onMapReady(map)
-      calledRef.current = true
-    }
+    if (!map || calledRef.current) return
+    onMapReady(map)
+    calledRef.current = true
   }, [map, onMapReady])
 
   return null
@@ -113,7 +136,7 @@ interface MapViewProps {
   locations: WaterActivityLocation[]
   selectedLocation: WaterActivityLocation | null
   onMarkerClick: (event: MarkerClickEvent) => void
-  onMapReady?: (map: L.Map) => void
+  onMapReady?: (map: google.maps.Map) => void
   mapStyle: MapStyle
 }
 
@@ -121,32 +144,66 @@ function MarkerWithClick({
   location,
   isSelected,
   mapStyle,
+  projectionRef,
   onMarkerClick,
 }: {
   location: WaterActivityLocation
   isSelected: boolean
   mapStyle: MapStyle
+  projectionRef: MutableRefObject<google.maps.MapCanvasProjection | null>
   onMarkerClick: (event: MarkerClickEvent) => void
 }) {
-  const map = useMap()
+  const size = isSelected ? 44 : 32
+  const isComingSoon = location.status === "coming_soon"
+  const dropShadow =
+    mapStyle === "dark"
+      ? "drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 1px 3px rgba(0,0,0,0.5))"
+      : "none"
+  const opacity = isComingSoon && !isSelected ? 0.7 : 1
+
+  const handleClick = () => {
+    const point = latLngToAnchorPoint(
+      projectionRef.current,
+      location.coordinates[0],
+      location.coordinates[1],
+    )
+    onMarkerClick({ location, point })
+  }
 
   return (
-    <Marker
-      position={location.coordinates}
-      icon={createMarkerIcon(
-        isSelected,
-        location.status === "coming_soon",
-        mapStyle,
-      )}
-      eventHandlers={{
-        click: () => {
-          const point = map.latLngToContainerPoint(location.coordinates)
-          onMarkerClick({ location, point: { x: point.x, y: point.y } })
-        },
+    <AdvancedMarker
+      position={{
+        lat: location.coordinates[0],
+        lng: location.coordinates[1],
       }}
-    />
+      anchorPoint={AdvancedMarkerAnchorPoint.BOTTOM}
+      onClick={handleClick}
+    >
+      <div
+        className="relative cursor-pointer"
+        style={{ width: size, height: size }}
+      >
+        {isComingSoon && !isSelected ? (
+          <span
+            className="pointer-events-none absolute left-1/2 top-1/2 z-0 inline-flex size-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-duck-cyan/40 opacity-75 animate-ping"
+            aria-hidden
+          />
+        ) : null}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={LOGO_PIN_URL}
+          alt=""
+          width={size}
+          height={size}
+          className="relative z-10 h-full w-full object-contain transition-transform"
+          style={{ filter: dropShadow, opacity }}
+        />
+      </div>
+    </AdvancedMarker>
   )
 }
+
+const defaultCenter = { lat: ASWAN_CENTER[0], lng: ASWAN_CENTER[1] }
 
 export default function MapView({
   locations,
@@ -155,37 +212,54 @@ export default function MapView({
   onMapReady,
   mapStyle,
 }: MapViewProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ""
+  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? ""
+
+  const projectionRef = useRef<google.maps.MapCanvasProjection | null>(null)
+
   const handleMapReady = useCallback(
-    (map: L.Map) => {
+    (map: google.maps.Map) => {
       onMapReady?.(map)
     },
     [onMapReady],
   )
 
+  if (!apiKey || !mapId) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-off-white p-4 text-center text-sm text-duck-navy">
+        Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY and NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID to
+        load the map.
+      </div>
+    )
+  }
+
   return (
-    <MapContainer
-      center={ASWAN_CENTER}
-      zoom={DEFAULT_ZOOM}
-      className="h-full w-full"
-      zoomControl={false}
-      attributionControl={false}
-    >
-      <TileLayer
-        key={mapStyle}
-        url={TILE_URLS[mapStyle]}
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
-      />
-      <FitBounds locations={locations} />
-      <MapReadyBridge onMapReady={handleMapReady} />
-      {locations.map((location) => (
-        <MarkerWithClick
-          key={`${location.id}-${mapStyle}`}
-          location={location}
-          isSelected={selectedLocation?.id === location.id}
-          mapStyle={mapStyle}
-          onMarkerClick={onMarkerClick}
-        />
-      ))}
-    </MapContainer>
+    <APIProvider apiKey={apiKey}>
+      <Map
+        defaultCenter={defaultCenter}
+        defaultZoom={DEFAULT_ZOOM}
+        mapId={mapId}
+        className="h-full w-full"
+        colorScheme={
+          mapStyle === "dark" ? ColorScheme.DARK : ColorScheme.LIGHT
+        }
+        disableDefaultUI
+        gestureHandling="greedy"
+      >
+        <ProjectionUpdater projectionRef={projectionRef} />
+        <FitBounds locations={locations} />
+        <MapReadyBridge onMapReady={handleMapReady} />
+        {locations.map((location) => (
+          <MarkerWithClick
+            key={`${location.id}-${mapStyle}`}
+            location={location}
+            isSelected={selectedLocation?.id === location.id}
+            mapStyle={mapStyle}
+            projectionRef={projectionRef}
+            onMarkerClick={onMarkerClick}
+          />
+        ))}
+      </Map>
+    </APIProvider>
   )
 }

@@ -14,13 +14,19 @@ import {
 import Image from "next/image"
 import Link from "next/link"
 
+type FullpageWindow = Window & {
+  fullpage_api?: { moveTo: (sectionIndex: number) => void }
+}
+
 export default function Footer() {
   const t = useTranslations("footer")
   const scrollToTop = () => {
-    if (typeof window !== "undefined" && (window as any).fullpage_api) {
-      ;(window as any).fullpage_api.moveTo(1)
+    if (typeof window === "undefined") return
+    const w = window as FullpageWindow
+    if (w.fullpage_api) {
+      w.fullpage_api.moveTo(1)
     } else {
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      w.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
 

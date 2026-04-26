@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
-import type L from "leaflet"
 import { Plus, Minus, Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getDestinations } from "@/lib/api/destinations"
@@ -12,6 +11,7 @@ import LocationDetailPopover from "./LocationDetailPopover"
 import type { MapStyle, MarkerClickEvent } from "./MapView"
 import {
   destinationsToMapLocations,
+  DEFAULT_ZOOM,
   FOCUSED_ZOOM,
   type ActivityType,
   type WaterActivityLocation,
@@ -55,7 +55,7 @@ export default function MapPageClient() {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
   const [mapStyle, setMapStyle] = useState<MapStyle>("light")
-  const mapRef = useRef<L.Map | null>(null)
+  const mapRef = useRef<google.maps.Map | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -86,7 +86,11 @@ export default function MapPageClient() {
   const handleMarkerClick = useCallback((event: MarkerClickEvent) => {
     const map = mapRef.current
     if (map) {
-      map.flyTo(event.location.coordinates, FOCUSED_ZOOM, { duration: 0.5 })
+      map.panTo({
+        lat: event.location.coordinates[0],
+        lng: event.location.coordinates[1],
+      })
+      map.setZoom(FOCUSED_ZOOM)
     }
     setSelectedLocation(event.location)
     setAnchorPoint(event.point)
@@ -98,7 +102,7 @@ export default function MapPageClient() {
     if (!open) setSelectedLocation(null)
   }
 
-  const handleMapReady = useCallback((map: L.Map) => {
+  const handleMapReady = useCallback((map: google.maps.Map) => {
     mapRef.current = map
   }, [])
 
@@ -111,8 +115,7 @@ export default function MapPageClient() {
           <div className="w-10 h-10 rounded-full border-2 border-duck-cyan border-t-transparent animate-spin" />
         </div>
       )}
-      {/* Map container — z-0 creates a stacking context so Leaflet's internal
-          z-indexes (up to 1000+) don't escape and overlap navbar/popover */}
+      {/* Map container — z-0 keeps the map under filters/nav while popover stays above */}
       <div className="absolute inset-0 z-0">
         <MapView
           locations={filteredLocations}
@@ -161,7 +164,12 @@ export default function MapPageClient() {
         {/* Zoom controls */}
         <div className="flex flex-col gap-0.5">
           <button
-            onClick={() => mapRef.current?.zoomIn()}
+            onClick={() => {
+              const map = mapRef.current
+              if (!map) return
+              const z = map.getZoom()
+              map.setZoom((z ?? DEFAULT_ZOOM) + 1)
+            }}
             className={cn(
               "w-10 h-10 sm:w-9 sm:h-9 rounded-t-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer touch-manipulation",
               isDark
@@ -173,7 +181,12 @@ export default function MapPageClient() {
             <Plus className="size-4" />
           </button>
           <button
-            onClick={() => mapRef.current?.zoomOut()}
+            onClick={() => {
+              const map = mapRef.current
+              if (!map) return
+              const z = map.getZoom()
+              map.setZoom((z ?? DEFAULT_ZOOM) - 1)
+            }}
             className={cn(
               "w-10 h-10 sm:w-9 sm:h-9 rounded-b-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer touch-manipulation",
               isDark

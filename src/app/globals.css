@@ -58,17 +58,17 @@
 }
 
 :root {
-  /* Duck brand palette */
-  --duck-navy: #1b2838;
-  --duck-navy-deep: #131e2b;
-  --duck-yellow: #f5e642;
-  --duck-yellow-hover: #e6d83b;
-  --duck-cyan: #2bbbc5;
-  --duck-cyan-light: #3dd1db;
+  /* Duck brand palette (screenshot source: yellow #F5E847, teal #067BA1, navy #121528) */
+  --duck-navy: #121528;
+  --duck-navy-deep: #0c0e1a;
+  --duck-yellow: #f5e847;
+  --duck-yellow-hover: #e6da3f;
+  --duck-cyan: #067ba1;
+  --duck-cyan-light: #0d9bc7;
   --white: #ffffff;
   --off-white: #f5f5f0;
-  --dark-bg: #1b2838;
-  --dark-bg-deeper: #131e2b;
+  --dark-bg: #121528;
+  --dark-bg-deeper: #0c0e1a;
   --text-dark: #1a1a1a;
   --text-body: #4a4a4a;
   --text-muted: #7a7a7a;
