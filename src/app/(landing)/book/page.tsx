@@ -135,6 +135,8 @@ function BookPageContent() {
 
   // --- NEW: useRef to store previous trip id ---
   const prevTripIdRef = useRef<number | null>(null)
+  /** Skip step 1 once when loading /book?trip=... so user lands on the form; reset on new mount. */
+  const didAutoAdvanceRef = useRef(false)
 
   const resourceLabels: Record<ResourceType, string> = {
     kayak: t("resourceKayak"),
@@ -259,7 +261,13 @@ function BookPageContent() {
       if (tripParam && data.length > 0) {
         const id = parseInt(tripParam, 10)
         const trip = data.find((t) => t.id === id)
-        if (trip) setSelectedTrip(trip)
+        if (trip) {
+          setSelectedTrip(trip)
+          if (!didAutoAdvanceRef.current) {
+            didAutoAdvanceRef.current = true
+            setStep(2)
+          }
+        }
       }
     }
     fetchTrips()
