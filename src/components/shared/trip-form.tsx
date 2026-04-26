@@ -32,6 +32,7 @@ import * as tourGuidesApi from "@/lib/api/tour-guides"
 import { DateTimePicker } from "@/components/shared/date-time-picker"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Trip, Destination, Supplier, TourGuide } from "@/lib/types"
+import { resolveImageUrl } from "@/lib/image-utils"
 
 /** Go gorm.Model serializes primary key as `ID`; normalize to `id` for the UI. */
 function normalizeTourGuides(list: TourGuide[]): TourGuide[] {
@@ -76,6 +77,10 @@ export default function TripForm({
     description_en: "",
     destination_ids: [] as number[],
     price: "",
+    foreigner_price: "",
+    guide_mandatory: false,
+    guide_price: "",
+    display_order: "0",
     currency: "EGP",
     refundable: true,
     cancelation_policy_ar: "",
@@ -132,6 +137,10 @@ export default function TripForm({
       description_en: tripDesc.en || "",
       destination_ids: tripData.destinations?.map((d) => d.id) || [],
       price: tripData.price.toString(),
+      foreigner_price: (tripData.foreigner_price ?? 0).toString(),
+      guide_mandatory: tripData.guide_mandatory ?? false,
+      guide_price: (tripData.guide_price ?? 0).toString(),
+      display_order: (tripData.display_order ?? 0).toString(),
       currency: tripData.currency,
       refundable: tripData.refundable,
       cancelation_policy_ar: tripPolicy?.ar || "",
@@ -223,6 +232,10 @@ export default function TripForm({
         location: false,
         is_tour: formData.is_tour,
         price: parseFloat(formData.price),
+        foreigner_price: parseFloat(formData.foreigner_price) || 0,
+        guide_mandatory: formData.guide_mandatory,
+        guide_price: parseFloat(formData.guide_price) || 0,
+        display_order: parseInt(formData.display_order, 10) || 0,
         currency: formData.currency,
         refundable: formData.refundable,
         cancelation_policy: {
@@ -490,9 +503,9 @@ export default function TripForm({
               الأسعار والإلغاء
             </h2>
             <div className="grid gap-4">
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">السعر</Label>
+                  <Label htmlFor="price">السعر للمصريين</Label>
                   <Input
                     id="price"
                     type="number"
@@ -503,6 +516,28 @@ export default function TripForm({
                     }
                     placeholder="180"
                     required
+                  />
+                  {formData.is_tour && (
+                    <p className="text-xs text-duck-cyan">
+                      السعر لكل ضيف في الساعة
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="foreigner_price">السعر للأجانب</Label>
+                  <Input
+                    id="foreigner_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.foreigner_price}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        foreigner_price: e.target.value,
+                      })
+                    }
+                    placeholder="250"
                   />
                   {formData.is_tour && (
                     <p className="text-xs text-duck-cyan">
@@ -589,6 +624,53 @@ export default function TripForm({
             </div>
           </div>
 
+          {/* Guide Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              المرشد
+            </h2>
+            <div className="grid gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="guide_mandatory"
+                  checked={formData.guide_mandatory}
+                  onCheckedChange={(checked) =>
+                    setFormData({
+                      ...formData,
+                      guide_mandatory: checked === true,
+                    })
+                  }
+                />
+                <Label
+                  htmlFor="guide_mandatory"
+                  className="cursor-pointer font-normal"
+                >
+                  المرشد إلزامي لهذه الرحلة
+                </Label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="guide_price">سعر المرشد (اختياري)</Label>
+                <Input
+                  id="guide_price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.guide_price}
+                  onChange={(e) =>
+                    setFormData({ ...formData, guide_price: e.target.value })
+                  }
+                  placeholder="0"
+                />
+                <p className="text-xs text-text-muted">
+                  {formData.guide_mandatory
+                    ? "يُضاف هذا السعر إلى إجمالي كل حجز."
+                    : "يُضاف هذا السعر فقط عند اختيار العميل لمرشد أثناء الحجز."}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Schedule Section */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
@@ -651,6 +733,25 @@ export default function TripForm({
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="display_order">ترتيب العرض</Label>
+                  <Input
+                    id="display_order"
+                    type="number"
+                    min="0"
+                    value={formData.display_order}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        display_order: e.target.value,
+                      })
+                    }
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-text-muted">
+                    الأقل يظهر أولاً في قائمة الرحلات.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -676,17 +777,7 @@ export default function TripForm({
                           width={0}
                           height={0}
                           sizes="100vw"
-                          src={(() => {
-                            const base = process.env.NEXT_PUBLIC_API_URL || ""
-                            const normalized = url.startsWith("http")
-                              ? url
-                              : url.startsWith("/")
-                                ? url
-                                : `/${url}`
-                            return base
-                              ? `${base.replace(/\/$/, "")}${normalized}`
-                              : normalized
-                          })()}
+                          src={resolveImageUrl(url) ?? url}
                           alt=""
                           className="w-full h-full object-cover"
                           unoptimized

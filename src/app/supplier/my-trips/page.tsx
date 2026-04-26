@@ -205,9 +205,15 @@ export default function MyTripsPage() {
                     </p>
                   )}
                   <p>
-                    <span className="font-medium">السعر:</span>{" "}
+                    <span className="font-medium">السعر للمصريين:</span>{" "}
                     {formatCurrency(trip.price, trip.currency)}
                   </p>
+                  {(trip.foreigner_price ?? 0) > 0 && (
+                    <p>
+                      <span className="font-medium">السعر للأجانب:</span>{" "}
+                      {formatCurrency(trip.foreigner_price, trip.currency)}
+                    </p>
+                  )}
                   <p>
                     <span className="font-medium">عدد الاشخاص:</span>{" "}
                     {trip.max_guests}
@@ -221,6 +227,20 @@ export default function MyTripsPage() {
                     <p>
                       <span className="font-medium">المرشد:</span>{" "}
                       {trip.tour_guide.name}
+                      {trip.guide_mandatory ? (
+                        <span className="text-duck-cyan ms-1">
+                          (إلزامي
+                          {(trip.guide_price ?? 0) > 0
+                            ? ` +${formatCurrency(trip.guide_price, trip.currency)}`
+                            : ""}
+                          )
+                        </span>
+                      ) : (trip.guide_price ?? 0) > 0 ? (
+                        <span className="text-text-muted ms-1">
+                          (اختياري +
+                          {formatCurrency(trip.guide_price, trip.currency)})
+                        </span>
+                      ) : null}
                     </p>
                   )}
                 </div>

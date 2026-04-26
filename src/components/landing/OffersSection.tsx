@@ -331,6 +331,16 @@ export default function OffersSection() {
                         </p>
                         <p className="text-duck-cyan font-semibold text-lg">
                           {formatCurrency(trip.price, trip.currency)}
+                          {(trip.foreigner_price ?? 0) > 0 && (
+                            <span className="text-sm font-normal text-duck-cyan/70">
+                              {" / "}
+                              {formatCurrency(
+                                trip.foreigner_price,
+                                trip.currency,
+                              )}{" "}
+                              {t("foreignerSuffix")}
+                            </span>
+                          )}
                           {trip.is_tour && (
                             <span className="text-sm font-normal text-duck-cyan/70">
                               {" "}
@@ -507,6 +517,21 @@ export default function OffersSection() {
                     >
                       {selectedTrip?.is_tour ? t("tour") : t("trip")}
                     </span>
+                    {selectedTrip?.guide_mandatory && (
+                      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+                        {t("guideIncluded")}
+                      </span>
+                    )}
+                    {!selectedTrip?.guide_mandatory &&
+                      (selectedTrip?.guide_price ?? 0) > 0 && (
+                        <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">
+                          {t("guideOptional")} +
+                          {formatCurrency(
+                            selectedTrip!.guide_price,
+                            selectedTrip!.currency,
+                          )}
+                        </span>
+                      )}
                     {selectedTrip?.refundable === true && (
                       <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700">
                         {t("refundable")}
@@ -540,12 +565,23 @@ export default function OffersSection() {
                   )}
 
                   {/* Price + Duration */}
-                  <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-4 text-sm flex-wrap">
                     <span className="text-duck-cyan font-semibold">
                       {selectedTrip &&
                         formatCurrency(
                           selectedTrip.price,
                           selectedTrip.currency,
+                        )}
+                      {selectedTrip &&
+                        (selectedTrip.foreigner_price ?? 0) > 0 && (
+                          <span className="font-normal text-duck-cyan/70">
+                            {" / "}
+                            {formatCurrency(
+                              selectedTrip.foreigner_price,
+                              selectedTrip.currency,
+                            )}{" "}
+                            {t("foreignerSuffix")}
+                          </span>
                         )}
                       {selectedTrip?.is_tour && (
                         <span className="font-normal text-duck-cyan/70">
@@ -752,6 +788,21 @@ export default function OffersSection() {
                   >
                     {selectedTrip?.is_tour ? t("tour") : t("trip")}
                   </span>
+                  {selectedTrip?.guide_mandatory && (
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+                      {t("guideIncluded")}
+                    </span>
+                  )}
+                  {!selectedTrip?.guide_mandatory &&
+                    (selectedTrip?.guide_price ?? 0) > 0 && (
+                      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">
+                        {t("guideOptional")} +
+                        {formatCurrency(
+                          selectedTrip!.guide_price,
+                          selectedTrip!.currency,
+                        )}
+                      </span>
+                    )}
                   {selectedTrip?.refundable === true && (
                     <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700">
                       {t("refundable")}
@@ -785,10 +836,21 @@ export default function OffersSection() {
                 )}
 
                 {/* Price + Duration */}
-                <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-4 text-sm flex-wrap">
                   <span className="text-duck-cyan font-semibold">
                     {selectedTrip &&
                       formatCurrency(selectedTrip.price, selectedTrip.currency)}
+                    {selectedTrip &&
+                      (selectedTrip.foreigner_price ?? 0) > 0 && (
+                        <span className="font-normal text-duck-cyan/70">
+                          {" / "}
+                          {formatCurrency(
+                            selectedTrip.foreigner_price,
+                            selectedTrip.currency,
+                          )}{" "}
+                          {t("foreignerSuffix")}
+                        </span>
+                      )}
                     {selectedTrip?.is_tour && (
                       <span className="font-normal text-duck-cyan/70">
                         {" "}

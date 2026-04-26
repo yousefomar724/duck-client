@@ -91,7 +91,10 @@
     "nonRefundable": "غير قابل للاسترداد",
     "maxGuests": "حتى {count} ضيوف",
     "noDescription": "لا يوجد وصف متاح.",
-    "destinations": "الوجهات"
+    "destinations": "الوجهات",
+    "foreignerSuffix": "للأجانب",
+    "guideIncluded": "المرشد مُضمَّن",
+    "guideOptional": "مرشد اختياري"
   },
   "experiences": {
     "subtitle": "خدماتنا",
@@ -420,6 +423,31 @@
     "reviewWantsGuide": "المرشد",
     "reviewWantsGuideYes": "نعم",
     "reviewWantsGuideNo": "لا",
+    "guestsMixLabel": "جنسيات الضيوف",
+    "guestsMixLocal": "جميعهم مصريون",
+    "guestsMixForeigner": "جميعهم أجانب",
+    "guestsMixMixed": "مختلط (مصريون وأجانب)",
+    "localGuestsLabel": "عدد المصريين",
+    "foreignerGuestsLabel": "عدد الأجانب",
+    "guestMixSumHint": "المصريون + الأجانب = {sum} / {total}",
+    "guestMixSumError": "مجموع المصريين والأجانب يجب أن يساوي {total} ضيف",
+    "guideMandatoryBanner": "المرشد إلزامي لهذه الرحلة (+{price}).",
+    "guideOptionalFee": "(+{price})",
+    "hearAboutUs": "كيف سمعت عنا؟",
+    "hearAboutUsPlaceholder": "اختر خياراً",
+    "hearAbout_instagram": "إنستغرام",
+    "hearAbout_facebook": "فيسبوك",
+    "hearAbout_tiktok": "تيك توك",
+    "hearAbout_google": "بحث جوجل",
+    "hearAbout_friend": "صديق أو أحد أفراد العائلة",
+    "hearAbout_other": "أخرى",
+    "referralText": "يرجى التوضيح",
+    "referralTextPlaceholder": "مثال: ترشيح من أحمد، مدونة سفر، إلخ.",
+    "reviewLocalGuests": "المصريون ({count})",
+    "reviewForeignerGuests": "الأجانب ({count})",
+    "reviewGuideFee": "رسوم المرشد",
+    "reviewHearAboutUs": "سمعت عنا عبر",
+    "reviewReferral": "تفاصيل الترشيح",
     "validationFailed": "الرجاء ملء جميع الحقول المطلوبة بشكل صحيح"
   },
   "contact": {
@@ -510,6 +538,16 @@
     "needHelp": "هل تحتاج إلى مساعدة؟",
     "contactWhatsApp": "اتصل بنا عبر WhatsApp"
   },
+  "notFound": {
+    "code": "404",
+    "title": "الصفحة غير موجودة",
+    "subtitle": "يبدو أنك ابتعدت عن المسار",
+    "description": "الصفحة التي تبحث عنها غير موجودة أو ربما تم نقلها. دعنا نعيدك إلى مياه هادئة.",
+    "backToHome": "العودة إلى الصفحة الرئيسية",
+    "exploreTrips": "استكشف الرحلات",
+    "needHelp": "هل تحتاج إلى مساعدة؟",
+    "contactWhatsApp": "اتصل بنا عبر WhatsApp"
+  },
   "common": {
     "loading": "جاري التحميل...",
     "required": "*"
@@ -527,6 +565,8 @@
     "companyNameRequired": "اسم الشركة مطلوب ويجب أن يحتوي على حرفين على الأقل",
     "phoneRequired": "رقم الهاتف مطلوب",
     "emailInvalid": "البريد الإلكتروني غير صالح",
-    "messageMin": "يرجى إدخال تفاصيل الاستفسار (١٠ أحرف على الأقل)"
+    "messageMin": "يرجى إدخال تفاصيل الاستفسار (١٠ أحرف على الأقل)",
+    "hearAboutUsRequired": "أخبرنا كيف سمعت عنا",
+    "referralRequired": "يرجى تقديم مزيد من التفاصيل"
   }
 }

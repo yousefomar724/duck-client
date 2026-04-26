@@ -27,6 +27,10 @@ export interface Trip {
   supplier?: Supplier
   is_tour?: boolean
   price: number
+  foreigner_price: number
+  guide_mandatory: boolean
+  guide_price: number
+  display_order: number
   currency: string
   rate: number
   destination: boolean
@@ -68,6 +72,10 @@ export interface Booking {
   /** ISO 8601 date string */
   booking_date?: string
   quantity?: number
+  local_guests?: number
+  foreigner_guests?: number
+  hear_about_us?: string
+  referral_text?: string
   resource_type?: string
   order_ref?: string
   order_id?: string
@@ -178,12 +186,18 @@ export interface CreateBookingRequest {
   phone_number: string
   /** ISO 8601 datetime string */
   booking_date: string
-  guests: number
   resource_type: ResourceType
+  /** Total quantity (equals local_guests + foreigner_guests; server recomputes for non-tours). */
   quantity: number
+  local_guests: number
+  foreigner_guests: number
   duration?: number
-  /** User preference for a tour guide (tour trips only; ignored or false otherwise) */
+  /** User preference for a tour guide (ignored when guide_mandatory). */
   wants_guide?: boolean
+  /** Channel the user heard about us from (e.g. instagram, facebook, friend, other). */
+  hear_about_us: string
+  /** Free-text referral detail; required when hear_about_us is "friend" or "other". */
+  referral_text?: string
 }
 
 export interface CreateTripRequest {
@@ -192,6 +206,10 @@ export interface CreateTripRequest {
   name: { ar: string; en: string }
   description: { ar: string; en: string }
   price: number
+  foreigner_price: number
+  guide_mandatory: boolean
+  guide_price?: number
+  display_order?: number
   currency: string
   destination: boolean
   location: boolean

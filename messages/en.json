@@ -91,7 +91,10 @@
     "nonRefundable": "Non-refundable",
     "maxGuests": "Up to {count} guests",
     "noDescription": "No description available.",
-    "destinations": "Destinations"
+    "destinations": "Destinations",
+    "foreignerSuffix": "for foreigners",
+    "guideIncluded": "Guide included",
+    "guideOptional": "Optional guide"
   },
   "experiences": {
     "subtitle": "Our Services",
@@ -420,6 +423,31 @@
     "reviewWantsGuide": "Tour guide",
     "reviewWantsGuideYes": "Yes",
     "reviewWantsGuideNo": "No",
+    "guestsMixLabel": "Guest nationality mix",
+    "guestsMixLocal": "All Egyptians",
+    "guestsMixForeigner": "All foreigners",
+    "guestsMixMixed": "Mixed (Egyptians & foreigners)",
+    "localGuestsLabel": "Number of Egyptians",
+    "foreignerGuestsLabel": "Number of foreigners",
+    "guestMixSumHint": "Egyptians + foreigners = {sum} / {total}",
+    "guestMixSumError": "Egyptians and foreigners must total {total} guests",
+    "guideMandatoryBanner": "A tour guide is required for this trip (+{price}).",
+    "guideOptionalFee": "(+{price})",
+    "hearAboutUs": "How did you hear about us?",
+    "hearAboutUsPlaceholder": "Select an option",
+    "hearAbout_instagram": "Instagram",
+    "hearAbout_facebook": "Facebook",
+    "hearAbout_tiktok": "TikTok",
+    "hearAbout_google": "Google Search",
+    "hearAbout_friend": "A friend or family",
+    "hearAbout_other": "Other",
+    "referralText": "Please specify",
+    "referralTextPlaceholder": "e.g. Ahmed's recommendation, a travel blog, etc.",
+    "reviewLocalGuests": "Egyptians ({count})",
+    "reviewForeignerGuests": "Foreigners ({count})",
+    "reviewGuideFee": "Tour guide fee",
+    "reviewHearAboutUs": "Heard about us via",
+    "reviewReferral": "Referral details",
     "validationFailed": "Please fill in all required fields correctly"
   },
   "contact": {
@@ -510,6 +538,16 @@
     "needHelp": "Need help?",
     "contactWhatsApp": "Contact us via WhatsApp"
   },
+  "notFound": {
+    "code": "404",
+    "title": "Page Not Found",
+    "subtitle": "Looks like you've drifted off course",
+    "description": "The page you're looking for doesn't exist or may have been moved. Let's get you back to smooth waters.",
+    "backToHome": "Back to Home",
+    "exploreTrips": "Explore trips",
+    "needHelp": "Need help?",
+    "contactWhatsApp": "Contact us via WhatsApp"
+  },
   "common": {
     "loading": "Loading...",
     "required": "*"
@@ -527,6 +565,8 @@
     "companyNameRequired": "Company name is required and must be at least 2 characters",
     "phoneRequired": "Phone number is required",
     "emailInvalid": "Invalid email address",
-    "messageMin": "Please enter inquiry details (at least 10 characters)"
+    "messageMin": "Please enter inquiry details (at least 10 characters)",
+    "hearAboutUsRequired": "Please tell us how you heard about us",
+    "referralRequired": "Please provide more details"
   }
 }

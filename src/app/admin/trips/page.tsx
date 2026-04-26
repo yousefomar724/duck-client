@@ -224,7 +224,8 @@ export default function AdminTripsPage() {
                   <TableHead className="text-right">الاسم</TableHead>
                   <TableHead className="text-right">المورد</TableHead>
                   <TableHead className="text-right">المرشد</TableHead>
-                  <TableHead className="text-right">السعر</TableHead>
+                  <TableHead className="text-right">سعر المصريين</TableHead>
+                  <TableHead className="text-right">سعر الأجانب</TableHead>
                   <TableHead className="text-right">التاريخ</TableHead>
                   <TableHead className="text-right">الأشخاص</TableHead>
                   <TableHead className="text-right">المدة</TableHead>
@@ -261,10 +262,33 @@ export default function AdminTripsPage() {
                       </TableCell>
                       <TableCell>{getSupplierName(supplier)}</TableCell>
                       <TableCell className="text-text-muted">
-                        {trip.tour_guide?.name || "-"}
+                        <div className="flex flex-col">
+                          <span>{trip.tour_guide?.name || "-"}</span>
+                          {trip.guide_mandatory ? (
+                            <span className="text-xs text-duck-cyan">
+                              إلزامي
+                              {(trip.guide_price ?? 0) > 0
+                                ? ` (+${formatCurrency(trip.guide_price, trip.currency)})`
+                                : ""}
+                            </span>
+                          ) : (trip.guide_price ?? 0) > 0 ? (
+                            <span className="text-xs text-text-muted">
+                              اختياري +
+                              {formatCurrency(trip.guide_price, trip.currency)}
+                            </span>
+                          ) : null}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {formatCurrency(trip.price, trip.currency)}
+                      </TableCell>
+                      <TableCell>
+                        {(trip.foreigner_price ?? 0) > 0
+                          ? formatCurrency(
+                              trip.foreigner_price,
+                              trip.currency,
+                            )
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-text-muted">
                         {formatDate(trip.from)}

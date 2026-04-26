@@ -73,14 +73,37 @@ const RESOURCE_TYPES = [
   "sup",
 ] as const satisfies readonly ResourceType[]
 
+type GuestMix = "local" | "foreigner" | "mixed"
+type HearAboutUs =
+  | "instagram"
+  | "facebook"
+  | "tiktok"
+  | "google"
+  | "friend"
+  | "other"
+
+const HEAR_ABOUT_OPTIONS: readonly HearAboutUs[] = [
+  "instagram",
+  "facebook",
+  "tiktok",
+  "google",
+  "friend",
+  "other",
+] as const
+
 type ContactFormValues = {
   full_name: string
   phone: string
   booking_date: Date
   resource_type: ResourceType
   guests: number
+  guest_mix: GuestMix
+  local_guests: number
+  foreigner_guests: number
   duration: number
   wants_guide: boolean
+  hear_about_us: HearAboutUs | ""
+  referral_text: string
 }
 
 function getLocalizedText(value: any, locale: string, fallback = ""): string {
@@ -142,11 +165,30 @@ function BookPageContent() {
           .number({ invalid_type_error: tv("numberInvalid") })
           .int()
           .min(1, tv("minOneGuest")),
+        guest_mix: z.enum(["local", "foreigner", "mixed"]),
+        local_guests: z.coerce
+          .number({ invalid_type_error: tv("numberInvalid") })
+          .int()
+          .min(0),
+        foreigner_guests: z.coerce
+          .number({ invalid_type_error: tv("numberInvalid") })
+          .int()
+          .min(0),
         duration: z.coerce
           .number({ invalid_type_error: tv("numberInvalid") })
           .int()
           .min(1, tv("minOne")),
         wants_guide: z.boolean(),
+        hear_about_us: z.enum([
+          "",
+          "instagram",
+          "facebook",
+          "tiktok",
+          "google",
+          "friend",
+          "other",
+        ]),
+        referral_text: z.string(),
       }),
     [tv],
   )
@@ -161,8 +203,43 @@ function BookPageContent() {
             path: ["guests"],
           })
         }
+        if (data.guest_mix === "mixed") {
+          const sum = data.local_guests + data.foreigner_guests
+          if (sum !== data.guests) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t("guestMixSumError", { total: data.guests }),
+              path: ["local_guests"],
+            })
+          }
+          if (data.local_guests < 1 && data.foreigner_guests < 1) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: tv("minOneGuest"),
+              path: ["local_guests"],
+            })
+          }
+        }
+        if (!data.hear_about_us) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: tv("hearAboutUsRequired"),
+            path: ["hear_about_us"],
+          })
+        }
+        if (
+          (data.hear_about_us === "friend" ||
+            data.hear_about_us === "other") &&
+          data.referral_text.trim().length === 0
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: tv("referralRequired"),
+            path: ["referral_text"],
+          })
+        }
       }),
-    [selectedTrip, contactSchema, t],
+    [selectedTrip, contactSchema, t, tv],
   )
 
   // Fetch trips
@@ -201,16 +278,35 @@ function BookPageContent() {
       booking_date: defaultTomorrow,
       resource_type: "kayak",
       guests: 1,
+      guest_mix: "local",
+      local_guests: 1,
+      foreigner_guests: 0,
       duration: 1,
       wants_guide: false,
+      hear_about_us: "",
+      referral_text: "",
     },
   })
 
   useEffect(() => {
-    if (!selectedTrip?.is_tour) {
+    if (!selectedTrip) return
+    // Guide is only opt-in when the trip has an optional paid guide (non-mandatory, price > 0)
+    // OR for legacy tours without a guide_price. In all other cases we reset to false.
+    const hasOptionalGuide =
+      !selectedTrip.guide_mandatory &&
+      ((selectedTrip.guide_price ?? 0) > 0 ||
+        (selectedTrip.is_tour === true &&
+          (selectedTrip.guide_price ?? 0) === 0))
+    if (!hasOptionalGuide) {
       form.setValue("wants_guide", false)
     }
-  }, [selectedTrip?.is_tour, form])
+  }, [
+    selectedTrip?.guide_mandatory,
+    selectedTrip?.guide_price,
+    selectedTrip?.is_tour,
+    selectedTrip,
+    form,
+  ])
 
   // --- FIX: Avoid calling setState synchronously in effect ---
   // Move logic for guestsMode ("preset"/"custom") determination and guest form value capping
@@ -251,6 +347,18 @@ function BookPageContent() {
     name: "resource_type",
   })
   const watchedGuests = useWatch({ control: form.control, name: "guests" })
+  const watchedGuestMix = useWatch({
+    control: form.control,
+    name: "guest_mix",
+  })
+  const watchedLocalGuests = useWatch({
+    control: form.control,
+    name: "local_guests",
+  })
+  const watchedForeignerGuests = useWatch({
+    control: form.control,
+    name: "foreigner_guests",
+  })
   const watchedDuration = useWatch({ control: form.control, name: "duration" })
   const watchedFullName = useWatch({ control: form.control, name: "full_name" })
   const watchedPhone = useWatch({ control: form.control, name: "phone" })
@@ -258,6 +366,25 @@ function BookPageContent() {
     control: form.control,
     name: "wants_guide",
   })
+  const watchedHearAboutUs = useWatch({
+    control: form.control,
+    name: "hear_about_us",
+  })
+  const watchedReferralText = useWatch({
+    control: form.control,
+    name: "referral_text",
+  })
+
+  // When guest_mix changes, keep local/foreigner in sync with total.
+  useEffect(() => {
+    if (watchedGuestMix === "local") {
+      form.setValue("local_guests", Number(watchedGuests) || 0)
+      form.setValue("foreigner_guests", 0)
+    } else if (watchedGuestMix === "foreigner") {
+      form.setValue("foreigner_guests", Number(watchedGuests) || 0)
+      form.setValue("local_guests", 0)
+    }
+  }, [watchedGuestMix, watchedGuests, form])
 
   const handleUseMyData = () => {
     if (!user) return
@@ -271,24 +398,43 @@ function BookPageContent() {
 
   const handleSubmit = form.handleSubmit(async (values) => {
     if (!selectedTrip) return
-    if (!user) {
-      const returnUrl = encodeURIComponent("/book?trip=" + selectedTrip.id)
-      window.location.assign("/login?returnUrl=" + returnUrl)
-      return
-    }
     const phoneNumber = localEgyptMobileToE164(values.phone)
     setSubmitLoading(true)
     const booking_date = formatISO(startOfDay(values.booking_date))
+
+    let localGuests = 0
+    let foreignerGuests = 0
+    if (values.guest_mix === "local") {
+      localGuests = values.guests
+    } else if (values.guest_mix === "foreigner") {
+      foreignerGuests = values.guests
+    } else {
+      localGuests = values.local_guests
+      foreignerGuests = values.foreigner_guests
+    }
+    const totalGuests = localGuests + foreignerGuests
+
+    const hasOptionalGuide =
+      !selectedTrip.guide_mandatory &&
+      ((selectedTrip.guide_price ?? 0) > 0 ||
+        (selectedTrip.is_tour === true &&
+          (selectedTrip.guide_price ?? 0) === 0))
+    const needsReferral =
+      values.hear_about_us === "friend" || values.hear_about_us === "other"
+
     const { data, error } = await bookingsApi.createBooking({
       trip_id: selectedTrip.id,
       full_name: values.full_name.trim(),
       phone_number: phoneNumber,
       booking_date,
-      guests: values.guests,
       resource_type: values.resource_type,
-      quantity: values.guests,
+      quantity: totalGuests,
+      local_guests: localGuests,
+      foreigner_guests: foreignerGuests,
       duration: values.duration,
-      wants_guide: selectedTrip.is_tour ? values.wants_guide : false,
+      wants_guide: hasOptionalGuide ? values.wants_guide : false,
+      hear_about_us: values.hear_about_us || "",
+      referral_text: needsReferral ? values.referral_text.trim() : "",
     })
     setSubmitLoading(false)
     if (error) {
@@ -728,75 +874,263 @@ function BookPageContent() {
                     }}
                   />
 
-                  {selectedTrip?.is_tour && (
-                    <>
+                  {/* Guest mix: locals / foreigners split */}
+                  <FormField
+                    control={form.control}
+                    name="guest_mix"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-text-dark font-medium">
+                          {t("guestsMixLabel")}{" "}
+                          <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select
+                          dir={locale === "ar" ? "rtl" : "ltr"}
+                          value={field.value}
+                          onValueChange={(val) =>
+                            field.onChange(val as GuestMix)
+                          }
+                        >
+                          <FormControl>
+                            <SelectTrigger className="rounded-lg border-black/20 max-w-full!">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="local">
+                              {t("guestsMixLocal")}
+                            </SelectItem>
+                            <SelectItem value="foreigner">
+                              {t("guestsMixForeigner")}
+                            </SelectItem>
+                            <SelectItem value="mixed">
+                              {t("guestsMixMixed")}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {watchedGuestMix === "mixed" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="duration"
+                        name="local_guests"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-text-dark font-medium">
-                              {t("duration")}{" "}
-                              <span className="text-red-500">*</span>
+                              {t("localGuestsLabel")}
                             </FormLabel>
-                            <Select
-                              dir={locale === "ar" ? "rtl" : "ltr"}
-                              value={String(field.value)}
-                              onValueChange={(val) =>
-                                field.onChange(Number(val))
-                              }
-                            >
-                              <FormControl>
-                                <SelectTrigger className="rounded-lg border-black/20 max-w-full!">
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {[1, 2, 3, 4, 5, 6].map((h) => (
-                                  <SelectItem
-                                    key={h}
-                                    value={String(h)}
-                                    className="py-3"
-                                  >
-                                    {durationLabels[h]}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                inputMode="numeric"
+                                min={0}
+                                className="rounded-lg border-black/20"
+                                value={field.value}
+                                onChange={(e) => {
+                                  const v = e.target.value
+                                  field.onChange(v === "" ? 0 : Number(v))
+                                }}
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
                         control={form.control}
-                        name="wants_guide"
+                        name="foreigner_guests"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-start gap-3 space-y-0 rounded-xl border border-duck-cyan/20 bg-duck-cyan/5 p-4">
+                          <FormItem>
+                            <FormLabel className="text-text-dark font-medium">
+                              {t("foreignerGuestsLabel")}
+                            </FormLabel>
                             <FormControl>
-                              <Checkbox
-                                id="wants_guide"
-                                checked={field.value}
-                                onCheckedChange={(c) =>
-                                  field.onChange(c === true)
-                                }
-                                className="mt-0.5"
+                              <Input
+                                type="number"
+                                inputMode="numeric"
+                                min={0}
+                                className="rounded-lg border-black/20"
+                                value={field.value}
+                                onChange={(e) => {
+                                  const v = e.target.value
+                                  field.onChange(v === "" ? 0 : Number(v))
+                                }}
                               />
                             </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel
-                                htmlFor="wants_guide"
-                                className="cursor-pointer font-medium text-text-dark"
-                              >
-                                {t("wantsGuide")}
-                              </FormLabel>
-                              <p className="text-sm font-normal text-text-muted">
-                                {t("guideRecommendation")}
-                              </p>
-                            </div>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </>
+                      <p className="text-xs text-text-muted sm:col-span-2">
+                        {t("guestMixSumHint", {
+                          total: Number(watchedGuests) || 0,
+                          sum:
+                            (Number(watchedLocalGuests) || 0) +
+                            (Number(watchedForeignerGuests) || 0),
+                        })}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedTrip?.is_tour && (
+                    <FormField
+                      control={form.control}
+                      name="duration"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-text-dark font-medium">
+                            {t("duration")}{" "}
+                            <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <Select
+                            dir={locale === "ar" ? "rtl" : "ltr"}
+                            value={String(field.value)}
+                            onValueChange={(val) =>
+                              field.onChange(Number(val))
+                            }
+                          >
+                            <FormControl>
+                              <SelectTrigger className="rounded-lg border-black/20 max-w-full!">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {[1, 2, 3, 4, 5, 6].map((h) => (
+                                <SelectItem
+                                  key={h}
+                                  value={String(h)}
+                                  className="py-3"
+                                >
+                                  {durationLabels[h]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  {selectedTrip?.guide_mandatory ? (
+                    <div className="rounded-xl border border-duck-cyan/20 bg-duck-cyan/5 p-4 text-sm text-text-dark">
+                      <p className="font-medium">
+                        {t("guideMandatoryBanner", {
+                          price: formatCurrency(
+                            selectedTrip.guide_price ?? 0,
+                            selectedTrip.currency,
+                          ),
+                        })}
+                      </p>
+                      <p className="text-text-muted mt-1">
+                        {t("guideRecommendation")}
+                      </p>
+                    </div>
+                  ) : (selectedTrip?.guide_price ?? 0) > 0 ||
+                    selectedTrip?.is_tour ? (
+                    <FormField
+                      control={form.control}
+                      name="wants_guide"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start gap-3 space-y-0 rounded-xl border border-duck-cyan/20 bg-duck-cyan/5 p-4">
+                          <FormControl>
+                            <Checkbox
+                              id="wants_guide"
+                              checked={field.value}
+                              onCheckedChange={(c) =>
+                                field.onChange(c === true)
+                              }
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel
+                              htmlFor="wants_guide"
+                              className="cursor-pointer font-medium text-text-dark"
+                            >
+                              {t("wantsGuide")}
+                              {selectedTrip && (selectedTrip.guide_price ?? 0) > 0 ? (
+                                <span className="text-duck-cyan ms-2">
+                                  {t("guideOptionalFee", {
+                                    price: formatCurrency(
+                                      selectedTrip.guide_price ?? 0,
+                                      selectedTrip.currency,
+                                    ),
+                                  })}
+                                </span>
+                              ) : null}
+                            </FormLabel>
+                            <p className="text-sm font-normal text-text-muted">
+                              {t("guideRecommendation")}
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  ) : null}
+
+                  {/* How did you hear about us */}
+                  <FormField
+                    control={form.control}
+                    name="hear_about_us"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-text-dark font-medium">
+                          {t("hearAboutUs")}{" "}
+                          <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select
+                          dir={locale === "ar" ? "rtl" : "ltr"}
+                          value={field.value || undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val as HearAboutUs)
+                          }
+                        >
+                          <FormControl>
+                            <SelectTrigger className="rounded-lg border-black/20 max-w-full!">
+                              <SelectValue
+                                placeholder={t("hearAboutUsPlaceholder")}
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {HEAR_ABOUT_OPTIONS.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {t(`hearAbout_${opt}`)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {(watchedHearAboutUs === "friend" ||
+                    watchedHearAboutUs === "other") && (
+                    <FormField
+                      control={form.control}
+                      name="referral_text"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-text-dark font-medium">
+                            {t("referralText")}{" "}
+                            <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t("referralTextPlaceholder")}
+                              className="rounded-lg border-black/20 focus-visible:ring-duck-cyan focus-visible:border-duck-cyan"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
 
                   <div className="flex gap-4">
@@ -891,32 +1225,94 @@ function BookPageContent() {
                       }
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-muted">{t("reviewGuests")}</span>
-                    <span>
-                      {t("reviewGuestsValue", {
-                        guests: watchedGuests,
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-muted">{t("reviewTotal")}</span>
-                    <span className="font-bold text-duck-cyan">
-                      {formatCurrency(
-                        selectedTrip.is_tour
-                          ? selectedTrip.price *
-                              (Number(watchedGuests) || 1) *
-                              (Number(watchedDuration) || 1)
-                          : selectedTrip.price * (Number(watchedGuests) || 1),
-                        selectedTrip.currency,
-                      )}
-                    </span>
-                  </div>
-                  {isNonArabicLocale ? (
-                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                      {t("priceEgyptiansOnlyNote")}
-                    </p>
-                  ) : null}
+                  {(() => {
+                    const localCount =
+                      watchedGuestMix === "local"
+                        ? Number(watchedGuests) || 0
+                        : watchedGuestMix === "mixed"
+                          ? Number(watchedLocalGuests) || 0
+                          : 0
+                    const foreignerCount =
+                      watchedGuestMix === "foreigner"
+                        ? Number(watchedGuests) || 0
+                        : watchedGuestMix === "mixed"
+                          ? Number(watchedForeignerGuests) || 0
+                          : 0
+                    const duration = selectedTrip.is_tour
+                      ? Number(watchedDuration) || 1
+                      : 1
+                    const localTotal =
+                      selectedTrip.price * localCount * duration
+                    const foreignerTotal =
+                      (selectedTrip.foreigner_price ?? 0) *
+                      foreignerCount *
+                      duration
+                    const hasOptionalGuideCheck =
+                      !selectedTrip.guide_mandatory &&
+                      ((selectedTrip.guide_price ?? 0) > 0 ||
+                        (selectedTrip.is_tour === true &&
+                          (selectedTrip.guide_price ?? 0) === 0))
+                    const addsGuideFee =
+                      selectedTrip.guide_mandatory ||
+                      (hasOptionalGuideCheck && watchedWantsGuide)
+                    const guideFee = addsGuideFee
+                      ? selectedTrip.guide_price ?? 0
+                      : 0
+                    const total = localTotal + foreignerTotal + guideFee
+                    return (
+                      <>
+                        {localCount > 0 ? (
+                          <div className="flex justify-between">
+                            <span className="text-text-muted">
+                              {t("reviewLocalGuests", { count: localCount })}
+                            </span>
+                            <span>
+                              {formatCurrency(
+                                localTotal,
+                                selectedTrip.currency,
+                              )}
+                            </span>
+                          </div>
+                        ) : null}
+                        {foreignerCount > 0 ? (
+                          <div className="flex justify-between">
+                            <span className="text-text-muted">
+                              {t("reviewForeignerGuests", {
+                                count: foreignerCount,
+                              })}
+                            </span>
+                            <span>
+                              {formatCurrency(
+                                foreignerTotal,
+                                selectedTrip.currency,
+                              )}
+                            </span>
+                          </div>
+                        ) : null}
+                        {guideFee > 0 ? (
+                          <div className="flex justify-between">
+                            <span className="text-text-muted">
+                              {t("reviewGuideFee")}
+                            </span>
+                            <span>
+                              {formatCurrency(
+                                guideFee,
+                                selectedTrip.currency,
+                              )}
+                            </span>
+                          </div>
+                        ) : null}
+                        <div className="flex justify-between border-t pt-3">
+                          <span className="text-text-muted">
+                            {t("reviewTotal")}
+                          </span>
+                          <span className="font-bold text-duck-cyan">
+                            {formatCurrency(total, selectedTrip.currency)}
+                          </span>
+                        </div>
+                      </>
+                    )
+                  })()}
                   <div className="flex justify-between">
                     <span className="text-text-muted">{t("reviewName")}</span>
                     <span>{watchedFullName}</span>
@@ -929,16 +1325,37 @@ function BookPageContent() {
                         : "—"}
                     </span>
                   </div>
-                  {selectedTrip.is_tour ? (
+                  {selectedTrip.guide_mandatory ||
+                  (!selectedTrip.guide_mandatory &&
+                    ((selectedTrip.guide_price ?? 0) > 0 ||
+                      selectedTrip.is_tour)) ? (
                     <div className="flex justify-between">
                       <span className="text-text-muted">
                         {t("reviewWantsGuide")}
                       </span>
                       <span>
-                        {watchedWantsGuide
+                        {selectedTrip.guide_mandatory || watchedWantsGuide
                           ? t("reviewWantsGuideYes")
                           : t("reviewWantsGuideNo")}
                       </span>
+                    </div>
+                  ) : null}
+                  {watchedHearAboutUs ? (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">
+                        {t("reviewHearAboutUs")}
+                      </span>
+                      <span>{t(`hearAbout_${watchedHearAboutUs}`)}</span>
+                    </div>
+                  ) : null}
+                  {(watchedHearAboutUs === "friend" ||
+                    watchedHearAboutUs === "other") &&
+                  watchedReferralText ? (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">
+                        {t("reviewReferral")}
+                      </span>
+                      <span className="text-end">{watchedReferralText}</span>
                     </div>
                   ) : null}
                 </div>
