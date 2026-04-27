@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogOut, Package, User } from "lucide-react"
+import { Home, LogOut, Package } from "lucide-react"
 import { useAuth } from "@/lib/stores/auth-store"
 import {
   Sidebar,
@@ -18,12 +18,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Logo from "./logo"
 import { supplierNavItems } from "@/lib/constants"
@@ -57,7 +51,7 @@ export default function SupplierSidebar() {
       user.username
     : "مزود خدمة"
   const displayName = (supplierId ? supplierName : "") || fallbackDisplayName
-  const secondaryText = user?.username || "مزود خدمة"
+  const email = user?.email?.trim() || ""
   const avatarSrc = useMemo(
     () => resolveImageUrl(supplierId ? supplierIcon : "") ?? undefined,
     [supplierIcon, supplierId],
@@ -104,8 +98,29 @@ export default function SupplierSidebar() {
   return (
     <Sidebar side={locale === "ar" ? "right" : "left"} collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center justify-center py-4">
-          <Logo width={100} height={50} />
+        <div className="flex flex-col items-stretch gap-3 px-2">
+          <div className="flex justify-center py-2">
+            <Logo width={100} height={50} />
+          </div>
+          <div className="group-data-[collapsible=icon]:hidden flex w-full min-w-0 items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-2 py-2.5">
+            <Avatar className="h-9 w-9 shrink-0">
+              <AvatarImage src={avatarSrc} alt={displayName} />
+              <AvatarFallback className="bg-duck-cyan text-sm text-white">
+                {displayName.charAt(0) || "م"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1 text-right">
+              <p className="truncate text-sm font-medium leading-tight">
+                {displayName}
+              </p>
+              <p
+                className="truncate text-xs text-text-muted"
+                title={email || undefined}
+              >
+                {email || "—"}
+              </p>
+            </div>
+          </div>
         </div>
       </SidebarHeader>
 
@@ -171,39 +186,16 @@ export default function SupplierSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu dir="rtl">
-              <DropdownMenuTrigger
-                asChild
-                className="h-full! bg-gray-100 cursor-pointer"
-              >
-                <SidebarMenuButton className="w-full">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={avatarSrc} alt={displayName} />
-                    <AvatarFallback className="bg-duck-cyan text-white">
-                      {displayName.charAt(0) || "م"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col items-start text-right">
-                    <span className="text-sm font-medium">{displayName}</span>
-                    <span className="text-xs text-text-muted">
-                      {secondaryText}
-                    </span>
-                  </div>
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="top" className="w-56">
-                <DropdownMenuItem asChild>
-                  <Link href="/supplier/profile" onClick={handleNavClick}>
-                    <User className="w-4 h-4 ml-2" />
-                    <span>الملف الشخصي</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => logout()}>
-                  <LogOut className="w-4 h-4 ml-2" />
-                  <span>تسجيل الخروج</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <SidebarMenuButton
+              className="w-full"
+              onClick={() => {
+                logout()
+                if (isMobile) setOpenMobile(false)
+              }}
+            >
+              <LogOut className="h-4 w-4" />
+              <span>تسجيل الخروج</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

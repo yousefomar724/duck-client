@@ -195,7 +195,7 @@ export interface CreateBookingRequest {
   /** User preference for a tour guide (ignored when guide_mandatory). */
   wants_guide?: boolean
   /** Channel the user heard about us from (e.g. instagram, facebook, friend, other). */
-  hear_about_us: string
+  hear_about_us?: string
   /** Free-text referral detail; required when hear_about_us is "friend" or "other". */
   referral_text?: string
 }

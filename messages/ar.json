@@ -459,6 +459,7 @@
     "guideMandatoryBanner": "المرشد إلزامي لهذه الرحلة (+{price}).",
     "guideOptionalFee": "(+{price})",
     "hearAboutUs": "كيف سمعت عنا؟",
+    "hearAboutUsOptional": "(اختياري)",
     "hearAboutUsPlaceholder": "اختر خياراً",
     "hearAbout_instagram": "إنستغرام",
     "hearAbout_facebook": "فيسبوك",
@@ -628,7 +629,6 @@
     "phoneRequired": "رقم الهاتف مطلوب",
     "emailInvalid": "البريد الإلكتروني غير صالح",
     "messageMin": "يرجى إدخال تفاصيل الاستفسار (١٠ أحرف على الأقل)",
-    "hearAboutUsRequired": "أخبرنا كيف سمعت عنا",
     "referralRequired": "يرجى تقديم مزيد من التفاصيل"
   }
 }

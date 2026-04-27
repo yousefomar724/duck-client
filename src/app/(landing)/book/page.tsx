@@ -226,16 +226,8 @@ function BookPageContent() {
             })
           }
         }
-        if (!data.hear_about_us) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: tv("hearAboutUsRequired"),
-            path: ["hear_about_us"],
-          })
-        }
         if (
-          (data.hear_about_us === "friend" ||
-            data.hear_about_us === "other") &&
+          (data.hear_about_us === "friend" || data.hear_about_us === "other") &&
           data.referral_text.trim().length === 0
         ) {
           ctx.addIssue({
@@ -507,7 +499,7 @@ function BookPageContent() {
   return (
     <>
       {/* Content */}
-      <section className="bg-off-white pt-24 md:pt-32 pb-20 px-4 md:px-10">
+      <section className="bg-duck-cyan/80 pt-24 md:pt-32 pb-20 px-4 md:px-10">
         <div className="max-w-3xl mx-auto">
           <div
             className="bg-white rounded-3xl shadow-lg p-8 md:p-10"
@@ -540,7 +532,9 @@ function BookPageContent() {
                   >
                     {step > s ? <Check className="w-4 h-4" /> : s}
                   </span>
-                  {s < 3 && <span className="w-4 sm:w-6 h-0.5 bg-duck-cyan/20" />}
+                  {s < 3 && (
+                    <span className="w-4 sm:w-6 h-0.5 bg-duck-cyan/20" />
+                  )}
                 </div>
               ))}
             </div>
@@ -1028,9 +1022,7 @@ function BookPageContent() {
                           <Select
                             dir={locale === "ar" ? "rtl" : "ltr"}
                             value={String(field.value)}
-                            onValueChange={(val) =>
-                              field.onChange(Number(val))
-                            }
+                            onValueChange={(val) => field.onChange(Number(val))}
                           >
                             <FormControl>
                               <SelectTrigger className="rounded-lg border-black/20 max-w-full!">
@@ -1092,7 +1084,8 @@ function BookPageContent() {
                               className="cursor-pointer font-medium text-text-dark"
                             >
                               {t("wantsGuide")}
-                              {selectedTrip && (selectedTrip.guide_price ?? 0) > 0 ? (
+                              {selectedTrip &&
+                              (selectedTrip.guide_price ?? 0) > 0 ? (
                                 <span className="text-duck-cyan ms-2">
                                   {t("guideOptionalFee", {
                                     price: formatCurrency(
@@ -1120,7 +1113,9 @@ function BookPageContent() {
                       <FormItem>
                         <FormLabel className="text-text-dark font-medium">
                           {t("hearAboutUs")}{" "}
-                          <span className="text-red-500">*</span>
+                          <span className="text-text-muted font-normal">
+                            {t("hearAboutUsOptional")}
+                          </span>
                         </FormLabel>
                         <Select
                           dir={locale === "ar" ? "rtl" : "ltr"}
@@ -1295,7 +1290,7 @@ function BookPageContent() {
                       selectedTrip.guide_mandatory ||
                       (hasOptionalGuideCheck && watchedWantsGuide)
                     const guideFee = addsGuideFee
-                      ? selectedTrip.guide_price ?? 0
+                      ? (selectedTrip.guide_price ?? 0)
                       : 0
                     const total = localTotal + foreignerTotal + guideFee
                     return (
@@ -1334,10 +1329,7 @@ function BookPageContent() {
                               {t("reviewGuideFee")}
                             </span>
                             <span>
-                              {formatCurrency(
-                                guideFee,
-                                selectedTrip.currency,
-                              )}
+                              {formatCurrency(guideFee, selectedTrip.currency)}
                             </span>
                           </div>
                         ) : null}

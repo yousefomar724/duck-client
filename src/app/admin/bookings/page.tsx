@@ -476,7 +476,7 @@ export default function AdminBookings() {
                                   <div className="text-text-muted text-xs mb-0.5">
                                     معرف الجلسة
                                   </div>
-                                  <div className="font-mono break-all">
+                                  <div className="font-mono break-all whitespace-pre-wrap">
                                     {booking.session_id || "—"}
                                   </div>
                                 </div>
@@ -484,7 +484,7 @@ export default function AdminBookings() {
                                   <div className="text-text-muted text-xs mb-0.5">
                                     رقم الطلب / المرجع
                                   </div>
-                                  <div className="font-mono break-all">
+                                  <div className="font-mono break-all whitespace-pre-wrap">
                                     {[booking.order_id, booking.order_ref]
                                       .filter(Boolean)
                                       .join(" · ") || "—"}

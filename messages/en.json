@@ -459,6 +459,7 @@
     "guideMandatoryBanner": "A tour guide is required for this trip (+{price}).",
     "guideOptionalFee": "(+{price})",
     "hearAboutUs": "How did you hear about us?",
+    "hearAboutUsOptional": "(optional)",
     "hearAboutUsPlaceholder": "Select an option",
     "hearAbout_instagram": "Instagram",
     "hearAbout_facebook": "Facebook",
@@ -628,7 +629,6 @@
     "phoneRequired": "Phone number is required",
     "emailInvalid": "Invalid email address",
     "messageMin": "Please enter inquiry details (at least 10 characters)",
-    "hearAboutUsRequired": "Please tell us how you heard about us",
     "referralRequired": "Please provide more details"
   }
 }
