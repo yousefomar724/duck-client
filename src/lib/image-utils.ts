@@ -1,3 +1,6 @@
+/** Public logo asset for missing images (cards, avatars, placeholders). */
+export const DUCK_LOGO_PLACEHOLDER = "/logo-transparent.png"
+
 /**
  * Resolves image URL from API.
  * - Absolute URLs are returned as-is.

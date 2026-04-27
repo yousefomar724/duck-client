@@ -114,14 +114,14 @@
     "filterHint": "Select an activity to see available locations on the map",
     "viewInteractiveMap": "View Interactive Map",
     "locationsAvailable": "{count} locations available for water sports on the Nile River in Aswan.",
-    "accessLocations": "Locations",
-    "accessLocationsDesc": "Available on the Nile",
-    "accessFlight": "Hour",
-    "accessFlightDesc": "Flight from Cairo",
-    "accessTrain": "Hours",
-    "accessTrainDesc": "By train from Cairo",
-    "accessCar": "Hours",
-    "accessCarDesc": "By car from Luxor"
+    "statDestinationsUnit": "Destinations",
+    "statDestinationsDesc": "Active locations on the map",
+    "statTripsUnit": "Trips & experiences",
+    "statTripsDesc": "Bookable experiences available",
+    "statSuppliersUnit": "Partners",
+    "statSuppliersDesc": "Verified service providers",
+    "statGuidesUnit": "Tour guides",
+    "statGuidesDesc": "Professional guides available"
   },
   "mapPage": {
     "metadata": {
@@ -537,7 +537,12 @@
     "resourceSup": "SUP",
     "colType": "Type",
     "tour": "Tour",
-    "trip": "Trip"
+    "trip": "Trip",
+    "refundPendingNote": "Your refund is being processed by our team. Contact us on WhatsApp if you need an update.",
+    "refundFailedNote": "The refund could not be completed automatically. Please reach out to us on WhatsApp for assistance.",
+    "refundContactWhatsApp": "WhatsApp support",
+    "refundWhatsAppPrefillPending": "Hi, I have a booking awaiting refund. Booking ID: {id}.",
+    "refundWhatsAppPrefillFailed": "Hi, I need help with a failed refund. Booking ID: {id}."
   },
   "bookingSuccess": {
     "title": "Booking Successful!",

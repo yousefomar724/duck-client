@@ -132,12 +132,16 @@ export interface MarkerClickEvent {
   point: { x: number; y: number }
 }
 
+type GestureHandling = "auto" | "cooperative" | "greedy" | "none"
+
 interface MapViewProps {
   locations: WaterActivityLocation[]
   selectedLocation: WaterActivityLocation | null
   onMarkerClick: (event: MarkerClickEvent) => void
   onMapReady?: (map: google.maps.Map) => void
   mapStyle: MapStyle
+  /** "cooperative" lets the page scroll over the map (wheel does not zoom). Default "greedy" for full-page maps. */
+  gestureHandling?: GestureHandling
 }
 
 function MarkerWithClick({
@@ -211,6 +215,7 @@ export default function MapView({
   onMarkerClick,
   onMapReady,
   mapStyle,
+  gestureHandling = "greedy",
 }: MapViewProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ""
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? ""
@@ -244,7 +249,7 @@ export default function MapView({
           mapStyle === "dark" ? ColorScheme.DARK : ColorScheme.LIGHT
         }
         disableDefaultUI
-        gestureHandling="greedy"
+        gestureHandling={gestureHandling}
       >
         <ProjectionUpdater projectionRef={projectionRef} />
         <FitBounds locations={locations} />

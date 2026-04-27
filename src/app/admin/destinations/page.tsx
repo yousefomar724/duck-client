@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { MoreVertical, Pencil, Trash2 } from "lucide-react"
-import Image from "next/image"
+import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import PageHeader from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -421,7 +421,9 @@ export default function AdminDestinations() {
         {destinations.map((destination) => {
           const primaryImage =
             destination.images?.[0] ?? destination.image ?? ""
-          const fullImageUrl = primaryImage ? resolveImageUrl(primaryImage) : ""
+          const resolvedPrimary = primaryImage
+            ? resolveImageUrl(primaryImage)
+            : null
 
           return (
             <Card
@@ -429,23 +431,18 @@ export default function AdminDestinations() {
               className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200 gap-0!"
             >
               <div className="relative h-48 w-full bg-gray-200">
-                {fullImageUrl ? (
-                  <Image
-                    src={fullImageUrl}
-                    alt={
-                      typeof destination.name === "string"
-                        ? destination.name
-                        : (destination.name?.ar ?? "")
-                    }
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-text-muted">
-                    لا توجد صورة
-                  </div>
-                )}
+                <ImageWithLogoFallback
+                  src={resolvedPrimary ?? undefined}
+                  alt={
+                    typeof destination.name === "string"
+                      ? destination.name
+                      : (destination.name?.ar ?? "")
+                  }
+                  fill
+                  className="object-cover"
+                  fallbackClassName="object-contain p-6"
+                  unoptimized
+                />
                 {destination.public_status && (
                   <span className="absolute top-2 end-2 rounded-full bg-duck-navy/80 text-white text-xs px-2 py-0.5">
                     {destination.public_status === "coming-soon"
@@ -637,11 +634,12 @@ export default function AdminDestinations() {
                   <div className="space-y-2">
                     <p className="text-sm font-medium">الصورة الحالية</p>
                     <div className="relative w-32 h-32 rounded border border-gray-300 overflow-hidden bg-gray-100">
-                      <Image
-                        src={resolveImageUrl(formData.image)}
+                      <ImageWithLogoFallback
+                        src={resolveImageUrl(formData.image) ?? undefined}
                         alt="Current destination"
                         fill
                         className="object-cover"
+                        fallbackClassName="object-contain p-3"
                         unoptimized
                       />
                       <button
@@ -677,11 +675,12 @@ export default function AdminDestinations() {
                   <div className="space-y-2">
                     <p className="text-sm font-medium">الصورة المختارة</p>
                     <div className="relative w-32 h-32 rounded border border-gray-300 overflow-hidden bg-gray-100">
-                      <Image
+                      <ImageWithLogoFallback
                         src={imagePreviewUrl}
                         alt="Selected destination"
                         fill
                         className="object-cover"
+                        fallbackClassName="object-contain p-3"
                         unoptimized
                       />
                       <button
@@ -801,11 +800,12 @@ export default function AdminDestinations() {
                       key={`existing-${i}`}
                       className="relative w-20 h-20 rounded border overflow-hidden bg-gray-100"
                     >
-                      <Image
-                        src={resolveImageUrl(url)}
+                      <ImageWithLogoFallback
+                        src={resolveImageUrl(url) ?? undefined}
                         alt=""
                         fill
                         className="object-cover"
+                        fallbackClassName="object-contain p-2"
                         unoptimized
                       />
                       <button
@@ -822,11 +822,12 @@ export default function AdminDestinations() {
                       key={`new-${i}`}
                       className="relative w-20 h-20 rounded border overflow-hidden bg-gray-100"
                     >
-                      <Image
+                      <ImageWithLogoFallback
                         src={url}
                         alt=""
                         fill
                         className="object-cover"
+                        fallbackClassName="object-contain p-2"
                         unoptimized
                       />
                       <button

@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient, ApiResponse } from './client';
-import type { Booking, CreateBookingRequest } from '@/lib/types';
+import type { Booking, BookingStatus, CreateBookingRequest } from '@/lib/types';
 
 export interface BookingResponse {
   payment_url: string;
@@ -41,7 +41,10 @@ export async function cancelBooking(
 
 export interface ProcessRefundResponse {
   message: string;
-  booking_status: string;
+  booking_status: Extract<
+    BookingStatus,
+    'REFUNDED' | 'REFUND_FAILED'
+  >;
   refund: unknown;
 }
 
@@ -53,4 +56,18 @@ export async function processRefund(
     method: 'POST',
     body: JSON.stringify({ reason: reason ?? '' }),
   });
+}
+
+/** Admin-only: cancel booking (e.g. guest, weather) → REFUND_PENDING; no 24h rule */
+export async function adminCancelBooking(
+  id: number,
+  reason?: string,
+): Promise<ApiResponse<{ message: string; booking: Booking }>> {
+  return apiClient<{ message: string; booking: Booking }>(
+    `/bookings/${id}/admin-cancel`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason?.trim() ?? '' }),
+    },
+  );
 }

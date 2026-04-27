@@ -3,12 +3,15 @@
 
 import useEmblaCarousel from "embla-carousel-react"
 import { useCallback, useState, useEffect, useRef } from "react"
-import Image from "next/image"
+import {
+  ImageWithLogoFallback,
+  ImgWithLogoFallback,
+} from "@/components/shared/image-with-logo-fallback"
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { useTranslations, useLocale } from "next-intl"
 import { getDestinations } from "@/lib/api/destinations"
 import type { Destination } from "@/lib/types"
-import { resolveImageUrl } from "@/lib/image-utils"
+import { DUCK_LOGO_PLACEHOLDER, resolveImageUrl } from "@/lib/image-utils"
 import {
   Dialog,
   DialogContent,
@@ -149,7 +152,7 @@ export default function ResortsSection() {
     }
   }, [selectedDestination, dialogCarouselApi])
 
-  const placeholderImage = "/logo-transparent.png"
+  const placeholderImage = DUCK_LOGO_PLACEHOLDER
   const selectedDestinationName = getLocalizedText(
     selectedDestination?.name,
     t("defaultName"),
@@ -214,9 +217,13 @@ export default function ResortsSection() {
                 const destinationDescription = getLocalizedText(
                   destination.description,
                 )
-                const imageUrl =
-                  resolveImageUrl(destination.image) ?? placeholderImage
+                const resolvedMain = resolveImageUrl(destination.image)
+                const imageUrl = resolvedMain ?? placeholderImage
+                const isPlaceholder = !resolvedMain
                 const isExternal = imageUrl.startsWith("http")
+                const imageObjectClass = isPlaceholder
+                  ? "object-contain p-10 sm:p-12"
+                  : "object-cover"
                 return (
                   <div
                     key={destination.id}
@@ -224,18 +231,20 @@ export default function ResortsSection() {
                     className="flex-[0_0_280px] md:flex-[0_0_300px] min-w-0 relative h-[500px] rounded-2xl overflow-hidden group cursor-pointer first:ms-6"
                   >
                     {isExternal ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- API image URL may be external
-                      <img
+                      <ImgWithLogoFallback
                         src={imageUrl}
                         alt={destinationName}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className={`absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-105 ${imageObjectClass}`}
+                        fallbackClassName="absolute inset-0 w-full h-full object-contain p-10 sm:p-12 transition-transform duration-500 group-hover:scale-105 bg-gray-900/20"
                       />
                     ) : (
-                      <Image
+                      <ImageWithLogoFallback
                         src={imageUrl}
                         alt={destinationName}
                         fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        className={`transition-transform duration-500 group-hover:scale-105 ${imageObjectClass}`}
+                        fallbackClassName="object-contain p-10 sm:p-12"
+                        unoptimized={imageUrl.startsWith("http")}
                       />
                     )}
 
@@ -332,11 +341,12 @@ export default function ResortsSection() {
                     {displayImages.map((imageUrl, i) => (
                       <CarouselItem key={i} className="h-full ps-0">
                         <div className="relative h-full w-full">
-                          <Image
+                          <ImageWithLogoFallback
                             src={imageUrl}
                             alt={`${selectedDestinationName} - ${t("imageAlt", { index: i + 1 })}`}
                             fill
                             className="object-cover"
+                            fallbackClassName="object-contain p-6 bg-duck-navy-deep/50"
                             unoptimized={imageUrl.startsWith("http")}
                           />
                         </div>
@@ -477,11 +487,12 @@ export default function ResortsSection() {
                   {displayImages.map((imageUrl, i) => (
                     <CarouselItem key={i} className="h-full ps-0">
                       <div className="relative h-full w-full">
-                        <Image
+                        <ImageWithLogoFallback
                           src={imageUrl}
                           alt={`${selectedDestinationName} - ${t("imageAlt", { index: i + 1 })}`}
                           fill
                           className="object-cover"
+                          fallbackClassName="object-contain p-6 bg-duck-navy-deep/50"
                           unoptimized={imageUrl.startsWith("http")}
                         />
                       </div>

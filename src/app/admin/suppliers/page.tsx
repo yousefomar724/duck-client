@@ -16,7 +16,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage } from "@/components/ui/avatar"
+import { DUCK_LOGO_PLACEHOLDER, resolveImageUrl } from "@/lib/image-utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +37,22 @@ function getSupplierName(supplier: Supplier): string {
   return typeof supplier.name === "string"
     ? supplier.name
     : supplier.name?.ar || supplier.name?.en || "-"
+}
+
+function SupplierTableAvatar({ supplier }: { supplier: Supplier }) {
+  const [failed, setFailed] = useState(false)
+  const resolved = supplier.icon ? resolveImageUrl(supplier.icon) : null
+  const showLogo = !resolved || failed
+  return (
+    <Avatar className="h-9 w-9">
+      <AvatarImage
+        src={showLogo ? DUCK_LOGO_PLACEHOLDER : resolved}
+        alt=""
+        className={showLogo ? "object-contain p-1.5" : "object-cover"}
+        onError={() => setFailed(true)}
+      />
+    </Avatar>
+  )
 }
 
 function getSupplierAbout(supplier: Supplier): string {
@@ -204,19 +221,7 @@ export default function AdminSuppliersPage() {
                           className="hover:bg-duck-cyan/5 transition-colors"
                         >
                           <TableCell>
-                            <Avatar className="h-9 w-9">
-                              {supplier.icon ? (
-                                <img
-                                  src={supplier.icon}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <AvatarFallback className="bg-duck-cyan/20 text-duck-cyan">
-                                  {getSupplierName(supplier).charAt(0) || "م"}
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
+                            <SupplierTableAvatar supplier={supplier} />
                           </TableCell>
                           <TableCell className="font-medium">
                             {getSupplierName(supplier)}

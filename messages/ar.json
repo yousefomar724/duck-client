@@ -114,14 +114,14 @@
     "filterHint": "اختر النشاط لرؤية المواقع المتاحة على الخريطة",
     "viewInteractiveMap": "عرض الخريطة التفاعلية",
     "locationsAvailable": "{count} مواقع متاحة للرياضات المائية على نهر النيل في أسوان.",
-    "accessLocations": "مواقع",
-    "accessLocationsDesc": "متاحة على النيل",
-    "accessFlight": "ساعة",
-    "accessFlightDesc": "طيران من القاهرة",
-    "accessTrain": "ساعات",
-    "accessTrainDesc": "بالقطار من القاهرة",
-    "accessCar": "ساعات",
-    "accessCarDesc": "بالسيارة من الأقصر"
+    "statDestinationsUnit": "وجهات",
+    "statDestinationsDesc": "مواقع نشطة على الخريطة",
+    "statTripsUnit": "رحلات وتجارب",
+    "statTripsDesc": "خيارات حجز متاحة",
+    "statSuppliersUnit": "شركاء",
+    "statSuppliersDesc": "مزودو خدمات معتمدون",
+    "statGuidesUnit": "مرشدين",
+    "statGuidesDesc": "مرشدون سياحيون متاحون"
   },
   "mapPage": {
     "metadata": {
@@ -537,7 +537,12 @@
     "resourceSup": "التجديف وقوفاً",
     "colType": "النوع",
     "tour": "جولة",
-    "trip": "رحلة"
+    "trip": "رحلة",
+    "refundPendingNote": "جاري معالجة استردادك من قبل فريقنا. تواصل معنا عبر واتساب إذا احتجت متابعة.",
+    "refundFailedNote": "تعذر إكمال الاسترداد تلقائياً. يرجى التواصل معنا عبر واتساب للمساعدة.",
+    "refundContactWhatsApp": "دعم واتساب",
+    "refundWhatsAppPrefillPending": "مرحباً، لدي حجز في انتظار الاسترداد. رقم الحجز: {id}.",
+    "refundWhatsAppPrefillFailed": "مرحباً، أحتاج مساعدة بخصوص فشل الاسترداد. رقم الحجز: {id}."
   },
   "bookingSuccess": {
     "title": "تم الحجز بنجاح!",

@@ -32,6 +32,7 @@ import type { Booking, BookingStatus } from "@/lib/types"
 import { useToast } from "@/lib/stores/toast-store"
 import Footer from "@/components/landing/Footer"
 import { useTranslations, useLocale } from "next-intl"
+import { buildWhatsAppHref } from "@/lib/support-contact"
 
 function canCancelBooking(status: string): boolean {
   return status === "CONFIRMED" || status === "SUCCESS" || status === "PAID"
@@ -182,11 +183,47 @@ function MyBookingsContent() {
                         <TableCell>
                           {formatCurrency(b.amount, b.currency)}
                         </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={b.status as BookingStatus}
-                            type="booking"
-                          />
+                        <TableCell className="max-w-[14rem] align-top">
+                          <div className="space-y-2">
+                            <StatusBadge
+                              status={b.status as BookingStatus}
+                              type="booking"
+                            />
+                            {b.status === "REFUND_PENDING" && (
+                              <p className="text-xs text-text-muted leading-snug">
+                                {t("refundPendingNote")}{" "}
+                                <a
+                                  href={buildWhatsAppHref(
+                                    t("refundWhatsAppPrefillPending", {
+                                      id: String(b.ID),
+                                    }),
+                                  )}
+                                  className="text-duck-cyan underline font-medium"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {t("refundContactWhatsApp")}
+                                </a>
+                              </p>
+                            )}
+                            {b.status === "REFUND_FAILED" && (
+                              <p className="text-xs text-text-muted leading-snug">
+                                {t("refundFailedNote")}{" "}
+                                <a
+                                  href={buildWhatsAppHref(
+                                    t("refundWhatsAppPrefillFailed", {
+                                      id: String(b.ID),
+                                    }),
+                                  )}
+                                  className="text-duck-cyan underline font-medium"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {t("refundContactWhatsApp")}
+                                </a>
+                              </p>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {canCancelBooking(b.status) ? (

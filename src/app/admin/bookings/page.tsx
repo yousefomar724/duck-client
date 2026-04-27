@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 import * as bookingsApi from "@/lib/api/bookings"
 import * as tripsApi from "@/lib/api/trips"
 import * as suppliersApi from "@/lib/api/suppliers"
@@ -39,7 +40,13 @@ import { formatCurrency, formatDateTime } from "@/lib/constants"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import StatCard from "@/components/shared/stat-card"
-import { CalendarCheck, CheckCircle, ChevronDown, Clock } from "lucide-react"
+import {
+  Banknote,
+  CalendarCheck,
+  CheckCircle,
+  ChevronDown,
+  Clock,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import type {
   BookingStatus,
@@ -105,6 +112,14 @@ function localizedText(
   return s.length > maxLen ? `${s.slice(0, maxLen)}…` : s
 }
 
+function canAdminCancelBooking(status: string): boolean {
+  return (
+    status === "CONFIRMED" ||
+    status === "SUCCESS" ||
+    status === "PAID"
+  )
+}
+
 export default function AdminBookings() {
   const { addToast } = useToast()
   const getSupplierName = (supplier?: Supplier) => {
@@ -124,6 +139,9 @@ export default function AdminBookings() {
   const [refundId, setRefundId] = useState<number | null>(null)
   const [refundReason, setRefundReason] = useState("")
   const [refundLoading, setRefundLoading] = useState(false)
+  const [adminCancelId, setAdminCancelId] = useState<number | null>(null)
+  const [adminCancelNote, setAdminCancelNote] = useState("")
+  const [adminCancelLoading, setAdminCancelLoading] = useState(false)
   const [guideUpdating, setGuideUpdating] = useState<number | null>(null)
   const [expandedBookingId, setExpandedBookingId] = useState<number | null>(
     null,
@@ -176,6 +194,9 @@ export default function AdminBookings() {
   const totalCount = bookings.length
   const confirmedCount = bookings.filter((b) => b.status === "CONFIRMED").length
   const pendingCount = bookings.filter((b) => b.status === "PENDING").length
+  const refundPendingCount = bookings.filter(
+    (b) => b.status === "REFUND_PENDING",
+  ).length
 
   const handleGuideChange = async (tripId: number, guideId: string) => {
     setGuideUpdating(tripId)
@@ -196,7 +217,7 @@ export default function AdminBookings() {
   const processRefund = async () => {
     if (refundId == null) return
     setRefundLoading(true)
-    const { error: err } = await bookingsApi.processRefund(
+    const { data, error: err } = await bookingsApi.processRefund(
       refundId,
       refundReason.trim() || undefined,
     )
@@ -207,7 +228,31 @@ export default function AdminBookings() {
       addToast(err, "error")
       return
     }
-    addToast("تمت معالجة الاسترداد", "success")
+    if (data?.booking_status === "REFUNDED") {
+      addToast("تمت معالجة الاسترداد بنجاح", "success")
+    } else if (data?.booking_status === "REFUND_FAILED") {
+      addToast("فشلت عملية الاسترداد عبر الدفع. راجع حالة الحجز أو حاول لاحقاً.", "error")
+    } else {
+      addToast("تم إرسال طلب الاسترداد", "success")
+    }
+    await fetchData()
+  }
+
+  const confirmAdminCancel = async () => {
+    if (adminCancelId == null) return
+    setAdminCancelLoading(true)
+    const { error: err } = await bookingsApi.adminCancelBooking(
+      adminCancelId,
+      adminCancelNote.trim() || undefined,
+    )
+    setAdminCancelLoading(false)
+    setAdminCancelId(null)
+    setAdminCancelNote("")
+    if (err) {
+      addToast(err, "error")
+      return
+    }
+    addToast("تم وضع الحجز في انتظار الاسترداد. يمكنك معالجة الاسترداد لاحقاً.", "success")
     await fetchData()
   }
 
@@ -233,7 +278,7 @@ export default function AdminBookings() {
     <div className="space-y-6">
       <PageHeader title="الحجوزات" />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="إجمالي الحجوزات"
           value={totalCount}
@@ -248,6 +293,11 @@ export default function AdminBookings() {
           title="حجوزات قيد الانتظار"
           value={pendingCount}
           icon={Clock}
+        />
+        <StatCard
+          title="في انتظار الاسترداد"
+          value={refundPendingCount}
+          icon={Banknote}
         />
       </div>
 
@@ -358,9 +408,49 @@ export default function AdminBookings() {
                               className="border-t border-border bg-muted/20 px-3 py-4 sm:px-5"
                               dir="rtl"
                             >
-                              <p className="text-sm font-semibold text-duck-navy mb-3">
-                                تفاصيل الحجز
-                              </p>
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+                                <p className="text-sm font-semibold text-duck-navy">
+                                  تفاصيل الحجز
+                                </p>
+                                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+                                  {canAdminCancelBooking(booking.status) && (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-full sm:w-auto border-amber-600/40 text-amber-900 hover:bg-amber-50"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setAdminCancelId(booking.ID)
+                                      }}
+                                      onKeyDown={(e) => e.stopPropagation()}
+                                    >
+                                      إلغاء من الإدارة
+                                    </Button>
+                                  )}
+                                  {booking.status === "REFUND_PENDING" && (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      className="w-full sm:w-auto shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setRefundId(booking.ID)
+                                      }}
+                                      onKeyDown={(e) => e.stopPropagation()}
+                                    >
+                                      معالجة الاسترداد
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                              {canAdminCancelBooking(booking.status) && (
+                                <p className="text-xs text-text-muted mb-3 -mt-1">
+                                  لضيوف بدون حساب أو إلغاء تشغيلي/طقس: ألغِ من
+                                  الإدارة ليصبح الحجز «في انتظار الاسترداد»، ثم نفّذ
+                                  الاسترداد.
+                                </p>
+                              )}
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 text-sm">
                                 <div>
                                   <div className="text-text-muted text-xs mb-0.5">
@@ -629,6 +719,51 @@ export default function AdminBookings() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={adminCancelId != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAdminCancelId(null)
+            setAdminCancelNote("")
+          }
+        }}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>إلغاء الحجز من الإدارة؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيصبح الحجز «في انتظار الاسترداد» دون شرط الـ 24 ساعة. يمكنك بعدها
+              تنفيذ الاسترداد عبر الدفع. استخدم هذا للضيوف بدون حساب أو لإلغاء
+              الرحلة لأسباب تشغيلية.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="admin-cancel-note">ملاحظة (اختياري)</Label>
+            <Input
+              id="admin-cancel-note"
+              value={adminCancelNote}
+              onChange={(e) => setAdminCancelNote(e.target.value)}
+              placeholder="مثال: طقس، طلب العميل عبر واتساب"
+            />
+          </div>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={adminCancelLoading}>
+              إلغاء
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-700 hover:bg-amber-800"
+              onClick={(e) => {
+                e.preventDefault()
+                void confirmAdminCancel()
+              }}
+              disabled={adminCancelLoading}
+            >
+              {adminCancelLoading ? "جاري..." : "تأكيد الإلغاء"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={refundId != null}

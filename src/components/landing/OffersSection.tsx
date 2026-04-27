@@ -3,13 +3,21 @@
 
 import useEmblaCarousel from "embla-carousel-react"
 import { useCallback, useState, useEffect, useRef } from "react"
-import Image from "next/image"
+import {
+  ImageWithLogoFallback,
+  ImgWithLogoFallback,
+} from "@/components/shared/image-with-logo-fallback"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Clock, Users } from "lucide-react"
 import { useTranslations, useLocale } from "next-intl"
 import { getTrips } from "@/lib/api/trips"
 import type { Trip } from "@/lib/types"
-import { getTripImage, getTripImages, resolveImageUrl } from "@/lib/image-utils"
+import {
+  DUCK_LOGO_PLACEHOLDER,
+  getTripImage,
+  getTripImages,
+  resolveImageUrl,
+} from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
 import {
   Carousel,
@@ -50,6 +58,7 @@ export default function OffersSection() {
     useState<CarouselApi | null>(null)
   const [dialogCarouselIndex, setDialogCarouselIndex] = useState(0)
   const dialogCarouselApiRef = useRef<CarouselApi | null>(null)
+  const innerCarouselApisRef = useRef<Map<number, CarouselApi>>(new Map())
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
@@ -80,7 +89,7 @@ export default function OffersSection() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [locale])
 
   const scrollPrev = useCallback(
     () => emblaApi && emblaApi.scrollPrev(),
@@ -138,7 +147,42 @@ export default function OffersSection() {
     }
   }, [selectedTrip, dialogCarouselApi])
 
-  const placeholderImage = "/logo-transparent.png"
+  const placeholderImage = DUCK_LOGO_PLACEHOLDER
+
+  const reinitVisibleInnerCarousel = useCallback(() => {
+    const tripId = trips[selectedIndex]?.id
+    if (tripId == null) return
+    const inner = innerCarouselApisRef.current.get(tripId)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => inner?.reInit())
+    })
+  }, [trips, selectedIndex])
+
+  useEffect(() => {
+    reinitVisibleInnerCarousel()
+  }, [selectedIndex, trips, reinitVisibleInnerCarousel])
+
+  useEffect(() => {
+    if (loading || trips.length === 0 || !emblaApi) return
+    const id = window.setTimeout(() => {
+      emblaApi.reInit()
+      reinitVisibleInnerCarousel()
+    }, 150)
+    return () => clearTimeout(id)
+  }, [loading, trips.length, emblaApi, reinitVisibleInnerCarousel])
+
+  useEffect(() => {
+    const onLayout = () => {
+      emblaApi?.reInit()
+      reinitVisibleInnerCarousel()
+    }
+    window.addEventListener("resize", onLayout)
+    window.addEventListener("fullpage:sectionchange", onLayout)
+    return () => {
+      window.removeEventListener("resize", onLayout)
+      window.removeEventListener("fullpage:sectionchange", onLayout)
+    }
+  }, [emblaApi, reinitVisibleInnerCarousel])
 
   // Dialog computed values
   const isDialogOpen = selectedTrip !== null
@@ -163,6 +207,10 @@ export default function OffersSection() {
   const dialogDisplayUrls =
     dialogImageUrls.length > 0 ? dialogImageUrls : [placeholderImage]
   const dialogHasMultipleImages = dialogDisplayUrls.length > 1
+
+  const selectedResolvedSupplierIcon = selectedTrip?.supplier?.icon
+    ? resolveImageUrl(selectedTrip.supplier.icon)
+    : null
 
   const handleDialogClose = useCallback((open: boolean) => {
     if (!open) {
@@ -235,39 +283,61 @@ export default function OffersSection() {
                       "Unknown Supplier"
                 const duration = trip.duration ?? 1
 
+                const resolvedSupplierIcon = trip.supplier?.icon
+                  ? resolveImageUrl(trip.supplier.icon)
+                  : null
+
                 return (
                   <div
                     key={trip.id}
-                    className="flex-[0_0_90%] md:max-w-280 min-w-0 relative rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row first:ms-6 group"
+                    className="flex-[0_0_90%] md:max-w-280 min-w-0 relative rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row min-h-0 first:ms-6 group"
                   >
-                    {/* Image Side */}
+                    {/* Image Side — aspect box gives real height; fill images do not size the flex row (Embla would be 0px otherwise) */}
                     <div
                       dir="ltr"
-                      className="w-full md:w-2/3 relative h-72 md:h-full overflow-hidden **:data-[slot=carousel-content]:h-full"
+                      className="w-full md:w-2/3 relative shrink-0 overflow-hidden"
                     >
-                      <Carousel
-                        opts={{
-                          align: "start",
-                          loop: true,
-                          direction: "ltr",
-                        }}
-                        className="h-full w-full relative"
-                      >
-                        <CarouselContent className="h-full ms-0 min-h-full">
-                          {displayUrls.map((imageUrl, i) => (
-                            <CarouselItem key={i} className="h-full ps-0">
-                              <div className="relative h-full w-full">
-                                <Image
-                                  src={imageUrl}
-                                  alt={`${tripName} - ${t("imageAlt", { index: i + 1 })}`}
-                                  fill
-                                  className="object-cover"
-                                  unoptimized={imageUrl.startsWith("http")}
-                                />
-                              </div>
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
+                      <div className="relative w-full aspect-4/3 min-h-72">
+                        <Carousel
+                          setApi={(api) => {
+                            if (api) innerCarouselApisRef.current.set(trip.id, api)
+                            else innerCarouselApisRef.current.delete(trip.id)
+                          }}
+                          opts={{
+                            align: "start",
+                            loop: true,
+                            direction: "ltr",
+                          }}
+                          className="absolute inset-0 h-full w-full [&_[data-slot=carousel-content]]:h-full"
+                        >
+                          <CarouselContent className="h-full ms-0">
+                            {displayUrls.map((imageUrl, i) => {
+                              const isPlaceholderSlide =
+                                imageUrl === DUCK_LOGO_PLACEHOLDER ||
+                                imageUrl.endsWith("/logo-transparent.png")
+                              return (
+                                <CarouselItem
+                                  key={i}
+                                  className="h-full ps-0 basis-full"
+                                >
+                                  <div className="relative h-full w-full min-h-48">
+                                    <ImageWithLogoFallback
+                                      src={imageUrl}
+                                      alt={`${tripName} - ${t("imageAlt", { index: i + 1 })}`}
+                                      fill
+                                      sizes="(max-width: 768px) 90vw, min(560px, 40vw)"
+                                      className={
+                                        isPlaceholderSlide
+                                          ? "object-contain bg-gray-100 p-6"
+                                          : "object-cover"
+                                      }
+                                      fallbackClassName="object-contain bg-gray-100 p-6"
+                                    />
+                                  </div>
+                                </CarouselItem>
+                              )
+                            })}
+                          </CarouselContent>
                         {hasMultipleImages && (
                           <>
                             <CarouselPrevious
@@ -288,7 +358,8 @@ export default function OffersSection() {
                             </CarouselNext>
                           </>
                         )}
-                      </Carousel>
+                        </Carousel>
+                      </div>
                       {/* Tour/Trip badge */}
                       <span
                         className={cn(
@@ -307,17 +378,17 @@ export default function OffersSection() {
                       <div>
                         {supplierName && (
                           <div className="flex items-center gap-2 mb-2">
-                            {trip.supplier?.icon &&
-                              resolveImageUrl(trip.supplier.icon) && (
-                                // eslint-disable-next-line @next/next/no-img-element -- API supplier icon URL may be external
-                                <img
-                                  src={
-                                    resolveImageUrl(trip.supplier.icon) ?? ""
-                                  }
-                                  alt=""
-                                  className="w-6 h-6 rounded-full object-cover"
-                                />
+                            <ImgWithLogoFallback
+                              src={resolvedSupplierIcon}
+                              alt=""
+                              className={cn(
+                                "w-6 h-6 rounded-full shrink-0",
+                                resolvedSupplierIcon
+                                  ? "object-cover"
+                                  : "object-contain p-0.5 bg-muted",
                               )}
+                              fallbackClassName="w-6 h-6 rounded-full object-contain p-0.5 bg-muted"
+                            />
                             <span className="text-text-muted text-sm">
                               {supplierName}
                             </span>
@@ -440,11 +511,12 @@ export default function OffersSection() {
                     {dialogDisplayUrls.map((imageUrl, i) => (
                       <CarouselItem key={i} className="h-full ps-0">
                         <div className="relative h-full w-full">
-                          <Image
+                          <ImageWithLogoFallback
                             src={imageUrl}
                             alt={`${selectedTripName} - ${t("imageAlt", { index: i + 1 })}`}
                             fill
                             className="object-cover"
+                            fallbackClassName="object-contain p-6 bg-off-white"
                             unoptimized={imageUrl.startsWith("http")}
                           />
                         </div>
@@ -547,17 +619,17 @@ export default function OffersSection() {
                   {/* Supplier */}
                   {selectedTrip?.supplier && (
                     <div className="flex items-center gap-2">
-                      {selectedTrip.supplier.icon &&
-                        resolveImageUrl(selectedTrip.supplier.icon) && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={
-                              resolveImageUrl(selectedTrip.supplier.icon) ?? ""
-                            }
-                            alt=""
-                            className="w-5 h-5 rounded-full object-cover"
-                          />
+                      <ImgWithLogoFallback
+                        src={selectedResolvedSupplierIcon}
+                        alt=""
+                        className={cn(
+                          "w-5 h-5 rounded-full shrink-0",
+                          selectedResolvedSupplierIcon
+                            ? "object-cover"
+                            : "object-contain p-0.5 bg-muted",
                         )}
+                        fallbackClassName="w-5 h-5 rounded-full object-contain p-0.5 bg-muted"
+                      />
                       <span className="text-text-muted text-sm">
                         {getLocalizedText(selectedTrip.supplier.name)}
                       </span>
@@ -711,11 +783,12 @@ export default function OffersSection() {
                   {dialogDisplayUrls.map((imageUrl, i) => (
                     <CarouselItem key={i} className="h-full ps-0">
                       <div className="relative h-full w-full">
-                        <Image
+                        <ImageWithLogoFallback
                           src={imageUrl}
                           alt={`${selectedTripName} - ${t("imageAlt", { index: i + 1 })}`}
                           fill
                           className="object-cover"
+                          fallbackClassName="object-contain p-6 bg-off-white"
                           unoptimized={imageUrl.startsWith("http")}
                         />
                       </div>
@@ -818,17 +891,17 @@ export default function OffersSection() {
                 {/* Supplier */}
                 {selectedTrip?.supplier && (
                   <div className="flex items-center gap-2">
-                    {selectedTrip.supplier.icon &&
-                      resolveImageUrl(selectedTrip.supplier.icon) && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={
-                            resolveImageUrl(selectedTrip.supplier.icon) ?? ""
-                          }
-                          alt=""
-                          className="w-5 h-5 rounded-full object-cover"
-                        />
+                    <ImgWithLogoFallback
+                      src={selectedResolvedSupplierIcon}
+                      alt=""
+                      className={cn(
+                        "w-5 h-5 rounded-full shrink-0",
+                        selectedResolvedSupplierIcon
+                          ? "object-cover"
+                          : "object-contain p-0.5 bg-muted",
                       )}
+                      fallbackClassName="w-5 h-5 rounded-full object-contain p-0.5 bg-muted"
+                    />
                     <span className="text-text-muted text-sm">
                       {getLocalizedText(selectedTrip.supplier.name)}
                     </span>

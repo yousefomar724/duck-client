@@ -6,6 +6,9 @@ import dynamic from "next/dynamic"
 import { MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getDestinations } from "@/lib/api/destinations"
+import { getTrips } from "@/lib/api/trips"
+import { getSuppliers } from "@/lib/api/suppliers"
+import { getTourGuides } from "@/lib/api/tour-guides"
 import {
   type ActivityFilter,
   destinationsToMapLocations,
@@ -52,12 +55,43 @@ export default function LocationSection() {
     [tMap],
   )
 
-  const accessInfo = [
-    { time: "4", unit: t("accessLocations"), desc: t("accessLocationsDesc") },
-    { time: "1", unit: t("accessFlight"), desc: t("accessFlightDesc") },
-    { time: "4", unit: t("accessTrain"), desc: t("accessTrainDesc") },
-    { time: "3", unit: t("accessCar"), desc: t("accessCarDesc") },
-  ]
+  const [statCounts, setStatCounts] = useState<{
+    destinations: number | null
+    trips: number | null
+    suppliers: number | null
+    tourGuides: number | null
+  }>({
+    destinations: null,
+    trips: null,
+    suppliers: null,
+    tourGuides: null,
+  })
+
+  const statCards = useMemo(
+    () => [
+      {
+        value: statCounts.destinations,
+        unit: t("statDestinationsUnit"),
+        desc: t("statDestinationsDesc"),
+      },
+      {
+        value: statCounts.trips,
+        unit: t("statTripsUnit"),
+        desc: t("statTripsDesc"),
+      },
+      {
+        value: statCounts.suppliers,
+        unit: t("statSuppliersUnit"),
+        desc: t("statSuppliersDesc"),
+      },
+      {
+        value: statCounts.tourGuides,
+        unit: t("statGuidesUnit"),
+        desc: t("statGuidesDesc"),
+      },
+    ],
+    [statCounts, t],
+  )
 
   const [locations, setLocations] = useState(
     destinationsToMapLocations([], { resolveImageUrl, locale }),
@@ -66,14 +100,26 @@ export default function LocationSection() {
 
   useEffect(() => {
     let cancelled = false
-    getDestinations(undefined, "active").then((res) => {
+    void (async () => {
+      const [destRes, tripsRes, suppliersRes, guidesRes] = await Promise.all([
+        getDestinations(locale, "active"),
+        getTrips(locale),
+        getSuppliers(locale),
+        getTourGuides(),
+      ])
       if (cancelled) return
-      if (res.data) {
+      if (destRes.data) {
         setLocations(
-          destinationsToMapLocations(res.data, { resolveImageUrl, locale }),
+          destinationsToMapLocations(destRes.data, { resolveImageUrl, locale }),
         )
       }
-    })
+      setStatCounts({
+        destinations: destRes.error ? null : (destRes.data?.length ?? 0),
+        trips: tripsRes.error ? null : (tripsRes.data?.length ?? 0),
+        suppliers: suppliersRes.error ? null : (suppliersRes.data?.length ?? 0),
+        tourGuides: guidesRes.error ? null : (guidesRes.data?.length ?? 0),
+      })
+    })()
     return () => {
       cancelled = true
     }
@@ -125,6 +171,7 @@ export default function LocationSection() {
             selectedLocation={null}
             onMarkerClick={() => {}}
             mapStyle="light"
+            gestureHandling="cooperative"
           />
 
           {/* Overlay link to full map page */}
@@ -152,12 +199,14 @@ export default function LocationSection() {
           className="flex flex-wrap justify-center gap-4 mb-8"
           dir={locale === "ar" ? "rtl" : "ltr"}
         >
-          {accessInfo.map((item, index) => (
+          {statCards.map((item, index) => (
             <div
               key={index}
               className="flex-1 min-w-[200px] max-w-[240px] bg-text-body text-white p-6 rounded-xl text-center flex flex-col items-center justify-center"
             >
-              <div className="text-4xl font-bold mb-1">{item.time}</div>
+              <div className="text-4xl font-bold mb-1 tabular-nums">
+                {item.value === null ? "—" : item.value}
+              </div>
               <div className="text-lg mb-2">{item.unit}</div>
               <div className="text-white/70 text-xs">{item.desc}</div>
             </div>

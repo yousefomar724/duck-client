@@ -15,6 +15,7 @@ import { useToast } from "@/lib/stores/toast-store"
 import * as suppliersApi from "@/lib/api/suppliers"
 import * as supplierStorageApi from "@/lib/api/supplier-storage"
 import * as imagesApi from "@/lib/api/images"
+import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import { resolveImageUrl } from "@/lib/image-utils"
 
 const parseResources = (raw: unknown): Record<string, number> => {
@@ -245,16 +246,15 @@ export default function SupplierProfilePage() {
             <div className="space-y-3">
               <Label>{t("iconOptional")}</Label>
               <div className="flex items-center gap-4">
-                {iconPreviewUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={iconPreviewUrl}
-                    alt={t("iconPreviewAlt")}
-                    className="h-16 w-16 rounded-full object-cover border"
+                <div className="relative h-16 w-16 shrink-0 rounded-full border bg-muted overflow-hidden">
+                  <ImageWithLogoFallback
+                    src={iconPreviewUrl ?? undefined}
+                    alt={iconPreviewUrl ? t("iconPreviewAlt") : ""}
+                    fill
+                    className="rounded-full object-cover"
+                    fallbackClassName="object-contain p-2 rounded-full"
                   />
-                ) : (
-                  <div className="h-16 w-16 rounded-full border bg-muted" />
-                )}
+                </div>
                 <div className="flex-1 space-y-2">
                   <Input
                     type="file"

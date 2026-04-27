@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Pencil, Trash2 } from "lucide-react"
+import { DuckLogoPlaceholder } from "@/components/shared/duck-logo-placeholder"
+import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import PageHeader from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -22,7 +24,39 @@ import * as tripsApi from "@/lib/api/trips"
 import { CardGridSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import { Trip } from "@/lib/types"
-import Image from "next/image"
+
+function TripCardMedia({
+  fullImageUrl,
+  name,
+}: {
+  fullImageUrl: string | null
+  name: string
+}) {
+  const [videoFailed, setVideoFailed] = useState(false)
+  if (!fullImageUrl) return <DuckLogoPlaceholder />
+  if (fullImageUrl.endsWith(".mp4")) {
+    if (videoFailed) return <DuckLogoPlaceholder />
+    return (
+      <video
+        src={fullImageUrl}
+        className="w-full h-full object-cover"
+        muted
+        loop
+        autoPlay
+        onError={() => setVideoFailed(true)}
+      />
+    )
+  }
+  return (
+    <ImageWithLogoFallback
+      src={fullImageUrl}
+      alt={name}
+      fill
+      className="w-full h-full object-cover"
+      fallbackClassName="object-contain p-4"
+    />
+  )
+}
 
 export default function MyTripsPage() {
   const [trips, setTrips] = useState<Trip[]>([])
@@ -160,32 +194,14 @@ export default function MyTripsPage() {
                 >
                   {trip.is_tour ? "جولة" : "رحلة"}
                 </span>
-                {fullImageUrl ? (
-                  fullImageUrl.endsWith(".mp4") ? (
-                    <video
-                      src={fullImageUrl}
-                      className="w-full h-full object-cover"
-                      muted
-                      loop
-                      autoPlay
-                    />
-                  ) : (
-                    <Image
-                      src={fullImageUrl}
-                      fill
-                      alt={
-                        typeof trip.name === "string"
-                          ? trip.name
-                          : trip.name?.ar || "Trip"
-                      }
-                      className="w-full h-full object-cover"
-                    />
-                  )
-                ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-400">لا توجد صورة</span>
-                  </div>
-                )}
+                <TripCardMedia
+                  fullImageUrl={fullImageUrl}
+                  name={
+                    typeof trip.name === "string"
+                      ? trip.name
+                      : trip.name?.ar || "Trip"
+                  }
+                />
               </div>
               <CardContent className="p-4">
                 <h3 className="font-bold text-lg mb-2 text-duck-navy">
