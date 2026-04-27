@@ -571,6 +571,11 @@ function BookPageContent() {
                         locale,
                         t("defaultTripName"),
                       )
+                      const description = getLocalizedText(
+                        trip.description,
+                        locale,
+                        "",
+                      )
                       const rawImage = getTripImage(trip.images)
                       const imageUrl =
                         resolveImageUrl(rawImage) ?? placeholderImage
@@ -622,6 +627,11 @@ function BookPageContent() {
                             <h3 className="text-text-dark font-bold text-lg mb-1">
                               {name}
                             </h3>
+                            {description ? (
+                              <p className="text-text-body text-sm leading-relaxed line-clamp-3 mb-2">
+                                {description}
+                              </p>
+                            ) : null}
                             <p className="text-duck-cyan font-semibold">
                               {formatCurrency(trip.price, trip.currency)}
                             </p>
