@@ -67,9 +67,20 @@ export function normalizeTrip(raw: unknown): Trip {
   return out as unknown as Trip
 }
 
+/** Lower `display_order` first; equal order uses `id` for stable, deterministic sorting. */
+export function sortTripsByDisplayOrder(trips: Trip[]): Trip[] {
+  return [...trips].sort((a, b) => {
+    const oa = a.display_order ?? 0
+    const ob = b.display_order ?? 0
+    if (oa !== ob) return oa - ob
+    return a.id - b.id
+  })
+}
+
 export function normalizeTrips(raw: unknown): Trip[] {
   if (!Array.isArray(raw)) return []
-  return raw.map((item) => normalizeTrip(item))
+  const trips = raw.map((item) => normalizeTrip(item))
+  return sortTripsByDisplayOrder(trips)
 }
 
 export function normalizeDestinations(raw: unknown): Destination[] {
