@@ -774,12 +774,11 @@ export default function TripForm({
                         className="relative aspect-square rounded border border-gray-300 overflow-hidden bg-gray-100"
                       >
                         <Image
-                          width={0}
-                          height={0}
-                          sizes="100vw"
+                          fill
+                          sizes="(max-width: 768px) 33vw, 200px"
                           src={resolveImageUrl(url) ?? url}
                           alt=""
-                          className="w-full h-full object-cover"
+                          className="object-cover"
                           unoptimized
                         />
                         <button

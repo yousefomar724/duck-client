@@ -313,11 +313,11 @@ export default function Navbar() {
               <Image
                 src="/logo-transparent.png"
                 alt="Duck Entertainment"
-                width={0}
-                height={0}
-                sizes="100vw"
+                width={240}
+                height={80}
+                sizes="(max-width: 768px) 80px, (max-width: 1024px) 56px, 96px"
                 className={cn(
-                  "transition-all duration-500 w-20 md:w-14 lg:w-24 md:bg-white md:rounded-b-xl md:object-contain md:px-4 md:py-2",
+                  "h-auto transition-all duration-500 w-20 md:w-14 lg:w-24 md:bg-white md:rounded-b-xl md:object-contain md:px-4 md:py-2",
                   // isSolid ? "" : "brightness-0 invert",
                 )}
               />

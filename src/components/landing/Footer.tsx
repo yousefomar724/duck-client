@@ -54,9 +54,9 @@ export default function Footer() {
                 <Image
                   src="/logo-transparent.png"
                   alt="Duck Entertainment"
-                  width={0}
-                  height={0}
-                  sizes="100vw"
+                  width={160}
+                  height={160}
+                  sizes="96px"
                   className={cn(
                     "transition-all duration-500 w-24 bg-white rounded-full h-24 object-contain p-4",
                     // "brightness-0 invert",
