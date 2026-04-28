@@ -300,7 +300,8 @@ export default function OffersSection() {
                       <div className="relative w-full aspect-4/3 min-h-72">
                         <Carousel
                           setApi={(api) => {
-                            if (api) innerCarouselApisRef.current.set(trip.id, api)
+                            if (api)
+                              innerCarouselApisRef.current.set(trip.id, api)
                             else innerCarouselApisRef.current.delete(trip.id)
                           }}
                           opts={{
@@ -338,26 +339,26 @@ export default function OffersSection() {
                               )
                             })}
                           </CarouselContent>
-                        {hasMultipleImages && (
-                          <>
-                            <CarouselPrevious
-                              variant="ghost"
-                              size="icon"
-                              className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                              aria-label={t("prevImage")}
-                            >
-                              <ChevronLeft className="size-4" />
-                            </CarouselPrevious>
-                            <CarouselNext
-                              variant="ghost"
-                              size="icon"
-                              className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
-                              aria-label={t("nextImage")}
-                            >
-                              <ChevronRight className="size-4" />
-                            </CarouselNext>
-                          </>
-                        )}
+                          {hasMultipleImages && (
+                            <>
+                              <CarouselPrevious
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-1/2 start-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                                aria-label={t("prevImage")}
+                              >
+                                <ChevronLeft className="size-4" />
+                              </CarouselPrevious>
+                              <CarouselNext
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-1/2 end-3 -translate-y-1/2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm border-0 text-white/80 hover:text-white hover:bg-black/60"
+                                aria-label={t("nextImage")}
+                              >
+                                <ChevronRight className="size-4" />
+                              </CarouselNext>
+                            </>
+                          )}
                         </Carousel>
                       </div>
                       {/* Tour/Trip badge */}

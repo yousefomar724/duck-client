@@ -60,31 +60,40 @@ export const mockSuppliers: Supplier[] = [
   },
 ]
 
+/** Meeting point & booking refs for Nagaa El Kabila / Elephantine (client-provided). */
+const ASWAN_NAQUA_MAP =
+  "https://maps.app.goo.gl/t4GVSBzuXVRoqhRs5"
+const ASWAN_BOOKING_FORM =
+  "https://docs.google.com/forms/d/e/1FAIpQLSdYj5G1qRP41ItoPceA_NK8E-ztDP1xmqC0yz0s0SQ-gyajCg/viewform"
+const ASWAN_INSTAPAY =
+  "https://ipn.eg/S/ahmedragab9491/instapay/8XekIs"
+
 export const mockTrips: Trip[] = [
   {
     id: 1,
     supplier_id: 1,
     price: 180,
-    foreigner_price: 0,
+    foreigner_price: 500,
     guide_mandatory: false,
     guide_price: 0,
     display_order: 0,
     currency: "EGP",
     rate: 5,
     duration: 120,
+    is_tour: false,
     destination: true,
     location: true,
     from: "2024-03-01",
-    to: "2024-12-31",
+    to: "2027-12-31",
     itinerary: [
-      { ar: "الاجتماع في نقطة البداية", en: "Meet at starting point" },
-      { ar: "جولة بالكاياك لمدة ساعتين", en: "2-hour kayaking tour" },
+      { ar: "الالتقاء في معدية النجع القبلي (جزيرة أسوان)", en: "Meet at Nagaa El Kabila ferry (Elephantine)" },
+      { ar: "جولة كاياك حرة على النيل", en: "Free-style kayaking on the Nile" },
       { ar: "استراحة وتصوير", en: "Break and photography" },
     ],
-    name: { ar: "جولة الكاياك على النيل", en: "Nile Kayaking Tour" },
+    name: { ar: "جولة الكاياك الحرة على النيل", en: "Free-style Nile kayaking" },
     description: {
-      ar: "استمتع بجولة كاياك رائعة على نهر النيل في أسوان مع مناظر خلابة",
-      en: "Enjoy an amazing kayak tour on the Nile River in Aswan with stunning views",
+      ar: `أسعار: ١٨٠ ج للمصريين، ٥٠٠ ج للأجانب. متاح من الفجر للمغرب بالحجز المسبق – جميع أيام الأسبوع. نقطة اللقاء: جزيرة أسوان – معدية النجع القبلي بجوار مكاني كافيه. الخريطة: ${ASWAN_NAQUA_MAP}. للتواصل: ٠١٥٥٠٠٦١٠٠٦ – ٠١١٠٠٢٥٥٠٥٣. تأكيد الحجز: ${ASWAN_BOOKING_FORM}. الدفع عبر إنستا باي: ${ASWAN_INSTAPAY}`,
+      en: `EGP 180 for Egyptians, EGP 500 for foreigners. Dawn to sunset by advance booking, seven days a week. Meet at Elephantine Island – Nagaa El Kabila ferry beside Makani Cafe. Map: ${ASWAN_NAQUA_MAP}. Phones: 01550061006 – 01100255053. Booking form: ${ASWAN_BOOKING_FORM}. InstaPay: ${ASWAN_INSTAPAY}`,
     },
     availability: [
       { date: "2024-03-15", slots: 10 },
@@ -98,6 +107,21 @@ export const mockTrips: Trip[] = [
     },
     refundable: true,
     created_at: "2024-02-15T10:00:00Z",
+    destinations: [
+      {
+        id: 5,
+        name: {
+          ar: "معدية النجع القبلي – جزيرة أسوان",
+          en: "Nagaa El Kabila Ferry – Elephantine Island",
+        },
+        description: {
+          ar: "نقطة اللقاء الرئيسية للكاياك (بجوار مكاني كافيه)",
+          en: "Main kayak meeting point (beside Makani Cafe)",
+        },
+        image: "/resort.webp",
+        status: "active",
+      },
+    ],
   },
   {
     id: 2,
@@ -172,6 +196,69 @@ export const mockTrips: Trip[] = [
     },
     refundable: false,
     created_at: "2024-02-25T10:00:00Z",
+  },
+  {
+    id: 4,
+    supplier_id: 1,
+    price: 275,
+    foreigner_price: 850,
+    guide_mandatory: false,
+    guide_price: 0,
+    display_order: 1,
+    currency: "EGP",
+    rate: 5,
+    duration: 0,
+    is_tour: true,
+    destination: true,
+    location: true,
+    from: "2024-03-01",
+    to: "2027-12-31",
+    itinerary: [
+      {
+        ar: "التق مع الكابتن في معدية النجع القبلي",
+        en: "Meet your captain at Nagaa El Kabila ferry",
+      },
+      {
+        ar: "جولة خاصة لأماكن مخفية وسط النيل مع تصوير احترافي",
+        en: "Private tour to hidden spots on the Nile with photography",
+      },
+      {
+        ar: "تسليم الصور خلال ٢٤ ساعة بعد الشعار والتعديلات",
+        en: "Photos delivered within 24 hours after branding and edits",
+      },
+    ],
+    name: {
+      ar: "جولة خاصة مع كابتن (أماكن مخفية + تصوير)",
+      en: "Private captain tour (hidden spots + photography)",
+    },
+    description: {
+      ar: `مع كابتن لأماكن مخفية وسط النيل وتصوير؛ تسليم الصور خلال ٢٤ ساعة بعد إضافة الشعار والتعديلات. المصريون: ٢٧٥ ج للفرد (فرد واحد: ٣٠٠ ج). الأجانب: ٨٥٠ ج. مواعيد من الفجر للمغرب بالحجز المسبق. الخريطة: ${ASWAN_NAQUA_MAP}. حجز: ${ASWAN_BOOKING_FORM}. إنستا باي: ${ASWAN_INSTAPAY} – ٠١٥٥٠٠٦١٠٠٦ / ٠١١٠٠٢٥٥٠٥٣`,
+      en: `Captain-led route to hidden Nile spots with photography; photos within 24 hours after logo and edits. Egyptians: EGP 275 per person (solo: EGP 300). Foreigners: EGP 850. Dawn–sunset by booking. Map: ${ASWAN_NAQUA_MAP}. Form: ${ASWAN_BOOKING_FORM}. InstaPay: ${ASWAN_INSTAPAY}. Tel: 01550061006 / 01100255053`,
+    },
+    availability: [],
+    max_guests: 8,
+    images: ["/resort.webp", "/offer.webp"],
+    cancelation_policy: {
+      ar: "الإلغاء وفق سياسة المورد؛ تأكيد الحجز عبر النموذج أو الهاتف",
+      en: "Cancellation per supplier policy; confirm via form or phone",
+    },
+    refundable: true,
+    created_at: "2025-04-01T10:00:00Z",
+    destinations: [
+      {
+        id: 5,
+        name: {
+          ar: "معدية النجع القبلي – جزيرة أسوان",
+          en: "Nagaa El Kabila Ferry – Elephantine Island",
+        },
+        description: {
+          ar: "نقطة اللقاء الرئيسية للكاياك (بجوار مكاني كافيه)",
+          en: "Main kayak meeting point (beside Makani Cafe)",
+        },
+        image: "/resort.webp",
+        status: "active",
+      },
+    ],
   },
 ]
 
@@ -274,6 +361,27 @@ export const mockDestinations: Destination[] = [
     image: "/resort.webp",
     status: "active",
     trip_count: 6,
+  },
+  {
+    id: 5,
+    name: {
+      ar: "معدية النجع القبلي – جزيرة أسوان",
+      en: "Nagaa El Kabila Ferry – Elephantine Island, Aswan",
+    },
+    description: {
+      ar: `نقطة اللقاء للكاياك والجولات الخاصة بجوار مكاني كافيه على جزيرة أسوان. الخريطة: ${ASWAN_NAQUA_MAP}. تأكيد الحجز عبر النموذج: ${ASWAN_BOOKING_FORM}. الدفع إنستا باي: ${ASWAN_INSTAPAY}. للتواصل: ٠١٥٥٠٠٦١٠٠٦ – ٠١١٠٠٢٥٥٠٥٣`,
+      en: `Kayak and private-tour meeting point beside Makani Cafe on Elephantine Island. Map: ${ASWAN_NAQUA_MAP}. Booking: ${ASWAN_BOOKING_FORM}. InstaPay: ${ASWAN_INSTAPAY}. Phone: 01550061006 – 01100255053`,
+    },
+    image: "/resort.webp",
+    images: ["/resort.webp", "/offer.webp"],
+    status: "active",
+    lat: 24.0867,
+    lng: 32.8895,
+    activities: ["kayak"],
+    public_status: "open",
+    operating_hours:
+      "متاح من الفجر للمغرب بالحجز المسبق – جميع أيام الأسبوع",
+    trip_count: 2,
   },
 ]
 

@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { Plus, Minus, Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { getDestinations } from "@/lib/api/destinations"
+import { getPublicDestinations } from "@/lib/catalog/site-catalog"
 import { useLocale, useTranslations } from "next-intl"
 import ActivityFilters from "./ActivityFilters"
 import LocationDetailPopover from "./LocationDetailPopover"
@@ -154,9 +154,7 @@ export default function MapPageClient() {
               ? "bg-white/20 text-white hover:bg-white/30"
               : "bg-white text-duck-navy hover:bg-gray-100 border border-black/10",
           )}
-          aria-label={
-            isDark ? t("controls.lightMode") : t("controls.darkMode")
-          }
+          aria-label={isDark ? t("controls.lightMode") : t("controls.darkMode")}
         >
           {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </button>

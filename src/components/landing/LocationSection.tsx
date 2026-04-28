@@ -184,16 +184,6 @@ export default function LocationSection() {
           </Link>
         </div>
 
-        <div className="flex justify-center mt-0 mb-4">
-          <Link
-            href="/map"
-            className="inline-flex items-center gap-2 bg-duck-navy text-white px-8 py-3 rounded-full font-medium hover:bg-duck-navy/90 transition-colors shadow-lg text-base"
-          >
-            <MapPin className="size-5" />
-            <span>{t("viewInteractiveMap")}</span>
-          </Link>
-        </div>
-
         {/* Access Info */}
         <div
           className="flex flex-wrap justify-center gap-4 mb-8"

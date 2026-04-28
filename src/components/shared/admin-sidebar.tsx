@@ -18,16 +18,23 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import Logo from "./logo"
 import { adminNavItems } from "@/lib/constants"
 import { useLocale, useTranslations } from "next-intl"
+import { cn } from "@/lib/utils"
 
 export default function AdminSidebar() {
   const t = useTranslations("common")
   const locale = useLocale()
   const pathname = usePathname()
   const { user, logout } = useAuth()
-  const { isMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, setOpenMobile } = useSidebar()
+  const isCollapsedIcon = !isMobile && state === "collapsed"
   const displayName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(" ") ||
       user.username
@@ -41,28 +48,71 @@ export default function AdminSidebar() {
   return (
     <Sidebar side={locale === "ar" ? "right" : "left"} collapsible="icon">
       <SidebarHeader>
-        <div className="flex flex-col items-stretch gap-3 px-2">
-          <div className="flex justify-center py-2">
-            <Logo width={100} height={50} />
+        <div
+          className={cn(
+            "flex flex-col items-stretch px-2",
+            isCollapsedIcon ? "gap-2" : "gap-3",
+          )}
+        >
+          <div
+            className={cn(
+              "flex justify-center",
+              isCollapsedIcon ? "py-1.5" : "py-2",
+            )}
+          >
+            <Logo
+              width={isCollapsedIcon ? 36 : 100}
+              height={isCollapsedIcon ? 18 : 50}
+              className={cn(
+                isCollapsedIcon &&
+                  "max-h-8 w-auto max-w-11 object-contain",
+              )}
+            />
           </div>
-          <div className="group-data-[collapsible=icon]:hidden flex w-full min-w-0 items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-2 py-2.5">
-            <Avatar className="h-9 w-9 shrink-0">
-              <AvatarFallback className="bg-duck-cyan text-white text-sm">
-                {displayName.charAt(0) || "أ"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1 text-right">
-              <p className="truncate text-sm font-medium leading-tight">
-                {displayName}
-              </p>
-              <p
-                className="truncate text-xs text-text-muted"
-                title={email || undefined}
-              >
-                {email || "—"}
-              </p>
+          {isCollapsedIcon ? (
+            <div className="flex justify-center pb-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="rounded-md outline-none ring-sidebar-ring focus-visible:ring-2"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className="bg-duck-cyan text-sm text-white">
+                        {displayName.charAt(0) || "أ"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent
+                  side={locale === "ar" ? "left" : "right"}
+                  className="max-w-[min(100vw-2rem,18rem)] text-right"
+                >
+                  <p className="font-medium">{displayName}</p>
+                  <p className="text-muted-foreground text-xs">{email || "—"}</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-          </div>
+          ) : (
+            <div className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-2 py-2.5">
+              <Avatar className="h-9 w-9 shrink-0">
+                <AvatarFallback className="bg-duck-cyan text-sm text-white">
+                  {displayName.charAt(0) || "أ"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1 text-right">
+                <p className="truncate text-sm font-medium leading-tight">
+                  {displayName}
+                </p>
+                <p
+                  className="truncate text-xs text-text-muted"
+                  title={email || undefined}
+                >
+                  {email || "—"}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </SidebarHeader>
 

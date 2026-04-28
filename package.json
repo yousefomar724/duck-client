@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:aswan": "node scripts/seed-aswan-api.mjs"
   },
   "dependencies": {
     "@fullpage/react-fullpage": "^0.1.49",
