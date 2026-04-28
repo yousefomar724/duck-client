@@ -3,7 +3,6 @@
 
 import { Suspense, useState, useEffect, useMemo, useRef } from "react"
 import { useSearchParams } from "next/navigation"
-import Image from "next/image"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod/v3"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -51,6 +50,8 @@ import { useAuth } from "@/lib/stores/auth-store"
 import { useToast } from "@/lib/stores/toast-store"
 import Footer from "@/components/landing/Footer"
 import { useTranslations, useLocale } from "next-intl"
+import { TripListingPrices } from "@/components/shared/trip-listing-prices"
+import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 
 /** Local Egyptian mobile: 0 + (10|11|12|15) + 8 digits */
 const EGYPT_MOBILE_LOCAL_REGEX = /^0(10|11|12|15)\d{8}$/
@@ -143,8 +144,6 @@ function BookPageContent() {
     water_cycle: t("resourceWaterCycle"),
     sup: t("resourceSup"),
   }
-  const isNonArabicLocale = locale !== "ar"
-
   const durationLabels: Record<number, string> = {
     1: t("duration1h"),
     2: t("duration2h"),
@@ -494,8 +493,6 @@ function BookPageContent() {
     }
   })
 
-  const placeholderImage = "/logo-transparent.png"
-
   return (
     <>
       {/* Content */}
@@ -545,11 +542,9 @@ function BookPageContent() {
                 <h2 className="text-text-dark text-2xl font-bold">
                   {t("step1Title")}
                 </h2>
-                {isNonArabicLocale ? (
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    {t("priceEgyptiansOnlyNote")}
-                  </p>
-                ) : null}
+                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                  {t("priceEgyptiansOnlyNote")}
+                </p>
                 {tripsLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {[1, 2, 3, 4].map((i) => (
@@ -577,37 +572,28 @@ function BookPageContent() {
                         "",
                       )
                       const rawImage = getTripImage(trip.images)
-                      const imageUrl =
-                        resolveImageUrl(rawImage) ?? placeholderImage
+                      const imageSrc = resolveImageUrl(rawImage)
                       const isSelected = selectedTrip?.id === trip.id
-                      const isExternal = imageUrl.startsWith("http")
                       return (
                         <button
                           key={trip.id}
                           type="button"
                           onClick={() => setSelectedTrip(trip)}
-                          className={`text-right rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col transition-all ${
+                          className={`text-right rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] h-fit bg-white flex flex-col transition-all ${
                             isSelected
                               ? "ring-2 ring-duck-cyan ring-offset-2"
                               : "hover:shadow-lg"
                           }`}
                         >
                           <div className="relative h-40 w-full overflow-hidden">
-                            {isExternal ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={imageUrl}
-                                alt={name}
-                                className="absolute inset-0 w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Image
-                                src={imageUrl}
-                                alt={name}
-                                fill
-                                className="object-cover"
-                              />
-                            )}
+                            <ImageWithLogoFallback
+                              src={imageSrc}
+                              alt={name}
+                              fill
+                              sizes="(max-width: 640px) 100vw, 400px"
+                              className="object-cover"
+                              fallbackClassName="object-contain bg-gray-100 p-6"
+                            />
                             {isSelected && (
                               <div className="absolute top-3 end-3 w-8 h-8 rounded-full bg-duck-cyan flex items-center justify-center">
                                 <Check className="w-4 h-4 text-duck-navy" />
@@ -632,9 +618,23 @@ function BookPageContent() {
                                 {description}
                               </p>
                             ) : null}
-                            <p className="text-duck-cyan font-semibold">
-                              {formatCurrency(trip.price, trip.currency)}
-                            </p>
+                            <div className="text-duck-cyan">
+                              <TripListingPrices
+                                trip={trip}
+                                egyptiansOfferLabel={t(
+                                  "egyptiansSpecialOffer",
+                                  {
+                                    price: formatCurrency(
+                                      trip.price,
+                                      trip.currency,
+                                    ),
+                                  },
+                                )}
+                                perHourSuffix={
+                                  trip.is_tour ? t("perHour") : undefined
+                                }
+                              />
+                            </div>
                             <p className="text-text-muted text-sm mt-1">
                               {trip.duration ?? 1}{" "}
                               {(trip.duration ?? 1) === 1

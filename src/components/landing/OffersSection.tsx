@@ -37,6 +37,7 @@ import {
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { TripListingPrices } from "@/components/shared/trip-listing-prices"
 
 export default function OffersSection() {
   const t = useTranslations("offers")
@@ -401,24 +402,20 @@ export default function OffersSection() {
                         <p className="text-text-body leading-relaxed mb-4 line-clamp-4">
                           {tripDescription}
                         </p>
-                        <p className="text-duck-cyan font-semibold text-lg">
-                          {formatCurrency(trip.price, trip.currency)}
-                          {(trip.foreigner_price ?? 0) > 0 && (
-                            <span className="text-sm font-normal text-duck-cyan/70">
-                              {" / "}
-                              {formatCurrency(
-                                trip.foreigner_price,
+                        <p className="text-duck-cyan">
+                          <TripListingPrices
+                            trip={trip}
+                            egyptiansOfferLabel={t("egyptiansSpecialOffer", {
+                              price: formatCurrency(
+                                trip.price,
                                 trip.currency,
-                              )}{" "}
-                              {t("foreignerSuffix")}
-                            </span>
-                          )}
-                          {trip.is_tour && (
-                            <span className="text-sm font-normal text-duck-cyan/70">
-                              {" "}
-                              {t("perHour")}
-                            </span>
-                          )}
+                              ),
+                            })}
+                            perHourSuffix={
+                              trip.is_tour ? t("perHour") : undefined
+                            }
+                            mainPriceClassName="text-lg"
+                          />
                         </p>
                         <p className="text-text-muted text-sm mt-1">
                           {trip.is_tour
@@ -639,30 +636,20 @@ export default function OffersSection() {
 
                   {/* Price + Duration */}
                   <div className="flex items-center gap-4 text-sm flex-wrap">
-                    <span className="text-duck-cyan font-semibold">
-                      {selectedTrip &&
-                        formatCurrency(
-                          selectedTrip.price,
-                          selectedTrip.currency,
-                        )}
-                      {selectedTrip &&
-                        (selectedTrip.foreigner_price ?? 0) > 0 && (
-                          <span className="font-normal text-duck-cyan/70">
-                            {" / "}
-                            {formatCurrency(
-                              selectedTrip.foreigner_price,
-                              selectedTrip.currency,
-                            )}{" "}
-                            {t("foreignerSuffix")}
-                          </span>
-                        )}
-                      {selectedTrip?.is_tour && (
-                        <span className="font-normal text-duck-cyan/70">
-                          {" "}
-                          {t("perHour")}
-                        </span>
-                      )}
-                    </span>
+                    {selectedTrip ? (
+                      <TripListingPrices
+                        trip={selectedTrip}
+                        egyptiansOfferLabel={t("egyptiansSpecialOffer", {
+                          price: formatCurrency(
+                            selectedTrip.price,
+                            selectedTrip.currency,
+                          ),
+                        })}
+                        perHourSuffix={
+                          selectedTrip.is_tour ? t("perHour") : undefined
+                        }
+                      />
+                    ) : null}
                     <span className="text-text-muted flex items-center gap-1">
                       <Clock className="size-3.5" />
                       {selectedTrip?.is_tour
@@ -911,27 +898,20 @@ export default function OffersSection() {
 
                 {/* Price + Duration */}
                 <div className="flex items-center gap-4 text-sm flex-wrap">
-                  <span className="text-duck-cyan font-semibold">
-                    {selectedTrip &&
-                      formatCurrency(selectedTrip.price, selectedTrip.currency)}
-                    {selectedTrip &&
-                      (selectedTrip.foreigner_price ?? 0) > 0 && (
-                        <span className="font-normal text-duck-cyan/70">
-                          {" / "}
-                          {formatCurrency(
-                            selectedTrip.foreigner_price,
-                            selectedTrip.currency,
-                          )}{" "}
-                          {t("foreignerSuffix")}
-                        </span>
-                      )}
-                    {selectedTrip?.is_tour && (
-                      <span className="font-normal text-duck-cyan/70">
-                        {" "}
-                        {t("perHour")}
-                      </span>
-                    )}
-                  </span>
+                  {selectedTrip ? (
+                    <TripListingPrices
+                      trip={selectedTrip}
+                      egyptiansOfferLabel={t("egyptiansSpecialOffer", {
+                        price: formatCurrency(
+                          selectedTrip.price,
+                          selectedTrip.currency,
+                        ),
+                      })}
+                      perHourSuffix={
+                        selectedTrip.is_tour ? t("perHour") : undefined
+                      }
+                    />
+                  ) : null}
                   <span className="text-text-muted flex items-center gap-1">
                     <Clock className="size-3.5" />
                     {selectedTrip?.is_tour

@@ -9,7 +9,8 @@
  *   API_URL=http://localhost:8080/api/v1 ADMIN_TOKEN=eyJhbG... pnpm seed:aswan
  *
  * Optional env:
- *   SUPPLIER_ID   - default 1 (required for admin-created trips)
+ *   SUPPLIER_ID   - explicit supplier row id for trips (admin-created trips require a valid FK).
+ *                   If omitted, uses GET /suppliers and picks the first supplier (recommended).
  *   FORCE_SEED    - if "1", always POST destination/trips even when matching Arabic names exist (may duplicate rows)
  *
  * Requires: Node 18+
@@ -27,8 +28,12 @@ const API_URL =
   "http://localhost:8080/api/v1"
 const base = API_URL.replace(/\/$/, "")
 
-const SUPPLIER_ID = Number(process.env.SUPPLIER_ID || "1") || 1
 const FORCE_SEED = process.env.FORCE_SEED === "1"
+
+function normalizeList(json) {
+  if (json == null) return []
+  return Array.isArray(json) ? json : []
+}
 
 function arName(nameField) {
   if (nameField == null) return ""
@@ -88,14 +93,14 @@ async function main() {
 
   let destinations = []
   try {
-    destinations = await fetchJson(`${base}/destinations`)
+    destinations = normalizeList(await fetchJson(`${base}/destinations`))
   } catch (e) {
     console.warn("Could not list destinations (optional):", e.message)
   }
 
   let trips = []
   try {
-    trips = await fetchJson(`${base}/trips`)
+    trips = normalizeList(await fetchJson(`${base}/trips`))
   } catch (e) {
     console.warn("Could not list trips (optional):", e.message)
   }
@@ -107,6 +112,33 @@ async function main() {
 
   const token = await resolveToken()
   const authHeaders = { Authorization: `Bearer ${token}` }
+
+  let supplierId
+  const explicit = process.env.SUPPLIER_ID?.trim()
+  if (explicit) {
+    supplierId = Number(explicit) || 0
+    if (!supplierId) {
+      throw new Error(`Invalid SUPPLIER_ID=${explicit}`)
+    }
+    console.log(`Using SUPPLIER_ID from env: ${supplierId}`)
+  } else {
+    let suppliers = []
+    try {
+      suppliers = normalizeList(await fetchJson(`${base}/suppliers`, { headers: authHeaders }))
+    } catch (e) {
+      console.warn("Could not list suppliers:", e.message)
+    }
+    if (suppliers.length === 0) {
+      throw new Error(
+        "No suppliers in the database. Register a supplier user (POST /auth/register with role supplier) or create a supplier row, then rerun. You can also set SUPPLIER_ID if one already exists.",
+      )
+    }
+    supplierId = suppliers[0].id ?? suppliers[0].ID
+    if (!supplierId) {
+      throw new Error("Could not read supplier id from GET /suppliers response")
+    }
+    console.log(`Using first supplier id=${supplierId} (${suppliers.length} total)`)
+  }
 
   if (destinationId && !FORCE_SEED) {
     console.log(`Using existing destination id=${destinationId} (same Arabic name)`)
@@ -140,7 +172,7 @@ async function main() {
 
     const payload = {
       ...tripPartial,
-      supplier_id: SUPPLIER_ID,
+      supplier_id: supplierId,
       destination_ids: [destinationId],
     }
 
