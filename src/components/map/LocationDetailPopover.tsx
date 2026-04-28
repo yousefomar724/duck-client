@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import Image from "next/image"
 import {
   X,
   Clock,
@@ -24,6 +23,7 @@ import {
 import { type WaterActivityLocation, type DifficultyLevel } from "./map-data"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
+import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 
 interface LocationDetailPopoverProps {
   location: WaterActivityLocation | null
@@ -32,12 +32,13 @@ interface LocationDetailPopoverProps {
   anchorPoint: { x: number; y: number }
 }
 
-const FALLBACK_IMAGE = "/logo-transparent.png"
-
-function getDisplayImages(location: WaterActivityLocation): string[] {
-  if (location.images?.length) return location.images
-  if (location.image) return [location.image]
-  return [FALLBACK_IMAGE]
+function getDisplayImages(location: WaterActivityLocation): (string | undefined)[] {
+  if (location.images?.length) {
+    const urls = location.images.filter((u): u is string => Boolean(u?.trim?.()))
+    if (urls.length) return urls
+  }
+  if (location.image?.trim()) return [location.image]
+  return [undefined]
 }
 
 export default function LocationDetailPopover({
@@ -148,11 +149,16 @@ export default function LocationDetailPopover({
               {images.map((src, i) => (
                 <CarouselItem key={i} className="h-full ps-0">
                   <div className="relative h-full w-full">
-                    <Image
+                    <ImageWithLogoFallback
                       src={src}
-                      alt={t("imageAlt", { name: location.name, index: i + 1 })}
+                      alt={t("imageAlt", {
+                        name: location.name,
+                        index: i + 1,
+                      })}
                       fill
+                      sizes="(max-width: 640px) calc(100vw - 1rem), 340px"
                       className="object-cover"
+                      fallbackClassName="object-contain bg-gray-100 p-6"
                     />
                   </div>
                 </CarouselItem>
@@ -255,7 +261,7 @@ export default function LocationDetailPopover({
             </div>
 
             {/* Description — scrolls only when height exceeds max */}
-            <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+            <div className="max-h-16 break-all overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
               <p className="text-white/80 text-sm leading-relaxed ps-1">
                 {location.description}
               </p>

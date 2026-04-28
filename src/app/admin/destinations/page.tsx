@@ -459,7 +459,7 @@ export default function AdminDestinations() {
                         ? destination.name
                         : (destination.name?.ar ?? "")}
                     </h3>
-                    <p className="text-sm text-text-muted mt-1 line-clamp-2">
+                    <p className="text-sm text-text-muted mt-1 line-clamp-2 break-all">
                       {typeof destination.description === "string"
                         ? destination.description
                         : (destination.description?.ar ?? "")}

@@ -4,7 +4,6 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { Plus, Minus, Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { getPublicDestinations } from "@/lib/catalog/site-catalog"
 import { useLocale, useTranslations } from "next-intl"
 import ActivityFilters from "./ActivityFilters"
 import LocationDetailPopover from "./LocationDetailPopover"
@@ -16,6 +15,7 @@ import {
   type ActivityType,
   type WaterActivityLocation,
 } from "./map-data"
+import { getDestinations } from "@/lib/api/destinations"
 
 function resolveImageUrl(url: string): string {
   if (!url) return ""

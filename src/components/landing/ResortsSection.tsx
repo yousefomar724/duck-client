@@ -455,7 +455,7 @@ export default function ResortsSection() {
                   ) : null}
 
                   {/* Description */}
-                  <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                  <div className="max-h-16 break-all overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
                     <div className="text-white/80 text-sm leading-relaxed whitespace-pre-line ps-1">
                       {selectedDestinationDescription || t("noDescription")}
                     </div>
@@ -603,7 +603,7 @@ export default function ResortsSection() {
                 ) : null}
 
                 {/* Description */}
-                <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                <div className="max-h-16 break-all overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
                   <DialogDescription className="text-white/80 text-sm leading-relaxed whitespace-pre-line ps-1">
                     {selectedDestinationDescription || t("noDescription")}
                   </DialogDescription>

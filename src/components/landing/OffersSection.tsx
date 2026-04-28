@@ -406,10 +406,7 @@ export default function OffersSection() {
                           <TripListingPrices
                             trip={trip}
                             egyptiansOfferLabel={t("egyptiansSpecialOffer", {
-                              price: formatCurrency(
-                                trip.price,
-                                trip.currency,
-                              ),
+                              price: formatCurrency(trip.price, trip.currency),
                             })}
                             perHourSuffix={
                               trip.is_tour ? t("perHour") : undefined
@@ -679,7 +676,7 @@ export default function OffersSection() {
                   )}
 
                   {/* Description */}
-                  <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                  <div className="max-h-16 break-all overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
                     <div className="text-text-body text-sm leading-relaxed whitespace-pre-line ps-1">
                       {selectedTripDescription || t("noDescription")}
                     </div>
@@ -937,7 +934,7 @@ export default function OffersSection() {
                 )}
 
                 {/* Description */}
-                <div className="max-h-16 overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
+                <div className="max-h-16 break-all overflow-y-auto overscroll-contain scrollbar-duck rounded-lg">
                   <DialogDescription className="text-text-body text-sm leading-relaxed whitespace-pre-line ps-1">
                     {selectedTripDescription || t("noDescription")}
                   </DialogDescription>
