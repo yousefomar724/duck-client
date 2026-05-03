@@ -6,19 +6,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod/v3"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, ChevronLeft, ChevronDownIcon, User } from "lucide-react"
-import { format, formatISO, startOfDay } from "date-fns"
-import { arSA, enUS } from "date-fns/locale"
-import {
-  arSA as arSADayPicker,
-  enUS as enUSDayPicker,
-} from "react-day-picker/locale"
-import { Calendar } from "@/components/ui/calendar"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Check, ChevronLeft, User } from "lucide-react"
+import { formatISO, set, startOfDay } from "date-fns"
 import {
   Select,
   SelectContent,
@@ -37,6 +26,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { BookingScheduleField } from "@/components/booking/booking-schedule-field"
+import {
+  formatBookingDayPhrase,
+  formatBookingTime,
+} from "@/lib/booking/relative-booking-day"
 import { getTrips } from "@/lib/api/trips"
 import * as bookingsApi from "@/lib/api/bookings"
 import {
@@ -140,7 +134,6 @@ function BookPageContent() {
   const [tripsLoading, setTripsLoading] = useState(true)
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
-  const [bookingDateOpen, setBookingDateOpen] = useState(false)
   const [guestsMode, setGuestsMode] = useState<"preset" | "custom">("preset")
 
   const navigateToStep = useCallback(
@@ -188,10 +181,14 @@ function BookPageContent() {
           .string()
           .min(1, tv("phoneRequired"))
           .regex(EGYPT_MOBILE_LOCAL_REGEX, tv("phoneMobileEgypt")),
-        booking_date: z.date({
-          required_error: tv("dateRequired"),
-          invalid_type_error: tv("dateInvalid"),
-        }),
+        booking_date: z
+          .date({
+            required_error: tv("dateRequired"),
+            invalid_type_error: tv("dateInvalid"),
+          })
+          .refine((d) => d.getTime() >= Date.now() - 60_000, {
+            message: tv("dateTimePast"),
+          }),
         resource_type: z.enum(RESOURCE_TYPES),
         guests: z.coerce
           .number({ invalid_type_error: tv("numberInvalid") })
@@ -307,7 +304,12 @@ function BookPageContent() {
   const defaultTomorrow = useMemo(() => {
     const t = new Date()
     t.setDate(t.getDate() + 1)
-    return startOfDay(t)
+    return set(startOfDay(t), {
+      hours: 10,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+    })
   }, [])
 
   const form = useForm<ContactFormValues>({
@@ -440,7 +442,7 @@ function BookPageContent() {
     if (!selectedTrip) return
     const phoneNumber = localEgyptMobileToE164(values.phone)
     setSubmitLoading(true)
-    const booking_date = formatISO(startOfDay(values.booking_date))
+    const booking_date = formatISO(values.booking_date)
 
     let localGuests = 0
     let foreignerGuests = 0
@@ -776,53 +778,16 @@ function BookPageContent() {
                           {t("bookingDate")}{" "}
                           <span className="text-red-500">*</span>
                         </FormLabel>
-                        <Popover
-                          open={bookingDateOpen}
-                          onOpenChange={setBookingDateOpen}
-                        >
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full justify-between font-normal text-right"
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP", {
-                                    locale: locale === "ar" ? arSA : enUS,
-                                  })
-                                ) : (
-                                  <span className="text-muted-foreground">
-                                    {t("selectDate")}
-                                  </span>
-                                )}
-                                <ChevronDownIcon className="ms-2 size-4 shrink-0 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-auto overflow-hidden p-0"
-                            align="start"
-                            dir={locale === "ar" ? "rtl" : "ltr"}
-                          >
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={(d) => {
-                                field.onChange(d)
-                                setBookingDateOpen(false)
-                              }}
-                              disabled={(date) =>
-                                startOfDay(date) < startOfDay(new Date())
-                              }
-                              defaultMonth={field.value}
-                              locale={
-                                locale === "ar" ? arSADayPicker : enUSDayPicker
-                              }
-                              dir={locale === "ar" ? "rtl" : "ltr"}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <BookingScheduleField
+                            key={locale}
+                            name={field.name}
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            locale={locale}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1289,10 +1254,22 @@ function BookPageContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-muted">{t("reviewDate")}</span>
-                    <span>
+                    <span className="font-medium text-text-dark text-end">
                       {watchedBookingDate
-                        ? format(watchedBookingDate, "PPP", {
-                            locale: locale === "ar" ? arSA : enUS,
+                        ? t("bookingScheduleSummaryNatural", {
+                            day: formatBookingDayPhrase(
+                              watchedBookingDate,
+                              locale,
+                              {
+                                today: t("relativeDayToday"),
+                                tomorrow: t("relativeDayTomorrow"),
+                                dayAfterTomorrow: t("relativeDayAfterTomorrow"),
+                              },
+                            ),
+                            time: formatBookingTime(
+                              watchedBookingDate,
+                              locale,
+                            ),
                           })
                         : "—"}
                     </span>

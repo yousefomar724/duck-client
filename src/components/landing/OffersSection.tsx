@@ -309,6 +309,7 @@ export default function OffersSection() {
                             align: "start",
                             loop: true,
                             direction: "ltr",
+                            watchDrag: false,
                           }}
                           className="absolute inset-0 h-full w-full [&_[data-slot=carousel-content]]:h-full"
                         >
