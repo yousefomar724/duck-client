@@ -235,7 +235,7 @@ export default function ResortsSection() {
                         src={imageUrl}
                         alt={destinationName}
                         className={`absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-105 ${imageObjectClass}`}
-                        fallbackClassName="absolute inset-0 w-full h-full object-contain p-10 sm:p-12 transition-transform duration-500 group-hover:scale-105 bg-gray-900/20"
+                        fallbackClassName="absolute inset-0 w-full h-full object-contain p-0 transition-transform duration-500 group-hover:scale-105 bg-white"
                       />
                     ) : (
                       <ImageWithLogoFallback
@@ -346,7 +346,7 @@ export default function ResortsSection() {
                             alt={`${selectedDestinationName} - ${t("imageAlt", { index: i + 1 })}`}
                             fill
                             className="object-cover"
-                            fallbackClassName="object-contain p-6 bg-duck-navy-deep/50"
+                            fallbackClassName="object-contain p-6 bg-white"
                             unoptimized={imageUrl.startsWith("http")}
                           />
                         </div>
@@ -400,7 +400,7 @@ export default function ResortsSection() {
 
               {/* Content section */}
               <div className="flex flex-col min-h-0 flex-1 bg-duck-navy-deep text-white">
-                <div className="px-4 py-2 flex flex-col gap-3">
+                <div className="p-4 flex flex-col gap-3">
                   {/* Name + Status badge */}
                   <div className="flex flex-col gap-2">
                     <div className="text-white text-xl font-bold leading-tight">
@@ -492,7 +492,7 @@ export default function ResortsSection() {
                           alt={`${selectedDestinationName} - ${t("imageAlt", { index: i + 1 })}`}
                           fill
                           className="object-cover"
-                          fallbackClassName="object-contain p-6 bg-duck-navy-deep/50"
+                          fallbackClassName="object-contain p-6 bg-white"
                           unoptimized={imageUrl.startsWith("http")}
                         />
                       </div>
@@ -546,7 +546,7 @@ export default function ResortsSection() {
 
             {/* Content section */}
             <div className="flex flex-col min-h-0 flex-1">
-              <div className="px-4 py-2 flex flex-col gap-3">
+              <div className="p-4 flex flex-col gap-3">
                 {/* Name + Status badge */}
                 <div className="flex flex-col gap-2">
                   <DialogHeader className="mb-0">

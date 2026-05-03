@@ -564,7 +564,7 @@ export default function OffersSection() {
 
               {/* Content section */}
               <div className="flex flex-col min-h-0 flex-1">
-                <div className="px-4 py-2 flex flex-col gap-3">
+                <div className="p-4 flex flex-col gap-3">
                   {/* Title */}
                   <div className="mb-0">
                     <div className="text-text-dark text-xl font-bold leading-tight">
@@ -826,7 +826,7 @@ export default function OffersSection() {
 
             {/* Content section */}
             <div className="flex flex-col min-h-0 flex-1">
-              <div className="px-4 py-2 flex flex-col gap-3">
+              <div className="p-4 flex flex-col gap-3">
                 {/* Title */}
                 <DialogHeader className="mb-0">
                   <DialogTitle className="text-text-dark text-xl font-bold leading-tight">

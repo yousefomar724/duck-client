@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { Suspense, useState, useEffect, useMemo, useRef } from "react"
-import { useSearchParams } from "next/navigation"
+import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod/v3"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -118,6 +118,8 @@ function getLocalizedText(value: any, locale: string, fallback = ""): string {
 }
 
 function BookPageContent() {
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const tripParam = searchParams.get("trip")
   const { user } = useAuth()
@@ -126,13 +128,38 @@ function BookPageContent() {
   const tv = useTranslations("validation")
   const locale = useLocale()
 
-  const [step, setStep] = useState(1)
+  const step = useMemo(() => {
+    const raw = searchParams.get("step")
+    if (raw) {
+      const n = parseInt(raw, 10)
+      if (n >= 1 && n <= 3) return n
+    }
+    return 1
+  }, [searchParams])
   const [trips, setTrips] = useState<Trip[]>([])
   const [tripsLoading, setTripsLoading] = useState(true)
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [bookingDateOpen, setBookingDateOpen] = useState(false)
   const [guestsMode, setGuestsMode] = useState<"preset" | "custom">("preset")
+
+  const navigateToStep = useCallback(
+    (nextStep: number, mode: "push" | "replace", tripId?: number) => {
+      const p = new URLSearchParams(searchParams.toString())
+      p.set("step", String(nextStep))
+      const fromParam = tripParam ? parseInt(tripParam, 10) : NaN
+      const tid =
+        tripId ??
+        selectedTrip?.id ??
+        (Number.isFinite(fromParam) ? fromParam : NaN)
+      if (Number.isFinite(tid)) p.set("trip", String(tid))
+      const qs = p.toString()
+      const url = qs ? `${pathname}?${qs}` : pathname
+      if (mode === "replace") router.replace(url)
+      else router.push(url)
+    },
+    [pathname, router, searchParams, selectedTrip?.id, tripParam],
+  )
 
   // --- NEW: useRef to store previous trip id ---
   const prevTripIdRef = useRef<number | null>(null)
@@ -254,9 +281,19 @@ function BookPageContent() {
         const trip = data.find((t) => t.id === id)
         if (trip) {
           setSelectedTrip(trip)
-          if (!didAutoAdvanceRef.current) {
+          const stepInUrl =
+            typeof window !== "undefined"
+              ? new URLSearchParams(window.location.search).get("step")
+              : null
+          if (!stepInUrl && !didAutoAdvanceRef.current) {
             didAutoAdvanceRef.current = true
-            setStep(2)
+            const p = new URLSearchParams(
+              typeof window !== "undefined" ? window.location.search : "",
+            )
+            p.set("trip", String(trip.id))
+            p.set("step", "2")
+            const qs = p.toString()
+            router.replace(qs ? `${pathname}?${qs}` : pathname)
           }
         }
       }
@@ -265,7 +302,7 @@ function BookPageContent() {
     return () => {
       cancelled = true
     }
-  }, [tripParam, locale])
+  }, [tripParam, locale, pathname, router])
 
   const defaultTomorrow = useMemo(() => {
     const t = new Date()
@@ -650,7 +687,10 @@ function BookPageContent() {
                 <Button
                   type="button"
                   disabled={!selectedTrip}
-                  onClick={() => setStep(2)}
+                  onClick={() =>
+                    selectedTrip &&
+                    navigateToStep(2, "push", selectedTrip.id)
+                  }
                   className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow-hover w-full sm:w-auto"
                 >
                   {t("next")}
@@ -1181,7 +1221,7 @@ function BookPageContent() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setStep(1)}
+                      onClick={() => navigateToStep(1, "push")}
                       className="rounded-full border-text-dark"
                     >
                       <ChevronLeft className="w-4 h-4 ms-1 rtl:rotate-180" />
@@ -1192,7 +1232,7 @@ function BookPageContent() {
                       onClick={() => {
                         form.trigger().then((ok) => {
                           if (ok) {
-                            setStep(3)
+                            navigateToStep(3, "push")
                           } else {
                             addToast(t("validationFailed"), "error")
                             const firstErrorKey = Object.keys(
@@ -1406,7 +1446,7 @@ function BookPageContent() {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setStep(2)}
+                        onClick={() => navigateToStep(2, "push")}
                         disabled={submitLoading}
                         className="rounded-full border-text-dark"
                       >
