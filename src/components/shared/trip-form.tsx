@@ -2,7 +2,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import Image from "next/image"
 import {
   Info,
   DollarSign,
@@ -33,6 +32,10 @@ import { DateTimePicker } from "@/components/shared/date-time-picker"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Trip, Destination, Supplier, TourGuide } from "@/lib/types"
 import { resolveImageUrl } from "@/lib/image-utils"
+import {
+  ImageWithLogoFallback,
+  ImgWithLogoFallback,
+} from "@/components/shared/image-with-logo-fallback"
 
 /** Go gorm.Model serializes primary key as `ID`; normalize to `id` for the UI. */
 function normalizeTourGuides(list: TourGuide[]): TourGuide[] {
@@ -773,13 +776,12 @@ export default function TripForm({
                         key={`existing-${index}`}
                         className="relative aspect-square rounded border border-gray-300 overflow-hidden bg-gray-100"
                       >
-                        <Image
+                        <ImageWithLogoFallback
                           fill
                           sizes="(max-width: 768px) 33vw, 200px"
                           src={resolveImageUrl(url) ?? url}
-                          alt=""
+                          alt={`صورة الرحلة ${index + 1}`}
                           className="object-cover"
-                          unoptimized
                         />
                         <button
                           type="button"
@@ -821,10 +823,10 @@ export default function TripForm({
                         className="relative w-full aspect-square bg-gray-100 rounded border border-gray-300 flex items-center justify-center overflow-hidden"
                       >
                         {file.type.startsWith("image/") && (
-                          <img
+                          <ImgWithLogoFallback
                             src={URL.createObjectURL(file)}
-                            alt={`Preview ${index}`}
-                            className="w-full h-full object-cover"
+                            alt={`معاينة ${index + 1}`}
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
                         )}
                         <button
