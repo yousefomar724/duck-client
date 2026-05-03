@@ -27,6 +27,8 @@ export interface ActivityFilter {
 }
 
 export const ASWAN_CENTER: [number, number] = [24.0889, 32.8998]
+/** Custom map pin (public asset) */
+export const MAP_MARKER_URL = "/duck-marker.png"
 export const DEFAULT_ZOOM = 13
 /** Zoom level when a pin is selected (zoom in to focus on the location) */
 export const FOCUSED_ZOOM = 15

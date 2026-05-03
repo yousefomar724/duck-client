@@ -16,11 +16,9 @@ import {
   useMap,
 } from "@vis.gl/react-google-maps"
 import type { WaterActivityLocation } from "./map-data"
-import { ASWAN_CENTER, DEFAULT_ZOOM } from "./map-data"
+import { ASWAN_CENTER, DEFAULT_ZOOM, MAP_MARKER_URL } from "./map-data"
 
 export type MapStyle = "light" | "dark"
-
-const LOGO_PIN_URL = "/duck.png"
 
 function ProjectionUpdater({
   projectionRef,
@@ -195,7 +193,7 @@ function MarkerWithClick({
         ) : null}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={LOGO_PIN_URL}
+          src={MAP_MARKER_URL}
           alt=""
           width={size}
           height={size}
