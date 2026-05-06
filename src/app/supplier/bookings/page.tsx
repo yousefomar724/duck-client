@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import StatCard from "@/components/shared/stat-card"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
 import * as bookingsApi from "@/lib/api/bookings"
+import { confirmManualPayment, refundManualPayment } from "@/lib/api/bookings"
 import * as tripsApi from "@/lib/api/trips"
 import * as tourGuidesApi from "@/lib/api/tour-guides"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
@@ -35,7 +36,7 @@ import type {
   Supplier,
 } from "@/lib/types"
 import { useToast } from "@/lib/stores/toast-store"
-import { CalendarCheck, CheckCircle, ChevronDown, Clock } from "lucide-react"
+import { CalendarCheck, CheckCircle, ChevronDown, Clock, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const ALL_FILTER_VALUES = [
@@ -111,6 +112,7 @@ export default function SupplierBookingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [guideUpdating, setGuideUpdating] = useState<number | null>(null)
+  const [manualActionLoading, setManualActionLoading] = useState<number | null>(null)
   const [expandedBookingId, setExpandedBookingId] = useState<number | null>(
     null,
   )
@@ -164,6 +166,24 @@ export default function SupplierBookingsPage() {
       return
     }
     addToast("تم تحديث المرشد", "success")
+    await fetchBookings()
+  }
+
+  const handleManualConfirm = async (id: number) => {
+    setManualActionLoading(id)
+    const { error } = await confirmManualPayment(id)
+    setManualActionLoading(null)
+    if (error) { addToast(error, "error"); return }
+    addToast("تم تأكيد استلام الدفع", "success")
+    await fetchBookings()
+  }
+
+  const handleManualRefund = async (id: number) => {
+    setManualActionLoading(id)
+    const { error } = await refundManualPayment(id)
+    setManualActionLoading(null)
+    if (error) { addToast(error, "error"); return }
+    addToast("تم استرداد الدفع", "success")
     await fetchBookings()
   }
 
@@ -433,6 +453,26 @@ export default function SupplierBookingsPage() {
                                 بيانات إضافية
                               </p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 text-sm">
+                                {booking.payment_method && (
+                                  <div>
+                                    <div className="text-text-muted text-xs mb-0.5">
+                                      طريقة الدفع
+                                    </div>
+                                    <div>
+                                      <span
+                                        className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
+                                          booking.payment_method === "MANUAL"
+                                            ? "bg-amber-100 text-amber-700"
+                                            : "bg-blue-100 text-blue-700"
+                                        }`}
+                                      >
+                                        {booking.payment_method === "MANUAL"
+                                          ? "إنستاباي / يدوي"
+                                          : "كاشير"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                                 <div>
                                   <div className="text-text-muted text-xs mb-0.5">
                                     معرف الجلسة
@@ -585,6 +625,45 @@ export default function SupplierBookingsPage() {
                                   </div>
                                 )}
                               </div>
+                              {booking.payment_method === "MANUAL" && (
+                                <div
+                                  className="border-t border-border/60 pt-4 mt-4"
+                                  onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                >
+                                  <p className="text-sm font-semibold text-duck-navy mb-3">
+                                    إجراءات الدفع اليدوي
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {booking.status === "PENDING" && (
+                                      <button
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
+                                        disabled={manualActionLoading === rowId}
+                                        onClick={() => handleManualConfirm(rowId)}
+                                      >
+                                        {manualActionLoading === rowId ? (
+                                          <Loader2 className="size-4 animate-spin" />
+                                        ) : (
+                                          <CheckCircle className="size-4" />
+                                        )}
+                                        تأكيد استلام الدفع
+                                      </button>
+                                    )}
+                                    {booking.status === "CONFIRMED" && (
+                                      <button
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
+                                        disabled={manualActionLoading === rowId}
+                                        onClick={() => handleManualRefund(rowId)}
+                                      >
+                                        {manualActionLoading === rowId ? (
+                                          <Loader2 className="size-4 animate-spin" />
+                                        ) : null}
+                                        استرداد الدفع
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

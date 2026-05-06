@@ -80,6 +80,7 @@ export interface Booking {
   order_ref?: string
   order_id?: string
   wants_guide?: boolean
+  payment_method?: "KASHIER" | "MANUAL"
 }
 
 export interface Wallet {

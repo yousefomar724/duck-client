@@ -37,7 +37,7 @@ import {
   type SuccessCache,
   SUCCESS_CACHE_KEY,
 } from "@/lib/booking-success-cache"
-import type { ResourceType, Trip } from "@/lib/types"
+import type { Booking, ResourceType, Trip } from "@/lib/types"
 import { getTripImage, resolveImageUrl } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
 import { useAuth } from "@/lib/stores/auth-store"
@@ -49,6 +49,10 @@ import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallb
 
 /** Local Egyptian mobile: 0 + (10|11|12|15) + 8 digits */
 const EGYPT_MOBILE_LOCAL_REGEX = /^0(10|11|12|15)\d{8}$/
+
+const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
+const INSTAPAY_LINK = "https://ipn.eg/s/ahmedragab9491/instapay/8XekIs"
+const INSTAPAY_PHONE = "+20 15 50061006"
 
 function parseStoredPhoneToLocal(p: string): string | null {
   const d = p.replace(/\D/g, "")
@@ -135,6 +139,8 @@ function BookPageContent() {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [guestsMode, setGuestsMode] = useState<"preset" | "custom">("preset")
+  const [paymentAmount, setPaymentAmount] = useState<number>(0)
+  const [manualBookingResult, setManualBookingResult] = useState<{ booking: Booking; chosenAmount: number } | null>(null)
 
   const navigateToStep = useCallback(
     (nextStep: number, mode: "push" | "replace", tripId?: number) => {
@@ -438,6 +444,44 @@ function BookPageContent() {
     }
   }
 
+  const totalAmount = useMemo(() => {
+    if (!selectedTrip) return 0
+    const localCount =
+      watchedGuestMix === "local"
+        ? Number(watchedGuests) || 0
+        : watchedGuestMix === "mixed"
+          ? Number(watchedLocalGuests) || 0
+          : 0
+    const foreignerCount =
+      watchedGuestMix === "foreigner"
+        ? Number(watchedGuests) || 0
+        : watchedGuestMix === "mixed"
+          ? Number(watchedForeignerGuests) || 0
+          : 0
+    const duration = selectedTrip.is_tour ? Number(watchedDuration) || 1 : 1
+    const localTotal = selectedTrip.price * localCount * duration
+    const foreignerTotal =
+      (selectedTrip.foreigner_price ?? 0) * foreignerCount * duration
+    const hasOptionalGuideCheck =
+      !selectedTrip.guide_mandatory &&
+      ((selectedTrip.guide_price ?? 0) > 0 ||
+        (selectedTrip.is_tour === true &&
+          (selectedTrip.guide_price ?? 0) === 0))
+    const addsGuideFee =
+      selectedTrip.guide_mandatory ||
+      (hasOptionalGuideCheck && watchedWantsGuide)
+    const guideFee = addsGuideFee ? (selectedTrip.guide_price ?? 0) : 0
+    return localTotal + foreignerTotal + guideFee
+  }, [
+    selectedTrip,
+    watchedGuestMix,
+    watchedGuests,
+    watchedLocalGuests,
+    watchedForeignerGuests,
+    watchedDuration,
+    watchedWantsGuide,
+  ])
+
   const handleSubmit = form.handleSubmit(async (values) => {
     if (!selectedTrip) return
     const phoneNumber = localEgyptMobileToE164(values.phone)
@@ -464,7 +508,7 @@ function BookPageContent() {
     const needsReferral =
       values.hear_about_us === "friend" || values.hear_about_us === "other"
 
-    const { data, error } = await bookingsApi.createBooking({
+    const bookingPayload = {
       trip_id: selectedTrip.id,
       full_name: values.full_name.trim(),
       phone_number: phoneNumber,
@@ -477,7 +521,29 @@ function BookPageContent() {
       wants_guide: hasOptionalGuide ? values.wants_guide : false,
       hear_about_us: values.hear_about_us || "",
       referral_text: needsReferral ? values.referral_text.trim() : "",
-    })
+    }
+
+    if (PAYMENT_METHOD === "instapay") {
+      const minPayment = Math.ceil(totalAmount * 0.5)
+      const chosenAmount =
+        paymentAmount >= minPayment ? paymentAmount : totalAmount
+      const { data, error } = await bookingsApi.createManualBooking(bookingPayload)
+      setSubmitLoading(false)
+      if (error) {
+        const isConflict =
+          error.toLowerCase().includes("availability") ||
+          error.toLowerCase().includes("no availability") ||
+          error.includes("409")
+        addToast(isConflict ? t("noAvailability") : error, "error")
+        return
+      }
+      if (data?.booking) {
+        setManualBookingResult({ booking: data.booking, chosenAmount })
+      }
+      return
+    }
+
+    const { data, error } = await bookingsApi.createBooking(bookingPayload)
     setSubmitLoading(false)
     if (error) {
       const isConflict =
@@ -546,33 +612,37 @@ function BookPageContent() {
               className="flex justify-center gap-2 sm:gap-3 mb-8 pb-8 border-b border-border/60"
               dir="ltr"
             >
-              {[1, 2, 3].map((s) => (
-                <div
-                  key={s}
-                  className={`flex items-center gap-1 ${
-                    step === s
-                      ? "text-duck-cyan font-semibold"
-                      : step > s
-                        ? "text-duck-cyan/90"
-                        : "text-text-muted"
-                  }`}
-                >
-                  <span
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                      step === s
-                        ? "bg-duck-cyan text-duck-navy"
-                        : step > s
-                          ? "bg-duck-cyan/15 text-duck-cyan"
-                          : "bg-muted text-text-muted"
+              {[1, 2, 3].map((s) => {
+                const isDone = manualBookingResult ? true : step > s
+                const isActive = !manualBookingResult && step === s
+                return (
+                  <div
+                    key={s}
+                    className={`flex items-center gap-1 ${
+                      isActive
+                        ? "text-duck-cyan font-semibold"
+                        : isDone
+                          ? "text-duck-cyan/90"
+                          : "text-text-muted"
                     }`}
                   >
-                    {step > s ? <Check className="w-4 h-4" /> : s}
-                  </span>
-                  {s < 3 && (
-                    <span className="w-4 sm:w-6 h-0.5 bg-duck-cyan/20" />
-                  )}
-                </div>
-              ))}
+                    <span
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                        isActive
+                          ? "bg-duck-cyan text-duck-navy"
+                          : isDone
+                            ? "bg-duck-cyan/15 text-duck-cyan"
+                            : "bg-muted text-text-muted"
+                      }`}
+                    >
+                      {isDone ? <Check className="w-4 h-4" /> : s}
+                    </span>
+                    {s < 3 && (
+                      <span className="w-4 sm:w-6 h-0.5 bg-duck-cyan/20" />
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
             {/* Step 1: Trip selection */}
@@ -1417,6 +1487,94 @@ function BookPageContent() {
                     </div>
                   ) : null}
                 </div>
+                {PAYMENT_METHOD === "instapay" && totalAmount > 0 && (
+                  <div className="rounded-2xl border border-duck-cyan/30 bg-duck-cyan/5 p-5 space-y-4">
+                    <p className="font-semibold text-text-dark">
+                      {t("paymentAmountTitle")}
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentAmount(totalAmount)}
+                        className={`flex-1 min-w-[140px] rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
+                          paymentAmount === totalAmount || paymentAmount === 0
+                            ? "border-duck-cyan bg-duck-cyan/10 text-duck-navy"
+                            : "border-border hover:border-duck-cyan/50"
+                        }`}
+                      >
+                        <span className="block text-base font-bold">
+                          {formatCurrency(totalAmount, selectedTrip.currency)}
+                        </span>
+                        <span className="flex items-center justify-center gap-1 mt-0.5">
+                          {t("paymentAmountFull")}
+                          <span className="text-xs bg-duck-cyan text-duck-navy px-1.5 py-0.5 rounded-full font-semibold ms-1">
+                            {t("paymentAmountRecommended")}
+                          </span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaymentAmount(Math.ceil(totalAmount * 0.5))
+                        }
+                        className={`flex-1 min-w-[140px] rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
+                          paymentAmount === Math.ceil(totalAmount * 0.5) &&
+                          paymentAmount !== totalAmount
+                            ? "border-duck-cyan bg-duck-cyan/10 text-duck-navy"
+                            : "border-border hover:border-duck-cyan/50"
+                        }`}
+                      >
+                        <span className="block text-base font-bold">
+                          {formatCurrency(
+                            Math.ceil(totalAmount * 0.5),
+                            selectedTrip.currency,
+                          )}
+                        </span>
+                        <span className="block mt-0.5">{t("paymentAmountHalf")}</span>
+                      </button>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-sm text-text-muted">
+                        {t("paymentAmountCustomLabel")}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={Math.ceil(totalAmount * 0.5)}
+                          max={totalAmount}
+                          value={paymentAmount || totalAmount}
+                          onChange={(e) => {
+                            const v = Number(e.target.value)
+                            setPaymentAmount(v)
+                          }}
+                          className="w-full rounded-lg border border-black/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-duck-cyan focus:border-duck-cyan"
+                        />
+                        <span className="text-sm text-text-muted whitespace-nowrap">
+                          {selectedTrip.currency}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-muted">
+                        {t("paymentAmountMin", {
+                          min: formatCurrency(
+                            Math.ceil(totalAmount * 0.5),
+                            selectedTrip.currency,
+                          ),
+                        })}
+                      </p>
+                    </div>
+                    {paymentAmount > 0 && paymentAmount < totalAmount && (
+                      <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                        {t("partialPaymentRemaining", {
+                          remaining: formatCurrency(
+                            totalAmount - paymentAmount,
+                            selectedTrip.currency,
+                          ),
+                        })}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <Form {...form}>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="flex gap-4">
@@ -1437,11 +1595,94 @@ function BookPageContent() {
                       >
                         {submitLoading
                           ? t("submitLoading")
-                          : t("proceedToPayment")}
+                          : PAYMENT_METHOD === "instapay"
+                            ? t("submitInstapay")
+                            : t("proceedToPayment")}
                       </Button>
                     </div>
                   </form>
                 </Form>
+              </div>
+            )}
+            {/* Step 4: InstaPay confirmation */}
+            {manualBookingResult && (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+                    <Check className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h2 className="text-text-dark text-2xl font-bold">
+                    {t("bookingCreated")}
+                  </h2>
+                  <p className="text-text-muted text-sm">
+                    {t("bookingRef")}:{" "}
+                    <span className="font-mono font-semibold text-duck-navy">
+                      #{manualBookingResult.booking.ID}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="bg-off-white rounded-2xl p-5 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-text-muted text-sm">
+                      {t("amountToSend")}
+                    </span>
+                    <span className="font-bold text-xl text-duck-cyan">
+                      {formatCurrency(
+                        manualBookingResult.chosenAmount,
+                        manualBookingResult.booking.currency || "EGP",
+                      )}
+                    </span>
+                  </div>
+                  {manualBookingResult.chosenAmount <
+                    (manualBookingResult.booking.amount ?? 0) && (
+                    <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                      {t("partialPaymentRemaining", {
+                        remaining: formatCurrency(
+                          (manualBookingResult.booking.amount ?? 0) -
+                            manualBookingResult.chosenAmount,
+                          manualBookingResult.booking.currency || "EGP",
+                        ),
+                      })}
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border-2 border-duck-cyan/30 p-5 space-y-4">
+                  <p className="font-semibold text-text-dark">
+                    {t("instapayInstructions")}
+                  </p>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-text-muted">{t("instapayPhone")}</span>
+                    <span
+                      className="font-mono font-semibold text-duck-navy"
+                      dir="ltr"
+                    >
+                      {INSTAPAY_PHONE}
+                    </span>
+                  </div>
+                  <a
+                    href={INSTAPAY_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full bg-duck-cyan text-duck-navy rounded-full py-3 px-6 font-semibold hover:bg-duck-cyan/90 transition-colors"
+                  >
+                    {t("payViaInstapay")}
+                  </a>
+                </div>
+
+                <p className="text-sm text-text-muted text-center">
+                  {t("bookingPendingNote")}
+                </p>
+
+                <div className="text-center">
+                  <a
+                    href="/my-bookings"
+                    className="text-duck-cyan underline underline-offset-2 text-sm font-medium"
+                  >
+                    {t("viewMyBookings")}
+                  </a>
+                </div>
               </div>
             )}
           </div>

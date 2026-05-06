@@ -8,6 +8,38 @@ export interface BookingResponse {
   booking: Booking;
 }
 
+export interface ManualBookingResponse {
+  message: string;
+  booking: Booking;
+}
+
+export async function createManualBooking(
+  data: CreateBookingRequest,
+): Promise<ApiResponse<ManualBookingResponse>> {
+  return apiClient<ManualBookingResponse>('/bookings/manual', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function confirmManualPayment(
+  id: number,
+): Promise<ApiResponse<{ message: string; booking: Booking }>> {
+  return apiClient<{ message: string; booking: Booking }>(
+    `/bookings/${id}/manual-confirm`,
+    { method: 'POST' },
+  );
+}
+
+export async function refundManualPayment(
+  id: number,
+): Promise<ApiResponse<{ message: string; booking: Booking }>> {
+  return apiClient<{ message: string; booking: Booking }>(
+    `/bookings/${id}/manual-refund`,
+    { method: 'POST' },
+  );
+}
+
 export async function createBooking(
   data: CreateBookingRequest,
 ): Promise<ApiResponse<BookingResponse>> {
