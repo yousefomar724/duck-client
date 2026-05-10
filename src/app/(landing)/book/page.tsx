@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from "react"
+import {
+  Suspense,
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod/v3"
@@ -51,8 +58,8 @@ import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallb
 const EGYPT_MOBILE_LOCAL_REGEX = /^0(10|11|12|15)\d{8}$/
 
 const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
-const INSTAPAY_LINK = "https://ipn.eg/s/ahmedragab9491/instapay/8XekIs"
-const INSTAPAY_PHONE = "+20 15 50061006"
+const INSTAPAY_LINK = "https://ipn.eg/S/yousefomaralex/instapay/8Pnhtt"
+const INSTAPAY_PHONE = "+201550061006"
 
 function parseStoredPhoneToLocal(p: string): string | null {
   const d = p.replace(/\D/g, "")
@@ -140,7 +147,10 @@ function BookPageContent() {
   const [submitLoading, setSubmitLoading] = useState(false)
   const [guestsMode, setGuestsMode] = useState<"preset" | "custom">("preset")
   const [paymentAmount, setPaymentAmount] = useState<number>(0)
-  const [manualBookingResult, setManualBookingResult] = useState<{ booking: Booking; chosenAmount: number } | null>(null)
+  const [manualBookingResult, setManualBookingResult] = useState<{
+    booking: Booking
+    chosenAmount: number
+  } | null>(null)
 
   const navigateToStep = useCallback(
     (nextStep: number, mode: "push" | "replace", tripId?: number) => {
@@ -527,7 +537,8 @@ function BookPageContent() {
       const minPayment = Math.ceil(totalAmount * 0.5)
       const chosenAmount =
         paymentAmount >= minPayment ? paymentAmount : totalAmount
-      const { data, error } = await bookingsApi.createManualBooking(bookingPayload)
+      const { data, error } =
+        await bookingsApi.createManualBooking(bookingPayload)
       setSubmitLoading(false)
       if (error) {
         const isConflict =
@@ -760,8 +771,7 @@ function BookPageContent() {
                   type="button"
                   disabled={!selectedTrip}
                   onClick={() =>
-                    selectedTrip &&
-                    navigateToStep(2, "push", selectedTrip.id)
+                    selectedTrip && navigateToStep(2, "push", selectedTrip.id)
                   }
                   className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow-hover w-full sm:w-auto"
                 >
@@ -1336,10 +1346,7 @@ function BookPageContent() {
                                 dayAfterTomorrow: t("relativeDayAfterTomorrow"),
                               },
                             ),
-                            time: formatBookingTime(
-                              watchedBookingDate,
-                              locale,
-                            ),
+                            time: formatBookingTime(watchedBookingDate, locale),
                           })
                         : "—"}
                     </span>
@@ -1530,7 +1537,9 @@ function BookPageContent() {
                             selectedTrip.currency,
                           )}
                         </span>
-                        <span className="block mt-0.5">{t("paymentAmountHalf")}</span>
+                        <span className="block mt-0.5">
+                          {t("paymentAmountHalf")}
+                        </span>
                       </button>
                     </div>
                     <div className="space-y-1.5">
@@ -1653,7 +1662,9 @@ function BookPageContent() {
                     {t("instapayInstructions")}
                   </p>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-text-muted">{t("instapayPhone")}</span>
+                    <span className="text-text-muted">
+                      {t("instapayPhone")}
+                    </span>
                     <span
                       className="font-mono font-semibold text-duck-navy"
                       dir="ltr"
