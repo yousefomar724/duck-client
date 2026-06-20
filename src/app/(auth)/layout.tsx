@@ -29,7 +29,7 @@ export default async function AuthLayout({
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: "url('/kayak4.jpg'), url('/resort.webp')",
+            backgroundImage: "url('/IMG_1705.jpg'), url('/resort.webp')",
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",

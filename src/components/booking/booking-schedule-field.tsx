@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { format, set, startOfDay } from "date-fns"
 import { arSA, enUS } from "date-fns/locale"
 import {
@@ -17,12 +17,32 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import { Input } from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+/** Bookable window: 6:00 AM – 6:30 PM (inclusive), in minutes from midnight. */
+export const BOOKING_MIN_MINUTES = 6 * 60 // 06:00
+export const BOOKING_MAX_MINUTES = 18 * 60 + 30 // 18:30
+export const BOOKING_MIN_TIME = "06:00"
+export const BOOKING_MAX_TIME = "18:30"
+/** Step between selectable time slots, in minutes. */
+export const BOOKING_SLOT_MINUTES = 30
+
+function clampMinutesToWindow(minutes: number): number {
+  if (minutes < BOOKING_MIN_MINUTES) return BOOKING_MIN_MINUTES
+  if (minutes > BOOKING_MAX_MINUTES) return BOOKING_MAX_MINUTES
+  return minutes
+}
 
 function mergeCalendarDay(picked: Date, previous: Date): Date {
   return set(previous, {
@@ -37,9 +57,10 @@ function mergeTimeFromHHMM(base: Date, hhmm: string): Date {
   const h = Number.parseInt(hStr ?? "", 10)
   const m = Number.parseInt(mStr ?? "", 10)
   if (Number.isNaN(h) || Number.isNaN(m)) return base
+  const clamped = clampMinutesToWindow(h * 60 + m)
   return set(base, {
-    hours: h,
-    minutes: m,
+    hours: Math.floor(clamped / 60),
+    minutes: clamped % 60,
     seconds: 0,
     milliseconds: 0,
   })
@@ -76,6 +97,30 @@ export function BookingScheduleField({
 
   const dateTriggerId = `booking-date-${name ?? "booking"}`
   const timeInputId = `booking-time-${name ?? "booking"}`
+
+  // Only times inside the bookable window are offered, so impossible times
+  // (before 6:00 AM or after 6:30 PM) can never be selected.
+  const timeSlots = useMemo(() => {
+    const slots: { value: string; label: string }[] = []
+    for (
+      let m = BOOKING_MIN_MINUTES;
+      m <= BOOKING_MAX_MINUTES;
+      m += BOOKING_SLOT_MINUTES
+    ) {
+      const h = Math.floor(m / 60)
+      const min = m % 60
+      const hhmm = `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`
+      const label = format(
+        set(startOfDay(value), { hours: h, minutes: min }),
+        "p",
+        { locale: dateFnsLocale },
+      )
+      slots.push({ value: hhmm, label })
+    }
+    return slots
+  }, [value, dateFnsLocale])
+
+  const selectedTime = format(value, "HH:mm")
 
   return (
     <div className="space-y-2" dir={dir}>
@@ -121,18 +166,29 @@ export function BookingScheduleField({
         </div>
 
         <div className="flex shrink-0 flex-col gap-1.5">
-          <Input
-            id={timeInputId}
-            type="time"
-            step={60}
-            dir="ltr"
-            value={format(value, "HH:mm")}
-            aria-label={`${t("bookingTime")}: ${formatBookingTime(value, locale)}`}
-            onChange={(e) => {
-              onChange(mergeTimeFromHHMM(value, e.target.value))
+          <Select
+            dir={dir}
+            value={selectedTime}
+            onValueChange={(v) => {
+              onChange(mergeTimeFromHHMM(value, v))
+              onBlur?.()
             }}
-            className="w-44 max-w-full rounded-lg border-black/20 focus-visible:border-duck-cyan focus-visible:ring-duck-cyan [&::-webkit-calendar-picker-indicator]:opacity-70"
-          />
+          >
+            <SelectTrigger
+              id={timeInputId}
+              aria-label={`${t("bookingTime")}: ${formatBookingTime(value, locale)}`}
+              className="w-44 max-w-full rounded-lg border-black/20 focus-visible:border-duck-cyan focus-visible:ring-duck-cyan"
+            >
+              <SelectValue placeholder={t("bookingTime")} />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              {timeSlots.map((slot) => (
+                <SelectItem key={slot.value} value={slot.value}>
+                  {slot.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -141,6 +197,9 @@ export function BookingScheduleField({
           day: dayPhrase,
           time: format(value, "p", { locale: dateFnsLocale }),
         })}
+      </p>
+      <p className="text-muted-foreground px-1 text-xs">
+        {t("bookingTimeWindowHint")}
       </p>
     </div>
   )

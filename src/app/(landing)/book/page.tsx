@@ -33,7 +33,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { BookingScheduleField } from "@/components/booking/booking-schedule-field"
+import {
+  BookingScheduleField,
+  BOOKING_MIN_MINUTES,
+  BOOKING_MAX_MINUTES,
+} from "@/components/booking/booking-schedule-field"
 import {
   formatBookingDayPhrase,
   formatBookingTime,
@@ -204,7 +208,16 @@ function BookPageContent() {
           })
           .refine((d) => d.getTime() >= Date.now() - 60_000, {
             message: tv("dateTimePast"),
-          }),
+          })
+          .refine(
+            (d) => {
+              const minutes = d.getHours() * 60 + d.getMinutes()
+              return (
+                minutes >= BOOKING_MIN_MINUTES && minutes <= BOOKING_MAX_MINUTES
+              )
+            },
+            { message: tv("bookingTimeRange") },
+          ),
         resource_type: z.enum(RESOURCE_TYPES),
         guests: z.coerce
           .number({ invalid_type_error: tv("numberInvalid") })
