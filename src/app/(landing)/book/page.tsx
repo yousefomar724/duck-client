@@ -32,7 +32,6 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   BookingScheduleField,
   BOOKING_MIN_MINUTES,
@@ -349,26 +348,6 @@ function BookPageContent() {
     },
   })
 
-  useEffect(() => {
-    if (!selectedTrip) return
-    // Guide is only opt-in when the trip has an optional paid guide (non-mandatory, price > 0)
-    // OR for legacy tours without a guide_price. In all other cases we reset to false.
-    const hasOptionalGuide =
-      !selectedTrip.guide_mandatory &&
-      ((selectedTrip.guide_price ?? 0) > 0 ||
-        (selectedTrip.is_tour === true &&
-          (selectedTrip.guide_price ?? 0) === 0))
-    if (!hasOptionalGuide) {
-      form.setValue("wants_guide", false)
-    }
-  }, [
-    selectedTrip?.guide_mandatory,
-    selectedTrip?.guide_price,
-    selectedTrip?.is_tour,
-    selectedTrip,
-    form,
-  ])
-
   // --- FIX: Avoid calling setState synchronously in effect ---
   // Move logic for guestsMode ("preset"/"custom") determination and guest form value capping
   // out of effect and derive it from selectedTrip via state and useMemo, updating state only when necessary
@@ -423,10 +402,6 @@ function BookPageContent() {
   const watchedDuration = useWatch({ control: form.control, name: "duration" })
   const watchedFullName = useWatch({ control: form.control, name: "full_name" })
   const watchedPhone = useWatch({ control: form.control, name: "phone" })
-  const watchedWantsGuide = useWatch({
-    control: form.control,
-    name: "wants_guide",
-  })
   const watchedHearAboutUs = useWatch({
     control: form.control,
     name: "hear_about_us",
@@ -475,16 +450,7 @@ function BookPageContent() {
     const localTotal = selectedTrip.price * localCount * duration
     const foreignerTotal =
       (selectedTrip.foreigner_price ?? 0) * foreignerCount * duration
-    const hasOptionalGuideCheck =
-      !selectedTrip.guide_mandatory &&
-      ((selectedTrip.guide_price ?? 0) > 0 ||
-        (selectedTrip.is_tour === true &&
-          (selectedTrip.guide_price ?? 0) === 0))
-    const addsGuideFee =
-      selectedTrip.guide_mandatory ||
-      (hasOptionalGuideCheck && watchedWantsGuide)
-    const guideFee = addsGuideFee ? (selectedTrip.guide_price ?? 0) : 0
-    return localTotal + foreignerTotal + guideFee
+    return localTotal + foreignerTotal
   }, [
     selectedTrip,
     watchedGuestMix,
@@ -492,7 +458,6 @@ function BookPageContent() {
     watchedLocalGuests,
     watchedForeignerGuests,
     watchedDuration,
-    watchedWantsGuide,
   ])
 
   const handleSubmit = form.handleSubmit(async (values) => {
@@ -513,11 +478,6 @@ function BookPageContent() {
     }
     const totalGuests = localGuests + foreignerGuests
 
-    const hasOptionalGuide =
-      !selectedTrip.guide_mandatory &&
-      ((selectedTrip.guide_price ?? 0) > 0 ||
-        (selectedTrip.is_tour === true &&
-          (selectedTrip.guide_price ?? 0) === 0))
     const needsReferral =
       values.hear_about_us === "friend" || values.hear_about_us === "other"
 
@@ -531,7 +491,7 @@ function BookPageContent() {
       local_guests: localGuests,
       foreigner_guests: foreignerGuests,
       duration: values.duration,
-      wants_guide: hasOptionalGuide ? values.wants_guide : false,
+      wants_guide: false,
       hear_about_us: values.hear_about_us || "",
       referral_text: needsReferral ? values.referral_text.trim() : "",
     }
@@ -1147,60 +1107,8 @@ function BookPageContent() {
 
                   {selectedTrip?.guide_mandatory ? (
                     <div className="rounded-xl border border-duck-cyan/20 bg-duck-cyan/5 p-4 text-sm text-text-dark">
-                      <p className="font-medium">
-                        {t("guideMandatoryBanner", {
-                          price: formatCurrency(
-                            selectedTrip.guide_price ?? 0,
-                            selectedTrip.currency,
-                          ),
-                        })}
-                      </p>
-                      <p className="text-text-muted mt-1">
-                        {t("guideRecommendation")}
-                      </p>
+                      <p className="font-medium">{t("captainIncluded")}</p>
                     </div>
-                  ) : (selectedTrip?.guide_price ?? 0) > 0 ||
-                    selectedTrip?.is_tour ? (
-                    <FormField
-                      control={form.control}
-                      name="wants_guide"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start gap-3 space-y-0 rounded-xl border border-duck-cyan/20 bg-duck-cyan/5 p-4">
-                          <FormControl>
-                            <Checkbox
-                              id="wants_guide"
-                              checked={field.value}
-                              onCheckedChange={(c) =>
-                                field.onChange(c === true)
-                              }
-                              className="mt-0.5"
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel
-                              htmlFor="wants_guide"
-                              className="cursor-pointer font-medium text-text-dark"
-                            >
-                              {t("wantsGuide")}
-                              {selectedTrip &&
-                              (selectedTrip.guide_price ?? 0) > 0 ? (
-                                <span className="text-duck-cyan ms-2">
-                                  {t("guideOptionalFee", {
-                                    price: formatCurrency(
-                                      selectedTrip.guide_price ?? 0,
-                                      selectedTrip.currency,
-                                    ),
-                                  })}
-                                </span>
-                              ) : null}
-                            </FormLabel>
-                            <p className="text-sm font-normal text-text-muted">
-                              {t("guideRecommendation")}
-                            </p>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
                   ) : null}
 
                   {/* How did you hear about us */}
@@ -1390,18 +1298,7 @@ function BookPageContent() {
                       (selectedTrip.foreigner_price ?? 0) *
                       foreignerCount *
                       duration
-                    const hasOptionalGuideCheck =
-                      !selectedTrip.guide_mandatory &&
-                      ((selectedTrip.guide_price ?? 0) > 0 ||
-                        (selectedTrip.is_tour === true &&
-                          (selectedTrip.guide_price ?? 0) === 0))
-                    const addsGuideFee =
-                      selectedTrip.guide_mandatory ||
-                      (hasOptionalGuideCheck && watchedWantsGuide)
-                    const guideFee = addsGuideFee
-                      ? (selectedTrip.guide_price ?? 0)
-                      : 0
-                    const total = localTotal + foreignerTotal + guideFee
+                    const total = localTotal + foreignerTotal
                     return (
                       <>
                         {localCount > 0 ? (
@@ -1432,16 +1329,6 @@ function BookPageContent() {
                             </span>
                           </div>
                         ) : null}
-                        {guideFee > 0 ? (
-                          <div className="flex justify-between">
-                            <span className="text-text-muted">
-                              {t("reviewGuideFee")}
-                            </span>
-                            <span>
-                              {formatCurrency(guideFee, selectedTrip.currency)}
-                            </span>
-                          </div>
-                        ) : null}
                         <div className="flex justify-between border-t pt-3">
                           <span className="text-text-muted">
                             {t("reviewTotal")}
@@ -1465,19 +1352,12 @@ function BookPageContent() {
                         : "—"}
                     </span>
                   </div>
-                  {selectedTrip.guide_mandatory ||
-                  (!selectedTrip.guide_mandatory &&
-                    ((selectedTrip.guide_price ?? 0) > 0 ||
-                      selectedTrip.is_tour)) ? (
+                  {selectedTrip.guide_mandatory ? (
                     <div className="flex justify-between">
                       <span className="text-text-muted">
-                        {t("reviewWantsGuide")}
+                        {t("reviewCaptain")}
                       </span>
-                      <span>
-                        {selectedTrip.guide_mandatory || watchedWantsGuide
-                          ? t("reviewWantsGuideYes")
-                          : t("reviewWantsGuideNo")}
-                      </span>
+                      <span>{t("reviewCaptainIncludedValue")}</span>
                     </div>
                   ) : null}
                   {watchedHearAboutUs ? (
