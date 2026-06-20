@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { GoogleLogin } from "@react-oauth/google"
+import { Eye, EyeOff } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -57,6 +58,7 @@ function LoginFormContent() {
   const [loginKind, setLoginKind] = useState<LoginKind>(initialKind)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -178,15 +180,29 @@ function LoginFormContent() {
                 {t("forgotPassword")}
               </Link>
             </div>
-            <Input
-              id="password"
-              type="password"
-              dir="ltr"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                dir="ltr"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="bg-white/50 border-gray-200 focus:border-duck-cyan focus:ring-duck-cyan/20 pe-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+                className="absolute inset-y-0 end-0 flex items-center pe-3 text-text-muted hover:text-duck-navy transition-colors"
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
+              </button>
+            </div>
           </div>
           <Button
             type="submit"

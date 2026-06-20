@@ -240,6 +240,8 @@
       "email": "Email",
       "password": "Password",
       "forgotPassword": "Forgot password?",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "submit": "Login",
       "loading": "Loading...",
       "orContinueWith": "Or continue with",

@@ -196,7 +196,11 @@ export default function Navbar() {
                     className="justify-center rounded-full gap-2 cursor-pointer"
                     onClick={() => {
                       setSheetOpen(false)
-                      setSettingsOpen(true)
+                      // Wait for the sheet to finish closing before opening the
+                      // settings dialog, otherwise the same touch that closes the
+                      // sheet is treated as an outside interaction and instantly
+                      // dismisses the dialog on mobile.
+                      setTimeout(() => setSettingsOpen(true), 250)
                     }}
                   >
                     <Globe className="size-4" />

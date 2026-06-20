@@ -37,7 +37,6 @@ export default function SettingsDialog({
   return (
     <Dialog
       open={open}
-      modal={false}
       onOpenChange={(v) => {
         if (!v) setLanguage(locale)
         onOpenChange(v)

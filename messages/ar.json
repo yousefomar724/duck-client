@@ -240,6 +240,8 @@
       "email": "البريد الإلكتروني",
       "password": "كلمة المرور",
       "forgotPassword": "نسيت كلمة المرور؟",
+      "showPassword": "إظهار كلمة المرور",
+      "hidePassword": "إخفاء كلمة المرور",
       "submit": "تسجيل الدخول",
       "loading": "جاري التحميل...",
       "orContinueWith": "او المتابعة عبر",
