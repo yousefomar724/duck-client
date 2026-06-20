@@ -184,7 +184,6 @@ function LoginFormContent() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                dir="ltr"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
