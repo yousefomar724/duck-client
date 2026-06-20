@@ -278,16 +278,6 @@ function BookPageContent() {
             })
           }
         }
-        if (
-          (data.hear_about_us === "friend" || data.hear_about_us === "other") &&
-          data.referral_text.trim().length === 0
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: tv("referralRequired"),
-            path: ["referral_text"],
-          })
-        }
       }),
     [selectedTrip, contactSchema, t, tv],
   )
@@ -1260,7 +1250,9 @@ function BookPageContent() {
                         <FormItem>
                           <FormLabel className="text-text-dark font-medium">
                             {t("referralText")}{" "}
-                            <span className="text-red-500">*</span>
+                            <span className="text-text-muted font-normal">
+                              {t("hearAboutUsOptional")}
+                            </span>
                           </FormLabel>
                           <FormControl>
                             <Input
