@@ -61,7 +61,7 @@ import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallb
 const EGYPT_MOBILE_LOCAL_REGEX = /^0(10|11|12|15)\d{8}$/
 
 const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
-const INSTAPAY_LINK = "https://ipn.eg/S/yousefomaralex/instapay/8Pnhtt"
+const INSTAPAY_LINK = "https://ipn.eg/S/ahmedragab9491/instapay/8XekIs"
 const INSTAPAY_PHONE = "+201550061006"
 
 function parseStoredPhoneToLocal(p: string): string | null {

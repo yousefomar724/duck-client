@@ -68,7 +68,9 @@ export interface Booking {
   full_name: string
   phone_number: string
   status: BookingStatus
-  created_at: string
+  created_at?: string
+  CreatedAt?: string
+  UpdatedAt?: string
   /** ISO 8601 date string */
   booking_date?: string
   quantity?: number

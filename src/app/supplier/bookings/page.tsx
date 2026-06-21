@@ -400,7 +400,9 @@ export default function SupplierBookingsPage() {
                                   <div>
                                     {booking.created_at
                                       ? formatDateTime(booking.created_at)
-                                      : "—"}
+                                      : booking.UpdatedAt
+                                        ? formatDateTime(booking.UpdatedAt)
+                                        : "—"}
                                   </div>
                                 </div>
                                 <div

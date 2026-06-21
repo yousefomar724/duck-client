@@ -76,12 +76,12 @@ export default function AdminDashboard() {
   const activeSuppliers = suppliers.length
   const activeTrips = trips.length
 
-  // Get recent bookings (last 10)
   const recentBookings = [...bookings]
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
+    .sort((a, b) => {
+      const dateA = a.created_at ?? a.CreatedAt ?? a.UpdatedAt ?? 0
+      const dateB = b.created_at ?? b.CreatedAt ?? b.UpdatedAt ?? 0
+      return new Date(dateB).getTime() - new Date(dateA).getTime()
+    })
     .slice(0, 10)
 
   return (
