@@ -158,12 +158,12 @@ export default function Footer() {
             <div className="grid grid-cols-[auto_1fr] items-center gap-3 mb-2 text-sm">
               <Mail className="w-4 h-4 text-white/60" />
               <a
-                href="mailto:duck.aswan@gmail.com"
+                href="mailto:duck.asw@gmail.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-white hover:underline"
               >
-                duck.aswan@gmail.com
+                duck.asw@gmail.com
               </a>
             </div>
             <div className="grid grid-cols-[auto_1fr] items-center gap-3 text-sm text-white/70">

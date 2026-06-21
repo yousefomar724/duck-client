@@ -40,7 +40,7 @@ import { buildWhatsAppHref } from "@/lib/support-contact"
 const OFFICE_MAPS_URL = "https://maps.app.goo.gl/FPt8JJ8VgaTTzBir6"
 const SUPPORT_PHONE_DISPLAY = "+20 15 5006 1006"
 const SUPPORT_PHONE_TEL = "tel:+201550061006"
-const SUPPORT_EMAIL = "mailto:duck.aswan@gmail.com"
+const SUPPORT_EMAIL = "mailto:duck.asw@gmail.com"
 
 function getLocalizedBilingual(
   value: { ar: string; en: string } | undefined,
@@ -389,7 +389,7 @@ function BookingSuccessContent() {
               <div>
                 <p className="text-xs text-text-muted">{t("emailUs")}</p>
                 <p className="font-medium text-duck-navy break-all">
-                  duck.aswan@gmail.com
+                  duck.asw@gmail.com
                 </p>
               </div>
             </a>
