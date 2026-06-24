@@ -444,6 +444,7 @@
     "reviewTrip": "Trip",
     "reviewDuration": "Duration",
     "reviewDate": "Booking Date",
+    "reviewTime": "Time",
     "reviewResourceType": "Equipment Type",
     "reviewGuests": "Guests",
     "reviewGuestsValue": "{guests} guests",
@@ -521,6 +522,8 @@
     "instapayInstructions": "Send this amount via InstaPay",
     "instapayPhone": "InstaPay number",
     "payViaInstapay": "Pay via InstaPay",
+    "instapaySendReceipt": "Please send the payment receipt to this WhatsApp number to confirm:",
+    "instapaySendReceiptBtn": "Send Receipt on WhatsApp",
     "bookingPendingNote": "Your booking will be confirmed once the supplier receives your payment.",
     "viewMyBookings": "View my bookings",
     "partialPaymentRemaining": "Remaining {remaining} to be paid in cash on meeting day"

@@ -1249,18 +1249,23 @@ function BookPageContent() {
                     <span className="text-text-muted">{t("reviewDate")}</span>
                     <span className="font-medium text-text-dark text-end">
                       {watchedBookingDate
-                        ? t("bookingScheduleSummaryNatural", {
-                            day: formatBookingDayPhrase(
-                              watchedBookingDate,
-                              locale,
-                              {
-                                today: t("relativeDayToday"),
-                                tomorrow: t("relativeDayTomorrow"),
-                                dayAfterTomorrow: t("relativeDayAfterTomorrow"),
-                              },
-                            ),
-                            time: formatBookingTime(watchedBookingDate, locale),
-                          })
+                        ? formatBookingDayPhrase(
+                            watchedBookingDate,
+                            locale,
+                            {
+                              today: t("relativeDayToday"),
+                              tomorrow: t("relativeDayTomorrow"),
+                              dayAfterTomorrow: t("relativeDayAfterTomorrow"),
+                            },
+                          )
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">{t("reviewTime")}</span>
+                    <span className="font-medium text-text-dark text-end">
+                      {watchedBookingDate
+                        ? formatBookingTime(watchedBookingDate, locale)
                         : "—"}
                     </span>
                   </div>
@@ -1565,6 +1570,31 @@ function BookPageContent() {
                   >
                     {t("payViaInstapay")}
                   </a>
+
+                  <div className="border-t border-border/60 pt-4 mt-2 space-y-4">
+                    <p className="font-semibold text-text-dark text-sm">
+                      {t("instapaySendReceipt")}
+                    </p>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-text-muted">
+                        WhatsApp
+                      </span>
+                      <span
+                        className="font-mono font-semibold text-duck-navy"
+                        dir="ltr"
+                      >
+                        +201550061006
+                      </span>
+                    </div>
+                    <a
+                      href={`https://wa.me/201550061006?text=${encodeURIComponent(`Hello, I have paid for my booking (Ref: #${manualBookingResult.booking.ID}). Here is my receipt.`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white rounded-full py-3 px-6 font-semibold hover:bg-[#20bd5a] transition-colors"
+                    >
+                      {t("instapaySendReceiptBtn")}
+                    </a>
+                  </div>
                 </div>
 
                 <p className="text-sm text-text-muted text-center">

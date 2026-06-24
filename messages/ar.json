@@ -444,6 +444,7 @@
     "reviewTrip": "الرحلة",
     "reviewDuration": "المدة",
     "reviewDate": "تاريخ الحجز",
+    "reviewTime": "الوقت",
     "reviewResourceType": "نوع المعدات",
     "reviewGuests": "عدد الاشخاص",
     "reviewGuestsValue": "{guests} ضيف",
@@ -521,6 +522,8 @@
     "instapayInstructions": "أرسل هذا المبلغ عبر إنستاباي",
     "instapayPhone": "رقم إنستاباي",
     "payViaInstapay": "ادفع عبر إنستاباي",
+    "instapaySendReceipt": "يرجى إرسال إيصال الدفع إلى رقم الواتساب هذا للتأكيد:",
+    "instapaySendReceiptBtn": "إرسال الإيصال عبر الواتساب",
     "bookingPendingNote": "سيتم تأكيد حجزك بعد استلام المورد للدفع",
     "viewMyBookings": "عرض حجوزاتي",
     "partialPaymentRemaining": "المبلغ المتبقي {remaining} يُدفع نقداً يوم اللقاء"
