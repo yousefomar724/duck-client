@@ -224,7 +224,7 @@ function LoginFormContent() {
         </div>
 
         <div
-          className="relative flex justify-center [&_iframe]:max-w-full!"
+          className="relative flex justify-center"
           style={{
             pointerEvents: isGoogleLoading || isLoading ? "none" : undefined,
           }}
