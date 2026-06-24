@@ -526,7 +526,12 @@
     "instapaySendReceiptBtn": "Send Receipt on WhatsApp",
     "bookingPendingNote": "Your booking will be confirmed once the supplier receives your payment.",
     "viewMyBookings": "View my bookings",
-    "partialPaymentRemaining": "Remaining {remaining} to be paid in cash on meeting day"
+    "partialPaymentRemaining": "Remaining {remaining} to be paid in cash on meeting day",
+    "optional": "Optional",
+    "playedBeforeLabel": "Have you tried kayak with us before?",
+    "selectYesNo": "Select Yes or No",
+    "yes": "Yes",
+    "no": "No"
   },
   "contact": {
     "heroSubtitle": "Partnerships & Collaboration",

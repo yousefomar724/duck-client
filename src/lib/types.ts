@@ -82,6 +82,7 @@ export interface Booking {
   order_ref?: string
   order_id?: string
   wants_guide?: boolean
+  played_before?: boolean
   payment_method?: "KASHIER" | "MANUAL"
 }
 
@@ -197,6 +198,7 @@ export interface CreateBookingRequest {
   duration?: number
   /** User preference for a tour guide (ignored when guide_mandatory). */
   wants_guide?: boolean
+  played_before?: boolean
   /** Channel the user heard about us from (e.g. instagram, facebook, friend, other). */
   hear_about_us?: string
   /** Free-text referral detail; required when hear_about_us is "friend" or "other". */

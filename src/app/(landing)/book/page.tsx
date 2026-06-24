@@ -115,6 +115,7 @@ type ContactFormValues = {
   foreigner_guests: number
   duration: number
   wants_guide: boolean
+  played_before?: boolean
   hear_about_us: HearAboutUs | ""
   referral_text: string
 }
@@ -236,6 +237,7 @@ function BookPageContent() {
           .int()
           .min(1, tv("minOne")),
         wants_guide: z.boolean(),
+        played_before: z.boolean().optional(),
         hear_about_us: z.enum([
           "",
           "instagram",
@@ -492,6 +494,7 @@ function BookPageContent() {
       foreigner_guests: foreignerGuests,
       duration: values.duration,
       wants_guide: false,
+      played_before: values.played_before,
       hear_about_us: values.hear_about_us || "",
       referral_text: needsReferral ? values.referral_text.trim() : "",
     }
@@ -1110,6 +1113,40 @@ function BookPageContent() {
                       <p className="font-medium">{t("captainIncluded")}</p>
                     </div>
                   ) : null}
+
+                  {/* Played Before */}
+                  <FormField
+                    control={form.control}
+                    name="played_before"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-text-dark font-medium">
+                          {t("playedBeforeLabel")}{" "}
+                          <span className="text-text-muted font-normal">
+                            ({t("optional")})
+                          </span>
+                        </FormLabel>
+                        <Select
+                          dir={locale === "ar" ? "rtl" : "ltr"}
+                          value={field.value === true ? "yes" : field.value === false ? "no" : ""}
+                          onValueChange={(val) =>
+                            field.onChange(val === "yes" ? true : val === "no" ? false : undefined)
+                          }
+                        >
+                          <FormControl>
+                            <SelectTrigger className="rounded-lg border-black/20 max-w-full!">
+                              <SelectValue placeholder={t("selectYesNo")} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="yes">{t("yes")}</SelectItem>
+                            <SelectItem value="no">{t("no")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   {/* How did you hear about us */}
                   <FormField

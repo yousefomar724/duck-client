@@ -526,7 +526,12 @@
     "instapaySendReceiptBtn": "إرسال الإيصال عبر الواتساب",
     "bookingPendingNote": "سيتم تأكيد حجزك بعد استلام المورد للدفع",
     "viewMyBookings": "عرض حجوزاتي",
-    "partialPaymentRemaining": "المبلغ المتبقي {remaining} يُدفع نقداً يوم اللقاء"
+    "partialPaymentRemaining": "المبلغ المتبقي {remaining} يُدفع نقداً يوم اللقاء",
+    "optional": "اختياري",
+    "playedBeforeLabel": "هل قمت بتجربة الكاياك معنا من قبل؟",
+    "selectYesNo": "اختر نعم أو لا",
+    "yes": "نعم",
+    "no": "لا"
   },
   "contact": {
     "heroSubtitle": "شراكات وتعاون",
