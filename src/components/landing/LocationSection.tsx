@@ -203,13 +203,6 @@ export default function LocationSection() {
             gestureHandling="cooperative"
           />
 
-          <LocationDetailPopover
-            location={selectedLocation}
-            open={popoverOpen}
-            onOpenChange={handlePopoverChange}
-            anchorPoint={anchorPoint}
-          />
-
           {/* Overlay link to full map page */}
           <Link
             href="/map"
@@ -219,6 +212,13 @@ export default function LocationSection() {
             <span>{t("viewInteractiveMap")}</span>
           </Link>
         </div>
+
+        <LocationDetailPopover
+          location={selectedLocation}
+          open={popoverOpen}
+          onOpenChange={handlePopoverChange}
+          anchorPoint={anchorPoint}
+        />
 
         {/* Access Info */}
         <div

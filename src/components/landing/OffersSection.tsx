@@ -291,12 +291,12 @@ export default function OffersSection() {
                 return (
                   <div
                     key={trip.id}
-                    className="flex-[0_0_90%] md:max-w-280 min-w-0 relative rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row min-h-0 group"
+                    className="flex-[0_0_90%] lg:max-w-280 min-w-0 relative rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col lg:flex-row min-h-0 group"
                   >
                     {/* Image Side — aspect box gives real height; fill images do not size the flex row (Embla would be 0px otherwise) */}
                     <div
                       dir="ltr"
-                      className="w-full md:w-2/3 relative shrink-0 overflow-hidden"
+                      className="w-full lg:w-2/3 relative shrink-0 overflow-hidden"
                     >
                       <div className="relative w-full aspect-4/3 min-h-72">
                         <Carousel
@@ -377,7 +377,7 @@ export default function OffersSection() {
                     </div>
 
                     {/* Text Side */}
-                    <div className="w-full md:w-1/3 p-4 md:p-10 flex flex-col justify-between items-start text-start gap-6">
+                    <div className="w-full lg:w-1/3 p-4 lg:p-10 flex flex-col justify-between items-start text-start gap-6">
                       <div>
                         {supplierName && (
                           <div className="flex items-center gap-2 mb-2">
@@ -496,6 +496,7 @@ export default function OffersSection() {
               "bg-white text-text-dark border-none",
               "rounded-t-2xl max-h-[90vh]",
             )}
+            dir={locale === "ar" ? "rtl" : "ltr"}
           >
             <div className="max-h-[90vh] overflow-y-auto">
               {/* Image carousel */}
@@ -762,6 +763,7 @@ export default function OffersSection() {
               "sm:max-w-2xl! p-0! overflow-hidden text-start",
               "bg-white! text-text-dark border-none",
             )}
+            dir={locale === "ar" ? "rtl" : "ltr"}
           >
             {/* Image carousel */}
             <div
