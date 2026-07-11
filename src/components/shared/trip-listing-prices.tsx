@@ -1,3 +1,4 @@
+import { Tag } from "lucide-react"
 import type { Trip } from "@/lib/types"
 import { formatCurrency } from "@/lib/constants"
 import { cn } from "@/lib/utils"
@@ -10,6 +11,7 @@ type TripListingPricesProps = {
   className?: string
   /** Applied to the main amount line when two-tier pricing exists, and to single-tier price. */
   mainPriceClassName?: string
+  locale?: string
 }
 
 export function TripListingPrices({
@@ -18,6 +20,7 @@ export function TripListingPrices({
   perHourSuffix,
   className,
   mainPriceClassName,
+  locale,
 }: TripListingPricesProps) {
   const hasForeigner = (trip.foreigner_price ?? 0) > 0
   const perHourEl = perHourSuffix ? (
@@ -33,7 +36,7 @@ export function TripListingPrices({
           className,
         )}
       >
-        {formatCurrency(trip.price, trip.currency)}
+        {formatCurrency(trip.price, trip.currency, locale)}
         {perHourEl}
       </span>
     )
@@ -42,10 +45,11 @@ export function TripListingPrices({
   return (
     <span className={cn("flex flex-col gap-1.5 items-start", className)}>
       <span className={cn("text-duck-cyan font-semibold", mainPriceClassName)}>
-        {formatCurrency(trip.foreigner_price!, trip.currency)}
+        {formatCurrency(trip.foreigner_price!, trip.currency, locale)}
         {perHourEl}
       </span>
-      <span className="inline-flex max-w-full rounded-full border border-emerald-200/70 bg-emerald-50 px-2.5 py-1 text-start text-xs font-semibold leading-snug text-emerald-900">
+      <span className="inline-flex items-center gap-1.5 max-w-full rounded-full border-2 border-amber-400 bg-amber-100 px-3 py-1.5 text-start text-sm md:text-base font-bold leading-snug text-amber-900 shadow-sm">
+        <Tag className="size-4 shrink-0 text-amber-600" />
         {egyptiansOfferLabel}
       </span>
     </span>

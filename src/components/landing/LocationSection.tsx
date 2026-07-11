@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { MapPin } from "lucide-react"
@@ -13,7 +13,10 @@ import {
   type ActivityFilter,
   destinationsToMapLocations,
   type ActivityType,
+  type WaterActivityLocation,
 } from "@/components/map/map-data"
+import type { MarkerClickEvent } from "@/components/map/MapView"
+import LocationDetailPopover from "@/components/map/LocationDetailPopover"
 import { useTranslations, useLocale } from "next-intl"
 
 function resolveImageUrl(url: string): string {
@@ -97,6 +100,29 @@ export default function LocationSection() {
     destinationsToMapLocations([], { resolveImageUrl, locale }),
   )
   const [activeFilter, setActiveFilter] = useState<ActivityType | "all">("all")
+  const [selectedLocation, setSelectedLocation] =
+    useState<WaterActivityLocation | null>(null)
+  const [popoverOpen, setPopoverOpen] = useState(false)
+  const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
+
+  const handleMarkerClick = (event: MarkerClickEvent) => {
+    // event.point is relative to the map's own container; since the map here
+    // is embedded mid-page (not full-viewport like /map), offset by the
+    // container's viewport position for the popover's fixed anchor to line up.
+    const rect = mapContainerRef.current?.getBoundingClientRect()
+    setSelectedLocation(event.location)
+    setAnchorPoint({
+      x: event.point.x + (rect?.left ?? 0),
+      y: event.point.y + (rect?.top ?? 0),
+    })
+    setPopoverOpen(true)
+  }
+
+  const handlePopoverChange = (open: boolean) => {
+    setPopoverOpen(open)
+    if (!open) setSelectedLocation(null)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -165,13 +191,23 @@ export default function LocationSection() {
         </div>
 
         {/* Map Container */}
-        <div className="relative w-full aspect-video max-h-[600px] mb-4 rounded-3xl shadow-sm overflow-hidden max-w-5xl mx-auto">
+        <div
+          ref={mapContainerRef}
+          className="relative w-full aspect-video max-h-[600px] mb-4 rounded-3xl shadow-sm overflow-hidden max-w-5xl mx-auto"
+        >
           <MapView
             locations={filteredLocations}
-            selectedLocation={null}
-            onMarkerClick={() => {}}
+            selectedLocation={selectedLocation}
+            onMarkerClick={handleMarkerClick}
             mapStyle="light"
             gestureHandling="cooperative"
+          />
+
+          <LocationDetailPopover
+            location={selectedLocation}
+            open={popoverOpen}
+            onOpenChange={handlePopoverChange}
+            anchorPoint={anchorPoint}
           />
 
           {/* Overlay link to full map page */}

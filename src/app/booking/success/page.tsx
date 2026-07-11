@@ -207,6 +207,7 @@ function BookingSuccessContent() {
                       {formatCurrency(
                         validCache.summary.amount,
                         validCache.trip.currency,
+                        locale,
                       )}
                     </span>
                   </div>

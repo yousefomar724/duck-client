@@ -181,7 +181,7 @@ function MyBookingsContent() {
                         <TableCell>{rt}</TableCell>
                         <TableCell>{b.quantity ?? "—"}</TableCell>
                         <TableCell>
-                          {formatCurrency(b.amount, b.currency)}
+                          {formatCurrency(b.amount, b.currency, locale)}
                         </TableCell>
                         <TableCell className="max-w-[14rem] align-top">
                           <div className="space-y-2">

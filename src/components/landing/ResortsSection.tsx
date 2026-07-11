@@ -70,7 +70,7 @@ export default function ResortsSection() {
     loop: true,
     align: "center",
     direction: locale === "ar" ? "rtl" : "ltr",
-    containScroll: "trimSnaps",
+    containScroll: false,
   })
 
   const [prevBtnDisabled, setPrevBtnDisabled] = useState(true)
@@ -195,15 +195,15 @@ export default function ResortsSection() {
               Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex-[0_0_280px] md:flex-[0_0_300px] min-w-0 h-[500px] rounded-2xl overflow-hidden bg-white/10 animate-pulse first:ms-6"
+                  className="flex-[0_0_280px] md:flex-[0_0_300px] min-w-0 h-[500px] rounded-2xl overflow-hidden bg-white/10 animate-pulse"
                 />
               ))
             ) : error ? (
-              <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
+              <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12">
                 <p className="text-white/80 text-center">{t("errorLoading")}</p>
               </div>
             ) : destinations.length === 0 ? (
-              <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
+              <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12">
                 <p className="text-white/80 text-center">
                   {t("noDestinations")}
                 </p>
@@ -228,7 +228,7 @@ export default function ResortsSection() {
                   <div
                     key={destination.id}
                     onClick={() => setSelectedDestination(destination)}
-                    className="flex-[0_0_280px] md:flex-[0_0_300px] min-w-0 relative h-[500px] rounded-2xl overflow-hidden group cursor-pointer first:ms-6"
+                    className="flex-[0_0_280px] md:flex-[0_0_300px] min-w-0 relative h-[500px] rounded-2xl overflow-hidden group cursor-pointer"
                   >
                     {isExternal ? (
                       <ImgWithLogoFallback
@@ -262,7 +262,7 @@ export default function ResortsSection() {
                     </div>
 
                     {/* Bottom Content */}
-                    <div className="absolute bottom-0 left-0 right-0 p-6 text-right">
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-start">
                       <button
                         type="button"
                         onClick={() => setSelectedDestination(destination)}
@@ -321,7 +321,7 @@ export default function ResortsSection() {
           <SheetContent
             side="bottom"
             className={cn(
-              "p-0 gap-0 overflow-hidden text-right",
+              "p-0 gap-0 overflow-hidden text-start",
               "bg-duck-navy-deep text-white border-none",
               "rounded-t-2xl max-h-[90vh]",
             )}
@@ -469,7 +469,7 @@ export default function ResortsSection() {
         <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogContent
             className={cn(
-              "sm:max-w-2xl! p-0! overflow-hidden text-right",
+              "sm:max-w-2xl! p-0! overflow-hidden text-start",
               "bg-duck-navy-deep! text-white border-none",
             )}
           >

@@ -65,7 +65,7 @@ export default function OffersSection() {
     loop: true,
     align: "center",
     direction: locale === "ar" ? "rtl" : "ltr",
-    containScroll: "trimSnaps",
+    containScroll: false,
   })
 
   const [prevBtnDisabled, setPrevBtnDisabled] = useState(true)
@@ -246,17 +246,17 @@ export default function OffersSection() {
               Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex-[0_0_90%] md:max-w-280 min-w-0 rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row animate-pulse first:ms-6"
+                  className="flex-[0_0_90%] md:max-w-280 min-w-0 rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row animate-pulse"
                 />
               ))
             ) : error ? (
-              <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
+              <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12">
                 <p className="text-text-body text-center">
                   {t("errorLoading")}
                 </p>
               </div>
             ) : trips.length === 0 ? (
-              <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12 first:ms-6">
+              <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12">
                 <p className="text-text-body text-center">{t("noTrips")}</p>
               </div>
             ) : (
@@ -291,7 +291,7 @@ export default function OffersSection() {
                 return (
                   <div
                     key={trip.id}
-                    className="flex-[0_0_90%] md:max-w-280 min-w-0 relative rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row min-h-0 first:ms-6 group"
+                    className="flex-[0_0_90%] md:max-w-280 min-w-0 relative rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row min-h-0 group"
                   >
                     {/* Image Side — aspect box gives real height; fill images do not size the flex row (Embla would be 0px otherwise) */}
                     <div
@@ -377,7 +377,7 @@ export default function OffersSection() {
                     </div>
 
                     {/* Text Side */}
-                    <div className="w-full md:w-1/3 p-4 md:p-10 flex flex-col justify-between items-start text-right gap-6">
+                    <div className="w-full md:w-1/3 p-4 md:p-10 flex flex-col justify-between items-start text-start gap-6">
                       <div>
                         {supplierName && (
                           <div className="flex items-center gap-2 mb-2">
@@ -407,12 +407,17 @@ export default function OffersSection() {
                           <TripListingPrices
                             trip={trip}
                             egyptiansOfferLabel={t("egyptiansSpecialOffer", {
-                              price: formatCurrency(trip.price, trip.currency),
+                              price: formatCurrency(
+                                trip.price,
+                                trip.currency,
+                                locale,
+                              ),
                             })}
                             perHourSuffix={
                               trip.is_tour ? t("perHour") : undefined
                             }
                             mainPriceClassName="text-lg"
+                            locale={locale}
                           />
                         </p>
                         <p className="text-text-muted text-sm mt-1">
@@ -487,7 +492,7 @@ export default function OffersSection() {
           <SheetContent
             side="bottom"
             className={cn(
-              "p-0 gap-0 overflow-hidden text-right",
+              "p-0 gap-0 overflow-hidden text-start",
               "bg-white text-text-dark border-none",
               "rounded-t-2xl max-h-[90vh]",
             )}
@@ -597,6 +602,7 @@ export default function OffersSection() {
                           {formatCurrency(
                             selectedTrip!.guide_price,
                             selectedTrip!.currency,
+                            locale,
                           )}
                         </span>
                       )}
@@ -641,11 +647,13 @@ export default function OffersSection() {
                           price: formatCurrency(
                             selectedTrip.price,
                             selectedTrip.currency,
+                            locale,
                           ),
                         })}
                         perHourSuffix={
                           selectedTrip.is_tour ? t("perHour") : undefined
                         }
+                        locale={locale}
                       />
                     ) : null}
                     <span className="text-text-muted flex items-center gap-1">
@@ -751,7 +759,7 @@ export default function OffersSection() {
         <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogContent
             className={cn(
-              "sm:max-w-2xl! p-0! overflow-hidden text-right",
+              "sm:max-w-2xl! p-0! overflow-hidden text-start",
               "bg-white! text-text-dark border-none",
             )}
           >
@@ -859,6 +867,7 @@ export default function OffersSection() {
                         {formatCurrency(
                           selectedTrip!.guide_price,
                           selectedTrip!.currency,
+                          locale,
                         )}
                       </span>
                     )}
@@ -903,8 +912,10 @@ export default function OffersSection() {
                         price: formatCurrency(
                           selectedTrip.price,
                           selectedTrip.currency,
+                          locale,
                         ),
                       })}
+                      locale={locale}
                       perHourSuffix={
                         selectedTrip.is_tour ? t("perHour") : undefined
                       }

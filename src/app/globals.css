@@ -58,6 +58,8 @@
 }
 
 :root {
+  color-scheme: light;
+
   /* Duck brand palette (screenshot source: yellow #F5E847, teal #067BA1, navy #121528) */
   --duck-navy: #121528;
   --duck-navy-deep: #0c0e1a;
@@ -128,6 +130,7 @@
 
   html {
     overflow-x: hidden;
+    color-scheme: light;
   }
 
   #fullpage,

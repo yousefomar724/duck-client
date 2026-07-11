@@ -171,8 +171,13 @@ export const currencies = [
   { value: "EUR", label: "يورو (EUR)" },
 ]
 
-export function formatCurrency(amount: number, currency: string = "EGP"): string {
-  return new Intl.NumberFormat("ar-EG", {
+export function formatCurrency(
+  amount: number,
+  currency: string = "EGP",
+  locale?: string,
+): string {
+  const intlLocale = locale === "en" ? "en-US" : "ar-EG"
+  return new Intl.NumberFormat(intlLocale, {
     style: "currency",
     currency: currency,
   }).format(amount)

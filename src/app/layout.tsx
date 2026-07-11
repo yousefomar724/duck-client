@@ -33,6 +33,9 @@ const fedraSerif = localFont({
 export const metadata: Metadata = {
   title: "Duck Entertainment",
   description: "Duck Entertainment — Water Sports in Aswan",
+  other: {
+    "color-scheme": "light",
+  },
 }
 
 export default async function RootLayout({

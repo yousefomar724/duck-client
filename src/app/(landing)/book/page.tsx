@@ -665,7 +665,7 @@ function BookPageContent() {
                           key={trip.id}
                           type="button"
                           onClick={() => setSelectedTrip(trip)}
-                          className={`text-right rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] h-fit bg-white flex flex-col transition-all ${
+                          className={`text-start rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] h-fit bg-white flex flex-col transition-all ${
                             isSelected
                               ? "ring-2 ring-duck-cyan ring-offset-2"
                               : "hover:shadow-lg"
@@ -713,12 +713,14 @@ function BookPageContent() {
                                     price: formatCurrency(
                                       trip.price,
                                       trip.currency,
+                                      locale,
                                     ),
                                   },
                                 )}
                                 perHourSuffix={
                                   trip.is_tour ? t("perHour") : undefined
                                 }
+                                locale={locale}
                               />
                             </div>
                             <p className="text-text-muted text-sm mt-1">
@@ -1352,6 +1354,7 @@ function BookPageContent() {
                               {formatCurrency(
                                 localTotal,
                                 selectedTrip.currency,
+                                locale,
                               )}
                             </span>
                           </div>
@@ -1367,6 +1370,7 @@ function BookPageContent() {
                               {formatCurrency(
                                 foreignerTotal,
                                 selectedTrip.currency,
+                                locale,
                               )}
                             </span>
                           </div>
@@ -1376,7 +1380,7 @@ function BookPageContent() {
                             {t("reviewTotal")}
                           </span>
                           <span className="font-bold text-duck-cyan">
-                            {formatCurrency(total, selectedTrip.currency)}
+                            {formatCurrency(total, selectedTrip.currency, locale)}
                           </span>
                         </div>
                       </>
@@ -1437,7 +1441,7 @@ function BookPageContent() {
                         }`}
                       >
                         <span className="block text-base font-bold">
-                          {formatCurrency(totalAmount, selectedTrip.currency)}
+                          {formatCurrency(totalAmount, selectedTrip.currency, locale)}
                         </span>
                         <span className="flex items-center justify-center gap-1 mt-0.5">
                           {t("paymentAmountFull")}
@@ -1462,6 +1466,7 @@ function BookPageContent() {
                           {formatCurrency(
                             Math.ceil(totalAmount * 0.5),
                             selectedTrip.currency,
+                            locale,
                           )}
                         </span>
                         <span className="block mt-0.5">
@@ -1495,6 +1500,7 @@ function BookPageContent() {
                           min: formatCurrency(
                             Math.ceil(totalAmount * 0.5),
                             selectedTrip.currency,
+                            locale,
                           ),
                         })}
                       </p>
@@ -1505,6 +1511,7 @@ function BookPageContent() {
                           remaining: formatCurrency(
                             totalAmount - paymentAmount,
                             selectedTrip.currency,
+                            locale,
                           ),
                         })}
                       </p>
@@ -1521,7 +1528,7 @@ function BookPageContent() {
                         disabled={submitLoading}
                         className="rounded-full border-text-dark"
                       >
-                        <ChevronLeft className="w-4 h-4 ms-1" />
+                        <ChevronLeft className="w-4 h-4 ms-1 rtl:rotate-180" />
                         {t("previous")}
                       </Button>
                       <Button
@@ -1567,6 +1574,7 @@ function BookPageContent() {
                       {formatCurrency(
                         manualBookingResult.chosenAmount,
                         manualBookingResult.booking.currency || "EGP",
+                        locale,
                       )}
                     </span>
                   </div>
@@ -1578,6 +1586,7 @@ function BookPageContent() {
                           (manualBookingResult.booking.amount ?? 0) -
                             manualBookingResult.chosenAmount,
                           manualBookingResult.booking.currency || "EGP",
+                          locale,
                         ),
                       })}
                     </p>
