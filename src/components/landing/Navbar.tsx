@@ -386,11 +386,24 @@ export default function Navbar() {
                 </Link>
               </>
             )}
-            {/* Mobile: invisible spacer same width as menu button so logo stays centered */}
-            <span
-              className="w-10 h-10 md:hidden shrink-0 invisible pointer-events-none"
-              aria-hidden
-            />
+            {/* Mobile only: quick language toggle (outside the menu) */}
+            <button
+              type="button"
+              onClick={() => {
+                const next = locale === "ar" ? "en" : "ar"
+                document.cookie = `locale=${next};path=/;max-age=31536000`
+                window.location.reload()
+              }}
+              aria-label={t("switchLanguage")}
+              className={cn(
+                "md:hidden flex items-center justify-center w-10 h-10 rounded-full shrink-0 transition-colors text-xs font-semibold tracking-wide",
+                isNavbarSolid
+                  ? "text-text-dark hover:bg-black/5"
+                  : "text-white hover:bg-white/10",
+              )}
+            >
+              {locale === "ar" ? "EN" : "AR"}
+            </button>
           </div>
         </div>
       </motion.nav>
