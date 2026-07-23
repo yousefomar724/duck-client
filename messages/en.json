@@ -215,6 +215,11 @@
     "transportClose": "Close",
     "transportWhatsappPrefill": "Hi, I would like to ask about transport to and from the activity location."
   },
+  "reviews": {
+    "subtitle": "Reviews",
+    "title": "What Our Guests Say",
+    "description": "Real reviews from real adventurers, straight from Google."
+  },
   "footer": {
     "brandDescription": "Create your unforgettable water adventure on the legendary Nile River. Enjoy the magic of Aswan from a unique perspective.",
     "company": "Company",
