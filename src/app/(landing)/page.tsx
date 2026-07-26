@@ -1,4 +1,5 @@
-"use client"
+import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import HeroSection from "@/components/landing/HeroSection"
 import RedSeaSection from "@/components/landing/RedSeaSection"
@@ -10,6 +11,20 @@ import ReviewsSection from "@/components/landing/ReviewsSection"
 import FAQSection from "@/components/landing/FAQSection"
 import Footer from "@/components/landing/Footer"
 import FullpageWrapper from "@/components/landing/FullpageWrapper"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("home.metadata")
+  return {
+    title: t("title"),
+    description: t("description"),
+    alternates: { canonical: "/" },
+    openGraph: {
+      title: t("title"),
+      description: t("description"),
+      url: "/",
+    },
+  }
+}
 
 export default function Home() {
   return (
