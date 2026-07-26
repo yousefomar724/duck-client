@@ -1,3 +1,21 @@
+# None of these packages need their install/build scripts to run: sharp,
+# @parcel/watcher and @swc/core get their native binaries from platform
+# optionalDependencies regardless; core-js's postinstall is a sponsorship
+# message; msw's browser mock-worker setup is unused (it only arrives
+# transitively via the shadcn CLI dev tool); unrs-resolver needs no native
+# build on any platform this project targets.
+#
+# Both schemas are declared because installs in the wild land on different
+# pnpm majors: `allowBuilds` is pnpm v11+ (replaces the settings below), the
+# other keys are what pnpm v10 and earlier read.
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
+  "@parcel/watcher": false
+  "@swc/core": false
+  core-js: false
+  msw: false
+
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
