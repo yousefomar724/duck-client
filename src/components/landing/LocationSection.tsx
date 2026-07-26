@@ -182,13 +182,17 @@ export default function LocationSection() {
           ref={mapContainerRef}
           className="relative w-full aspect-video max-h-[600px] mb-4 rounded-3xl shadow-sm overflow-hidden max-w-5xl mx-auto"
         >
-          <MapView
-            locations={filteredLocations}
-            selectedLocation={selectedLocation}
-            onMarkerClick={handleMarkerClick}
-            mapStyle="light"
-            gestureHandling="cooperative"
-          />
+          {/* z-0 isolates Leaflet's internal panes (z-index 400+) so the
+              overlay link below still paints on top of the map. */}
+          <div className="absolute inset-0 z-0">
+            <MapView
+              locations={filteredLocations}
+              selectedLocation={selectedLocation}
+              onMarkerClick={handleMarkerClick}
+              mapStyle="light"
+              gestureHandling="cooperative"
+            />
+          </div>
 
           {/* Overlay link to full map page */}
           <Link

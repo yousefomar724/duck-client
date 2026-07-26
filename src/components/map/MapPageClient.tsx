@@ -7,10 +7,9 @@ import { cn } from "@/lib/utils"
 import { useLocale, useTranslations } from "next-intl"
 import ActivityFilters from "./ActivityFilters"
 import LocationDetailPopover from "./LocationDetailPopover"
-import type { MapStyle, MarkerClickEvent } from "./MapView"
+import type { MapInstance, MapStyle, MarkerClickEvent } from "./MapView"
 import {
   destinationsToMapLocations,
-  DEFAULT_ZOOM,
   FOCUSED_ZOOM,
   type ActivityType,
   type WaterActivityLocation,
@@ -42,7 +41,7 @@ export default function MapPageClient() {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
   const [mapStyle, setMapStyle] = useState<MapStyle>("light")
-  const mapRef = useRef<google.maps.Map | null>(null)
+  const mapRef = useRef<MapInstance | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -71,14 +70,7 @@ export default function MapPageClient() {
   }, [locations, activeFilter])
 
   const handleMarkerClick = useCallback((event: MarkerClickEvent) => {
-    const map = mapRef.current
-    if (map) {
-      map.panTo({
-        lat: event.location.coordinates[0],
-        lng: event.location.coordinates[1],
-      })
-      map.setZoom(FOCUSED_ZOOM)
-    }
+    mapRef.current?.setView(event.location.coordinates, FOCUSED_ZOOM)
     setSelectedLocation(event.location)
     setAnchorPoint(event.point)
     setPopoverOpen(true)
@@ -89,7 +81,7 @@ export default function MapPageClient() {
     if (!open) setSelectedLocation(null)
   }
 
-  const handleMapReady = useCallback((map: google.maps.Map) => {
+  const handleMapReady = useCallback((map: MapInstance) => {
     mapRef.current = map
   }, [])
 
@@ -149,12 +141,7 @@ export default function MapPageClient() {
         {/* Zoom controls */}
         <div className="flex flex-col gap-0.5">
           <button
-            onClick={() => {
-              const map = mapRef.current
-              if (!map) return
-              const z = map.getZoom()
-              map.setZoom((z ?? DEFAULT_ZOOM) + 1)
-            }}
+            onClick={() => mapRef.current?.zoomIn()}
             className={cn(
               "w-10 h-10 sm:w-9 sm:h-9 rounded-t-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer touch-manipulation",
               isDark
@@ -166,12 +153,7 @@ export default function MapPageClient() {
             <Plus className="size-4" />
           </button>
           <button
-            onClick={() => {
-              const map = mapRef.current
-              if (!map) return
-              const z = map.getZoom()
-              map.setZoom((z ?? DEFAULT_ZOOM) - 1)
-            }}
+            onClick={() => mapRef.current?.zoomOut()}
             className={cn(
               "w-10 h-10 sm:w-9 sm:h-9 rounded-b-lg backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer touch-manipulation",
               isDark

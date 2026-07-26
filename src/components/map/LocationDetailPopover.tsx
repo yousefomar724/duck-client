@@ -1,6 +1,13 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useSyncExternalStore,
+} from "react"
+import { createPortal } from "react-dom"
 import {
   X,
   Clock,
@@ -34,6 +41,17 @@ interface LocationDetailPopoverProps {
   anchorPoint: { x: number; y: number }
 }
 
+const noopSubscribe = () => () => {}
+
+/** False during SSR and the hydration render, true afterwards. */
+function useIsHydrated(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  )
+}
+
 function getDisplayImages(location: WaterActivityLocation): (string | undefined)[] {
   if (location.images?.length) {
     const urls = location.images.filter((u): u is string => Boolean(u?.trim?.()))
@@ -53,6 +71,7 @@ export default function LocationDetailPopover({
   const locale = useLocale()
   const isMobile = useIsMobile()
   const [side, setSide] = useState<"right" | "bottom">("right")
+  const isHydrated = useIsHydrated()
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const carouselApiRef = useRef<CarouselApi | null>(null)
@@ -329,12 +348,20 @@ export default function LocationDetailPopover({
     </Sheet>
   ) : (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverAnchor asChild>
-        <span
-          className="pointer-events-none fixed w-0 h-0"
-          style={{ left: anchorPoint.x, top: anchorPoint.y }}
-        />
-      </PopoverAnchor>
+      {/* Portalled to <body>: anchorPoint is in viewport coordinates, and on the
+          landing page fullPage.js puts a transform on #fullpage, which would
+          otherwise become the containing block for this fixed anchor. */}
+      {isHydrated
+        ? createPortal(
+            <PopoverAnchor asChild>
+              <span
+                className="pointer-events-none fixed w-0 h-0"
+                style={{ left: anchorPoint.x, top: anchorPoint.y }}
+              />
+            </PopoverAnchor>,
+            document.body,
+          )
+        : null}
 
       <PopoverContent
         side={side}

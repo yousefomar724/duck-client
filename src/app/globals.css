@@ -177,3 +177,23 @@
     background: var(--duck-cyan-light);
   }
 }
+
+/* Leaflet — inherit our Arabic typography and tone down the required
+   OpenStreetMap/CARTO attribution so it reads as a caption, not a control. */
+.leaflet-container {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(4px);
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.6;
+  padding: 0 6px;
+}
+
+.leaflet-control-attribution a {
+  color: var(--text-body);
+}
