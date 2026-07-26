@@ -41,7 +41,7 @@ pnpm dlx shadcn@latest add [component-name]
 
 The landing page (`app/page.tsx`) uses a unique scroll behavior:
 - **First 3 sections** (Hero, RedSea, Amaala) have fullpage scroll-snap behavior
-- **Remaining sections** (Resorts, Offers, Experiences, Location, Weather, Footer) scroll normally
+- **Remaining sections** (Resorts, Offers, Location, Reviews, FAQ, Footer) scroll normally
 - All wrapped in `.fullpage-container` with scroll management
 
 ### Component Organization
@@ -49,15 +49,17 @@ The landing page (`app/page.tsx`) uses a unique scroll behavior:
 ```
 components/
   └── landing/              # All landing page sections
-      ├── Navbar.tsx        # Site navigation
-      ├── HeroSection.tsx   # First section (scroll-snap)
-      ├── RedSeaSection.tsx # Second section (scroll-snap)
-      ├── AmaalaSection.tsx # Third section (scroll-snap)
+      ├── Navbar.tsx          # Site navigation
+      ├── FullpageWrapper.tsx # fullPage.js host (no loading gate — see below)
+      ├── BackgroundVideo.tsx # Decorative video, poster + viewport-gated load
+      ├── HeroSection.tsx     # First section (scroll-snap)
+      ├── RedSeaSection.tsx   # Second section (scroll-snap)
+      ├── AmaalaSection.tsx   # Third section (scroll-snap)
       ├── ResortsSection.tsx
       ├── OffersSection.tsx
-      ├── ExperiencesSection.tsx
       ├── LocationSection.tsx
-      ├── WeatherSection.tsx
+      ├── ReviewsSection.tsx  # Elfsight widget, loaded on viewport approach
+      ├── FAQSection.tsx
       └── Footer.tsx
 ```
 

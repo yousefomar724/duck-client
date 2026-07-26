@@ -3,10 +3,7 @@
 
 import useEmblaCarousel from "embla-carousel-react"
 import { useCallback, useState, useEffect, useRef } from "react"
-import {
-  ImageWithLogoFallback,
-  ImgWithLogoFallback,
-} from "@/components/shared/image-with-logo-fallback"
+import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Clock, Users } from "lucide-react"
 import { useTranslations, useLocale } from "next-intl"
@@ -381,9 +378,11 @@ export default function OffersSection() {
                       <div>
                         {supplierName && (
                           <div className="flex items-center gap-2 mb-2">
-                            <ImgWithLogoFallback
+                            <ImageWithLogoFallback
                               src={resolvedSupplierIcon}
                               alt=""
+                              width={24}
+                              height={24}
                               className={cn(
                                 "w-6 h-6 rounded-full shrink-0",
                                 resolvedSupplierIcon
@@ -463,11 +462,13 @@ export default function OffersSection() {
           dir="ltr"
         >
           <button
+            type="button"
             onClick={scrollPrev}
             disabled={prevBtnDisabled}
+            aria-label={t("prevSlide")}
             className="disabled:opacity-30 hover:scale-110 transition-transform"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-6 h-6" aria-hidden="true" />
           </button>
 
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -477,11 +478,13 @@ export default function OffersSection() {
           </div>
 
           <button
+            type="button"
             onClick={scrollNext}
             disabled={nextBtnDisabled}
+            aria-label={t("nextSlide")}
             className="disabled:opacity-30 hover:scale-110 transition-transform"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-6 h-6" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -519,7 +522,6 @@ export default function OffersSection() {
                             fill
                             className="object-cover"
                             fallbackClassName="object-contain p-6 bg-off-white"
-                            unoptimized={imageUrl.startsWith("http")}
                           />
                         </div>
                       </CarouselItem>
@@ -574,9 +576,9 @@ export default function OffersSection() {
                 <div className="p-4 flex flex-col gap-3">
                   {/* Title */}
                   <div className="mb-0">
-                    <div className="text-text-dark text-xl font-bold leading-tight">
+                    <h2 className="text-text-dark text-xl font-bold leading-tight">
                       {selectedTripName}
-                    </div>
+                    </h2>
                   </div>
 
                   {/* Badges */}
@@ -622,9 +624,11 @@ export default function OffersSection() {
                   {/* Supplier */}
                   {selectedTrip?.supplier && (
                     <div className="flex items-center gap-2">
-                      <ImgWithLogoFallback
+                      <ImageWithLogoFallback
                         src={selectedResolvedSupplierIcon}
                         alt=""
+                        width={20}
+                        height={20}
                         className={cn(
                           "w-5 h-5 rounded-full shrink-0",
                           selectedResolvedSupplierIcon
@@ -695,9 +699,9 @@ export default function OffersSection() {
                   {/* Itinerary */}
                   {selectedTrip?.itinerary && (
                     <div>
-                      <h4 className="text-sm font-semibold text-text-dark mb-1">
+                      <h3 className="text-sm font-semibold text-text-dark mb-1">
                         {t("itinerary")}
-                      </h4>
+                      </h3>
                       {Array.isArray(selectedTrip.itinerary) ? (
                         <ol className="list-decimal list-inside text-text-body text-sm space-y-1 ps-1">
                           {selectedTrip.itinerary.map((step, i) => (
@@ -716,9 +720,9 @@ export default function OffersSection() {
                   {selectedTrip?.destinations &&
                     selectedTrip.destinations.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-semibold text-text-dark mb-1">
+                        <h3 className="text-sm font-semibold text-text-dark mb-1">
                           {t("destinations")}
-                        </h4>
+                        </h3>
                         <div className="flex flex-wrap gap-1.5">
                           {selectedTrip.destinations.map((dest) => (
                             <span
@@ -735,9 +739,9 @@ export default function OffersSection() {
                   {/* Cancellation Policy */}
                   {selectedTrip?.cancelation_policy && (
                     <div>
-                      <h4 className="text-sm font-semibold text-text-dark mb-1">
+                      <h3 className="text-sm font-semibold text-text-dark mb-1">
                         {t("cancelationPolicy")}
-                      </h4>
+                      </h3>
                       <p className="text-text-body text-sm ps-1">
                         {getLocalizedText(selectedTrip.cancelation_policy)}
                       </p>
@@ -785,7 +789,6 @@ export default function OffersSection() {
                           fill
                           className="object-cover"
                           fallbackClassName="object-contain p-6 bg-off-white"
-                          unoptimized={imageUrl.startsWith("http")}
                         />
                       </div>
                     </CarouselItem>
@@ -888,9 +891,11 @@ export default function OffersSection() {
                 {/* Supplier */}
                 {selectedTrip?.supplier && (
                   <div className="flex items-center gap-2">
-                    <ImgWithLogoFallback
+                    <ImageWithLogoFallback
                       src={selectedResolvedSupplierIcon}
                       alt=""
+                      width={20}
+                      height={20}
                       className={cn(
                         "w-5 h-5 rounded-full shrink-0",
                         selectedResolvedSupplierIcon
@@ -957,9 +962,9 @@ export default function OffersSection() {
                 {/* Itinerary */}
                 {selectedTrip?.itinerary && (
                   <div>
-                    <h4 className="text-sm font-semibold text-text-dark mb-1">
+                    <h3 className="text-sm font-semibold text-text-dark mb-1">
                       {t("itinerary")}
-                    </h4>
+                    </h3>
                     {Array.isArray(selectedTrip.itinerary) ? (
                       <ol className="list-decimal list-inside text-text-body text-sm space-y-1 ps-1">
                         {selectedTrip.itinerary.map((step, i) => (
@@ -978,9 +983,9 @@ export default function OffersSection() {
                 {selectedTrip?.destinations &&
                   selectedTrip.destinations.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-text-dark mb-1">
+                      <h3 className="text-sm font-semibold text-text-dark mb-1">
                         {t("destinations")}
-                      </h4>
+                      </h3>
                       <div className="flex flex-wrap gap-1.5">
                         {selectedTrip.destinations.map((dest) => (
                           <span
@@ -997,9 +1002,9 @@ export default function OffersSection() {
                 {/* Cancellation Policy */}
                 {selectedTrip?.cancelation_policy && (
                   <div>
-                    <h4 className="text-sm font-semibold text-text-dark mb-1">
+                    <h3 className="text-sm font-semibold text-text-dark mb-1">
                       {t("cancelationPolicy")}
-                    </h4>
+                    </h3>
                     <p className="text-text-body text-sm ps-1">
                       {getLocalizedText(selectedTrip.cancelation_policy)}
                     </p>

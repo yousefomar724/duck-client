@@ -3,10 +3,7 @@
 
 import useEmblaCarousel from "embla-carousel-react"
 import { useCallback, useState, useEffect, useRef } from "react"
-import {
-  ImageWithLogoFallback,
-  ImgWithLogoFallback,
-} from "@/components/shared/image-with-logo-fallback"
+import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { useTranslations, useLocale } from "next-intl"
 import { getDestinations } from "@/lib/api/destinations"
@@ -220,7 +217,6 @@ export default function ResortsSection() {
                 const resolvedMain = resolveImageUrl(destination.image)
                 const imageUrl = resolvedMain ?? placeholderImage
                 const isPlaceholder = !resolvedMain
-                const isExternal = imageUrl.startsWith("http")
                 const imageObjectClass = isPlaceholder
                   ? "object-contain p-10 sm:p-12"
                   : "object-cover"
@@ -230,23 +226,16 @@ export default function ResortsSection() {
                     onClick={() => setSelectedDestination(destination)}
                     className="flex-[0_0_280px] md:flex-[0_0_300px] min-w-0 relative h-[500px] rounded-2xl overflow-hidden group cursor-pointer"
                   >
-                    {isExternal ? (
-                      <ImgWithLogoFallback
-                        src={imageUrl}
-                        alt={destinationName}
-                        className={`absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-105 ${imageObjectClass}`}
-                        fallbackClassName="absolute inset-0 w-full h-full object-contain p-0 transition-transform duration-500 group-hover:scale-105 bg-white"
-                      />
-                    ) : (
-                      <ImageWithLogoFallback
-                        src={imageUrl}
-                        alt={destinationName}
-                        fill
-                        className={`transition-transform duration-500 group-hover:scale-105 ${imageObjectClass}`}
-                        fallbackClassName="object-contain p-10 sm:p-12"
-                        unoptimized={imageUrl.startsWith("http")}
-                      />
-                    )}
+                    <ImageWithLogoFallback
+                      src={imageUrl}
+                      alt={destinationName}
+                      fill
+                      // Cards are a fixed 280/300px wide — without this the
+                      // optimizer would generate 3840px variants.
+                      sizes="300px"
+                      className={`transition-transform duration-500 group-hover:scale-105 ${imageObjectClass}`}
+                      fallbackClassName="object-contain p-10 sm:p-12"
+                    />
 
                     {/* Overlay */}
                     <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
@@ -292,11 +281,13 @@ export default function ResortsSection() {
           dir="ltr"
         >
           <button
+            type="button"
             onClick={scrollPrev}
             disabled={prevBtnDisabled}
+            aria-label={t("prevSlide")}
             className="disabled:opacity-30 hover:scale-110 transition-transform"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-6 h-6" aria-hidden="true" />
           </button>
 
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -306,11 +297,13 @@ export default function ResortsSection() {
           </div>
 
           <button
+            type="button"
             onClick={scrollNext}
             disabled={nextBtnDisabled}
+            aria-label={t("nextSlide")}
             className="disabled:opacity-30 hover:scale-110 transition-transform"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-6 h-6" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -347,7 +340,6 @@ export default function ResortsSection() {
                             fill
                             className="object-cover"
                             fallbackClassName="object-contain p-6 bg-white"
-                            unoptimized={imageUrl.startsWith("http")}
                           />
                         </div>
                       </CarouselItem>
@@ -403,9 +395,9 @@ export default function ResortsSection() {
                 <div className="p-4 flex flex-col gap-3">
                   {/* Name + Status badge */}
                   <div className="flex flex-col gap-2">
-                    <div className="text-white text-xl font-bold leading-tight">
+                    <h2 className="text-white text-xl font-bold leading-tight">
                       {selectedDestinationName}
-                    </div>
+                    </h2>
                     <div className="flex flex-wrap items-center gap-2">
                       {selectedDestination?.public_status === "coming-soon" ? (
                         <span className="w-fit text-xs font-medium px-2.5 py-1 rounded-full bg-duck-yellow/20 text-duck-yellow animate-pulse">
@@ -493,7 +485,6 @@ export default function ResortsSection() {
                           fill
                           className="object-cover"
                           fallbackClassName="object-contain p-6 bg-white"
-                          unoptimized={imageUrl.startsWith("http")}
                         />
                       </div>
                     </CarouselItem>

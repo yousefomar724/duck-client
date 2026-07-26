@@ -62,7 +62,9 @@
     "noDescription": "No description available.",
     "prevImage": "Previous",
     "nextImage": "Next",
-    "imageAlt": "Image {index}"
+    "imageAlt": "Image {index}",
+    "prevSlide": "Previous destination",
+    "nextSlide": "Next destination"
   },
   "offers": {
     "subtitle": "Trips",
@@ -96,19 +98,9 @@
     "foreignerSuffix": "for foreigners",
     "egyptiansSpecialOffer": "Special rate for Egyptians: {price}",
     "guideIncluded": "Guide included",
-    "guideOptional": "Optional guide"
-  },
-  "experiences": {
-    "subtitle": "Our Services",
-    "title": "From serene sunset tours to thrilling rapids, we have the perfect adventure for everyone",
-    "testimonialIntro": "What our adventurers say — don't just take our word for it, hear from the thousands who have experienced the magic of the Nile with us.",
-    "viewAllReviews": "View All Reviews",
-    "kayak": "Kayak",
-    "sup": "Stand Up Paddle",
-    "waterbike": "Water Bike",
-    "kayakDesc": "Explore the Nile in our comfortable single and double kayaks. Single or double options, beginner-friendly, all equipment included.",
-    "supDesc": "Glide through calm waters on a paddleboard. Full-body workout, perfect for photos, calm waterways.",
-    "waterbikeDesc": "Pedal your way across the Nile on our water bikes. Easy to learn, perfect for families, no experience needed."
+    "guideOptional": "Optional guide",
+    "prevSlide": "Previous trip",
+    "nextSlide": "Next trip"
   },
   "location": {
     "subtitle": "Location",
@@ -163,20 +155,6 @@
     "imageAlt": "{name} - Image {index}",
     "operatingHours": "Operating hours: {hours}",
     "close": "Close"
-  },
-  "weather": {
-    "subtitle": "Weather",
-    "title": "Aswan Year-Round",
-    "aswan": "Aswan",
-    "nile": "Nile River",
-    "tempUnit": "°C",
-    "windUnit": "km/h",
-    "temperature": "Temperature",
-    "windSpeed": "Wind Speed",
-    "spring": "Spring",
-    "summer": "Summer",
-    "autumn": "Autumn",
-    "winter": "Winter"
   },
   "faq": {
     "subtitle": "FAQ",
@@ -235,7 +213,11 @@
     "support": "Support",
     "faqLink": "FAQ",
     "contactUs": "Contact Us",
-    "copyright": "© {year} Duck Entertainment. All rights reserved."
+    "copyright": "© {year} Duck Entertainment. All rights reserved.",
+    "backToTop": "Back to top",
+    "instagram": "Duck Entertainment on Instagram",
+    "facebook": "Duck Entertainment on Facebook",
+    "tiktok": "Duck Entertainment on TikTok"
   },
   "auth": {
     "copyright": "© {year} Duck Entertainment. All rights reserved.",
@@ -526,7 +508,6 @@
     "bookingRef": "Booking reference",
     "amountToSend": "Amount to send",
     "instapayInstructions": "Send this amount via InstaPay",
-    "instapayPhone": "InstaPay number",
     "payViaInstapay": "Pay via InstaPay",
     "instapaySendReceipt": "Please send the payment receipt to this WhatsApp number to confirm:",
     "instapaySendReceiptBtn": "Send Receipt on WhatsApp",
@@ -681,7 +662,8 @@
     "backToHome": "Back to Home",
     "supportWhatsappAriaLabel": "Contact support on WhatsApp",
     "supportWhatsappPrefill": "Hi, I have a question about Duck Entertainment services.",
-    "supportWhatsappShortLabel": "Support"
+    "supportWhatsappShortLabel": "Support",
+    "skipToContent": "Skip to main content"
   },
   "validation": {
     "nameMin": "Name must be at least 2 characters",
@@ -700,5 +682,11 @@
     "emailInvalid": "Invalid email address",
     "messageMin": "Please enter inquiry details (at least 10 characters)",
     "referralRequired": "Please provide more details"
+  },
+  "home": {
+    "metadata": {
+      "title": "Water Sports & Nile Adventures in Aswan",
+      "description": "Kayak, stand up paddle and water bike trips on the Nile around Elephantine Island, Aswan. Book guided water adventures with Duck Entertainment."
+    }
   }
 }

@@ -62,7 +62,9 @@
     "noDescription": "لا يوجد وصف متاح حالياً.",
     "prevImage": "السابق",
     "nextImage": "التالي",
-    "imageAlt": "صورة {index}"
+    "imageAlt": "صورة {index}",
+    "prevSlide": "الوجهة السابقة",
+    "nextSlide": "الوجهة التالية"
   },
   "offers": {
     "subtitle": "الرحلات",
@@ -96,19 +98,9 @@
     "foreignerSuffix": "للأجانب",
     "egyptiansSpecialOffer": "عرض خاص للمصريين: {price}",
     "guideIncluded": "الكابتن مُضمَّن",
-    "guideOptional": "كابتن اختياري"
-  },
-  "experiences": {
-    "subtitle": "خدماتنا",
-    "title": "من جولات الغروب الهادئة إلى المنحدرات المثيرة، لدينا المغامرة المثالية للجميع",
-    "testimonialIntro": "ماذا يقول المغامرون لدينا - لا تأخذ كلمتنا فقط، استمع إلى الآلاف الذين جربوا سحر النيل معنا.",
-    "viewAllReviews": "عرض جميع التقييمات",
-    "kayak": "كاياك",
-    "sup": "ستاند اب",
-    "waterbike": "واتر بايك",
-    "kayakDesc": "استكشف النيل في كاياكاتنا المريحة الفردية والمزدوجة. خيارات فردية أو مزدوجة، مناسبة للمبتدئين، جميع المعدات متضمنة.",
-    "supDesc": "انزلق عبر المياه الهادئة على لوح التجديف. تمرين كامل للجسم، مثالي للصور، طرق مياه هادئة.",
-    "waterbikeDesc": "دوس طريقك عبر النيل على دراجاتنا المائية. سهل التعلم، مثالي للعائلات، لا حاجة لخبرة."
+    "guideOptional": "كابتن اختياري",
+    "prevSlide": "الرحلة السابقة",
+    "nextSlide": "الرحلة التالية"
   },
   "location": {
     "subtitle": "الموقع",
@@ -163,20 +155,6 @@
     "imageAlt": "{name} - صورة {index}",
     "operatingHours": "ساعات العمل: {hours}",
     "close": "إغلاق"
-  },
-  "weather": {
-    "subtitle": "الطقس",
-    "title": "أسوان على مدار العام",
-    "aswan": "أسوان",
-    "nile": "نهر النيل",
-    "tempUnit": "°م",
-    "windUnit": "كم/س",
-    "temperature": "درجة الحرارة",
-    "windSpeed": "سرعة الرياح",
-    "spring": "الربيع",
-    "summer": "الصيف",
-    "autumn": "الخريف",
-    "winter": "الشتاء"
   },
   "faq": {
     "subtitle": "الأسئلة الشائعة",
@@ -235,7 +213,11 @@
     "support": "الدعم",
     "faqLink": "الأسئلة الشائعة",
     "contactUs": "تواصل معنا",
-    "copyright": "© {year} Duck Entertainment. جميع الحقوق محفوظة."
+    "copyright": "© {year} Duck Entertainment. جميع الحقوق محفوظة.",
+    "backToTop": "العودة إلى الأعلى",
+    "instagram": "داك إنترتينمنت على إنستغرام",
+    "facebook": "داك إنترتينمنت على فيسبوك",
+    "tiktok": "داك إنترتينمنت على تيك توك"
   },
   "auth": {
     "copyright": "© {year} Duck Entertainment. جميع الحقوق محفوظة.",
@@ -526,7 +508,6 @@
     "bookingRef": "رقم الحجز",
     "amountToSend": "المبلغ المطلوب إرساله",
     "instapayInstructions": "أرسل هذا المبلغ عبر إنستاباي",
-    "instapayPhone": "رقم إنستاباي",
     "payViaInstapay": "ادفع عبر إنستاباي",
     "instapaySendReceipt": "يرجى إرسال إيصال الدفع إلى رقم الواتساب هذا للتأكيد:",
     "instapaySendReceiptBtn": "إرسال الإيصال عبر الواتساب",
@@ -681,7 +662,8 @@
     "backToHome": "العودة إلى الصفحة الرئيسية",
     "supportWhatsappAriaLabel": "التواصل مع الدعم عبر واتساب",
     "supportWhatsappPrefill": "مرحباً، لدي سؤال عن خدمات Duck Entertainment.",
-    "supportWhatsappShortLabel": "دعم"
+    "supportWhatsappShortLabel": "دعم",
+    "skipToContent": "تخطي إلى المحتوى الرئيسي"
   },
   "validation": {
     "nameMin": "الاسم يجب أن يحتوي على حرفين على الأقل",
@@ -700,5 +682,11 @@
     "emailInvalid": "البريد الإلكتروني غير صالح",
     "messageMin": "يرجى إدخال تفاصيل الاستفسار (١٠ أحرف على الأقل)",
     "referralRequired": "يرجى تقديم مزيد من التفاصيل"
+  },
+  "home": {
+    "metadata": {
+      "title": "الرياضات المائية ومغامرات النيل في أسوان",
+      "description": "رحلات الكاياك والتجديف ودراجات الماء على نهر النيل حول جزيرة إلفنتين بأسوان. احجز مغامراتك المائية مع داك إنترتينمنت."
+    }
   }
 }

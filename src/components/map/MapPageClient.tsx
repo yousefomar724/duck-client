@@ -16,24 +16,11 @@ import {
   type WaterActivityLocation,
 } from "./map-data"
 import { getDestinations } from "@/lib/api/destinations"
+import { resolveImageUrl as resolveImageUrlOrNull } from "@/lib/image-utils"
 
-function resolveImageUrl(url: string): string {
-  if (!url) return ""
-  if (url.startsWith("http")) return url
-  const normalized = url.startsWith("/") ? url : `/${url}`
-  const apiUrl =
-    typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL
-      ? process.env.NEXT_PUBLIC_API_URL
-      : "https://duckapi.alefmenu.com/api/v1"
-  try {
-    const parsed = new URL(apiUrl)
-    if (parsed.hostname === "localhost" && parsed.port === "8080")
-      return normalized
-    return `${parsed.origin}${normalized}`
-  } catch {
-    return normalized
-  }
-}
+/** map-data expects a total `(url) => string`; the shared helper returns null. */
+const resolveImageUrl = (url: string): string =>
+  resolveImageUrlOrNull(url) ?? ""
 
 const MapView = dynamic(() => import("./MapView"), {
   ssr: false,

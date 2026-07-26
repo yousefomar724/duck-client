@@ -17,25 +17,12 @@ import {
 } from "@/components/map/map-data"
 import type { MarkerClickEvent } from "@/components/map/MapView"
 import LocationDetailPopover from "@/components/map/LocationDetailPopover"
+import { resolveImageUrl as resolveImageUrlOrNull } from "@/lib/image-utils"
 import { useTranslations, useLocale } from "next-intl"
 
-function resolveImageUrl(url: string): string {
-  if (!url) return ""
-  if (url.startsWith("http")) return url
-  const normalized = url.startsWith("/") ? url : `/${url}`
-  const apiUrl =
-    typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL
-      ? process.env.NEXT_PUBLIC_API_URL
-      : "https://duckapi.alefmenu.com/api/v1"
-  try {
-    const parsed = new URL(apiUrl)
-    if (parsed.hostname === "localhost" && parsed.port === "8080")
-      return normalized
-    return `${parsed.origin}${normalized}`
-  } catch {
-    return normalized
-  }
-}
+/** map-data expects a total `(url) => string`; the shared helper returns null. */
+const resolveImageUrl = (url: string): string =>
+  resolveImageUrlOrNull(url) ?? ""
 
 const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
