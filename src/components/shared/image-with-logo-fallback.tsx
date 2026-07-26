@@ -18,15 +18,12 @@ export type ImageWithLogoFallbackProps = Omit<
 
 /**
  * Next/Image that shows the DUCK logo if `src` is empty or the request errors.
+ *
+ * Remote uploads deliberately go through the Next image optimizer: the backend
+ * serves multi-megabyte originals with no cache headers, so resizing + AVIF/WebP
+ * here is where most of the page weight savings come from. Callers can still opt
+ * out per-image by passing `unoptimized`.
  */
-function shouldUnoptimizeSrc(url: string): boolean {
-  return (
-    url.startsWith("http") ||
-    url.startsWith("/uploads") ||
-    url.startsWith("//")
-  )
-}
-
 export function ImageWithLogoFallback({
   src,
   alt,
@@ -36,7 +33,7 @@ export function ImageWithLogoFallback({
 }: ImageWithLogoFallbackProps) {
   const [failed, setFailed] = useState(false)
   const showLogo = !src || failed
-  const { fill, sizes, unoptimized, ...restProps } = props
+  const { fill, sizes, ...restProps } = props
   const fillSizes =
     fill && !sizes
       ? "(max-width: 768px) 90vw, min(560px, 45vw)"
@@ -51,13 +48,9 @@ export function ImageWithLogoFallback({
         src={DUCK_LOGO_PLACEHOLDER}
         alt={alt}
         className={cn("object-contain bg-gray-100 p-4", fallbackClassName)}
-        unoptimized
       />
     )
   }
-
-  const primaryUnopt =
-    typeof unoptimized === "boolean" ? unoptimized : shouldUnoptimizeSrc(src)
 
   return (
     <Image
@@ -67,7 +60,6 @@ export function ImageWithLogoFallback({
       src={src}
       alt={alt}
       className={className}
-      unoptimized={primaryUnopt}
       onError={() => setFailed(true)}
     />
   )

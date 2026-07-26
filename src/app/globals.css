@@ -133,13 +133,11 @@
     color-scheme: light;
   }
 
+  /* fullPage.js owns vertical panning, but pinch-to-zoom must stay available
+     (WCAG 1.4.4). */
   #fullpage,
   .fp-section {
-    touch-action: none;
-  }
-
-  html:not(.fp-enabled) #fullpage {
-    visibility: hidden;
+    touch-action: pinch-zoom;
   }
 
   .fp-section:not(.fp-auto-height),

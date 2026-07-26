@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl"
 import { motion } from "framer-motion"
 import Link from "next/link"
+import BackgroundVideo from "@/components/landing/BackgroundVideo"
 
 export default function HeroSection() {
   const t = useTranslations("hero")
@@ -12,15 +13,12 @@ export default function HeroSection() {
       className="relative flex items-end justify-center pb-10 md:pb-20 w-full h-full"
     >
       {/* Background Video */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
+      <BackgroundVideo
+        eager
+        src="/videos/hero1.mp4"
+        poster="/videos/hero1-poster.jpg"
         className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
-      >
-        <source src="/videos/hero1.mp4" type="video/mp4" />
-      </video>
+      />
 
       {/* Overlay Gradient */}
       <div

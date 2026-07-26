@@ -441,7 +441,6 @@ export default function AdminDestinations() {
                   fill
                   className="object-cover"
                   fallbackClassName="object-contain p-6"
-                  unoptimized
                 />
                 {destination.public_status && (
                   <span className="absolute top-2 end-2 rounded-full bg-duck-navy/80 text-white text-xs px-2 py-0.5">
@@ -640,7 +639,6 @@ export default function AdminDestinations() {
                         fill
                         className="object-cover"
                         fallbackClassName="object-contain p-3"
-                        unoptimized
                       />
                       <button
                         type="button"
@@ -681,7 +679,6 @@ export default function AdminDestinations() {
                         fill
                         className="object-cover"
                         fallbackClassName="object-contain p-3"
-                        unoptimized
                       />
                       <button
                         type="button"
@@ -806,7 +803,6 @@ export default function AdminDestinations() {
                         fill
                         className="object-cover"
                         fallbackClassName="object-contain p-2"
-                        unoptimized
                       />
                       <button
                         type="button"
@@ -828,7 +824,6 @@ export default function AdminDestinations() {
                         fill
                         className="object-cover"
                         fallbackClassName="object-contain p-2"
-                        unoptimized
                       />
                       <button
                         type="button"

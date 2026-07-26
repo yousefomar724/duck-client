@@ -42,7 +42,37 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async headers() {
+    return [
+      {
+        // Re-encoded hero videos and the local font are content-addressed by name
+        // and never change in place.
+        source: '/:path(videos|fonts)/:file*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Proxied backend uploads arrive with no cache headers of their own.
+        source: '/uploads/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value:
+              'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+    ];
+  },
   images: {
+    formats: ['image/avif', 'image/webp'],
+    // 31 days — backend uploads are immutable once published.
+    minimumCacheTTL: 2678400,
+    qualities: [50, 75, 90],
     remotePatterns: [
       {
         protocol: 'http',
@@ -55,6 +85,17 @@ const nextConfig: NextConfig = {
         hostname: 'duckapi.alefmenu.com',
         pathname: '/uploads/**',
       },
+    ],
+  },
+  poweredByHeader: false,
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'recharts',
+      'date-fns',
+      'radix-ui',
+      'embla-carousel-react',
     ],
   },
 };
