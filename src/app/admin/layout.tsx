@@ -14,6 +14,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import AdminSidebar from "@/components/shared/admin-sidebar"
+import { RtlPanel } from "@/components/shared/rtl-panel"
 
 export default async function AdminLayout({
   children,
@@ -24,6 +25,7 @@ export default async function AdminLayout({
 
   return (
     // <ProtectedRoute allowedRoles={[2]}>
+    <RtlPanel>
     <SidebarProvider dir="rtl">
       <AdminSidebar />
       <SidebarInset>
@@ -46,6 +48,7 @@ export default async function AdminLayout({
         <main className="flex-1 p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
+    </RtlPanel>
     // </ProtectedRoute>
   )
 }

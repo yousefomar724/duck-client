@@ -4,7 +4,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
-import { Slot } from "radix-ui"
+import { Direction, Slot } from "radix-ui"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -82,22 +82,6 @@ function SidebarProvider({
       } else {
         _setOpen((prev) => {
           const openState = typeof value === "function" ? value(prev) : value
-          // #region agent log
-          fetch(
-            "http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                location: "sidebar.tsx:setOpen",
-                message: "_setOpen updater",
-                data: { prev, openState },
-                timestamp: Date.now(),
-                hypothesisId: "A",
-              }),
-            },
-          ).catch(() => {})
-          // #endregion
           return openState
         })
       }
@@ -112,19 +96,6 @@ function SidebarProvider({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        location: "sidebar.tsx:toggleSidebar",
-        message: "toggleSidebar",
-        data: { isMobile },
-        timestamp: Date.now(),
-        hypothesisId: "C",
-      }),
-    }).catch(() => {})
-    // #endregion
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
 
@@ -199,21 +170,9 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
-  // #region agent log
-  React.useEffect(() => {
-    fetch("http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        location: "sidebar.tsx:Sidebar",
-        message: "Sidebar state",
-        data: { state, isMobile, collapsible },
-        timestamp: Date.now(),
-        hypothesisId: "D",
-      }),
-    }).catch(() => {})
-  }, [state, isMobile, collapsible])
-  // #endregion
+  // The mobile sheet renders in a portal on <body>, so it does not inherit the
+  // dir of the sidebar wrapper. Read it from Radix instead.
+  const direction = Direction.useDirection()
 
   if (collapsible === "none") {
     return (
@@ -234,6 +193,7 @@ function Sidebar({
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
+          dir={direction}
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
@@ -324,22 +284,6 @@ function SidebarTrigger({
       size="icon"
       className={cn("src:size-7", className)}
       onClick={(event) => {
-        // #region agent log
-        fetch(
-          "http://127.0.0.1:7245/ingest/758904ae-9094-4d67-aaf5-68be881659ef",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              location: "sidebar.tsx:SidebarTrigger",
-              message: "trigger click",
-              data: {},
-              timestamp: Date.now(),
-              hypothesisId: "B",
-            }),
-          },
-        ).catch(() => {})
-        // #endregion
         onClick?.(event)
         toggleSidebar()
       }}

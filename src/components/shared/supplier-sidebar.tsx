@@ -29,7 +29,7 @@ import { supplierNavItems } from "@/lib/constants"
 import * as suppliersApi from "@/lib/api/suppliers"
 import { resolveImageUrl } from "@/lib/image-utils"
 import { cn } from "@/lib/utils"
-import { useLocale, useTranslations } from "next-intl"
+import { useTranslations } from "next-intl"
 
 function getLocalizedName(value: unknown): string {
   if (typeof value === "string") return value.trim()
@@ -43,7 +43,6 @@ function getLocalizedName(value: unknown): string {
 
 export default function SupplierSidebar() {
   const t = useTranslations("common")
-  const locale = useLocale()
   const pathname = usePathname()
   const { user, logout, onboardingComplete } = useAuth()
   const { isMobile, state, setOpenMobile } = useSidebar()
@@ -103,7 +102,8 @@ export default function SupplierSidebar() {
   }, [])
 
   return (
-    <Sidebar side={locale === "ar" ? "right" : "left"} collapsible="icon">
+    // The panel is Arabic-only, so it is RTL regardless of the site locale.
+    <Sidebar side="right" collapsible="icon">
       <SidebarHeader>
         <div
           className={cn(
@@ -143,7 +143,7 @@ export default function SupplierSidebar() {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent
-                  side={locale === "ar" ? "left" : "right"}
+                  side="left"
                   className="max-w-[min(100vw-2rem,18rem)] text-right"
                 >
                   <p className="font-medium">{displayName}</p>

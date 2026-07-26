@@ -14,6 +14,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import SupplierSidebar from "@/components/shared/supplier-sidebar"
+import { RtlPanel } from "@/components/shared/rtl-panel"
 import { ProtectedRoute } from "@/components/shared/protected-route"
 import { usePathname } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -37,6 +38,7 @@ export default function SupplierLayout({
   )
 
   const renderSupplierShell = (content: React.ReactNode) => (
+    <RtlPanel>
     <SidebarProvider dir="rtl">
       <SupplierSidebar />
       <SidebarInset>
@@ -59,6 +61,7 @@ export default function SupplierLayout({
         <main className="flex-1 p-6">{content}</main>
       </SidebarInset>
     </SidebarProvider>
+    </RtlPanel>
   )
 
   return (

@@ -25,12 +25,11 @@ import {
 } from "@/components/ui/tooltip"
 import Logo from "./logo"
 import { adminNavItems } from "@/lib/constants"
-import { useLocale, useTranslations } from "next-intl"
+import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 
 export default function AdminSidebar() {
   const t = useTranslations("common")
-  const locale = useLocale()
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const { isMobile, state, setOpenMobile } = useSidebar()
@@ -46,7 +45,8 @@ export default function AdminSidebar() {
   }
 
   return (
-    <Sidebar side={locale === "ar" ? "right" : "left"} collapsible="icon">
+    // The panel is Arabic-only, so it is RTL regardless of the site locale.
+    <Sidebar side="right" collapsible="icon">
       <SidebarHeader>
         <div
           className={cn(
@@ -85,7 +85,7 @@ export default function AdminSidebar() {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent
-                  side={locale === "ar" ? "left" : "right"}
+                  side="left"
                   className="max-w-[min(100vw-2rem,18rem)] text-right"
                 >
                   <p className="font-medium">{displayName}</p>
