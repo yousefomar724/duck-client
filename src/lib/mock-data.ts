@@ -66,7 +66,7 @@ const ASWAN_NAQUA_MAP =
 const ASWAN_BOOKING_FORM =
   "https://docs.google.com/forms/d/e/1FAIpQLSdYj5G1qRP41ItoPceA_NK8E-ztDP1xmqC0yz0s0SQ-gyajCg/viewform"
 const ASWAN_INSTAPAY =
-  "https://ipn.eg/S/ahmedragab9491/instapay/8XekIs"
+  "https://ipn.eg/S/karim.m.cib/instapay/5bCbda"
 
 export const mockTrips: Trip[] = [
   {

@@ -7,7 +7,6 @@ import {
   Mail,
   Phone,
   Instagram,
-  Twitter,
   Facebook,
   MapPin,
 } from "lucide-react"
@@ -17,6 +16,38 @@ import Link from "next/link"
 type FullpageWindow = Window & {
   fullpage_api?: { moveTo: (sectionIndex: number) => void }
 }
+
+/** lucide-react has no TikTok glyph, so it ships inline. */
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.59 2.59 0 0 1 0-5.18c.27 0 .52.04.76.12v-3.2a5.8 5.8 0 0 0-.76-.05A5.72 5.72 0 0 0 4.14 15.3 5.72 5.72 0 0 0 9.86 21a5.72 5.72 0 0 0 5.72-5.72V9.01a7.35 7.35 0 0 0 4.28 1.37V7.3a4.28 4.28 0 0 1-3.26-1.48Z" />
+    </svg>
+  )
+}
+
+const SOCIAL_LINKS = [
+  {
+    key: "instagram",
+    href: "https://www.instagram.com/duck.asw?igsh=d2Nwa2Nqb2t1bXVj&utm_source=qr",
+    Icon: Instagram,
+  },
+  {
+    key: "facebook",
+    href: "https://www.facebook.com/share/1AyX9yr91p/?mibextid=wwXIfr",
+    Icon: Facebook,
+  },
+  {
+    key: "tiktok",
+    href: "https://www.tiktok.com/@duckegy?_t=ZS-8yXR9sJsezl&_r=1",
+    Icon: TikTokIcon,
+  },
+] as const
 
 export default function Footer() {
   const t = useTranslations("footer")
@@ -36,10 +67,12 @@ export default function Footer() {
       <div className="py-4 px-4 md:px-10 border-b border-white/10">
         <div className="flex justify-center">
           <button
+            type="button"
             onClick={scrollToTop}
+            aria-label={t("backToTop")}
             className="w-12 h-12 rounded-full border border-white/30 flex items-center justify-center hover:bg-white/10 transition-colors"
           >
-            <ArrowUp className="w-5 h-5" />
+            <ArrowUp className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -69,27 +102,26 @@ export default function Footer() {
             </div>
 
             <div className="flex gap-4">
-              <a
-                href="https://www.instagram.com/duck.asw/?hl=en"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Instagram className="w-5 h-5 text-white/80 hover:text-white cursor-pointer" />
-              </a>
-              <Twitter className="w-5 h-5 text-white/80 hover:text-white cursor-pointer" />
-              <a
-                href="https://www.facebook.com/duck.asw/?hl=en"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Facebook className="w-5 h-5 text-white/80 hover:text-white cursor-pointer" />
-              </a>
+              {SOCIAL_LINKS.map(({ key, href, Icon }) => (
+                <a
+                  key={key}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t(key)}
+                >
+                  <Icon
+                    className="w-5 h-5 text-white/80 hover:text-white"
+                    aria-hidden="true"
+                  />
+                </a>
+              ))}
             </div>
           </div>
 
           {/* Column 2: الشركة */}
           <div>
-            <h4 className="text-base font-bold mb-6">{t("company")}</h4>
+            <h3 className="text-base font-bold mb-6">{t("company")}</h3>
             <ul className="space-y-3 text-white/70 text-sm">
               {[
                 t("aboutUs"),
@@ -108,7 +140,7 @@ export default function Footer() {
 
           {/* Column 3: الخدمات */}
           <div>
-            <h4 className="text-base font-bold mb-6">{t("servicesTitle")}</h4>
+            <h3 className="text-base font-bold mb-6">{t("servicesTitle")}</h3>
             <ul className="space-y-3 text-white/70 text-sm">
               {[
                 t("kayakTours"),
@@ -127,7 +159,7 @@ export default function Footer() {
 
           {/* Column 4: الدعم & Contact */}
           <div>
-            <h4 className="text-base font-bold mb-6">{t("support")}</h4>
+            <h3 className="text-base font-bold mb-6">{t("support")}</h3>
             <ul className="space-y-3 text-white/70 text-sm mb-3">
               <li>
                 <a href="#" className="hover:text-white transition-colors">

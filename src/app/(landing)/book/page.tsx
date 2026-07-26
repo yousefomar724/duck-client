@@ -61,8 +61,7 @@ import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallb
 const EGYPT_MOBILE_LOCAL_REGEX = /^0(10|11|12|15)\d{8}$/
 
 const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
-const INSTAPAY_LINK = "https://ipn.eg/S/ahmedragab9491/instapay/8XekIs"
-const INSTAPAY_PHONE = "+201550061006"
+const INSTAPAY_LINK = "https://ipn.eg/S/karim.m.cib/instapay/5bCbda"
 
 function parseStoredPhoneToLocal(p: string): string | null {
   const d = p.replace(/\D/g, "")
@@ -1597,17 +1596,6 @@ function BookPageContent() {
                   <p className="font-semibold text-text-dark">
                     {t("instapayInstructions")}
                   </p>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-text-muted">
-                      {t("instapayPhone")}
-                    </span>
-                    <span
-                      className="font-mono font-semibold text-duck-navy"
-                      dir="ltr"
-                    >
-                      {INSTAPAY_PHONE}
-                    </span>
-                  </div>
                   <a
                     href={INSTAPAY_LINK}
                     target="_blank"
