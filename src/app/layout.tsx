@@ -7,6 +7,7 @@ import { GoogleAnalytics } from "@next/third-parties/google"
 import { ToastContainer } from "@/components/shared/toast-container"
 import { AuthHydrator } from "@/lib/auth/auth-hydrator"
 import { GoogleOAuthProviderWrapper } from "@/lib/auth/google-oauth-provider"
+import { GA_MEASUREMENT_ID } from "@/lib/analytics"
 import { SITE_NAME, SITE_URL } from "@/lib/site"
 
 /** Origin serving destination/trip images — preconnecting saves ~300ms on LCP. */
@@ -19,8 +20,6 @@ const API_ORIGIN = (() => {
     return null
   }
 })()
-
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID
 
 const fedraSerif = localFont({
   src: [
@@ -115,7 +114,7 @@ export default async function RootLayout({
           <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
           <ToastContainer />
         </GoogleOAuthProviderWrapper>
-        {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
+        {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
       </body>
     </html>
   )
