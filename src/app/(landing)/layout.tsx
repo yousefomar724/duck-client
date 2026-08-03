@@ -11,7 +11,7 @@ const businessJsonLd = {
   description:
     "Kayaking, stand-up paddleboarding and water bike trips on the Nile around Elephantine Island in Aswan, Egypt.",
   url: SITE_URL,
-  image: `${SITE_URL}/og-image.jpg`,
+  image: `${SITE_URL}/og-nile-sunset.jpg`,
   logo: `${SITE_URL}/logo-transparent.png`,
   telephone: SITE_CONTACT.phone,
   email: SITE_CONTACT.email,

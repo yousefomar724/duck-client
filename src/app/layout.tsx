@@ -47,12 +47,17 @@ const fedraSerif = localFont({
 const SITE_DESCRIPTION =
   "Kayaking, stand-up paddleboarding and water bike trips on the Nile around Elephantine Island, Aswan. Book with Duck Entertainment."
 
-/** Social/preview card. 1200x630 is the size Facebook, WhatsApp and X expect. */
+/**
+ * Social/preview card. 1200x630 is the size Facebook, WhatsApp and X expect.
+ *
+ * Scrapers cache by URL, so renaming the file is what forces already-shared
+ * links to re-fetch — bumping the image in place leaves stale previews behind.
+ */
 const OG_IMAGE = {
-  url: "/og-image.jpg",
+  url: "/og-nile-sunset.jpg",
   width: 1200,
   height: 630,
-  alt: "Kayaking on the Nile at Elephantine Island, Aswan",
+  alt: "Kayaking on the Nile at sunset near Elephantine Island, Aswan",
 }
 
 /**
