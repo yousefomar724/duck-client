@@ -134,6 +134,73 @@ export const bookingStatusColors: Record<
   },
 }
 
+export type BookingStatusGroup =
+  | "pending"
+  | "active"
+  | "completed"
+  | "refund"
+  | "cancelled"
+  | "failed"
+
+export const bookingStatusGroups: Record<
+  BookingStatus,
+  { group: BookingStatusGroup; label: string }
+> = {
+  PENDING: { group: "pending", label: "قيد الانتظار" },
+  CONFIRMED: { group: "active", label: "نشط / مدفوع" },
+  SUCCESS: { group: "active", label: "نشط / مدفوع" },
+  PAID: { group: "active", label: "نشط / مدفوع" },
+  COMPLETED: { group: "completed", label: "مكتمل" },
+  REFUND_PENDING: { group: "refund", label: "استرداد" },
+  REFUNDED: { group: "refund", label: "استرداد" },
+  REFUND_FAILED: { group: "refund", label: "استرداد" },
+  CANCELLED: { group: "cancelled", label: "ملغي" },
+  FAILED: { group: "failed", label: "فشل" },
+}
+
+export const ALL_BOOKING_STATUSES: BookingStatus[] = [
+  "PENDING",
+  "CONFIRMED",
+  "CANCELLED",
+  "FAILED",
+  "SUCCESS",
+  "REFUND_PENDING",
+  "REFUNDED",
+  "REFUND_FAILED",
+  "COMPLETED",
+  "PAID",
+]
+
+/** Statuses counted as paid/active for KPI cards and filters. */
+export const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
+  "CONFIRMED",
+  "SUCCESS",
+  "PAID",
+  "COMPLETED",
+]
+
+export function isActiveBookingStatus(status: BookingStatus): boolean {
+  return ACTIVE_BOOKING_STATUSES.includes(status)
+}
+
+export function getBookingStatusLabel(status: BookingStatus): string {
+  return bookingStatusColors[status]?.label ?? status
+}
+
+export const paymentMethodLabels: Record<
+  NonNullable<import("./types").Booking["payment_method"]>,
+  string
+> = {
+  KASHIER: "كاشير",
+  MANUAL: "إنستاباي / يدوي",
+}
+
+export const resourceTypeLabels: Record<string, string> = {
+  kayak: "كاياك",
+  water_cycle: "دراجة مائية",
+  sup: "التجديف وقوفاً",
+}
+
 export const payoutStatusColors: Record<
   PayoutStatus,
   { bg: string; text: string; label: string }

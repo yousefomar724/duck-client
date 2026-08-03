@@ -1,207 +1,170 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { Fragment, useState, useEffect, useCallback } from "react"
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import PageHeader from "@/components/shared/page-header"
-import StatusBadge from "@/components/shared/status-badge"
+import { ErrorDisplay } from "@/components/shared/error-display"
+import { BookingListSkeleton } from "@/components/shared/loading-skeletons"
+import { BookingStatsRow } from "@/components/shared/bookings/booking-toolbar"
+import { BookingToolbar } from "@/components/shared/bookings/booking-toolbar"
+import { BookingList } from "@/components/shared/bookings/booking-list"
+import { SupplierManualPaymentActions } from "@/components/shared/bookings/supplier-manual-payment-actions"
+import { useBookingQueryState } from "@/components/shared/bookings/use-booking-query-state"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import StatCard from "@/components/shared/stat-card"
-import { formatCurrency, formatDateTime } from "@/lib/constants"
+  BOOKINGS_PAGE_SIZE,
+  filterBookings,
+  paginateBookings,
+  sortBookings,
+} from "@/lib/booking-utils"
+import { getBookingStatusLabel } from "@/lib/constants"
 import * as bookingsApi from "@/lib/api/bookings"
-import { confirmManualPayment, refundManualPayment } from "@/lib/api/bookings"
+import {
+  confirmManualPayment,
+  refundManualPayment,
+} from "@/lib/api/bookings"
 import * as tripsApi from "@/lib/api/trips"
 import * as tourGuidesApi from "@/lib/api/tour-guides"
-import { TableSkeleton } from "@/components/shared/loading-skeletons"
-import { ErrorDisplay } from "@/components/shared/error-display"
-import type {
-  Booking,
-  BookingStatus,
-  TourGuide,
-  Trip,
-  Supplier,
-} from "@/lib/types"
+import type { Booking, BookingStatus, TourGuide } from "@/lib/types"
 import { useToast } from "@/lib/stores/toast-store"
-import { CalendarCheck, CheckCircle, ChevronDown, Clock, Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
 
-const ALL_FILTER_VALUES = [
-  "all",
-  "PENDING",
-  "CONFIRMED",
-  "COMPLETED",
-  "SUCCESS",
-  "PAID",
-  "REFUND_PENDING",
-  "REFUNDED",
-  "CANCELLED",
-  "FAILED",
-  "REFUND_FAILED",
-] as const
-
-const filterLabels: Record<(typeof ALL_FILTER_VALUES)[number], string> = {
-  all: "الكل",
-  PENDING: "قيد الانتظار",
-  CONFIRMED: "مؤكد",
-  COMPLETED: "مكتمل",
-  SUCCESS: "نجح",
-  PAID: "مدفوع",
-  REFUND_PENDING: "في انتظار الاسترداد",
-  REFUNDED: "تم الاسترداد",
-  CANCELLED: "ملغي",
-  FAILED: "فشل",
-  REFUND_FAILED: "فشل الاسترداد",
-}
-
-const resourceLabels: Record<string, string> = {
-  kayak: "كاياك",
-  water_cycle: "دراجة مائية",
-  sup: "التجديف وقوفاً",
-}
-
-/** Chevron + 4 summary columns */
-const TABLE_COL_COUNT = 5
-
-function bookingRowId(booking: Booking): number {
-  const withLegacy = booking as Booking & { id?: number }
-  return booking.ID ?? withLegacy.id ?? 0
-}
-
-function localizedTripNameFromTrip(trip?: Trip) {
-  if (!trip) return "—"
-  const n = trip.name
-  if (typeof n === "string") return n
-  return n.ar || n.en || "—"
-}
-
-function localizedText(
-  value: string | { ar: string; en: string } | undefined,
-  maxLen = 200,
-) {
-  if (!value) return "—"
-  const s = typeof value === "string" ? value : value.ar || value.en || ""
-  if (!s) return "—"
-  return s.length > maxLen ? `${s.slice(0, maxLen)}…` : s
-}
-
-function supplierDisplayName(supplier?: Supplier) {
-  if (!supplier) return "—"
-  if (typeof supplier.name === "string") return supplier.name
-  return supplier.name.ar || supplier.name.en || "—"
-}
-
-export default function SupplierBookingsPage() {
+function SupplierBookingsContent() {
   const { addToast } = useToast()
+  const { state, setState, resetFilters } = useBookingQueryState()
+
   const [bookings, setBookings] = useState<Booking[]>([])
   const [tourGuides, setTourGuides] = useState<TourGuide[]>([])
-  const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [guidesWarning, setGuidesWarning] = useState<string | null>(null)
   const [guideUpdating, setGuideUpdating] = useState<number | null>(null)
-  const [manualActionLoading, setManualActionLoading] = useState<number | null>(null)
-  const [expandedBookingId, setExpandedBookingId] = useState<number | null>(
+  const [manualActionLoading, setManualActionLoading] = useState<number | null>(
     null,
   )
 
-  const toggleExpanded = (id: number) => {
-    setExpandedBookingId((prev) => (prev === id ? null : id))
-  }
-
-  const fetchBookings = useCallback(async () => {
-    setIsLoading(true)
+  const fetchBookings = useCallback(async (refreshOnly = false) => {
+    if (refreshOnly) setIsRefreshing(true)
+    else setIsLoading(true)
     setError(null)
+
     const [bookingsRes, guidesRes] = await Promise.all([
       bookingsApi.getMyBookings(),
       tourGuidesApi.getTourGuides(),
     ])
+
     if (bookingsRes.error) {
       setError(bookingsRes.error)
     } else {
       setBookings(bookingsRes.data || [])
     }
+
     setTourGuides(guidesRes.data || [])
+    if (guidesRes.error) {
+      setGuidesWarning(
+        "تعذّر تحميل قائمة المرشدين. يمكنك متابعة الحجوزات، لكن تعيين المرشد غير متاح مؤقتاً.",
+      )
+    } else {
+      setGuidesWarning(null)
+    }
+
     setIsLoading(false)
+    setIsRefreshing(false)
   }, [])
 
   useEffect(() => {
-    const id = setTimeout(() => fetchBookings(), 0)
-    return () => clearTimeout(id)
+    const id = window.setTimeout(() => {
+      void fetchBookings()
+    }, 0)
+    return () => window.clearTimeout(id)
   }, [fetchBookings])
 
-  // Filter bookings by status
-  let filteredBookings = bookings
-  if (statusFilter !== "all") {
-    filteredBookings = bookings.filter(
-      (booking) => booking.status === statusFilter,
-    )
-  }
+  const filteredBookings = useMemo(() => {
+    const filtered = filterBookings(bookings, {
+      search: state.search,
+      status: state.status,
+      payment: state.payment,
+    })
+    return sortBookings(filtered, state.sort)
+  }, [bookings, state.search, state.status, state.payment, state.sort])
 
-  const totalCount = bookings.length
-  const confirmedCount = bookings.filter((b) => b.status === "CONFIRMED").length
-  const pendingCount = bookings.filter((b) => b.status === "PENDING").length
+  const pagination = useMemo(
+    () => paginateBookings(filteredBookings, state.page, BOOKINGS_PAGE_SIZE),
+    [filteredBookings, state.page],
+  )
+
+  const toggleExpanded = (id: number) => {
+    setState({
+      expanded: state.expanded === id ? null : id,
+      page: state.page,
+    })
+  }
 
   const handleGuideChange = async (tripId: number, guideId: string) => {
     setGuideUpdating(tripId)
     const payload: Record<string, unknown> = {
       tour_guide_id: guideId === "none" ? 0 : parseInt(guideId, 10),
     }
-    const { error: err } = await tripsApi.updateTrip(tripId, payload as any)
+    const { error: err } = await tripsApi.updateTrip(
+      tripId,
+      payload as Parameters<typeof tripsApi.updateTrip>[1],
+    )
     setGuideUpdating(null)
     if (err) {
       addToast(err, "error")
       return
     }
     addToast("تم تحديث المرشد", "success")
-    await fetchBookings()
+    await fetchBookings(true)
   }
 
   const handleManualConfirm = async (id: number) => {
     setManualActionLoading(id)
-    const { error } = await confirmManualPayment(id)
+    const { error: err } = await confirmManualPayment(id)
     setManualActionLoading(null)
-    if (error) { addToast(error, "error"); return }
+    if (err) {
+      addToast(err, "error")
+      return
+    }
     addToast("تم تأكيد استلام الدفع", "success")
-    await fetchBookings()
+    await fetchBookings(true)
   }
 
   const handleManualRefund = async (id: number) => {
     setManualActionLoading(id)
-    const { error } = await refundManualPayment(id)
+    const { error: err } = await refundManualPayment(id)
     setManualActionLoading(null)
-    if (error) { addToast(error, "error"); return }
+    if (err) {
+      addToast(err, "error")
+      return
+    }
     addToast("تم استرداد الدفع", "success")
-    await fetchBookings()
+    await fetchBookings(true)
   }
 
-  // Get trip name for a booking
-  const getTripName = (booking: Booking) => {
-    if (booking.trip) {
-      return typeof booking.trip.name === "string"
-        ? booking.trip.name
-        : booking.trip.name.ar
-    }
-    return "غير معروف"
-  }
+  const listTitle =
+    state.status === "all"
+      ? "جميع الحجوزات"
+      : state.status === "active"
+        ? "الحجوزات — نشط / مدفوع"
+        : `الحجوزات — ${getBookingStatusLabel(state.status as BookingStatus)}`
+
+  const emptyTitle =
+    bookings.length === 0
+      ? "لا توجد حجوزات بعد"
+      : "لا توجد نتائج مطابقة"
+
+  const emptyDescription =
+    bookings.length === 0
+      ? "ستظهر حجوزات رحلاتك هنا فور إنشائها."
+      : "جرّب تعديل البحث أو إعادة ضبط عوامل التصفية."
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="الحجوزات" />
-        <TableSkeleton rows={5} columns={TABLE_COL_COUNT} />
+        <PageHeader
+          title="الحجوزات"
+          description="متابعة حجوزات رحلاتك وإدارة الدفع اليدوي"
+        />
+        <BookingListSkeleton />
       </div>
     )
   }
@@ -210,474 +173,83 @@ export default function SupplierBookingsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="الحجوزات" />
-        <ErrorDisplay error={error} onRetry={fetchBookings} />
+        <ErrorDisplay error={error} onRetry={() => void fetchBookings()} />
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="الحجوزات" />
+      <PageHeader
+        title="الحجوزات"
+        description="متابعة حجوزات رحلاتك وإدارة الدفع اليدوي"
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          title="إجمالي الحجوزات"
-          value={totalCount}
-          icon={CalendarCheck}
-        />
-        <StatCard
-          title="حجوزات مؤكدة"
-          value={confirmedCount}
-          icon={CheckCircle}
-        />
-        <StatCard
-          title="حجوزات قيد الانتظار"
-          value={pendingCount}
-          icon={Clock}
-        />
-      </div>
+      <BookingStatsRow
+        bookings={bookings}
+        showRefundPending
+        activeStatusFilter={state.status}
+        onStatusFilter={(status) => setState({ status }, true)}
+      />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Select dir="rtl" value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[240px]">
-            <SelectValue placeholder="تصفية حسب الحالة" />
-          </SelectTrigger>
-          <SelectContent>
-            {ALL_FILTER_VALUES.map((v) => (
-              <SelectItem key={v} value={v}>
-                {filterLabels[v]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <BookingToolbar
+        state={state}
+        resultCount={filteredBookings.length}
+        totalCount={bookings.length}
+        onChange={setState}
+        onReset={resetFilters}
+        onRefresh={() => void fetchBookings(true)}
+        isRefreshing={isRefreshing}
+      />
 
-      <Card className="overflow-hidden">
-        <CardHeader>
-          <CardTitle>
-            {statusFilter === "all"
-              ? "جميع الحجوزات"
-              : `الحجوزات - ${filterLabels[statusFilter as (typeof ALL_FILTER_VALUES)[number]] ?? statusFilter}`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6">
-          {filteredBookings.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-text-muted">لا توجد حجوزات متاحة</p>
-            </div>
-          ) : (
-            <Table className="min-w-[520px] overflow-x-auto max-w-full text-xs sm:text-sm">
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-10 text-right p-2" aria-hidden />
-                  <TableHead className="text-right">رقم الحجز</TableHead>
-                  <TableHead className="text-right">اسم العميل</TableHead>
-                  <TableHead className="text-right">المبلغ</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBookings.map((booking) => {
-                  const rowId = bookingRowId(booking)
-                  const rt = booking.resource_type
-                    ? (resourceLabels[booking.resource_type] ??
-                      booking.resource_type)
-                    : "—"
-                  const isExpanded = expandedBookingId === rowId
-                  const trip = booking.trip
-                  return (
-                    <Fragment
-                      key={`${rowId}-${booking.trip_id}-${booking.session_id}`}
-                    >
-                      <TableRow
-                        className={cn(
-                          "hover:bg-duck-cyan/5 cursor-pointer transition-colors",
-                          isExpanded && "bg-duck-cyan/10",
-                        )}
-                        role="button"
-                        tabIndex={0}
-                        aria-expanded={isExpanded}
-                        aria-label={`تفاصيل الحجز رقم ${rowId}`}
-                        onClick={() => toggleExpanded(rowId)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault()
-                            toggleExpanded(rowId)
-                          }
-                        }}
-                      >
-                        <TableCell className="w-10 p-2 align-middle">
-                          <ChevronDown
-                            className={cn(
-                              "size-4 text-text-muted transition-transform",
-                              isExpanded && "rotate-180",
-                            )}
-                            aria-hidden
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">#{rowId}</TableCell>
-                        <TableCell>{booking.full_name}</TableCell>
-                        <TableCell className="font-bold text-duck-navy whitespace-nowrap">
-                          {formatCurrency(booking.amount, booking.currency)}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={booking.status as BookingStatus}
-                            type="booking"
-                          />
-                        </TableCell>
-                      </TableRow>
-                      {isExpanded && (
-                        <TableRow className="hover:bg-transparent">
-                          <TableCell
-                            colSpan={TABLE_COL_COUNT}
-                            className="p-0 border-t-0"
-                          >
-                            <div
-                              className="border-t border-border bg-muted/20 px-3 py-4 sm:px-5"
-                              dir="rtl"
-                            >
-                              <p className="text-sm font-semibold text-duck-navy mb-3">
-                                تفاصيل الحجز
-                              </p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 text-sm">
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    رقم الهاتف
-                                  </div>
-                                  <div className="font-mono text-sm">
-                                    {booking.phone_number || "—"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    النوع
-                                  </div>
-                                  <div>
-                                    <span
-                                      className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
-                                        trip?.is_tour
-                                          ? "bg-purple-100 text-purple-700"
-                                          : "bg-blue-100 text-blue-700"
-                                      }`}
-                                    >
-                                      {trip?.is_tour ? "جولة" : "رحلة"}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    اسم الرحلة
-                                  </div>
-                                  <div>{getTripName(booking)}</div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    تاريخ الحجز
-                                  </div>
-                                  <div>
-                                    {booking.booking_date
-                                      ? formatDateTime(booking.booking_date)
-                                      : "—"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    المعدّات
-                                  </div>
-                                  <div>{rt}</div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    الكمية
-                                  </div>
-                                  <div>{booking.quantity ?? "—"}</div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    تاريخ الإنشاء
-                                  </div>
-                                  <div>
-                                    {booking.created_at
-                                      ? formatDateTime(booking.created_at)
-                                      : booking.UpdatedAt
-                                        ? formatDateTime(booking.UpdatedAt)
-                                        : "—"}
-                                  </div>
-                                </div>
-                                <div
-                                  className="sm:col-span-2 lg:col-span-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                  onKeyDown={(e) => e.stopPropagation()}
-                                >
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    المرشد
-                                  </div>
-                                  <div>
-                                    {trip?.is_tour ? (
-                                      <Select
-                                        dir="rtl"
-                                        value={
-                                          trip.tour_guide_id?.toString() ||
-                                          "none"
-                                        }
-                                        onValueChange={(v) =>
-                                          handleGuideChange(booking.trip_id, v)
-                                        }
-                                        disabled={
-                                          guideUpdating === booking.trip_id
-                                        }
-                                      >
-                                        <SelectTrigger className="w-full max-w-[220px] h-9 text-xs">
-                                          <SelectValue placeholder="اختر مرشد" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="none">
-                                            بدون مرشد
-                                          </SelectItem>
-                                          {tourGuides.map((g) => (
-                                            <SelectItem
-                                              key={g.ID}
-                                              value={g.ID.toString()}
-                                            >
-                                              {g.name}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    ) : (
-                                      "—"
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <p className="text-sm font-semibold text-duck-navy mt-6 mb-3">
-                                بيانات إضافية
-                              </p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 text-sm">
-                                {booking.payment_method && (
-                                  <div>
-                                    <div className="text-text-muted text-xs mb-0.5">
-                                      طريقة الدفع
-                                    </div>
-                                    <div>
-                                      <span
-                                        className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
-                                          booking.payment_method === "MANUAL"
-                                            ? "bg-amber-100 text-amber-700"
-                                            : "bg-blue-100 text-blue-700"
-                                        }`}
-                                      >
-                                        {booking.payment_method === "MANUAL"
-                                          ? "إنستاباي / يدوي"
-                                          : "كاشير"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    معرف الجلسة
-                                  </div>
-                                  <div className="font-mono break-all whitespace-pre-wrap">
-                                    {booking.session_id || "—"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    رقم الطلب / المرجع
-                                  </div>
-                                  <div className="font-mono break-all whitespace-pre-wrap">
-                                    {[booking.order_id, booking.order_ref]
-                                      .filter(Boolean)
-                                      .join(" · ") || "—"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    معرف المستخدم
-                                  </div>
-                                  <div>{booking.user_id ?? "—"}</div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    طلب مرشد
-                                  </div>
-                                  <div>
-                                    {booking.wants_guide === undefined
-                                      ? "—"
-                                      : booking.wants_guide
-                                        ? "نعم"
-                                        : "لا"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    معرف الرحلة
-                                  </div>
-                                  <div>{booking.trip_id}</div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    معرف المورد
-                                  </div>
-                                  <div>{booking.supplier_id ?? "—"}</div>
-                                </div>
-                                {booking.user && (
-                                  <div className="sm:col-span-2">
-                                    <div className="text-text-muted text-xs mb-0.5">
-                                      حساب العميل
-                                    </div>
-                                    <div>
-                                      {[
-                                        booking.user.first_name,
-                                        booking.user.last_name,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(" ")}{" "}
-                                      {booking.user.email
-                                        ? `· ${booking.user.email}`
-                                        : ""}
-                                    </div>
-                                  </div>
-                                )}
-                                {trip && (
-                                  <div className="sm:col-span-2 lg:col-span-3 border-t border-border/60 pt-3 mt-1">
-                                    <div className="text-text-muted text-xs mb-1">
-                                      الرحلة
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      <div>
-                                        <span className="text-text-muted">
-                                          الاسم (كامل):{" "}
-                                        </span>
-                                        {localizedTripNameFromTrip(trip)}
-                                      </div>
-                                      <div>
-                                        <span className="text-text-muted">
-                                          من:{" "}
-                                        </span>
-                                        {trip.from
-                                          ? formatDateTime(trip.from)
-                                          : "—"}
-                                      </div>
-                                      <div>
-                                        <span className="text-text-muted">
-                                          إلى:{" "}
-                                        </span>
-                                        {trip.to
-                                          ? formatDateTime(trip.to)
-                                          : "—"}
-                                      </div>
-                                      <div>
-                                        <span className="text-text-muted">
-                                          المدة:{" "}
-                                        </span>
-                                        {trip.duration ?? "—"}
-                                      </div>
-                                      <div>
-                                        <span className="text-text-muted">
-                                          الحد الأقصى للضيوف:{" "}
-                                        </span>
-                                        {trip.max_guests ?? "—"}
-                                      </div>
-                                      <div>
-                                        <span className="text-text-muted">
-                                          قابل للاسترداد:{" "}
-                                        </span>
-                                        {trip.refundable ? "نعم" : "لا"}
-                                      </div>
-                                      <div className="sm:col-span-2 whitespace-pre">
-                                        <span className="text-text-muted">
-                                          الوصف:{" "}
-                                        </span>
-                                        {localizedText(trip.description)}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                                {booking.supplier && (
-                                  <div className="sm:col-span-2 lg:col-span-3 border-t border-border/60 pt-3 mt-1">
-                                    <div className="text-text-muted text-xs mb-1">
-                                      المورد
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      <div>
-                                        <span className="text-text-muted">
-                                          الاسم:{" "}
-                                        </span>
-                                        {supplierDisplayName(booking.supplier)}
-                                      </div>
-                                      <div>
-                                        <span className="text-text-muted">
-                                          التقييم:{" "}
-                                        </span>
-                                        {booking.supplier.rate ?? "—"}
-                                      </div>
-                                      <div className="sm:col-span-2">
-                                        <span className="text-text-muted">
-                                          نبذة:{" "}
-                                        </span>
-                                        {localizedText(
-                                          booking.supplier.about,
-                                          300,
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              {booking.payment_method === "MANUAL" && (
-                                <div
-                                  className="border-t border-border/60 pt-4 mt-4"
-                                  onClick={(e) => e.stopPropagation()}
-                                  onKeyDown={(e) => e.stopPropagation()}
-                                >
-                                  <p className="text-sm font-semibold text-duck-navy mb-3">
-                                    إجراءات الدفع اليدوي
-                                  </p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {booking.status === "PENDING" && (
-                                      <button
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 transition-colors"
-                                        disabled={manualActionLoading === rowId}
-                                        onClick={() => handleManualConfirm(rowId)}
-                                      >
-                                        {manualActionLoading === rowId ? (
-                                          <Loader2 className="size-4 animate-spin" />
-                                        ) : (
-                                          <CheckCircle className="size-4" />
-                                        )}
-                                        تأكيد استلام الدفع
-                                      </button>
-                                    )}
-                                    {booking.status === "CONFIRMED" && (
-                                      <button
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
-                                        disabled={manualActionLoading === rowId}
-                                        onClick={() => handleManualRefund(rowId)}
-                                      >
-                                        {manualActionLoading === rowId ? (
-                                          <Loader2 className="size-4 animate-spin" />
-                                        ) : null}
-                                        استرداد الدفع
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </Fragment>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {guidesWarning && (
+        <ErrorDisplay
+          error={guidesWarning}
+          showRetry={false}
+          title="تنبيه"
+          className="border-amber-200 bg-amber-50 [&_h3]:text-amber-900 [&_p]:text-amber-800"
+        />
+      )}
+
+      <BookingList
+        bookings={pagination.items}
+        tourGuides={tourGuides}
+        expandedId={state.expanded}
+        onToggleExpanded={toggleExpanded}
+        variant="supplier"
+        guideUpdating={guideUpdating}
+        onGuideChange={handleGuideChange}
+        renderSupplierActions={(booking) => (
+          <SupplierManualPaymentActions
+            booking={booking}
+            loadingId={manualActionLoading}
+            onConfirm={handleManualConfirm}
+            onRefund={handleManualRefund}
+          />
+        )}
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        totalItems={pagination.totalItems}
+        onPageChange={(page) => setState({ page })}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        cardTitle={listTitle}
+      />
     </div>
+  )
+}
+
+export default function SupplierBookingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <PageHeader title="الحجوزات" />
+          <BookingListSkeleton />
+        </div>
+      }
+    >
+      <SupplierBookingsContent />
+    </Suspense>
   )
 }

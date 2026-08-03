@@ -132,6 +132,7 @@ export default function SupplierSidebar() {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
+                    aria-label={`الملف الشخصي: ${displayName}`}
                     className="rounded-md outline-none ring-sidebar-ring focus-visible:ring-2"
                   >
                     <Avatar className="h-9 w-9">

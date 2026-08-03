@@ -1,141 +1,44 @@
 "use client"
 
-import { Fragment, useState, useEffect } from "react"
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import PageHeader from "@/components/shared/page-header"
-import StatusBadge from "@/components/shared/status-badge"
+import { ErrorDisplay } from "@/components/shared/error-display"
+import { BookingListSkeleton } from "@/components/shared/loading-skeletons"
+import { BookingStatsRow } from "@/components/shared/bookings/booking-toolbar"
+import { BookingToolbar } from "@/components/shared/bookings/booking-toolbar"
+import { BookingList } from "@/components/shared/bookings/booking-list"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+  AdminBookingDialogs,
+  AdminBookingInlineActions,
+} from "@/components/shared/bookings/admin-booking-actions"
+import { useBookingQueryState } from "@/components/shared/bookings/use-booking-query-state"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+  BOOKINGS_PAGE_SIZE,
+  filterBookings,
+  paginateBookings,
+  sortBookings,
+} from "@/lib/booking-utils"
+import { getBookingStatusLabel } from "@/lib/constants"
 import * as bookingsApi from "@/lib/api/bookings"
 import * as tripsApi from "@/lib/api/trips"
 import * as suppliersApi from "@/lib/api/suppliers"
 import * as tourGuidesApi from "@/lib/api/tour-guides"
-import { formatCurrency, formatDateTime } from "@/lib/constants"
-import { TableSkeleton } from "@/components/shared/loading-skeletons"
-import { ErrorDisplay } from "@/components/shared/error-display"
-import StatCard from "@/components/shared/stat-card"
-import {
-  Banknote,
-  CalendarCheck,
-  CheckCircle,
-  ChevronDown,
-  Clock,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import type {
-  BookingStatus,
-  Booking,
-  Trip,
-  Supplier,
-  TourGuide,
-} from "@/lib/types"
+import type { Booking, BookingStatus, Supplier, TourGuide, Trip } from "@/lib/types"
 import { useToast } from "@/lib/stores/toast-store"
 
-const ALL_STATUSES: BookingStatus[] = [
-  "PENDING",
-  "CONFIRMED",
-  "CANCELLED",
-  "FAILED",
-  "SUCCESS",
-  "REFUND_PENDING",
-  "REFUNDED",
-  "REFUND_FAILED",
-  "COMPLETED",
-  "PAID",
-]
-
-const statusFilterLabels: Partial<Record<BookingStatus, string>> & {
-  all: string
-} = {
-  all: "كل الحالات",
-  PENDING: "قيد الانتظار",
-  CONFIRMED: "مؤكد",
-  CANCELLED: "ملغي",
-  FAILED: "فشل",
-  SUCCESS: "نجح",
-  REFUND_PENDING: "في انتظار الاسترداد",
-  REFUNDED: "تم الاسترداد",
-  REFUND_FAILED: "فشل الاسترداد",
-  COMPLETED: "مكتمل",
-  PAID: "مدفوع",
-}
-
-const resourceLabels: Record<string, string> = {
-  kayak: "كاياك",
-  water_cycle: "دراجة مائية",
-  sup: "التجديف وقوفاً",
-}
-
-/** Chevron + 4 summary columns */
-const TABLE_COL_COUNT = 5
-
-function localizedTripName(trip?: Trip) {
-  if (!trip) return "—"
-  const n = trip.name
-  if (typeof n === "string") return n
-  return n.ar || n.en || "—"
-}
-
-function localizedText(
-  value: string | { ar: string; en: string } | undefined,
-  maxLen = 200,
-) {
-  if (!value) return "—"
-  const s = typeof value === "string" ? value : value.ar || value.en || ""
-  if (!s) return "—"
-  return s.length > maxLen ? `${s.slice(0, maxLen)}…` : s
-}
-
-function canAdminCancelBooking(status: string): boolean {
-  return (
-    status === "CONFIRMED" ||
-    status === "SUCCESS" ||
-    status === "PAID"
-  )
-}
-
-export default function AdminBookings() {
+function AdminBookingsContent() {
   const { addToast } = useToast()
-  const getSupplierName = (supplier?: Supplier) => {
-    if (!supplier) return "-"
-    return typeof supplier.name === "string"
-      ? supplier.name
-      : supplier.name.ar || supplier.name.en || "-"
-  }
+  const { state, setState, resetFilters } = useBookingQueryState()
 
   const [bookings, setBookings] = useState<Booking[]>([])
   const [trips, setTrips] = useState<Trip[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [tourGuides, setTourGuides] = useState<TourGuide[]>([])
-  const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all")
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [guidesWarning, setGuidesWarning] = useState<string | null>(null)
+
   const [refundId, setRefundId] = useState<number | null>(null)
   const [refundReason, setRefundReason] = useState("")
   const [refundLoading, setRefundLoading] = useState(false)
@@ -143,21 +46,11 @@ export default function AdminBookings() {
   const [adminCancelNote, setAdminCancelNote] = useState("")
   const [adminCancelLoading, setAdminCancelLoading] = useState(false)
   const [guideUpdating, setGuideUpdating] = useState<number | null>(null)
-  const [expandedBookingId, setExpandedBookingId] = useState<number | null>(
-    null,
-  )
 
-  const toggleExpanded = (id: number) => {
-    setExpandedBookingId((prev) => (prev === id ? null : id))
-  }
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async (refreshOnly = false) => {
     try {
-      setIsLoading(true)
+      if (refreshOnly) setIsRefreshing(true)
+      else setIsLoading(true)
       setError(null)
 
       const [bookingsRes, tripsRes, suppliersRes, guidesRes] =
@@ -169,7 +62,12 @@ export default function AdminBookings() {
         ])
 
       if (bookingsRes.error || tripsRes.error || suppliersRes.error) {
-        setError("فشل في تحميل البيانات")
+        setError(
+          bookingsRes.error ||
+            tripsRes.error ||
+            suppliersRes.error ||
+            "فشل في تحميل البيانات",
+        )
         return
       }
 
@@ -177,41 +75,67 @@ export default function AdminBookings() {
       setTrips(tripsRes.data || [])
       setSuppliers(suppliersRes.data || [])
       setTourGuides(guidesRes.data || [])
+
+      if (guidesRes.error) {
+        setGuidesWarning(
+          "تعذّر تحميل قائمة المرشدين. يمكنك متابعة الحجوزات، لكن تعيين المرشد غير متاح مؤقتاً.",
+        )
+      } else {
+        setGuidesWarning(null)
+      }
     } catch (err) {
       setError("حدث خطأ أثناء تحميل البيانات")
       console.error(err)
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
+  }, [])
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      void fetchData()
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [fetchData])
+
+  const filteredBookings = useMemo(() => {
+    const filtered = filterBookings(bookings, {
+      search: state.search,
+      status: state.status,
+      payment: state.payment,
+    })
+    return sortBookings(filtered, state.sort)
+  }, [bookings, state.search, state.status, state.payment, state.sort])
+
+  const pagination = useMemo(
+    () => paginateBookings(filteredBookings, state.page, BOOKINGS_PAGE_SIZE),
+    [filteredBookings, state.page],
+  )
+
+  const toggleExpanded = (id: number) => {
+    setState({
+      expanded: state.expanded === id ? null : id,
+      page: state.page,
+    })
   }
-
-  const filteredBookings = bookings.filter((booking) => {
-    const matchesStatus =
-      statusFilter === "all" || booking.status === statusFilter
-    return matchesStatus
-  })
-
-  const totalCount = bookings.length
-  const confirmedCount = bookings.filter((b) => b.status === "CONFIRMED").length
-  const pendingCount = bookings.filter((b) => b.status === "PENDING").length
-  const refundPendingCount = bookings.filter(
-    (b) => b.status === "REFUND_PENDING",
-  ).length
 
   const handleGuideChange = async (tripId: number, guideId: string) => {
     setGuideUpdating(tripId)
     const payload: Record<string, unknown> = {
       tour_guide_id: guideId === "none" ? 0 : parseInt(guideId, 10),
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: err } = await tripsApi.updateTrip(tripId, payload as any)
+    const { error: err } = await tripsApi.updateTrip(
+      tripId,
+      payload as Parameters<typeof tripsApi.updateTrip>[1],
+    )
     setGuideUpdating(null)
     if (err) {
       addToast(err, "error")
       return
     }
     addToast("تم تحديث المرشد", "success")
-    await fetchData()
+    await fetchData(true)
   }
 
   const processRefund = async () => {
@@ -231,11 +155,14 @@ export default function AdminBookings() {
     if (data?.booking_status === "REFUNDED") {
       addToast("تمت معالجة الاسترداد بنجاح", "success")
     } else if (data?.booking_status === "REFUND_FAILED") {
-      addToast("فشلت عملية الاسترداد عبر الدفع. راجع حالة الحجز أو حاول لاحقاً.", "error")
+      addToast(
+        "فشلت عملية الاسترداد عبر الدفع. راجع حالة الحجز أو حاول لاحقاً.",
+        "error",
+      )
     } else {
       addToast("تم إرسال طلب الاسترداد", "success")
     }
-    await fetchData()
+    await fetchData(true)
   }
 
   const confirmAdminCancel = async () => {
@@ -252,15 +179,38 @@ export default function AdminBookings() {
       addToast(err, "error")
       return
     }
-    addToast("تم وضع الحجز في انتظار الاسترداد. يمكنك معالجة الاسترداد لاحقاً.", "success")
-    await fetchData()
+    addToast(
+      "تم وضع الحجز في انتظار الاسترداد. يمكنك معالجة الاسترداد لاحقاً.",
+      "success",
+    )
+    await fetchData(true)
   }
+
+  const listTitle =
+    state.status === "all"
+      ? "جميع الحجوزات"
+      : state.status === "active"
+        ? "الحجوزات — نشط / مدفوع"
+        : `الحجوزات — ${getBookingStatusLabel(state.status as BookingStatus)}`
+
+  const emptyTitle =
+    bookings.length === 0
+      ? "لا توجد حجوزات بعد"
+      : "لا توجد نتائج مطابقة"
+
+  const emptyDescription =
+    bookings.length === 0
+      ? "ستظهر الحجوزات الجديدة هنا فور إنشائها."
+      : "جرّب تعديل البحث أو إعادة ضبط عوامل التصفية."
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="الحجوزات" />
-        <TableSkeleton rows={5} columns={TABLE_COL_COUNT} />
+        <PageHeader
+          title="الحجوزات"
+          description="إدارة ومتابعة جميع حجوزات المنصة"
+        />
+        <BookingListSkeleton />
       </div>
     )
   }
@@ -269,545 +219,108 @@ export default function AdminBookings() {
     return (
       <div className="space-y-6">
         <PageHeader title="الحجوزات" />
-        <ErrorDisplay error={error} onRetry={fetchData} />
+        <ErrorDisplay error={error} onRetry={() => void fetchData()} />
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="الحجوزات" />
+      <PageHeader
+        title="الحجوزات"
+        description="إدارة ومتابعة جميع حجوزات المنصة"
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="إجمالي الحجوزات"
-          value={totalCount}
-          icon={CalendarCheck}
-        />
-        <StatCard
-          title="حجوزات مؤكدة"
-          value={confirmedCount}
-          icon={CheckCircle}
-        />
-        <StatCard
-          title="حجوزات قيد الانتظار"
-          value={pendingCount}
-          icon={Clock}
-        />
-        <StatCard
-          title="في انتظار الاسترداد"
-          value={refundPendingCount}
-          icon={Banknote}
-        />
-      </div>
+      <BookingStatsRow
+        bookings={bookings}
+        activeStatusFilter={state.status}
+        onStatusFilter={(status) => setState({ status }, true)}
+      />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Select
-          dir="rtl"
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
-        >
-          <SelectTrigger className="w-full sm:w-[240px]">
-            <SelectValue placeholder="تصفية حسب الحالة" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{statusFilterLabels.all}</SelectItem>
-            {ALL_STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {statusFilterLabels[s] ?? s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <BookingToolbar
+        state={state}
+        resultCount={filteredBookings.length}
+        totalCount={bookings.length}
+        onChange={setState}
+        onReset={resetFilters}
+        onRefresh={() => void fetchData(true)}
+        isRefreshing={isRefreshing}
+      />
 
-      <Card className="overflow-hidden">
-        <CardHeader>
-          <CardTitle>
-            {statusFilter === "all"
-              ? "جميع الحجوزات"
-              : `الحجوزات - ${statusFilterLabels[statusFilter] ?? statusFilter}`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6">
-          {filteredBookings.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-text-muted">لا توجد حجوزات متاحة</p>
-            </div>
-          ) : (
-            <Table className="min-w-[520px] overflow-x-auto max-w-full text-xs sm:text-sm">
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-10 text-right p-2" aria-hidden />
-                  <TableHead className="text-right">رقم الحجز</TableHead>
-                  <TableHead className="text-right">اسم العميل</TableHead>
-                  <TableHead className="text-right">المبلغ</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBookings.map((booking) => {
-                  const trip = trips.find((t) => t.id === booking.trip_id)
-                  const supplier = suppliers.find(
-                    (s) => s.id === booking.supplier_id,
-                  )
-                  const rt = booking.resource_type
-                    ? (resourceLabels[booking.resource_type] ??
-                      booking.resource_type)
-                    : "—"
-                  const isExpanded = expandedBookingId === booking.ID
-                  return (
-                    <Fragment key={booking.ID}>
-                      <TableRow
-                        className={cn(
-                          "hover:bg-duck-cyan/5 transition-colors cursor-pointer",
-                          isExpanded && "bg-duck-cyan/10",
-                        )}
-                        role="button"
-                        tabIndex={0}
-                        aria-expanded={isExpanded}
-                        aria-label={`تفاصيل الحجز رقم ${booking.ID}`}
-                        onClick={() => toggleExpanded(booking.ID)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault()
-                            toggleExpanded(booking.ID)
-                          }
-                        }}
-                      >
-                        <TableCell className="w-10 p-2 align-middle">
-                          <ChevronDown
-                            className={cn(
-                              "size-4 text-text-muted transition-transform",
-                              isExpanded && "rotate-180",
-                            )}
-                            aria-hidden
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          #{booking.ID}
-                        </TableCell>
-                        <TableCell>{booking.full_name}</TableCell>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          {formatCurrency(booking.amount, booking.currency)}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={booking.status as BookingStatus}
-                            type="booking"
-                          />
-                        </TableCell>
-                      </TableRow>
-                      {isExpanded && (
-                        <TableRow className="hover:bg-transparent">
-                          <TableCell
-                            colSpan={TABLE_COL_COUNT}
-                            className="p-0 border-t-0"
-                          >
-                            <div
-                              className="border-t border-border bg-muted/20 px-3 py-4 sm:px-5"
-                              dir="rtl"
-                            >
-                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
-                                <p className="text-sm font-semibold text-duck-navy">
-                                  تفاصيل الحجز
-                                </p>
-                                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-                                  {canAdminCancelBooking(booking.status) && (
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="outline"
-                                      className="w-full sm:w-auto border-amber-600/40 text-amber-900 hover:bg-amber-50"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        setAdminCancelId(booking.ID)
-                                      }}
-                                      onKeyDown={(e) => e.stopPropagation()}
-                                    >
-                                      إلغاء من الإدارة
-                                    </Button>
-                                  )}
-                                  {booking.status === "REFUND_PENDING" && (
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      className="w-full sm:w-auto shrink-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        setRefundId(booking.ID)
-                                      }}
-                                      onKeyDown={(e) => e.stopPropagation()}
-                                    >
-                                      معالجة الاسترداد
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                              {canAdminCancelBooking(booking.status) && (
-                                <p className="text-xs text-text-muted mb-3 -mt-1">
-                                  لضيوف بدون حساب أو إلغاء تشغيلي/طقس: ألغِ من
-                                  الإدارة ليصبح الحجز «في انتظار الاسترداد»، ثم نفّذ
-                                  الاسترداد.
-                                </p>
-                              )}
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 text-sm">
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    رقم الهاتف
-                                  </div>
-                                  <div className="font-mono text-sm">
-                                    {booking.phone_number || "—"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    النوع
-                                  </div>
-                                  <div>
-                                    <span
-                                      className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
-                                        trip?.is_tour
-                                          ? "bg-purple-100 text-purple-700"
-                                          : "bg-blue-100 text-blue-700"
-                                      }`}
-                                    >
-                                      {trip?.is_tour ? "جولة" : "رحلة"}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    المورد
-                                  </div>
-                                  <div>{getSupplierName(supplier)}</div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    تاريخ الحجز
-                                  </div>
-                                  <div>
-                                    {booking.booking_date
-                                      ? formatDateTime(booking.booking_date)
-                                      : "—"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    المعدّات
-                                  </div>
-                                  <div>{rt}</div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    الكمية
-                                  </div>
-                                  <div>{booking.quantity ?? "—"}</div>
-                                </div>
-                                <div
-                                  className="sm:col-span-2 lg:col-span-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                  onKeyDown={(e) => e.stopPropagation()}
-                                >
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    المرشد
-                                  </div>
-                                  <div>
-                                    {trip?.is_tour ? (
-                                      <Select
-                                        dir="rtl"
-                                        value={
-                                          trip.tour_guide_id?.toString() ||
-                                          "none"
-                                        }
-                                        onValueChange={(v) =>
-                                          handleGuideChange(trip.id, v)
-                                        }
-                                        disabled={guideUpdating === trip.id}
-                                      >
-                                        <SelectTrigger className="w-full max-w-[220px] h-9 text-xs">
-                                          <SelectValue placeholder="اختر مرشد" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="none">
-                                            بدون مرشد
-                                          </SelectItem>
-                                          {tourGuides.map((g) => (
-                                            <SelectItem
-                                              key={g.ID}
-                                              value={g.ID.toString()}
-                                            >
-                                              {g.name}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    ) : (
-                                      "—"
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <p className="text-sm font-semibold text-duck-navy mt-6 mb-3">
-                                بيانات إضافية
-                              </p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3 text-sm">
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    تاريخ الإنشاء
-                                  </div>
-                                  <div>
-                                    {booking.created_at
-                                      ? formatDateTime(booking.created_at)
-                                      : booking.UpdatedAt
-                                        ? formatDateTime(booking.UpdatedAt)
-                                        : "—"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    معرف الجلسة
-                                  </div>
-                                  <div className="font-mono break-all whitespace-pre-wrap">
-                                    {booking.session_id || "—"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    رقم الطلب / المرجع
-                                  </div>
-                                  <div className="font-mono break-all whitespace-pre-wrap">
-                                    {[booking.order_id, booking.order_ref]
-                                      .filter(Boolean)
-                                      .join(" · ") || "—"}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    معرف المستخدم
-                                  </div>
-                                  <div>{booking.user_id ?? "—"}</div>
-                                </div>
-                                <div>
-                                  <div className="text-text-muted text-xs mb-0.5">
-                                    طلب مرشد
-                                  </div>
-                                  <div>
-                                    {booking.wants_guide === undefined
-                                      ? "—"
-                                      : booking.wants_guide
-                                        ? "نعم"
-                                        : "لا"}
-                                  </div>
-                                </div>
-                                {booking.user && (
-                                  <div className="sm:col-span-2">
-                                    <div className="text-text-muted text-xs mb-0.5">
-                                      حساب العميل
-                                    </div>
-                                    <div>
-                                      {[
-                                        booking.user.first_name,
-                                        booking.user.last_name,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(" ")}{" "}
-                                      {booking.user.email
-                                        ? `· ${booking.user.email}`
-                                        : ""}
-                                    </div>
-                                  </div>
-                                )}
-                                <div className="sm:col-span-2 lg:col-span-3 border-t border-border/60 pt-3 mt-1">
-                                  <div className="text-text-muted text-xs mb-1">
-                                    الرحلة
-                                  </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                      <span className="text-text-muted">
-                                        الاسم:{" "}
-                                      </span>
-                                      {localizedTripName(trip)}
-                                    </div>
-                                    <div>
-                                      <span className="text-text-muted">
-                                        معرف الرحلة:{" "}
-                                      </span>
-                                      {booking.trip_id}
-                                    </div>
-                                    {trip && (
-                                      <>
-                                        <div>
-                                          <span className="text-text-muted">
-                                            من:{" "}
-                                          </span>
-                                          {trip.from
-                                            ? formatDateTime(trip.from)
-                                            : "—"}
-                                        </div>
-                                        <div>
-                                          <span className="text-text-muted">
-                                            إلى:{" "}
-                                          </span>
-                                          {trip.to
-                                            ? formatDateTime(trip.to)
-                                            : "—"}
-                                        </div>
-                                        <div>
-                                          <span className="text-text-muted">
-                                            المدة:{" "}
-                                          </span>
-                                          {trip.duration ?? "—"}
-                                        </div>
-                                        <div>
-                                          <span className="text-text-muted">
-                                            الحد الأقصى للضيوف:{" "}
-                                          </span>
-                                          {trip.max_guests ?? "—"}
-                                        </div>
-                                        <div>
-                                          <span className="text-text-muted">
-                                            قابل للاسترداد:{" "}
-                                          </span>
-                                          {trip.refundable ? "نعم" : "لا"}
-                                        </div>
-                                        <div className="sm:col-span-2 whitespace-pre">
-                                          <span className="text-text-muted">
-                                            الوصف:{" "}
-                                          </span>
-                                          {localizedText(trip.description)}
-                                        </div>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                                {supplier && (
-                                  <div className="sm:col-span-2 lg:col-span-3 border-t border-border/60 pt-3 mt-1">
-                                    <div className="text-text-muted text-xs mb-1">
-                                      المورد
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      <div>
-                                        <span className="text-text-muted">
-                                          المعرف:{" "}
-                                        </span>
-                                        {supplier.id}
-                                      </div>
-                                      <div>
-                                        <span className="text-text-muted">
-                                          التقييم:{" "}
-                                        </span>
-                                        {supplier.rate ?? "—"}
-                                      </div>
-                                      <div className="sm:col-span-2">
-                                        <span className="text-text-muted">
-                                          نبذة:{" "}
-                                        </span>
-                                        {localizedText(supplier.about, 300)}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </Fragment>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {guidesWarning && (
+        <ErrorDisplay
+          error={guidesWarning}
+          showRetry={false}
+          title="تنبيه"
+          className="border-amber-200 bg-amber-50 [&_h3]:text-amber-900 [&_p]:text-amber-800"
+        />
+      )}
 
-      <AlertDialog
-        open={adminCancelId != null}
-        onOpenChange={(open) => {
+      <BookingList
+        bookings={pagination.items}
+        trips={trips}
+        suppliers={suppliers}
+        tourGuides={tourGuides}
+        expandedId={state.expanded}
+        onToggleExpanded={toggleExpanded}
+        variant="admin"
+        guideUpdating={guideUpdating}
+        onGuideChange={handleGuideChange}
+        renderAdminActions={(booking) => (
+          <AdminBookingInlineActions
+            booking={booking}
+            onCancel={setAdminCancelId}
+            onRefund={setRefundId}
+          />
+        )}
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        totalItems={pagination.totalItems}
+        onPageChange={(page) => setState({ page })}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        cardTitle={listTitle}
+      />
+
+      <AdminBookingDialogs
+        adminCancelId={adminCancelId}
+        adminCancelNote={adminCancelNote}
+        adminCancelLoading={adminCancelLoading}
+        onAdminCancelNoteChange={setAdminCancelNote}
+        onAdminCancelOpenChange={(open) => {
           if (!open) {
             setAdminCancelId(null)
             setAdminCancelNote("")
           }
         }}
-      >
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>إلغاء الحجز من الإدارة؟</AlertDialogTitle>
-            <AlertDialogDescription>
-              سيصبح الحجز «في انتظار الاسترداد» دون شرط الـ 24 ساعة. يمكنك بعدها
-              تنفيذ الاسترداد عبر الدفع. استخدم هذا للضيوف بدون حساب أو لإلغاء
-              الرحلة لأسباب تشغيلية.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-2 py-2">
-            <Label htmlFor="admin-cancel-note">ملاحظة (اختياري)</Label>
-            <Input
-              id="admin-cancel-note"
-              value={adminCancelNote}
-              onChange={(e) => setAdminCancelNote(e.target.value)}
-              placeholder="مثال: طقس، طلب العميل عبر واتساب"
-            />
-          </div>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={adminCancelLoading}>
-              إلغاء
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-amber-700 hover:bg-amber-800"
-              onClick={(e) => {
-                e.preventDefault()
-                void confirmAdminCancel()
-              }}
-              disabled={adminCancelLoading}
-            >
-              {adminCancelLoading ? "جاري..." : "تأكيد الإلغاء"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={refundId != null}
-        onOpenChange={(open) => {
+        onConfirmAdminCancel={confirmAdminCancel}
+        refundId={refundId}
+        refundReason={refundReason}
+        refundLoading={refundLoading}
+        onRefundReasonChange={setRefundReason}
+        onRefundOpenChange={(open) => {
           if (!open) {
             setRefundId(null)
             setRefundReason("")
           }
         }}
-      >
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>معالجة الاسترداد</AlertDialogTitle>
-            <AlertDialogDescription>
-              سيتم إرسال طلب الاسترداد إلى بوابة الدفع. يمكنك إضافة سبب اختياري.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-2 py-2">
-            <Label htmlFor="refund-reason">السبب (اختياري)</Label>
-            <Input
-              id="refund-reason"
-              value={refundReason}
-              onChange={(e) => setRefundReason(e.target.value)}
-              placeholder="مثال: طلب العميل"
-            />
-          </div>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={refundLoading}>
-              إلغاء
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault()
-                void processRefund()
-              }}
-              disabled={refundLoading}
-            >
-              {refundLoading ? "جاري..." : "تأكيد الاسترداد"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirmRefund={processRefund}
+      />
     </div>
+  )
+}
+
+export default function AdminBookings() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <PageHeader title="الحجوزات" />
+          <BookingListSkeleton />
+        </div>
+      }
+    >
+      <AdminBookingsContent />
+    </Suspense>
   )
 }

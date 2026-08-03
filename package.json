@@ -14,6 +14,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:e2e": "playwright test",
     "seed:aswan": "node scripts/seed-aswan-api.mjs"
   },
   "dependencies": {
