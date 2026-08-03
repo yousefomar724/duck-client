@@ -504,14 +504,14 @@
     "paymentAmountMin": "Minimum {min}",
     "paymentAmountRecommended": "Recommended",
     "submitInstapay": "Confirm booking & pay via InstaPay",
-    "bookingCreated": "Booking created successfully!",
+    "bookingCreated": "Almost done — payment required",
     "bookingRef": "Booking reference",
     "amountToSend": "Amount to send",
     "instapayInstructions": "Send this amount via InstaPay",
     "payViaInstapay": "Pay via InstaPay",
     "instapaySendReceipt": "Please send the payment receipt to this WhatsApp number to confirm:",
     "instapaySendReceiptBtn": "Send Receipt on WhatsApp",
-    "bookingPendingNote": "Your booking will be confirmed once the supplier receives your payment.",
+    "bookingPendingNote": "Your booking is only confirmed once the supplier receives your payment and receipt.",
     "viewMyBookings": "View my bookings",
     "partialPaymentRemaining": "Remaining {remaining} to be paid in cash on meeting day",
     "optional": "Optional",
@@ -522,7 +522,13 @@
     "metadata": {
       "title": "Book a Kayak Tour in Aswan",
       "description": "Reserve a free-style or private captain-led kayak tour on the Nile at Elephantine Island, Aswan. Available dawn to sunset, seven days a week, by advance booking."
-    }
+    },
+    "bookingNotConfirmedYet": "Your booking is reserved but NOT confirmed yet. Complete the two steps below to secure it.",
+    "instapayStep1": "Step 1 — Pay {amount} via InstaPay",
+    "instapayStep2": "Step 2 — Send the payment receipt on WhatsApp",
+    "instapayCopyNumber": "Copy number",
+    "instapayCopied": "Copied",
+    "instapayCopyFailed": "Could not copy. Please select the number and copy it manually."
   },
   "contact": {
     "heroSubtitle": "Partnerships & Collaboration",

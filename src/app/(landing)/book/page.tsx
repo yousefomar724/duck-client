@@ -13,7 +13,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod/v3"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, ChevronLeft, User } from "lucide-react"
+import { Check, ChevronLeft, Clock, Copy, User } from "lucide-react"
+import {
+  buildWhatsAppHref,
+  SUPPORT_WHATSAPP_NUMBER,
+} from "@/lib/support-contact"
 import { formatISO, set, startOfDay } from "date-fns"
 import {
   Select,
@@ -144,6 +148,20 @@ function BookPageContent() {
     booking: Booking
     chosenAmount: number
   } | null>(null)
+  const [copiedNumber, setCopiedNumber] = useState(false)
+
+  const handleCopyWhatsApp = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(`+${SUPPORT_WHATSAPP_NUMBER}`)
+      setCopiedNumber(true)
+      // Revert to the idle label so the button stays usable if they copy again.
+      setTimeout(() => setCopiedNumber(false), 2000)
+    } catch {
+      // Clipboard is unavailable on insecure origins and some in-app
+      // browsers; the number stays selectable as plain text either way.
+      addToast(t("instapayCopyFailed"), "error")
+    }
+  }, [addToast, t])
 
   const navigateToStep = useCallback(
     (nextStep: number, mode: "push" | "replace", tripId?: string) => {
@@ -1352,9 +1370,11 @@ function BookPageContent() {
                         <span className="block text-base font-bold">
                           {formatCurrency(totalAmount, selectedTrip.currency, locale)}
                         </span>
-                        <span className="flex items-center justify-center gap-1 mt-0.5">
+                        {/* flex-wrap so the badge drops to its own line on
+                            narrow cards instead of colliding with the label. */}
+                        <span className="flex flex-wrap items-center justify-center gap-1 mt-0.5">
                           {t("paymentAmountFull")}
-                          <span className="text-xs bg-duck-cyan text-duck-navy px-1.5 py-0.5 rounded-full font-semibold ms-1">
+                          <span className="text-xs bg-duck-cyan text-duck-navy px-1.5 py-0.5 rounded-full font-semibold">
                             {t("paymentAmountRecommended")}
                           </span>
                         </span>
@@ -1429,13 +1449,17 @@ function BookPageContent() {
                 )}
                 <Form {...form}>
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="flex gap-4">
+                    {/* Stacks on mobile: the submit label ("Confirm booking &
+                        pay via InstaPay") is long, and Button's base styles are
+                        whitespace-nowrap + shrink-0, so side-by-side it
+                        overflowed the viewport on small screens. */}
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => navigateToStep(2, "push")}
                         disabled={submitLoading}
-                        className="rounded-full border-text-dark"
+                        className="rounded-full border-text-dark w-full sm:w-auto"
                       >
                         <ChevronLeft className="w-4 h-4 ms-1 rtl:rotate-180" />
                         {t("previous")}
@@ -1443,7 +1467,7 @@ function BookPageContent() {
                       <Button
                         type="submit"
                         disabled={submitLoading}
-                        className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow-hover"
+                        className="bg-duck-yellow text-duck-navy rounded-full px-6 sm:px-10 py-3 font-medium hover:bg-duck-yellow-hover w-full sm:w-auto h-auto whitespace-normal text-center"
                       >
                         {submitLoading
                           ? t("submitLoading")
@@ -1459,13 +1483,19 @@ function BookPageContent() {
             {/* Step 4: InstaPay confirmation */}
             {manualBookingResult && (
               <div className="space-y-6 mt-6">
+                {/* Deliberately NOT a green success state: at this point the
+                    booking is only reserved. A checkmark here read as "done"
+                    and users skipped paying. */}
                 <div className="text-center space-y-2">
-                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-                    <Check className="w-8 h-8 text-green-600" />
+                  <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+                    <Clock className="w-8 h-8 text-amber-600" />
                   </div>
                   <h2 className="text-text-dark text-2xl font-bold">
                     {t("bookingCreated")}
                   </h2>
+                  <p className="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm">
+                    {t("bookingNotConfirmedYet")}
+                  </p>
                   <p className="text-text-muted text-sm">
                     {t("bookingRef")}:{" "}
                     <span className="font-mono font-semibold text-duck-navy">
@@ -1504,7 +1534,13 @@ function BookPageContent() {
 
                 <div className="rounded-2xl border-2 border-duck-cyan/30 p-5 space-y-4">
                   <p className="font-semibold text-text-dark">
-                    {t("instapayInstructions")}
+                    {t("instapayStep1", {
+                      amount: formatCurrency(
+                        manualBookingResult.chosenAmount,
+                        manualBookingResult.booking.currency || "EGP",
+                        locale,
+                      ),
+                    })}
                   </p>
                   <a
                     href={INSTAPAY_LINK}
@@ -1515,23 +1551,45 @@ function BookPageContent() {
                     {t("payViaInstapay")}
                   </a>
 
-                  <div className="border-t border-border/60 pt-4 mt-2 space-y-4">
-                    <p className="font-semibold text-text-dark text-sm">
+                  <div className="border-t border-border/60 pt-4 mt-2 space-y-3">
+                    <p className="font-semibold text-text-dark">
+                      {t("instapayStep2")}
+                    </p>
+                    <p className="text-text-muted text-sm">
                       {t("instapaySendReceipt")}
                     </p>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-text-muted">
-                        WhatsApp
-                      </span>
+                    {/* Copyable so people paying from another device (or in
+                        the WhatsApp desktop app) can reach the number without
+                        retyping it. */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-off-white px-3 py-2">
                       <span
                         className="font-mono font-semibold text-duck-navy"
                         dir="ltr"
                       >
-                        +201550061006
+                        +{SUPPORT_WHATSAPP_NUMBER}
                       </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyWhatsApp}
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-duck-cyan hover:underline"
+                      >
+                        {copiedNumber ? (
+                          <>
+                            <Check className="w-4 h-4" aria-hidden="true" />
+                            {t("instapayCopied")}
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" aria-hidden="true" />
+                            {t("instapayCopyNumber")}
+                          </>
+                        )}
+                      </button>
                     </div>
                     <a
-                      href={`https://wa.me/201550061006?text=${encodeURIComponent(`Hello, I have paid for my booking (Ref: #${manualBookingResult.booking.ID}). Here is my receipt.`)}`}
+                      href={buildWhatsAppHref(
+                        `Hello, I have paid for my booking (Ref: #${manualBookingResult.booking.ID}). Here is my receipt.`,
+                      )}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white rounded-full py-3 px-6 font-semibold hover:bg-[#20bd5a] transition-colors"
@@ -1541,7 +1599,7 @@ function BookPageContent() {
                   </div>
                 </div>
 
-                <p className="text-sm text-text-muted text-center">
+                <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
                   {t("bookingPendingNote")}
                 </p>
 

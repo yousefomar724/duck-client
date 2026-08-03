@@ -504,14 +504,14 @@
     "paymentAmountMin": "الحد الأدنى {min}",
     "paymentAmountRecommended": "مُوصى به",
     "submitInstapay": "تأكيد الحجز والدفع بإنستاباي",
-    "bookingCreated": "تم إنشاء حجزك بنجاح!",
+    "bookingCreated": "خطوة أخيرة — مطلوب إتمام الدفع",
     "bookingRef": "رقم الحجز",
     "amountToSend": "المبلغ المطلوب إرساله",
     "instapayInstructions": "أرسل هذا المبلغ عبر إنستاباي",
     "payViaInstapay": "ادفع عبر إنستاباي",
     "instapaySendReceipt": "يرجى إرسال إيصال الدفع إلى رقم الواتساب هذا للتأكيد:",
     "instapaySendReceiptBtn": "إرسال الإيصال عبر الواتساب",
-    "bookingPendingNote": "سيتم تأكيد حجزك بعد استلام المورد للدفع",
+    "bookingPendingNote": "لا يتم تأكيد الحجز إلا بعد استلام المورد للدفع وإيصال التحويل.",
     "viewMyBookings": "عرض حجوزاتي",
     "partialPaymentRemaining": "المبلغ المتبقي {remaining} يُدفع نقداً يوم اللقاء",
     "optional": "اختياري",
@@ -522,7 +522,13 @@
     "metadata": {
       "title": "احجز جولة كاياك في أسوان",
       "description": "احجز جولة كاياك حرة أو جولة خاصة مع كابتن على النيل عند جزيرة إلفنتين بأسوان. متاح من الفجر حتى المغرب طوال أيام الأسبوع بالحجز المسبق."
-    }
+    },
+    "bookingNotConfirmedYet": "تم حجز مكانك مبدئياً ولم يتم تأكيد الحجز بعد. أكمل الخطوتين التاليتين لتأكيد حجزك.",
+    "instapayStep1": "الخطوة ١ — ادفع {amount} عبر إنستاباي",
+    "instapayStep2": "الخطوة ٢ — أرسل إيصال الدفع على واتساب",
+    "instapayCopyNumber": "نسخ الرقم",
+    "instapayCopied": "تم النسخ",
+    "instapayCopyFailed": "تعذّر النسخ. يرجى تحديد الرقم ونسخه يدوياً."
   },
   "contact": {
     "heroSubtitle": "شراكات وتعاون",
