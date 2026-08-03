@@ -42,6 +42,8 @@ import * as destinationsApi from "@/lib/api/destinations"
 import * as imagesApi from "@/lib/api/images"
 import { CardGridSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
+import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
+import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import type {
   Destination,
   DestinationActivity,
@@ -106,7 +108,7 @@ export default function AdminDestinations() {
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingDestination, setEditingDestination] =
@@ -118,7 +120,7 @@ export default function AdminDestinations() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
-  const [openingEditId, setOpeningEditId] = useState<number | null>(null)
+  const [openingEditId, setOpeningEditId] = useState<string | null>(null)
   const [editLoadError, setEditLoadError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -150,7 +152,7 @@ export default function AdminDestinations() {
       setIsLoading(true)
       setError(null)
 
-      const res = await destinationsApi.getDestinations()
+      const res = await destinationsApi.getDestinations(DASHBOARD_LANG)
 
       if (res.error) {
         setError("فشل في تحميل الوجهات")
@@ -166,7 +168,7 @@ export default function AdminDestinations() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       setIsDeleting(true)
       const res = await destinationsApi.deleteDestination(id)
@@ -433,11 +435,7 @@ export default function AdminDestinations() {
               <div className="relative h-48 w-full bg-gray-200">
                 <ImageWithLogoFallback
                   src={resolvedPrimary ?? undefined}
-                  alt={
-                    typeof destination.name === "string"
-                      ? destination.name
-                      : (destination.name?.ar ?? "")
-                  }
+                  alt={resolveLocalizedField(destination.name, "وجهة")}
                   fill
                   className="object-cover"
                   fallbackClassName="object-contain p-6"
@@ -559,7 +557,7 @@ export default function AdminDestinations() {
 
       {/* Create/Edit Destination Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent dir="rtl" className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingDestination ? "تعديل الوجهة" : "اضافة وجهة جديدة"}
@@ -570,7 +568,7 @@ export default function AdminDestinations() {
               <p className="text-sm text-red-600">{dialogError}</p>
             )}
             <div className="grid gap-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name_ar">الاسم (عربي)</Label>
                   <Input
@@ -595,7 +593,7 @@ export default function AdminDestinations() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="description_ar">الوصف (عربي)</Label>
                   <Textarea
@@ -691,7 +689,7 @@ export default function AdminDestinations() {
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="lat">خط العرض (Lat)</Label>
                   <Input
@@ -892,7 +890,7 @@ export default function AdminDestinations() {
         open={deleteId !== null}
         onOpenChange={() => setDeleteId(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle>حذف الوجهة</AlertDialogTitle>
             <AlertDialogDescription>

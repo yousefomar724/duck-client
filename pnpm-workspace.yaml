@@ -15,6 +15,7 @@ allowBuilds:
   "@swc/core": false
   core-js: false
   msw: false
+  mongodb-memory-server: true
 
 ignoredBuiltDependencies:
   - sharp
@@ -23,3 +24,10 @@ ignoredBuiltDependencies:
   - "@swc/core"
   - core-js
   - msw
+
+# pnpm v10 counterpart to `allowBuilds: {mongodb-memory-server: true}` above:
+# lets its postinstall pre-fetch the mongod binary used by the e2e harness
+# (scripts/test-server.mjs). Without it the binary is downloaded lazily on
+# first run instead, which works but is slower and noisier in CI.
+onlyBuiltDependencies:
+  - mongodb-memory-server

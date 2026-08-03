@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { format, set, startOfDay } from "date-fns"
+import { format } from "date-fns"
 import { arSA, enUS } from "date-fns/locale"
 import {
   arSA as arSADayPicker,
@@ -9,11 +9,20 @@ import {
 } from "react-day-picker/locale"
 import { CalendarIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
+import { startOfDay } from "date-fns"
 
 import {
   formatBookingDayPhrase,
   formatBookingTime,
 } from "@/lib/booking/relative-booking-day"
+import {
+  BOOKING_MIN_MINUTES,
+  BOOKING_MAX_MINUTES,
+  BOOKING_SLOT_MINUTES,
+  buildTimeSlots,
+  mergeCalendarDay,
+  mergeTimeFromHHMM,
+} from "@/lib/booking/schedule"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -30,41 +39,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-/** Bookable window: 6:00 AM – 6:30 PM (inclusive), in minutes from midnight. */
-export const BOOKING_MIN_MINUTES = 6 * 60 // 06:00
-export const BOOKING_MAX_MINUTES = 18 * 60 + 30 // 18:30
-export const BOOKING_MIN_TIME = "06:00"
-export const BOOKING_MAX_TIME = "18:30"
-/** Step between selectable time slots, in minutes. */
-export const BOOKING_SLOT_MINUTES = 30
-
-function clampMinutesToWindow(minutes: number): number {
-  if (minutes < BOOKING_MIN_MINUTES) return BOOKING_MIN_MINUTES
-  if (minutes > BOOKING_MAX_MINUTES) return BOOKING_MAX_MINUTES
-  return minutes
-}
-
-function mergeCalendarDay(picked: Date, previous: Date): Date {
-  return set(previous, {
-    year: picked.getFullYear(),
-    month: picked.getMonth(),
-    date: picked.getDate(),
-  })
-}
-
-function mergeTimeFromHHMM(base: Date, hhmm: string): Date {
-  const [hStr, mStr] = hhmm.split(":")
-  const h = Number.parseInt(hStr ?? "", 10)
-  const m = Number.parseInt(mStr ?? "", 10)
-  if (Number.isNaN(h) || Number.isNaN(m)) return base
-  const clamped = clampMinutesToWindow(h * 60 + m)
-  return set(base, {
-    hours: Math.floor(clamped / 60),
-    minutes: clamped % 60,
-    seconds: 0,
-    milliseconds: 0,
-  })
-}
+export {
+  BOOKING_MIN_MINUTES,
+  BOOKING_MAX_MINUTES,
+  BOOKING_MIN_TIME,
+  BOOKING_MAX_TIME,
+  BOOKING_SLOT_MINUTES,
+} from "@/lib/booking/schedule"
 
 export type BookingScheduleFieldProps = {
   value: Date
@@ -98,27 +79,10 @@ export function BookingScheduleField({
   const dateTriggerId = `booking-date-${name ?? "booking"}`
   const timeInputId = `booking-time-${name ?? "booking"}`
 
-  // Only times inside the bookable window are offered, so impossible times
-  // (before 6:00 AM or after 6:30 PM) can never be selected.
-  const timeSlots = useMemo(() => {
-    const slots: { value: string; label: string }[] = []
-    for (
-      let m = BOOKING_MIN_MINUTES;
-      m <= BOOKING_MAX_MINUTES;
-      m += BOOKING_SLOT_MINUTES
-    ) {
-      const h = Math.floor(m / 60)
-      const min = m % 60
-      const hhmm = `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`
-      const label = format(
-        set(startOfDay(value), { hours: h, minutes: min }),
-        "p",
-        { locale: dateFnsLocale },
-      )
-      slots.push({ value: hhmm, label })
-    }
-    return slots
-  }, [value, dateFnsLocale])
+  const timeSlots = useMemo(
+    () => buildTimeSlots(value, locale),
+    [value, locale],
+  )
 
   const selectedTime = format(value, "HH:mm")
 

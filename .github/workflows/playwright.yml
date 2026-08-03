@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: CI
 on:
   push:
     branches: [ main, master ]
@@ -10,13 +10,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 10.6.3
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
+        cache: pnpm
     - name: Install dependencies
-      run: npm install -g pnpm && pnpm install
+      run: pnpm install --frozen-lockfile
+    - name: Lint
+      run: pnpm lint
+    - name: Typecheck
+      run: pnpm typecheck
+    - name: Unit and integration tests
+      run: pnpm test
     - name: Install Playwright Browsers
       run: pnpm exec playwright install --with-deps
+    # scripts/test-server.mjs is self-contained: it starts an in-memory
+    # MongoDB, seeds it, builds, and serves — so no secrets are needed here.
     - name: Run Playwright tests
       run: pnpm exec playwright test
     - uses: actions/upload-artifact@v4

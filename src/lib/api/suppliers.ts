@@ -15,14 +15,14 @@ export async function getSuppliers(lang?: string): Promise<ApiResponse<Supplier[
   return apiClient<Supplier[]>(endpoint, { method: 'GET' });
 }
 
-export async function getSupplier(id: number, lang?: string): Promise<ApiResponse<Supplier>> {
+export async function getSupplier(id: string, lang?: string): Promise<ApiResponse<Supplier>> {
   let endpoint = `/suppliers/${id}`;
   if (lang) endpoint += `?lang=${lang}`;
   return apiClient<Supplier>(endpoint, { method: 'GET' });
 }
 
 export async function updateSupplier(
-  id: number,
+  id: string,
   data: UpdateSupplierInput,
   lang?: string,
 ): Promise<ApiResponse<Supplier>> {
@@ -34,7 +34,7 @@ export async function updateSupplier(
   });
 }
 
-export async function deleteSupplier(id: number): Promise<ApiResponse<{ message: string }>> {
+export async function deleteSupplier(id: string): Promise<ApiResponse<{ message: string }>> {
   return apiClient<{ message: string }>(`/suppliers/${id}`, {
     method: 'DELETE',
   });

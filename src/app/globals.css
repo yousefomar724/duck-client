@@ -156,23 +156,6 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 
-  /* Dashboard data surfaces */
-  .dashboard-surface {
-    @apply rounded-xl border border-border bg-card shadow-sm;
-  }
-
-  .dashboard-kpi-value {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .dashboard-data-cell {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .dashboard-focus-ring {
-    @apply outline-none focus-visible:ring-2 focus-visible:ring-duck-cyan focus-visible:ring-offset-2;
-  }
-
   /* Scrollbar styled to match duck brand (navy/cyan) */
   .scrollbar-duck {
     scrollbar-width: thin;
@@ -192,17 +175,6 @@
   }
   .scrollbar-duck::-webkit-scrollbar-thumb:hover {
     background: var(--duck-cyan-light);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
 }
 

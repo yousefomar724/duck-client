@@ -14,7 +14,7 @@ interface ProtectedRouteProps {
 
 /** Supplier routes: allow role 1, users with supplier_id, or JWT token with role 1 (fallback when user.role ambiguous) */
 function hasAccess(
-  user: { role?: unknown; supplier_id?: number } | null,
+  user: { role?: unknown; supplier_id?: string } | null,
   allowedRoles: number[],
 ): boolean {
   if (!user) return false

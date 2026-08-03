@@ -24,7 +24,7 @@
 .DS_Store
 *.pem
 
-# local source media (not served)
+# local media source (raw video/image masters, re-encoded into public/)
 /media-src/
 
 # debug

@@ -28,15 +28,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import * as suppliersApi from "@/lib/api/suppliers"
+import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
+import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import * as authApi from "@/lib/api/auth"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Supplier } from "@/lib/types"
 
 function getSupplierName(supplier: Supplier): string {
-  return typeof supplier.name === "string"
-    ? supplier.name
-    : supplier.name?.ar || supplier.name?.en || "-"
+  return resolveLocalizedField(supplier.name, "-")
 }
 
 function SupplierTableAvatar({ supplier }: { supplier: Supplier }) {
@@ -56,9 +56,7 @@ function SupplierTableAvatar({ supplier }: { supplier: Supplier }) {
 }
 
 function getSupplierAbout(supplier: Supplier): string {
-  const about = supplier.about
-  if (!about) return "-"
-  const text = typeof about === "string" ? about : about?.ar || about?.en || "-"
+  const text = resolveLocalizedField(supplier.about, "-")
   return text.length > 60 ? `${text.slice(0, 60)}...` : text
 }
 
@@ -69,8 +67,8 @@ export default function AdminSuppliersPage() {
   )
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [updatingId, setUpdatingId] = useState<number | null>(null)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
@@ -81,7 +79,7 @@ export default function AdminSuppliersPage() {
     try {
       setIsLoading(true)
       setError(null)
-      const res = await suppliersApi.getSuppliers()
+      const res = await suppliersApi.getSuppliers(DASHBOARD_LANG)
       if (res.error) {
         setError("فشل في تحميل الموردين")
         return
@@ -119,7 +117,7 @@ export default function AdminSuppliersPage() {
     }
   }
 
-  const handleDelete = async (userId: number) => {
+  const handleDelete = async (userId: string) => {
     try {
       setIsDeleting(true)
       const res = await authApi.deleteUser(userId)

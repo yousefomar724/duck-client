@@ -49,10 +49,12 @@ function SheetContent({
   children,
   side = "right",
   showCloseButton = true,
+  closeLabel = "Close",
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
+  closeLabel?: string
 }) {
   return (
     <SheetPortal>
@@ -63,9 +65,9 @@ function SheetContent({
         className={cn(
           "src:bg-background src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:fixed src:z-999 src:flex src:flex-col src:gap-4 src:shadow-lg src:transition src:ease-in-out src:data-[state=closed]:duration-300 src:data-[state=open]:duration-500",
           side === "right" &&
-            "src:data-[state=closed]:slide-out-to-right src:data-[state=open]:slide-in-from-right src:inset-y-0 src:right-0 src:h-full src:w-3/4 src:border-s src:sm:max-w-sm",
+            "src:data-[state=closed]:slide-out-to-right src:data-[state=open]:slide-in-from-right src:inset-y-0 src:right-0 src:h-full src:w-9/10 src:border-s src:sm:max-w-xl",
           side === "left" &&
-            "src:data-[state=closed]:slide-out-to-left src:data-[state=open]:slide-in-from-left src:inset-y-0 src:left-0 src:h-full src:w-3/4 src:border-e src:sm:max-w-sm",
+            "src:data-[state=closed]:slide-out-to-left src:data-[state=open]:slide-in-from-left src:inset-y-0 src:left-0 src:h-full src:w-9/10 src:border-e src:sm:max-w-xl",
           side === "top" &&
             "src:data-[state=closed]:slide-out-to-top src:data-[state=open]:slide-in-from-top src:inset-x-0 src:top-0 src:h-auto src:border-b",
           side === "bottom" &&
@@ -78,7 +80,7 @@ function SheetContent({
         {showCloseButton && (
           <SheetPrimitive.Close className="src:ring-offset-background src:focus:ring-ring src:data-[state=open]:bg-secondary src:absolute src:top-4 src:end-4 src:rounded-xs src:opacity-70 src:transition-opacity src:hover:opacity-100 src:focus:ring-2 src:focus:ring-offset-2 src:focus:outline-hidden src:disabled:pointer-events-none">
             <XIcon className="src:size-4" />
-            <span className="src:sr-only">Close</span>
+            <span className="sr-only">{closeLabel}</span>
           </SheetPrimitive.Close>
         )}
       </SheetPrimitive.Content>
@@ -86,11 +88,12 @@ function SheetContent({
   )
 }
 
-function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
+function SheetHeader({ className, side, ...props }: React.ComponentProps<"div"> & { side?: "left" | "right" }) {
   return (
     <div
+    dir={side === "left" ? "ltr" : "rtl"}
       data-slot="sheet-header"
-      className={cn("src:flex src:flex-col src:gap-1.5 src:p-4", className)}
+      className={cn("src:flex src:flex-col src:gap-1.5 src:px-4 src:pb-4 src:pt-10", className)}
       {...props}
     />
   )

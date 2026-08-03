@@ -23,7 +23,7 @@ export async function createManualBooking(
 }
 
 export async function confirmManualPayment(
-  id: number,
+  id: string,
 ): Promise<ApiResponse<{ message: string; booking: Booking }>> {
   return apiClient<{ message: string; booking: Booking }>(
     `/bookings/${id}/manual-confirm`,
@@ -32,7 +32,7 @@ export async function confirmManualPayment(
 }
 
 export async function refundManualPayment(
-  id: number,
+  id: string,
 ): Promise<ApiResponse<{ message: string; booking: Booking }>> {
   return apiClient<{ message: string; booking: Booking }>(
     `/bookings/${id}/manual-refund`,
@@ -63,7 +63,7 @@ export async function getUserBookings(): Promise<ApiResponse<Booking[]>> {
 }
 
 export async function cancelBooking(
-  id: number,
+  id: string,
 ): Promise<ApiResponse<{ message: string; booking: Booking }>> {
   return apiClient<{ message: string; booking: Booking }>(
     `/bookings/${id}/cancel`,
@@ -81,7 +81,7 @@ export interface ProcessRefundResponse {
 }
 
 export async function processRefund(
-  id: number,
+  id: string,
   reason?: string,
 ): Promise<ApiResponse<ProcessRefundResponse>> {
   return apiClient<ProcessRefundResponse>(`/bookings/${id}/refund`, {
@@ -92,7 +92,7 @@ export async function processRefund(
 
 /** Admin-only: cancel booking (e.g. guest, weather) → REFUND_PENDING; no 24h rule */
 export async function adminCancelBooking(
-  id: number,
+  id: string,
   reason?: string,
 ): Promise<ApiResponse<{ message: string; booking: Booking }>> {
   return apiClient<{ message: string; booking: Booking }>(

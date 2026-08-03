@@ -87,7 +87,7 @@ export async function getMe(): Promise<ApiResponse<User>> {
 }
 
 export async function activateUser(
-  userId: number,
+  userId: string,
   activate: boolean,
 ): Promise<ApiResponse<{ message: string }>> {
   return apiClient<{ message: string }>(
@@ -97,7 +97,7 @@ export async function activateUser(
 }
 
 export async function deleteUser(
-  userId: number,
+  userId: string,
 ): Promise<ApiResponse<{ message: string }>> {
   return apiClient<{ message: string }>(`/auth/delete?id=${userId}`, {
     method: 'PATCH',

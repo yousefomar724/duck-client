@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Pencil, Trash2 } from "lucide-react"
+import { Pencil, Trash2, Ship } from "lucide-react"
 import { DuckLogoPlaceholder } from "@/components/shared/duck-logo-placeholder"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import PageHeader from "@/components/shared/page-header"
+import { TripTypeBadge } from "@/components/shared/trip-type-badge"
+import { EmptyState } from "@/components/dashboard/empty-state"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import {
@@ -20,6 +22,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { formatCurrency } from "@/lib/constants"
+import { getTripImage, resolveImageUrl } from "@/lib/image-utils"
+import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import * as tripsApi from "@/lib/api/trips"
 import { CardGridSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
@@ -52,17 +56,27 @@ function TripCardMedia({
       src={fullImageUrl}
       alt={name}
       fill
-      className="w-full h-full object-cover"
+      sizes="(max-width: 768px) 100vw, 400px"
+      className="object-cover"
       fallbackClassName="object-contain p-4"
     />
   )
+}
+
+function getTripDestinationLabel(trip: Trip): string | null {
+  const names = (trip.destinations ?? [])
+    .map((destination) => resolveLocalizedField(destination.name, ""))
+    .filter(Boolean)
+  if (names.length > 0) return names.join("، ")
+  if (trip.destination) return "—"
+  return null
 }
 
 export default function MyTripsPage() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchTrips = async () => {
@@ -86,7 +100,7 @@ export default function MyTripsPage() {
     return () => clearTimeout(id)
   }, [])
 
-  const handleDelete = async (tripId: number) => {
+  const handleDelete = async (tripId: string) => {
     setIsDeleting(true)
     const { error: deleteError } = await tripsApi.deleteTrip(tripId)
     if (deleteError) {
@@ -100,14 +114,12 @@ export default function MyTripsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <PageHeader title="رحلاتي وجولاتي">
-          <Button
-            asChild
-            className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
-          >
-            <Link href="/supplier/my-trips/create">+ اضافة رحلة / جولة</Link>
-          </Button>
+      <div className="space-y-6">
+        <PageHeader
+          title="رحلاتي وجولاتي"
+          description="إدارة الرحلات والجولات المتاحة للحجز"
+        >
+          <Button disabled>+ اضافة رحلة / جولة</Button>
         </PageHeader>
         <CardGridSkeleton count={6} />
       </div>
@@ -116,14 +128,12 @@ export default function MyTripsPage() {
 
   if (error) {
     return (
-      <div className="p-6">
-        <PageHeader title="رحلاتي وجولاتي">
-          <Button
-            asChild
-            className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
-          >
-            <Link href="/supplier/my-trips/create">+ اضافة رحلة / جولة</Link>
-          </Button>
+      <div className="space-y-6">
+        <PageHeader
+          title="رحلاتي وجولاتي"
+          description="إدارة الرحلات والجولات المتاحة للحجز"
+        >
+          <Button disabled>+ اضافة رحلة / جولة</Button>
         </PageHeader>
         <ErrorDisplay error={error} onRetry={fetchTrips} />
       </div>
@@ -131,8 +141,11 @@ export default function MyTripsPage() {
   }
 
   return (
-    <div className="p-6">
-      <PageHeader title="رحلاتي وجولاتي">
+    <div className="space-y-6">
+      <PageHeader
+        title="رحلاتي وجولاتي"
+        description="إدارة الرحلات والجولات المتاحة للحجز"
+      >
         <Button
           asChild
           className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
@@ -143,41 +156,8 @@ export default function MyTripsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {trips.map((trip) => {
-          let imageUrl: string | null = null
-          if (typeof trip.images === "string") {
-            imageUrl = trip.images
-          } else if (Array.isArray(trip.images) && trip.images.length > 0) {
-            imageUrl = trip.images[0]
-          } else if (
-            trip.images &&
-            typeof trip.images === "object" &&
-            !Array.isArray(trip.images)
-          ) {
-            const urls = Object.values(
-              trip.images as Record<string, string>,
-            ).filter(Boolean)
-            imageUrl = urls[0] ?? null
-          }
-          const fullImageUrl = (() => {
-            if (!imageUrl) return null
-            if (imageUrl.startsWith("http")) return imageUrl
-            const normalized = imageUrl.startsWith("/")
-              ? imageUrl
-              : `/${imageUrl}`
-            const apiUrl =
-              process.env.NEXT_PUBLIC_API_URL ||
-              "https://duckapi.alefmenu.com/api/v1"
-            if (!apiUrl) return normalized
-            try {
-              const url = new URL(apiUrl)
-              if (url.hostname === "localhost" && url.port === "8080") {
-                return normalized
-              }
-              return `${url.origin}${normalized}`
-            } catch {
-              return normalized
-            }
-          })()
+          const fullImageUrl = resolveImageUrl(getTripImage(trip.images))
+          const destinationLabel = getTripDestinationLabel(trip)
 
           return (
             <Card
@@ -185,14 +165,8 @@ export default function MyTripsPage() {
               className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200 gap-0!"
             >
               <div className="relative h-48 w-full">
-                <span
-                  className={`absolute top-2 start-2 z-10 text-xs font-medium px-2 py-0.5 rounded-full ${
-                    trip.is_tour
-                      ? "bg-purple-100 text-purple-700"
-                      : "bg-blue-100 text-blue-700"
-                  }`}
-                >
-                  {trip.is_tour ? "جولة" : "رحلة"}
+                <span className="absolute top-2 start-2 z-10">
+                  <TripTypeBadge isTour={trip.is_tour} />
                 </span>
                 <TripCardMedia
                   fullImageUrl={fullImageUrl}
@@ -210,11 +184,12 @@ export default function MyTripsPage() {
                     : trip.name?.ar || "بدون عنوان"}
                 </h3>
                 <div className="space-y-1 text-sm text-text-body">
-                  {trip.destination && (
+                  {destinationLabel ? (
                     <p>
-                      <span className="font-medium">الوجهة:</span> نعم
+                      <span className="font-medium">الوجهة:</span>{" "}
+                      {destinationLabel}
                     </p>
-                  )}
+                  ) : null}
                   {trip.location && (
                     <p>
                       <span className="font-medium">الموقع:</span> نعم
@@ -316,17 +291,15 @@ export default function MyTripsPage() {
       </div>
 
       {trips.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-text-muted mb-4">لا توجد رحلات أو جولات حالياً</p>
-          <Button
-            asChild
-            className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
-          >
-            <Link href="/supplier/my-trips/create">
-              اضافة رحلة / جولة جديدة
-            </Link>
-          </Button>
-        </div>
+        <EmptyState
+          icon={Ship}
+          title="لا توجد رحلات أو جولات حالياً"
+          description="أضف رحلة أو جولة لبدء استقبال الحجوزات."
+          actionLabel="اضافة رحلة / جولة جديدة"
+          onAction={() => {
+            window.location.href = "/supplier/my-trips/create"
+          }}
+        />
       )}
     </div>
   )

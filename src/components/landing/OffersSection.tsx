@@ -56,7 +56,7 @@ export default function OffersSection() {
     useState<CarouselApi | null>(null)
   const [dialogCarouselIndex, setDialogCarouselIndex] = useState(0)
   const dialogCarouselApiRef = useRef<CarouselApi | null>(null)
-  const innerCarouselApisRef = useRef<Map<number, CarouselApi>>(new Map())
+  const innerCarouselApisRef = useRef<Map<string, CarouselApi>>(new Map())
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,

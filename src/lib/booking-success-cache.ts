@@ -6,7 +6,7 @@
 export const SUCCESS_CACHE_KEY = "duck.lastBookingContext"
 
 export type SuccessCacheDestination = {
-  id: number
+  id: string
   name: { ar: string; en: string }
   lat?: number
   lng?: number
@@ -17,7 +17,7 @@ export type SuccessCacheDestination = {
 export type SuccessCache = {
   order_ref: string
   trip: {
-    id: number
+    id: string
     name: { ar: string; en: string }
     currency: string
     refundable: boolean

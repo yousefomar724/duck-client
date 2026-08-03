@@ -29,7 +29,7 @@ import { supplierNavItems } from "@/lib/constants"
 import * as suppliersApi from "@/lib/api/suppliers"
 import { resolveImageUrl } from "@/lib/image-utils"
 import { cn } from "@/lib/utils"
-import { useTranslations } from "next-intl"
+import { dashboardStrings } from "@/lib/dashboard/strings"
 
 function getLocalizedName(value: unknown): string {
   if (typeof value === "string") return value.trim()
@@ -42,7 +42,6 @@ function getLocalizedName(value: unknown): string {
 }
 
 export default function SupplierSidebar() {
-  const t = useTranslations("common")
   const pathname = usePathname()
   const { user, logout, onboardingComplete } = useAuth()
   const { isMobile, state, setOpenMobile } = useSidebar()
@@ -132,7 +131,6 @@ export default function SupplierSidebar() {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    aria-label={`الملف الشخصي: ${displayName}`}
                     className="rounded-md outline-none ring-sidebar-ring focus-visible:ring-2"
                   >
                     <Avatar className="h-9 w-9">
@@ -187,7 +185,7 @@ export default function SupplierSidebar() {
                 >
                   <Link href="/" onClick={handleNavClick}>
                     <Home className="w-4 h-4" />
-                    <span>{t("backToHome")}</span>
+                    <span>{dashboardStrings.backToHome}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

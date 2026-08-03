@@ -15,8 +15,8 @@ export default function HeroSection() {
       {/* Background Video */}
       <BackgroundVideo
         eager
-        src="/videos/hero1.mp4"
-        poster="/videos/hero1-poster.jpg"
+        src="/videos/hero.mp4"
+        poster="/videos/hero-poster.jpg"
         className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
       />
 

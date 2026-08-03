@@ -45,7 +45,7 @@ function MyBookingsContent() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [cancelId, setCancelId] = useState<number | null>(null)
+  const [cancelId, setCancelId] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
   const resourceLabels: Record<string, string> = {

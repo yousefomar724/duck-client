@@ -16,12 +16,12 @@ interface EditTripPageProps {
 
 export default function EditTripPage({ params }: EditTripPageProps) {
   const router = useRouter()
-  const [tripId, setTripId] = useState<number | null>(null)
+  const [tripId, setTripId] = useState<string | null>(null)
   const [trip, setTrip] = useState<Trip | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchTrip = useCallback(async (id: number) => {
+  const fetchTrip = useCallback(async (id: string) => {
     setIsLoading(true)
     setError(null)
     const { data, error: fetchError } = await tripsApi.getTrip(id, {
@@ -37,7 +37,7 @@ export default function EditTripPage({ params }: EditTripPageProps) {
 
   useEffect(() => {
     params.then((resolvedParams) => {
-      const id = parseInt(resolvedParams.id)
+      const id = resolvedParams.id
       setTripId(id)
       fetchTrip(id)
     })

@@ -41,6 +41,15 @@ import {
   formatBookingDayPhrase,
   formatBookingTime,
 } from "@/lib/booking/relative-booking-day"
+import {
+  parseStoredPhoneToLocal,
+  localEgyptMobileToE164,
+} from "@/lib/booking/phone"
+import {
+  calculateBookingTotal,
+  minimumDeposit,
+} from "@/lib/booking/pricing"
+import { createBookingFormSchema } from "@/lib/booking/form-schema"
 import { getTrips } from "@/lib/api/trips"
 import * as bookingsApi from "@/lib/api/bookings"
 import {
@@ -57,27 +66,8 @@ import { useTranslations, useLocale } from "next-intl"
 import { TripListingPrices } from "@/components/shared/trip-listing-prices"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 
-/** Local Egyptian mobile: 0 + (10|11|12|15) + 8 digits */
-const EGYPT_MOBILE_LOCAL_REGEX = /^0(10|11|12|15)\d{8}$/
-
 const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
 const INSTAPAY_LINK = "https://ipn.eg/S/karim.m.cib/instapay/5bCbda"
-
-function parseStoredPhoneToLocal(p: string): string | null {
-  const d = p.replace(/\D/g, "")
-  if (d.startsWith("20") && d.length === 12) {
-    const rest = d.slice(2)
-    if (/^1[0125]\d{8}$/.test(rest)) return `0${rest}`
-  }
-  if (EGYPT_MOBILE_LOCAL_REGEX.test(d)) return d
-  if (d.length === 10 && /^1[0125]/.test(d)) return `0${d}`
-  return null
-}
-
-function localEgyptMobileToE164(localDigits: string): string {
-  const d = localDigits.replace(/\D/g, "")
-  return `+20${d.slice(1)}`
-}
 
 const RESOURCE_TYPES = [
   "kayak",
@@ -156,15 +146,11 @@ function BookPageContent() {
   } | null>(null)
 
   const navigateToStep = useCallback(
-    (nextStep: number, mode: "push" | "replace", tripId?: number) => {
+    (nextStep: number, mode: "push" | "replace", tripId?: string) => {
       const p = new URLSearchParams(searchParams.toString())
       p.set("step", String(nextStep))
-      const fromParam = tripParam ? parseInt(tripParam, 10) : NaN
-      const tid =
-        tripId ??
-        selectedTrip?.id ??
-        (Number.isFinite(fromParam) ? fromParam : NaN)
-      if (Number.isFinite(tid)) p.set("trip", String(tid))
+      const tid = tripId ?? selectedTrip?.id ?? tripParam ?? undefined
+      if (tid) p.set("trip", tid)
       const qs = p.toString()
       const url = qs ? `${pathname}?${qs}` : pathname
       if (mode === "replace") router.replace(url)
@@ -174,7 +160,7 @@ function BookPageContent() {
   )
 
   // --- NEW: useRef to store previous trip id ---
-  const prevTripIdRef = useRef<number | null>(null)
+  const prevTripIdRef = useRef<string | null>(null)
   /** Skip step 1 once when loading /book?trip=... so user lands on the form; reset on new mount. */
   const didAutoAdvanceRef = useRef(false)
 
@@ -192,94 +178,26 @@ function BookPageContent() {
     6: t("duration6h"),
   }
 
-  const contactSchema = useMemo(
-    () =>
-      z.object({
-        full_name: z.string().min(2, tv("nameMin")),
-        phone: z
-          .string()
-          .min(1, tv("phoneRequired"))
-          .regex(EGYPT_MOBILE_LOCAL_REGEX, tv("phoneMobileEgypt")),
-        booking_date: z
-          .date({
-            required_error: tv("dateRequired"),
-            invalid_type_error: tv("dateInvalid"),
-          })
-          .refine((d) => d.getTime() >= Date.now() - 60_000, {
-            message: tv("dateTimePast"),
-          })
-          .refine(
-            (d) => {
-              const minutes = d.getHours() * 60 + d.getMinutes()
-              return (
-                minutes >= BOOKING_MIN_MINUTES && minutes <= BOOKING_MAX_MINUTES
-              )
-            },
-            { message: tv("bookingTimeRange") },
-          ),
-        resource_type: z.enum(RESOURCE_TYPES),
-        guests: z.coerce
-          .number({ invalid_type_error: tv("numberInvalid") })
-          .int()
-          .min(1, tv("minOneGuest")),
-        guest_mix: z.enum(["local", "foreigner", "mixed"]),
-        local_guests: z.coerce
-          .number({ invalid_type_error: tv("numberInvalid") })
-          .int()
-          .min(0),
-        foreigner_guests: z.coerce
-          .number({ invalid_type_error: tv("numberInvalid") })
-          .int()
-          .min(0),
-        duration: z.coerce
-          .number({ invalid_type_error: tv("numberInvalid") })
-          .int()
-          .min(1, tv("minOne")),
-        wants_guide: z.boolean(),
-        played_before: z.boolean().optional(),
-        hear_about_us: z.enum([
-          "",
-          "instagram",
-          "facebook",
-          "tiktok",
-          "google",
-          "friend",
-          "other",
-        ]),
-        referral_text: z.string(),
-      }),
-    [tv],
-  )
-
   const formSchema = useMemo(
     () =>
-      contactSchema.superRefine((data, ctx) => {
-        if (selectedTrip && data.guests > selectedTrip.max_guests) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: t("maxGuestsError", { max: selectedTrip.max_guests }),
-            path: ["guests"],
-          })
-        }
-        if (data.guest_mix === "mixed") {
-          const sum = data.local_guests + data.foreigner_guests
-          if (sum !== data.guests) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: t("guestMixSumError", { total: data.guests }),
-              path: ["local_guests"],
-            })
-          }
-          if (data.local_guests < 1 && data.foreigner_guests < 1) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: tv("minOneGuest"),
-              path: ["local_guests"],
-            })
-          }
-        }
-      }),
-    [selectedTrip, contactSchema, t, tv],
+      createBookingFormSchema(
+        {
+          nameMin: tv("nameMin"),
+          phoneRequired: tv("phoneRequired"),
+          phoneMobileEgypt: tv("phoneMobileEgypt"),
+          dateRequired: tv("dateRequired"),
+          dateInvalid: tv("dateInvalid"),
+          dateTimePast: tv("dateTimePast"),
+          bookingTimeRange: tv("bookingTimeRange"),
+          numberInvalid: tv("numberInvalid"),
+          minOneGuest: tv("minOneGuest"),
+          minOne: tv("minOne"),
+          maxGuestsError: (max) => t("maxGuestsError", { max }),
+          guestMixSumError: (total) => t("guestMixSumError", { total }),
+        },
+        selectedTrip?.max_guests,
+      ),
+    [selectedTrip, t, tv],
   )
 
   // Fetch trips
@@ -293,7 +211,7 @@ function BookPageContent() {
       if (error || !data) return
       setTrips(data)
       if (tripParam && data.length > 0) {
-        const id = parseInt(tripParam, 10)
+        const id = tripParam
         const trip = data.find((t) => t.id === id)
         if (trip) {
           setSelectedTrip(trip)
@@ -433,33 +351,25 @@ function BookPageContent() {
     }
   }
 
-  const totalAmount = useMemo(() => {
-    if (!selectedTrip) return 0
-    const localCount =
-      watchedGuestMix === "local"
-        ? Number(watchedGuests) || 0
-        : watchedGuestMix === "mixed"
-          ? Number(watchedLocalGuests) || 0
-          : 0
-    const foreignerCount =
-      watchedGuestMix === "foreigner"
-        ? Number(watchedGuests) || 0
-        : watchedGuestMix === "mixed"
-          ? Number(watchedForeignerGuests) || 0
-          : 0
-    const duration = selectedTrip.is_tour ? Number(watchedDuration) || 1 : 1
-    const localTotal = selectedTrip.price * localCount * duration
-    const foreignerTotal =
-      (selectedTrip.foreigner_price ?? 0) * foreignerCount * duration
-    return localTotal + foreignerTotal
-  }, [
-    selectedTrip,
-    watchedGuestMix,
-    watchedGuests,
-    watchedLocalGuests,
-    watchedForeignerGuests,
-    watchedDuration,
-  ])
+  const totalAmount = useMemo(
+    () =>
+      calculateBookingTotal({
+        trip: selectedTrip,
+        guestMix: watchedGuestMix,
+        guests: Number(watchedGuests) || 0,
+        localGuests: Number(watchedLocalGuests) || 0,
+        foreignerGuests: Number(watchedForeignerGuests) || 0,
+        duration: Number(watchedDuration) || 1,
+      }),
+    [
+      selectedTrip,
+      watchedGuestMix,
+      watchedGuests,
+      watchedLocalGuests,
+      watchedForeignerGuests,
+      watchedDuration,
+    ],
+  )
 
   const handleSubmit = form.handleSubmit(async (values) => {
     if (!selectedTrip) return
@@ -499,7 +409,7 @@ function BookPageContent() {
     }
 
     if (PAYMENT_METHOD === "instapay") {
-      const minPayment = Math.ceil(totalAmount * 0.5)
+      const minPayment = minimumDeposit(totalAmount)
       const chosenAmount =
         paymentAmount >= minPayment ? paymentAmount : totalAmount
       const { data, error } =
@@ -1452,10 +1362,10 @@ function BookPageContent() {
                       <button
                         type="button"
                         onClick={() =>
-                          setPaymentAmount(Math.ceil(totalAmount * 0.5))
+                          setPaymentAmount(minimumDeposit(totalAmount))
                         }
                         className={`flex-1 min-w-[140px] rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
-                          paymentAmount === Math.ceil(totalAmount * 0.5) &&
+                          paymentAmount === minimumDeposit(totalAmount) &&
                           paymentAmount !== totalAmount
                             ? "border-duck-cyan bg-duck-cyan/10 text-duck-navy"
                             : "border-border hover:border-duck-cyan/50"
@@ -1463,7 +1373,7 @@ function BookPageContent() {
                       >
                         <span className="block text-base font-bold">
                           {formatCurrency(
-                            Math.ceil(totalAmount * 0.5),
+                            minimumDeposit(totalAmount),
                             selectedTrip.currency,
                             locale,
                           )}
@@ -1481,7 +1391,7 @@ function BookPageContent() {
                         <input
                           type="number"
                           inputMode="numeric"
-                          min={Math.ceil(totalAmount * 0.5)}
+                          min={minimumDeposit(totalAmount)}
                           max={totalAmount}
                           value={paymentAmount || totalAmount}
                           onChange={(e) => {
@@ -1497,7 +1407,7 @@ function BookPageContent() {
                       <p className="text-xs text-text-muted">
                         {t("paymentAmountMin", {
                           min: formatCurrency(
-                            Math.ceil(totalAmount * 0.5),
+                            minimumDeposit(totalAmount),
                             selectedTrip.currency,
                             locale,
                           ),

@@ -1,8 +1,8 @@
 import type { Destination, Supplier, TourGuide, Trip } from "@/lib/types"
 
-type GoId = { id?: number; ID?: number }
+type GoId = { id?: string; ID?: string }
 
-function pickId(obj: GoId | null | undefined): number | undefined {
+function pickId(obj: GoId | null | undefined): string | undefined {
   if (obj == null) return undefined
   return obj.id ?? obj.ID
 }
@@ -16,7 +16,7 @@ export function normalizeDestination(raw: unknown): Destination {
   const id = pickId(d)
   return {
     ...(d as object),
-    id: id ?? 0,
+    id: id ?? "",
   } as Destination
 }
 
@@ -24,14 +24,14 @@ function normalizeSupplier(raw: unknown): Supplier | undefined {
   if (raw == null || typeof raw !== "object") return undefined
   const s = raw as Record<string, unknown> & GoId
   const id = pickId(s)
-  return { ...(s as object), id: id ?? 0 } as Supplier
+  return { ...(s as object), id: id ?? "" } as Supplier
 }
 
 function normalizeTourGuideNested(raw: unknown): TourGuide | undefined {
   if (raw == null || typeof raw !== "object") return undefined
   const g = raw as Record<string, unknown> & GoId
   const id = pickId(g)
-  return { ...(g as object), ID: id ?? 0 } as TourGuide
+  return { ...(g as object), ID: id ?? "" } as TourGuide
 }
 
 export function normalizeTrip(raw: unknown): Trip {
@@ -39,7 +39,7 @@ export function normalizeTrip(raw: unknown): Trip {
     return raw as Trip
   }
   const t = raw as Record<string, unknown> & GoId
-  const id = pickId(t) ?? 0
+  const id = pickId(t) ?? ""
 
   const out: Record<string, unknown> = { ...t, id }
 
@@ -55,10 +55,10 @@ export function normalizeTrip(raw: unknown): Trip {
     out.tour_guide = normalizeTourGuideNested(t.tour_guide)
   }
 
-  const tgId = t.tour_guide_id as number | null | undefined
+  const tgId = t.tour_guide_id as string | null | undefined
   const normalizedGuide = out.tour_guide as TourGuide | undefined
   if (
-    (tgId == null || tgId === 0) &&
+    !tgId &&
     normalizedGuide?.ID
   ) {
     out.tour_guide_id = normalizedGuide.ID
@@ -73,7 +73,7 @@ export function sortTripsByDisplayOrder(trips: Trip[]): Trip[] {
     const oa = a.display_order ?? 0
     const ob = b.display_order ?? 0
     if (oa !== ob) return oa - ob
-    return a.id - b.id
+    return a.id.localeCompare(b.id)
   })
 }
 

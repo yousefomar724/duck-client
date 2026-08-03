@@ -78,7 +78,7 @@ export default function TripForm({
     name_en: "",
     description_ar: "",
     description_en: "",
-    destination_ids: [] as number[],
+    destination_ids: [] as string[],
     price: "",
     foreigner_price: "",
     guide_mandatory: false,
@@ -254,11 +254,11 @@ export default function TripForm({
       }
 
       if (formData.tour_guide_id) {
-        payload.tour_guide_id = parseInt(formData.tour_guide_id, 10)
+        payload.tour_guide_id = formData.tour_guide_id
       }
 
       if (showSupplierField && formData.supplier_id) {
-        payload.supplier_id = parseInt(formData.supplier_id, 10)
+        payload.supplier_id = formData.supplier_id
       }
 
       if (mode === "create") {

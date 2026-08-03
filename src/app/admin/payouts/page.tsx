@@ -31,16 +31,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import * as payoutsApi from "@/lib/api/payouts"
 import * as suppliersApi from "@/lib/api/suppliers"
-import {
-  formatCurrency,
-  formatDate,
-  getPayoutDateString,
-  isPaidPayoutStatus,
-  currencies,
-  payoutStatusColors,
-} from "@/lib/constants"
+import { formatCurrency, formatDate, getPayoutDateString, isPaidPayoutStatus, currencies, payoutStatusColors } from "@/lib/constants"
+import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
+import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { PayoutStatus, Payout, Supplier } from "@/lib/types"
@@ -68,10 +73,7 @@ function rowStatusValues(current: string): string[] {
 
 export default function AdminPayouts() {
   const getSupplierName = (supplier?: Supplier) => {
-    if (!supplier) return "مورد غير معروف"
-    return typeof supplier.name === "string"
-      ? supplier.name
-      : supplier.name.ar || supplier.name.en || "مورد غير معروف"
+    return resolveLocalizedField(supplier?.name, "مورد غير معروف")
   }
 
   const [payouts, setPayouts] = useState<Payout[]>([])
@@ -79,7 +81,8 @@ export default function AdminPayouts() {
   const [activeTab, setActiveTab] = useState<"all" | PayoutStatus>("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [updatingId, setUpdatingId] = useState<number | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [formSupplierId, setFormSupplierId] = useState("")
@@ -107,7 +110,7 @@ export default function AdminPayouts() {
 
       const [payoutsRes, suppliersRes] = await Promise.all([
         payoutsApi.getPayouts(),
-        suppliersApi.getSuppliers(),
+        suppliersApi.getSuppliers(DASHBOARD_LANG),
       ])
 
       if (payoutsRes.error || suppliersRes.error) {
@@ -153,7 +156,7 @@ export default function AdminPayouts() {
     setSubmitting(true)
     try {
       const res = await payoutsApi.createPayout({
-        supplier_id: Number(formSupplierId),
+        supplier_id: formSupplierId,
         amount: amountNum,
         currency: formCurrency,
         status: formStatus,
@@ -173,7 +176,7 @@ export default function AdminPayouts() {
     }
   }
 
-  const handleStatusUpdate = async (id: number, newStatus: PayoutStatus) => {
+  const handleStatusUpdate = async (id: string, newStatus: PayoutStatus) => {
     try {
       setUpdatingId(id)
       const res = await payoutsApi.updatePayout(id, { status: newStatus })
@@ -194,7 +197,7 @@ export default function AdminPayouts() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       setUpdatingId(id)
       const res = await payoutsApi.deletePayout(id)
@@ -205,6 +208,7 @@ export default function AdminPayouts() {
       }
 
       setPayouts(payouts.filter((p) => p.ID !== id))
+      setDeleteId(null)
     } catch (err) {
       setError("حدث خطأ أثناء حذف الدفعة")
       console.error(err)
@@ -497,7 +501,7 @@ export default function AdminPayouts() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleDelete(payout.ID)}
+                                    onClick={() => setDeleteId(payout.ID)}
                                     disabled={updatingId === payout.ID}
                                     className="text-red-600 hover:text-red-700"
                                   >
@@ -517,6 +521,36 @@ export default function AdminPayouts() {
           </>
         )}
       </div>
+      <AlertDialog
+        open={deleteId != null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف الدفعة؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              لا يمكن التراجع عن هذا الإجراء. سيتم حذف الدفعة نهائياً.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={updatingId != null}>
+              إلغاء
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={updatingId != null}
+              onClick={(e) => {
+                e.preventDefault()
+                if (deleteId) void handleDelete(deleteId)
+              }}
+            >
+              {updatingId ? "جاري الحذف..." : "حذف"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

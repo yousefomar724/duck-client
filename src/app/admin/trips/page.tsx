@@ -38,6 +38,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { formatCurrency, formatDate } from "@/lib/constants"
+import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
+import { resolveLocalizedField } from "@/lib/dashboard/localize"
+import { TripTypeBadge } from "@/components/shared/trip-type-badge"
 import * as tripsApi from "@/lib/api/trips"
 import * as suppliersApi from "@/lib/api/suppliers"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
@@ -46,10 +49,7 @@ import type { Trip, Supplier } from "@/lib/types"
 
 export default function AdminTripsPage() {
   const getSupplierName = (supplier?: Supplier) => {
-    if (!supplier) return "-"
-    return typeof supplier.name === "string"
-      ? supplier.name
-      : supplier.name.ar || supplier.name.en || "-"
+    return resolveLocalizedField(supplier?.name, "-")
   }
 
   const [trips, setTrips] = useState<Trip[]>([])
@@ -58,7 +58,7 @@ export default function AdminTripsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
@@ -71,8 +71,8 @@ export default function AdminTripsPage() {
       setError(null)
 
       const [tripsRes, suppliersRes] = await Promise.all([
-        tripsApi.getTrips(),
-        suppliersApi.getSuppliers(),
+        tripsApi.getTrips(DASHBOARD_LANG),
+        suppliersApi.getSuppliers(DASHBOARD_LANG),
       ])
 
       if (tripsRes.error || suppliersRes.error) {
@@ -90,7 +90,7 @@ export default function AdminTripsPage() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       setIsDeleting(true)
       const res = await tripsApi.deleteTrip(id)
@@ -111,7 +111,7 @@ export default function AdminTripsPage() {
   }
 
   const filteredTrips = trips.filter((t) => {
-    if (supplierFilter !== "all" && t.supplier_id !== parseInt(supplierFilter))
+    if (supplierFilter !== "all" && t.supplier_id !== supplierFilter)
       return false
     if (typeFilter === "trip" && t.is_tour) return false
     if (typeFilter === "tour" && !t.is_tour) return false
@@ -133,7 +133,7 @@ export default function AdminTripsPage() {
             <div key={i} className="border rounded-lg p-4 h-24" />
           ))}
         </div>
-        <TableSkeleton rows={5} columns={10} />
+        <TableSkeleton rows={5} columns={9} />
       </div>
     )
   }
@@ -219,17 +219,16 @@ export default function AdminTripsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="text-right">رقم</TableHead>
-                  <TableHead className="text-right">النوع</TableHead>
-                  <TableHead className="text-right">الاسم</TableHead>
-                  <TableHead className="text-right">المورد</TableHead>
-                  <TableHead className="text-right">المرشد</TableHead>
-                  <TableHead className="text-right">سعر المصريين</TableHead>
-                  <TableHead className="text-right">سعر الأجانب</TableHead>
-                  <TableHead className="text-right">التاريخ</TableHead>
-                  <TableHead className="text-right">الأشخاص</TableHead>
-                  <TableHead className="text-right">المدة</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
+                  <TableHead className="text-start">النوع</TableHead>
+                  <TableHead className="text-start">الاسم</TableHead>
+                  <TableHead className="text-start">المورد</TableHead>
+                  <TableHead className="text-start">المرشد</TableHead>
+                  <TableHead className="text-start">سعر المصريين</TableHead>
+                  <TableHead className="text-start">سعر الأجانب</TableHead>
+                  <TableHead className="text-start">التاريخ</TableHead>
+                  <TableHead className="text-start">الأشخاص</TableHead>
+                  <TableHead className="text-start">المدة</TableHead>
+                  <TableHead className="text-start">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -243,22 +242,11 @@ export default function AdminTripsPage() {
                       key={trip.id}
                       className="hover:bg-duck-cyan/5 transition-colors"
                     >
-                      <TableCell className="font-medium">#{trip.id}</TableCell>
                       <TableCell>
-                        <span
-                          className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
-                            trip.is_tour
-                              ? "bg-purple-100 text-purple-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {trip.is_tour ? "جولة" : "رحلة"}
-                        </span>
+                        <TripTypeBadge isTour={trip.is_tour} />
                       </TableCell>
                       <TableCell>
-                        {typeof trip.name === "string"
-                          ? trip.name
-                          : trip.name?.ar || "-"}
+                        {resolveLocalizedField(trip.name, "-")}
                       </TableCell>
                       <TableCell>{getSupplierName(supplier)}</TableCell>
                       <TableCell className="text-text-muted">

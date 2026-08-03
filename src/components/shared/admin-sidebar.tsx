@@ -25,11 +25,10 @@ import {
 } from "@/components/ui/tooltip"
 import Logo from "./logo"
 import { adminNavItems } from "@/lib/constants"
-import { useTranslations } from "next-intl"
+import { dashboardStrings } from "@/lib/dashboard/strings"
 import { cn } from "@/lib/utils"
 
 export default function AdminSidebar() {
-  const t = useTranslations("common")
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const { isMobile, state, setOpenMobile } = useSidebar()
@@ -75,7 +74,6 @@ export default function AdminSidebar() {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    aria-label={`الملف الشخصي: ${displayName}`}
                     className="rounded-md outline-none ring-sidebar-ring focus-visible:ring-2"
                   >
                     <Avatar className="h-9 w-9">
@@ -128,7 +126,7 @@ export default function AdminSidebar() {
                 >
                   <Link href="/" onClick={handleNavClick}>
                     <Home className="w-4 h-4" />
-                    <span>{t("backToHome")}</span>
+                    <span>{dashboardStrings.backToHome}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

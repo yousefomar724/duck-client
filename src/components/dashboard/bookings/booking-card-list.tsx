@@ -1,0 +1,128 @@
+"use client"
+
+import { Card, CardContent } from "@/components/ui/card"
+import StatusBadge from "@/components/shared/status-badge"
+import { TripTypeBadge } from "@/components/shared/trip-type-badge"
+import { PaymentMethodBadge } from "@/components/shared/payment-method-badge"
+import { BookingActions } from "./booking-actions"
+import { bookingStrings } from "./booking-strings"
+import {
+  bookingRowId,
+  localizedTripName,
+  needsAction,
+  supplierDisplayName,
+} from "@/lib/bookings/status"
+import {
+  formatCurrency,
+  formatDateShort,
+  formatRelativeTime,
+} from "@/lib/constants"
+import type { Booking, Supplier, Trip } from "@/lib/types"
+import type { BookingActionType } from "./booking-actions"
+import { cn } from "@/lib/utils"
+import { Calendar, ChevronLeft, User } from "lucide-react"
+
+interface BookingCardListProps {
+  bookings: Booking[]
+  role: "admin" | "supplier"
+  trips: Trip[]
+  suppliers: Supplier[]
+  loadingAction?: string | null
+  onAction: (type: BookingActionType, booking: Booking, note?: string) => void
+  onViewDetails: (booking: Booking) => void
+}
+
+export function BookingCardList({
+  bookings,
+  role,
+  trips,
+  suppliers,
+  loadingAction,
+  onAction,
+  onViewDetails,
+}: BookingCardListProps) {
+  const tripMap = new Map(trips.map((t) => [t.id, t]))
+  const supplierMap = new Map(suppliers.map((s) => [s.id, s]))
+
+  return (
+    <div className="space-y-3 md:hidden">
+      {bookings.map((booking) => {
+        const trip = booking.trip ?? tripMap.get(booking.trip_id)
+        const supplier =
+          booking.supplier ?? supplierMap.get(booking.supplier_id)
+
+        return (
+          <Card
+            key={bookingRowId(booking)}
+            className={cn(
+              "overflow-hidden cursor-pointer hover:shadow-md transition-shadow",
+              needsAction(booking) && "border-s-4 border-s-amber-400",
+            )}
+            onClick={() => onViewDetails(booking)}
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-xs text-text-muted">
+                    #{bookingRowId(booking)}
+                  </p>
+                  <p className="font-semibold text-text-dark flex items-center gap-1.5 mt-0.5">
+                    <User className="size-3.5 text-text-muted" />
+                    {booking.full_name}
+                  </p>
+                </div>
+                <StatusBadge status={booking.status} type="booking" />
+              </div>
+
+              <div className="flex items-center gap-2 text-sm">
+                <span className="truncate">{localizedTripName(trip)}</span>
+                <TripTypeBadge isTour={trip?.is_tour} />
+              </div>
+
+              {role === "admin" && (
+                <p className="text-xs text-text-muted">
+                  {bookingStrings.supplier}: {supplierDisplayName(supplier)}
+                </p>
+              )}
+
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1.5 text-text-muted">
+                  <Calendar className="size-3.5" />
+                  {booking.booking_date ? (
+                    <span>
+                      {formatDateShort(booking.booking_date)}
+                      <span className="text-xs ms-1">
+                        ({formatRelativeTime(booking.booking_date)})
+                      </span>
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </div>
+                <span className="font-bold text-duck-navy">
+                  {formatCurrency(booking.amount, booking.currency)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <PaymentMethodBadge method={booking.payment_method} />
+                <div className="flex items-center gap-1">
+                  <div data-prevent-row-click onClick={(e) => e.stopPropagation()}>
+                    <BookingActions
+                      booking={booking}
+                      role={role}
+                      variant="dropdown"
+                      loadingAction={loadingAction}
+                      onAction={onAction}
+                    />
+                  </div>
+                  <ChevronLeft className="size-4 text-text-muted rtl:rotate-180" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
+    </div>
+  )
+}

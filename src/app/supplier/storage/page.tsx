@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import * as supplierStorageApi from "@/lib/api/supplier-storage"
 import { useAuth } from "@/lib/stores/auth-store"
 import { useToast } from "@/lib/stores/toast-store"
+import { DetailPageSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { ResourceType } from "@/lib/types"
 
@@ -103,8 +104,11 @@ export default function SupplierStoragePage() {
   if (loading) {
     return (
       <div className="space-y-6 max-w-lg">
-        <PageHeader title="سعة المعدات" />
-        <p className="text-text-muted">جاري التحميل...</p>
+        <PageHeader
+          title="سعة المعدات"
+          description="حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة."
+        />
+        <DetailPageSkeleton />
       </div>
     )
   }
@@ -112,7 +116,10 @@ export default function SupplierStoragePage() {
   if (error && supplierId == null) {
     return (
       <div className="space-y-6">
-        <PageHeader title="سعة المعدات" />
+        <PageHeader
+          title="سعة المعدات"
+          description="حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة."
+        />
         <ErrorDisplay error={error} />
       </div>
     )
@@ -121,19 +128,21 @@ export default function SupplierStoragePage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <PageHeader title="سعة المعدات" />
+        <PageHeader
+          title="سعة المعدات"
+          description="حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة."
+        />
         <ErrorDisplay error={error} onRetry={load} />
       </div>
     )
   }
 
   return (
-    <div className="space-y-8 max-w-lg" dir="rtl">
-      <PageHeader title="سعة المعدات" />
-      <p className="text-text-muted text-sm leading-relaxed">
-        حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة (كاياك، دراجة مائية،
-        SUP). يُستخدم ذلك لاحتساب التوفر عند الحجز.
-      </p>
+    <div className="space-y-8 max-w-lg">
+      <PageHeader
+        title="سعة المعدات"
+        description="حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة (كاياك، دراجة مائية، SUP). يُستخدم ذلك لاحتساب التوفر عند الحجز."
+      />
 
       <div className="space-y-4 rounded-xl border bg-white p-6">
         <div className="space-y-2">

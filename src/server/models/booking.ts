@@ -1,0 +1,99 @@
+import mongoose, { Schema, Types } from 'mongoose';
+import { softDeletePlugin, schemaOptions } from '../db/plugins';
+
+export type BookingStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'SUCCESS'
+  | 'REFUND_PENDING'
+  | 'REFUNDED'
+  | 'REFUND_FAILED'
+  | 'COMPLETED'
+  | 'PAID';
+
+export interface BookingDoc extends mongoose.Document {
+  session_id?: string;
+  user_id?: Types.ObjectId | null;
+  trip_id: Types.ObjectId;
+  supplier_id: Types.ObjectId;
+  amount: number;
+  currency: string;
+  full_name: string;
+  phone_number: string;
+  status: BookingStatus;
+  payment_method: 'MANUAL' | 'KASHIER';
+  order_ref?: string;
+  order_id?: string;
+  booking_date: Date;
+  quantity: number;
+  local_guests: number;
+  foreigner_guests: number;
+  hear_about_us?: string;
+  referral_text?: string;
+  resource_type?: string;
+  wants_guide: boolean;
+  played_before?: boolean | null;
+  payment_data?: string;
+  deletedAt: Date | null;
+}
+
+const BookingSchema = new Schema<BookingDoc>(
+  {
+    session_id: { type: String, default: '' },
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    trip_id: { type: Schema.Types.ObjectId, ref: 'Trip', required: true },
+    supplier_id: { type: Schema.Types.ObjectId, ref: 'Supplier', required: true },
+    amount: { type: Number, required: true },
+    currency: { type: String, required: true },
+    full_name: { type: String, required: true },
+    phone_number: { type: String, required: true },
+    status: { type: String, default: 'PENDING' },
+    payment_method: { type: String, required: true, default: 'MANUAL' },
+    order_ref: { type: String, default: '' },
+    order_id: { type: String, default: '' },
+    booking_date: { type: Date, required: true },
+    quantity: { type: Number, default: 1 },
+    local_guests: { type: Number, default: 0 },
+    foreigner_guests: { type: Number, default: 0 },
+    hear_about_us: { type: String, default: '' },
+    referral_text: { type: String, default: '' },
+    resource_type: { type: String, default: '' },
+    wants_guide: { type: Boolean, default: false },
+    played_before: { type: Boolean, default: null },
+    payment_data: { type: String, default: '', select: false },
+  },
+  schemaOptions,
+);
+
+BookingSchema.plugin(softDeletePlugin);
+
+BookingSchema.set('toJSON', {
+  ...schemaOptions.toJSON,
+  // See trip.ts for why `doc.populated(path)` is used instead of a
+  // `typeof ret.x === 'object'` check (unpopulated ObjectIds are objects too,
+  // and collide with the `.id` virtual via BSON's internal `.id` buffer).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  transform(doc: any, ret: Record<string, unknown>) {
+    schemaOptions.toJSON.transform(doc, ret);
+    delete ret.payment_data;
+    if (doc.populated('trip_id') && ret.trip_id) {
+      ret.trip = ret.trip_id;
+      ret.trip_id = (ret.trip as { id?: string })?.id;
+    }
+    if (doc.populated('supplier_id') && ret.supplier_id) {
+      ret.supplier = ret.supplier_id;
+      ret.supplier_id = (ret.supplier as { id?: string })?.id;
+    }
+    if (doc.populated('user_id') && ret.user_id) {
+      ret.user = ret.user_id;
+      ret.user_id = (ret.user as { id?: string })?.id;
+    }
+    return ret;
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any);
+
+export const Booking =
+  mongoose.models.Booking || mongoose.model<BookingDoc>('Booking', BookingSchema, 'bookings');

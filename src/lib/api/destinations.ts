@@ -45,7 +45,7 @@ export async function getDestinations(
  * @param options.omitLang — use for admin edit form so `name`/`description` stay full `{ ar, en }` objects.
  */
 export async function getDestination(
-  id: number,
+  id: string,
   options?: { lang?: string; omitLang?: boolean },
 ): Promise<ApiResponse<Destination>> {
   const res = await apiClient<unknown>(`/destinations/${id}`, {
@@ -78,7 +78,7 @@ export async function createDestination(
 }
 
 export async function updateDestination(
-  id: number,
+  id: string,
   data: Partial<CreateDestinationInput>,
 ): Promise<ApiResponse<Destination>> {
   const res = await apiClient<unknown>(`/destinations/${id}`, {
@@ -94,7 +94,7 @@ export async function updateDestination(
   return { data: normalizeDestination(res.data), error: null };
 }
 
-export async function deleteDestination(id: number): Promise<ApiResponse<{ message: string }>> {
+export async function deleteDestination(id: string): Promise<ApiResponse<{ message: string }>> {
   return apiClient<{ message: string }>(`/destinations/${id}`, {
     method: 'DELETE',
   });

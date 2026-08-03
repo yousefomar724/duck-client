@@ -1,19 +1,19 @@
 export interface User {
-  id: number
+  id: string
   username: string
   email: string
   role: 0 | 1 | 2 // 0=user, 1=supplier, 2=admin
   first_name: string
   last_name: string
   phone_number: string
-  supplier_id?: number
+  supplier_id?: string
   google_id?: string
   created_at: string
 }
 
 export interface Supplier {
-  id: number
-  user_id?: number
+  id: string
+  user_id?: string
   name: string | { ar: string; en: string }
   about: string | { ar: string; en: string }
   icon: string
@@ -22,8 +22,8 @@ export interface Supplier {
 }
 
 export interface Trip {
-  id: number
-  supplier_id: number
+  id: string
+  supplier_id: string
   supplier?: Supplier
   is_tour?: boolean
   price: number
@@ -46,7 +46,7 @@ export interface Trip {
   images?: string[] | { [key: string]: string }
   cancelation_policy: { ar: string; en: string }
   refundable: boolean
-  tour_guide_id?: number
+  tour_guide_id?: string
   tour_guide?: TourGuide
   destinations?: Destination[]
   created_at?: string
@@ -55,13 +55,13 @@ export interface Trip {
 export type ResourceType = "kayak" | "water_cycle" | "sup"
 
 export interface Booking {
-  ID: number
+  ID: string
   session_id: string
-  user_id: number
+  user_id: string
   user?: User
-  trip_id: number
+  trip_id: string
   trip?: Trip
-  supplier_id: number
+  supplier_id: string
   supplier?: Supplier
   amount: number
   currency: string
@@ -87,17 +87,17 @@ export interface Booking {
 }
 
 export interface Wallet {
-  id: number
-  user_id: number
+  id: string
+  user_id: string
   amount: number
-  supplier_id: number
+  supplier_id: string
 }
 
 export type DestinationActivity = "waterbike" | "sup" | "kayak"
 export type DestinationPublicStatus = "open" | "coming-soon"
 
 export interface Destination {
-  id: number
+  id: string
   name: { ar: string; en: string }
   description: { ar: string; en: string }
   image: string
@@ -113,8 +113,8 @@ export interface Destination {
 }
 
 export interface Payout {
-  ID: number
-  supplier_id: number
+  ID: string
+  supplier_id: string
   supplier?: Supplier
   amount: number
   currency: string
@@ -147,7 +147,7 @@ export type UserRole = 0 | 1 | 2
 
 // Additional types for API integration
 export interface TourGuide {
-  ID: number
+  ID: string
   name: string
   price: number
   phone_number: string
@@ -155,16 +155,16 @@ export interface TourGuide {
 }
 
 export interface ImageStorage {
-  id: number
-  user_id: number
-  supplier_id?: number
+  id: string
+  user_id: string
+  supplier_id?: string
   image_url: string
 }
 
 /** Supplier resource limits (kayak, water_cycle, sup) from GET /supplier-storage/:id */
 export interface SupplierStorage {
-  id: number
-  supplier_id: number
+  id: string
+  supplier_id: string
   supplier?: Supplier
   /** Parsed JSON map of resource type -> max count */
   resources: Record<string, number>
@@ -185,7 +185,7 @@ export interface RegisterInput {
 }
 
 export interface CreateBookingRequest {
-  trip_id: number
+  trip_id: string
   full_name: string
   phone_number: string
   /** ISO 8601 datetime string */
@@ -206,7 +206,7 @@ export interface CreateBookingRequest {
 }
 
 export interface CreateTripRequest {
-  supplier_id?: number
+  supplier_id?: string
   is_tour?: boolean
   name: { ar: string; en: string }
   description: { ar: string; en: string }
@@ -225,8 +225,8 @@ export interface CreateTripRequest {
   availability?: { ar: string; en: string }
   max_guests: number
   images?: string[]
-  destination_ids?: number[]
+  destination_ids?: string[]
   cancelation_policy?: { ar: string; en: string }
   refundable: boolean
-  tour_guide_id?: number
+  tour_guide_id?: string
 }

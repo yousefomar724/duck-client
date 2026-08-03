@@ -6,8 +6,8 @@ import type { Trip, CreateTripRequest } from '@/lib/types';
 
 export async function getTrips(
   lang?: string,
-  supplierId?: number,
-  destinationId?: number,
+  supplierId?: string,
+  destinationId?: string,
 ): Promise<ApiResponse<Trip[]>> {
   let endpoint = '/trips';
   const params = new URLSearchParams();
@@ -32,7 +32,7 @@ export async function getTrips(
  * @param options.omitLang — use for edit forms so the API returns full `name`/`description` objects (not single-language strings).
  */
 export async function getTrip(
-  id: number,
+  id: string,
   options?: { lang?: string; omitLang?: boolean },
 ): Promise<ApiResponse<Trip>> {
   const res = await apiClient<unknown>(`/trips/${id}`, {
@@ -70,7 +70,7 @@ export async function createTrip(data: CreateTripRequest): Promise<ApiResponse<T
 }
 
 export async function updateTrip(
-  id: number,
+  id: string,
   data: Partial<CreateTripRequest>,
 ): Promise<ApiResponse<{ message: string }>> {
   return apiClient<{ message: string }>(`/trips/${id}`, {
@@ -79,7 +79,7 @@ export async function updateTrip(
   });
 }
 
-export async function deleteTrip(id: number): Promise<ApiResponse<{ message: string }>> {
+export async function deleteTrip(id: string): Promise<ApiResponse<{ message: string }>> {
   return apiClient<{ message: string }>(`/trips/${id}`, {
     method: 'DELETE',
   });

@@ -27,14 +27,20 @@ export type RelativeDayLabels = {
   dayAfterTomorrow: string
 }
 
-/** Calendar-day phrase (today / tomorrow / …) or localized long date. */
+/**
+ * Calendar-day phrase (today / tomorrow / …) or localized long date.
+ *
+ * `now` is forwarded to `getRelativeDayKind` so callers (and tests) can pin
+ * the reference day; it defaults to the real current date.
+ */
 export function formatBookingDayPhrase(
   selected: Date,
   locale: string,
   labels: RelativeDayLabels,
+  now: Date = new Date(),
 ): string {
   const dateFnsLocale = locale === "ar" ? arSA : enUS
-  switch (getRelativeDayKind(selected)) {
+  switch (getRelativeDayKind(selected, now)) {
     case "today":
       return labels.today
     case "tomorrow":

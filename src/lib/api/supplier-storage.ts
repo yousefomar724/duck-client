@@ -10,7 +10,7 @@ function isNotFound(err: string | null): boolean {
 }
 
 export async function getStorage(
-  supplierId: number,
+  supplierId: string,
 ): Promise<ApiResponse<SupplierStorage>> {
   const primary = await apiClient<SupplierStorage>(
     `/supplier-storage/${supplierId}`,

@@ -15,11 +15,11 @@ export async function getImages(): Promise<ApiResponse<ImageStorage[]>> {
   return apiClient<ImageStorage[]>('/images', { method: 'GET' });
 }
 
-export async function getImage(id: number): Promise<ApiResponse<ImageStorage>> {
+export async function getImage(id: string): Promise<ApiResponse<ImageStorage>> {
   return apiClient<ImageStorage>(`/images/${id}`, { method: 'GET' });
 }
 
-export async function deleteImage(id: number): Promise<ApiResponse<{ message: string }>> {
+export async function deleteImage(id: string): Promise<ApiResponse<{ message: string }>> {
   return apiClient<{ message: string }>(`/images/${id}`, {
     method: 'DELETE',
   });

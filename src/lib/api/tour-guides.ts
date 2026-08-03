@@ -13,7 +13,7 @@ export async function getTourGuides(): Promise<ApiResponse<TourGuide[]>> {
   return apiClient<TourGuide[]>('/tour-guides', { method: 'GET' });
 }
 
-export async function getTourGuide(id: number): Promise<ApiResponse<TourGuide>> {
+export async function getTourGuide(id: string): Promise<ApiResponse<TourGuide>> {
   return apiClient<TourGuide>(`/tour-guides/${id}`, { method: 'GET' });
 }
 
@@ -27,7 +27,7 @@ export async function createTourGuide(
 }
 
 export async function updateTourGuide(
-  id: number,
+  id: string,
   data: Partial<CreateTourGuideInput>,
 ): Promise<ApiResponse<TourGuide>> {
   return apiClient<TourGuide>(`/tour-guides/${id}`, {
@@ -36,7 +36,7 @@ export async function updateTourGuide(
   });
 }
 
-export async function deleteTourGuide(id: number): Promise<ApiResponse<{ message: string }>> {
+export async function deleteTourGuide(id: string): Promise<ApiResponse<{ message: string }>> {
   return apiClient<{ message: string }>(`/tour-guides/${id}`, {
     method: 'DELETE',
   });

@@ -134,73 +134,6 @@ export const bookingStatusColors: Record<
   },
 }
 
-export type BookingStatusGroup =
-  | "pending"
-  | "active"
-  | "completed"
-  | "refund"
-  | "cancelled"
-  | "failed"
-
-export const bookingStatusGroups: Record<
-  BookingStatus,
-  { group: BookingStatusGroup; label: string }
-> = {
-  PENDING: { group: "pending", label: "قيد الانتظار" },
-  CONFIRMED: { group: "active", label: "نشط / مدفوع" },
-  SUCCESS: { group: "active", label: "نشط / مدفوع" },
-  PAID: { group: "active", label: "نشط / مدفوع" },
-  COMPLETED: { group: "completed", label: "مكتمل" },
-  REFUND_PENDING: { group: "refund", label: "استرداد" },
-  REFUNDED: { group: "refund", label: "استرداد" },
-  REFUND_FAILED: { group: "refund", label: "استرداد" },
-  CANCELLED: { group: "cancelled", label: "ملغي" },
-  FAILED: { group: "failed", label: "فشل" },
-}
-
-export const ALL_BOOKING_STATUSES: BookingStatus[] = [
-  "PENDING",
-  "CONFIRMED",
-  "CANCELLED",
-  "FAILED",
-  "SUCCESS",
-  "REFUND_PENDING",
-  "REFUNDED",
-  "REFUND_FAILED",
-  "COMPLETED",
-  "PAID",
-]
-
-/** Statuses counted as paid/active for KPI cards and filters. */
-export const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
-  "CONFIRMED",
-  "SUCCESS",
-  "PAID",
-  "COMPLETED",
-]
-
-export function isActiveBookingStatus(status: BookingStatus): boolean {
-  return ACTIVE_BOOKING_STATUSES.includes(status)
-}
-
-export function getBookingStatusLabel(status: BookingStatus): string {
-  return bookingStatusColors[status]?.label ?? status
-}
-
-export const paymentMethodLabels: Record<
-  NonNullable<import("./types").Booking["payment_method"]>,
-  string
-> = {
-  KASHIER: "كاشير",
-  MANUAL: "إنستاباي / يدوي",
-}
-
-export const resourceTypeLabels: Record<string, string> = {
-  kayak: "كاياك",
-  water_cycle: "دراجة مائية",
-  sup: "التجديف وقوفاً",
-}
-
 export const payoutStatusColors: Record<
   PayoutStatus,
   { bg: string; text: string; label: string }
@@ -246,7 +179,10 @@ export function formatCurrency(
   const intlLocale = locale === "en" ? "en-US" : "ar-EG"
   return new Intl.NumberFormat(intlLocale, {
     style: "currency",
-    currency: currency,
+    currency,
+    numberingSystem: "latn",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount)
 }
 
@@ -282,4 +218,33 @@ export function formatDateTime(dateString: string): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date)
+}
+
+export function formatDateShort(dateString: string): string {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "—"
+  return new Intl.DateTimeFormat("ar-EG", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(date)
+}
+
+export function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "—"
+  const now = Date.now()
+  const diffMs = date.getTime() - now
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+  const rtf = new Intl.RelativeTimeFormat("ar", { numeric: "auto" })
+  if (Math.abs(diffDays) >= 1) {
+    return rtf.format(diffDays, "day")
+  }
+  const diffHours = Math.round(diffMs / (1000 * 60 * 60))
+  if (Math.abs(diffHours) >= 1) {
+    return rtf.format(diffHours, "hour")
+  }
+  const diffMinutes = Math.round(diffMs / (1000 * 60))
+  return rtf.format(diffMinutes, "minute")
 }

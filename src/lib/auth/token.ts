@@ -20,7 +20,7 @@ export function clearToken(): void {
 }
 
 export interface DecodedToken {
-  user_id: number;
+  user_id: string;
   role: number;
   exp: number;
 }
@@ -40,7 +40,7 @@ export function decodeToken(token: string): DecodedToken | null {
       'exp' in payload
     ) {
       return {
-        user_id: (payload as Record<string, unknown>).user_id as number,
+        user_id: (payload as Record<string, unknown>).user_id as string,
         role: (payload as Record<string, unknown>).role as number,
         exp: (payload as Record<string, unknown>).exp as number,
       };

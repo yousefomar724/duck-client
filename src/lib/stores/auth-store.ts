@@ -29,7 +29,7 @@ function isNotFoundError(err: string | null | undefined): boolean {
   return lower.includes("not found") || lower.includes("404")
 }
 
-async function fetchSupplierAboutAnyLang(supplierId: number): Promise<boolean> {
+async function fetchSupplierAboutAnyLang(supplierId: string): Promise<boolean> {
   const [arRes, enRes] = await Promise.all([
     suppliersApi.getSupplier(supplierId, "ar"),
     suppliersApi.getSupplier(supplierId, "en"),

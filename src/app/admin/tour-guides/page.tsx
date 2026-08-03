@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MoreVertical, Pencil, Trash2 } from "lucide-react"
+import { MoreVertical, Pencil, Trash2, User } from "lucide-react"
 import PageHeader from "@/components/shared/page-header"
+import { EmptyState } from "@/components/dashboard/empty-state"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -44,7 +45,7 @@ import { formatCurrency } from "@/lib/constants"
 import type { TourGuide } from "@/lib/types"
 
 const emptyForm = {
-  ID: 0,
+  ID: "",
   name: "",
   price: "" as number | "",
   phone_number: "",
@@ -54,15 +55,14 @@ export default function AdminTourGuides() {
   const [tourGuides, setTourGuides] = useState<TourGuide[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingGuide, setEditingGuide] = useState<TourGuide | null>(null)
   const [formData, setFormData] = useState(emptyForm)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [dialogError, setDialogError] = useState<string | null>(null)
-
-  console.log("editingGuide", editingGuide)
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     fetchTourGuides()
@@ -86,7 +86,7 @@ export default function AdminTourGuides() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       setIsDeleting(true)
       const res = await tourGuidesApi.deleteTourGuide(id)
@@ -187,7 +187,10 @@ export default function AdminTourGuides() {
   if (error) {
     return (
       <div className="space-y-6">
-        <PageHeader title="المرشدين">
+        <PageHeader
+          title="المرشدين"
+          description="إدارة المرشدين السياحيين المتاحين للجولات"
+        >
           <Button onClick={openCreateDialog}>+ اضافة مرشد</Button>
         </PageHeader>
         <ErrorDisplay error={error} onRetry={fetchTourGuides} />
@@ -195,9 +198,22 @@ export default function AdminTourGuides() {
     )
   }
 
+  const filteredGuides = tourGuides.filter((g) => {
+    if (!search.trim()) return true
+    const q = search.trim().toLowerCase()
+    return (
+      g.name.toLowerCase().includes(q) ||
+      g.phone_number.includes(q) ||
+      g.ID.toLowerCase().includes(q)
+    )
+  })
+
   return (
     <div className="space-y-6">
-      <PageHeader title="المرشدين">
+      <PageHeader
+        title="المرشدين"
+        description="إدارة المرشدين السياحيين المتاحين للجولات"
+      >
         <Button
           onClick={openCreateDialog}
           className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
@@ -206,29 +222,44 @@ export default function AdminTourGuides() {
         </Button>
       </PageHeader>
 
+      <div className="max-w-md">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="بحث بالاسم أو الهاتف..."
+        />
+      </div>
+
       <Card>
         <CardContent className="p-0!">
+          {filteredGuides.length === 0 ? (
+            <EmptyState
+              icon={User}
+              title={search ? "لا توجد نتائج" : "لا يوجد مرشدين سياحيين"}
+              description={
+                search
+                  ? "جرّب تعديل البحث."
+                  : "أضف مرشد سياحي لربطه مع الجولات."
+              }
+              actionLabel={search ? "مسح البحث" : "+ اضافة مرشد"}
+              onAction={
+                search
+                  ? () => setSearch("")
+                  : openCreateDialog
+              }
+            />
+          ) : (
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>الاسم</TableHead>
-                <TableHead>السعر</TableHead>
-                <TableHead>رقم الهاتف</TableHead>
+              <TableRow className="bg-muted/50">
+                <TableHead className="text-start">الاسم</TableHead>
+                <TableHead className="text-start">السعر</TableHead>
+                <TableHead className="text-start">رقم الهاتف</TableHead>
                 <TableHead className="w-[70px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tourGuides.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="text-center py-12 text-text-muted"
-                  >
-                    لا يوجد مرشدين سياحيين
-                  </TableCell>
-                </TableRow>
-              ) : (
-                tourGuides.map((guide) => (
+              {filteredGuides.map((guide) => (
                   <TableRow key={guide.ID}>
                     <TableCell className="font-medium">{guide.name}</TableCell>
                     <TableCell>{formatCurrency(guide.price)}</TableCell>
@@ -265,10 +296,10 @@ export default function AdminTourGuides() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
 

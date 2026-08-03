@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { CalendarCheck, DollarSign, Ship, Users } from "lucide-react"
+import PageHeader from "@/components/shared/page-header"
 import StatCard from "@/components/shared/stat-card"
 import StatusBadge from "@/components/shared/status-badge"
+import { EmptyState } from "@/components/dashboard/empty-state"
 import {
   Table,
   TableBody,
@@ -14,6 +16,8 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
+import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
+import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import * as bookingsApi from "@/lib/api/bookings"
 import * as tripsApi from "@/lib/api/trips"
 import * as suppliersApi from "@/lib/api/suppliers"
@@ -40,7 +44,7 @@ export default function AdminDashboard() {
       const [bookingsRes, tripsRes, suppliersRes] = await Promise.all([
         bookingsApi.getBookings(),
         tripsApi.getTrips(),
-        suppliersApi.getSuppliers(),
+        suppliersApi.getSuppliers(DASHBOARD_LANG),
       ])
 
       if (bookingsRes.error || tripsRes.error || suppliersRes.error) {
@@ -86,17 +90,23 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Grid */}
+      <PageHeader
+        title="لوحة التحكم"
+        description="نظرة عامة على الحجوزات والإيرادات والنشاط"
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="إجمالي الحجوزات"
           value={totalBookings}
           icon={CalendarCheck}
+          tone="neutral"
         />
         <StatCard
           title="إجمالي الإيرادات"
           value={formatCurrency(totalRevenue)}
           icon={DollarSign}
+          tone="success"
         />
         <StatCard
           title="الموردين النشطين"
@@ -106,16 +116,21 @@ export default function AdminDashboard() {
         <StatCard title="الرحلات النشطة" value={activeTrips} icon={Ship} />
       </div>
 
-      {/* Recent Bookings Table */}
       <Card>
         <CardHeader>
           <CardTitle>الحجوزات الأخيرة</CardTitle>
         </CardHeader>
         <CardContent>
+          {recentBookings.length === 0 ? (
+            <EmptyState
+              icon={CalendarCheck}
+              title="لا توجد حجوزات"
+              description="ستظهر أحدث الحجوزات هنا."
+            />
+          ) : (
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="text-right">رقم الحجز</TableHead>
                 <TableHead className="text-right">اسم العميل</TableHead>
                 <TableHead className="text-right">اسم الرحلة</TableHead>
                 <TableHead className="text-right">المبلغ</TableHead>
@@ -124,30 +139,17 @@ export default function AdminDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentBookings.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-8 h-44 text-text-muted"
-                  >
-                    لا توجد حجوزات
-                  </TableCell>
-                </TableRow>
-              ) : (
-                recentBookings.map((booking) => {
-                  const trip = trips.find((t) => t.id === booking.trip_id)
-                  return (
+              {recentBookings.map((booking) => (
                     <TableRow
                       key={booking.ID}
-                      className="hover:bg-duck-cyan/5 transition-colors"
+                      className="hover:bg-duck-cyan/5 transition-colors cursor-pointer"
+                      onClick={() => {
+                        window.location.href = `/admin/bookings?q=${encodeURIComponent(booking.ID)}`
+                      }}
                     >
-                      <TableCell className="font-medium">
-                        #{booking.ID}
-                      </TableCell>
                       <TableCell>{booking.full_name}</TableCell>
                       <TableCell>
-                        {(booking.trip?.name?.ar || booking.trip?.name?.en) ??
-                          "-"}
+                        {resolveLocalizedField(booking.trip?.name, "-")}
                       </TableCell>
                       <TableCell>
                         {formatCurrency(booking.amount, booking.currency)}
@@ -159,11 +161,10 @@ export default function AdminDashboard() {
                         {formatDateTime(booking.booking_date ?? "")}
                       </TableCell>
                     </TableRow>
-                  )
-                })
-              )}
+              ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
     </div>

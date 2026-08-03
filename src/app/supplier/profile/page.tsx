@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useTranslations } from "next-intl"
 import { Package, User } from "lucide-react"
 
 import PageHeader from "@/components/shared/page-header"
@@ -16,7 +15,9 @@ import * as suppliersApi from "@/lib/api/suppliers"
 import * as supplierStorageApi from "@/lib/api/supplier-storage"
 import * as imagesApi from "@/lib/api/images"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
+import { DetailPageSkeleton } from "@/components/shared/loading-skeletons"
 import { resolveImageUrl } from "@/lib/image-utils"
+import { supplierProfileStrings as s } from "@/lib/dashboard/strings"
 
 const parseResources = (raw: unknown): Record<string, number> => {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
@@ -40,7 +41,6 @@ const labels: Record<"kayak" | "water_cycle" | "sup", string> = {
 }
 
 export default function SupplierProfilePage() {
-  const t = useTranslations("supplierProfile")
   const { addToast } = useToast()
   const auth = useAuth()
   const supplierId = auth.user?.supplier_id
@@ -111,12 +111,12 @@ export default function SupplierProfilePage() {
     setIconUploading(false)
 
     if (error || !data?.image_url) {
-      addToast(error ?? t("iconUploadError"), "error")
+      addToast(error ?? s.iconUploadError, "error")
       return
     }
 
     setIconUrl(data.image_url)
-    addToast(t("iconUploadSuccess"), "success")
+    addToast(s.iconUploadSuccess, "success")
   }
 
   const handleSaveProfile = async () => {
@@ -135,7 +135,7 @@ export default function SupplierProfilePage() {
       return
     }
 
-    addToast(t("profileSaved"), "success")
+    addToast(s.profileSaved, "success")
     await auth.refreshOnboardingStatus()
     window.dispatchEvent(new Event("duck:supplier-profile-updated"))
   }
@@ -149,7 +149,7 @@ export default function SupplierProfilePage() {
     }
 
     if (resources.kayak + resources.water_cycle + resources.sup === 0) {
-      addToast(t("storageAtLeastOneError"), "error")
+      addToast(s.storageAtLeastOneError, "error")
       return
     }
 
@@ -161,21 +161,22 @@ export default function SupplierProfilePage() {
       return
     }
 
-    addToast(t("storageSaved"), "success")
+    addToast(s.storageSaved, "success")
     await auth.refreshOnboardingStatus()
   }
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t("title")} description={t("loading")} />
+        <PageHeader title={s.title} description={s.businessProfileHint} />
+        <DetailPageSkeleton />
       </div>
     )
   }
 
   return (
     <div className="space-y-8">
-      <PageHeader title={t("title")} />
+      <PageHeader title={s.title} description={s.businessProfileHint} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="shadow-xs">
@@ -185,20 +186,20 @@ export default function SupplierProfilePage() {
                 <User className="size-5" />
               </div>
               <div>
-                <div className="font-bold">{t("businessProfileTitle")}</div>
+                <div className="font-bold">{s.businessProfileTitle}</div>
                 <div className="text-sm text-text-muted">
-                  {t("businessProfileHint")}
+                  {s.businessProfileHint}
                 </div>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label>{t("businessName")}</Label>
+              <Label>{s.businessName}</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs text-text-muted">
-                    {t("nameAr")}
+                    {s.nameAr}
                   </Label>
                   <Input
                     value={nameAr}
@@ -207,7 +208,7 @@ export default function SupplierProfilePage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-text-muted">
-                    {t("nameEn")}
+                    {s.nameEn}
                   </Label>
                   <Input
                     dir="ltr"
@@ -219,11 +220,11 @@ export default function SupplierProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t("about")}</Label>
+              <Label>{s.about}</Label>
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs text-text-muted">
-                    {t("aboutAr")}
+                    {s.aboutAr}
                   </Label>
                   <Textarea
                     value={aboutAr}
@@ -232,7 +233,7 @@ export default function SupplierProfilePage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-text-muted">
-                    {t("aboutEn")}
+                    {s.aboutEn}
                   </Label>
                   <Textarea
                     dir="ltr"
@@ -244,12 +245,12 @@ export default function SupplierProfilePage() {
             </div>
 
             <div className="space-y-3">
-              <Label>{t("iconOptional")}</Label>
+              <Label>{s.iconOptional}</Label>
               <div className="flex items-center gap-4">
                 <div className="relative h-16 w-16 shrink-0 rounded-full border bg-muted overflow-hidden">
                   <ImageWithLogoFallback
                     src={iconPreviewUrl ?? undefined}
-                    alt={iconPreviewUrl ? t("iconPreviewAlt") : ""}
+                    alt={iconPreviewUrl ? s.iconPreviewAlt : ""}
                     fill
                     className="rounded-full object-cover"
                     fallbackClassName="object-contain p-2 rounded-full"
@@ -265,7 +266,7 @@ export default function SupplierProfilePage() {
                     }
                   />
                   <p className="text-xs text-text-muted">
-                    {t("iconUploadHint")}
+                    {s.iconUploadHint}
                   </p>
                 </div>
               </div>
@@ -277,7 +278,7 @@ export default function SupplierProfilePage() {
               onClick={() => void handleSaveProfile()}
               disabled={savingProfile}
             >
-              {savingProfile ? t("saving") : t("saveProfile")}
+              {savingProfile ? s.saving : s.saveProfile}
             </Button>
           </CardContent>
         </Card>
@@ -289,9 +290,9 @@ export default function SupplierProfilePage() {
                 <Package className="size-5" />
               </div>
               <div>
-                <div className="font-bold">{t("storageTitle")}</div>
+                <div className="font-bold">{s.storageTitle}</div>
                 <div className="text-sm text-text-muted">
-                  {t("storageHint")}
+                  {s.storageHint}
                 </div>
               </div>
             </div>
@@ -339,7 +340,7 @@ export default function SupplierProfilePage() {
               onClick={() => void handleSaveStorage()}
               disabled={savingStorage}
             >
-              {savingStorage ? t("saving") : t("saveStorage")}
+              {savingStorage ? s.saving : s.saveStorage}
             </Button>
           </CardContent>
         </Card>
