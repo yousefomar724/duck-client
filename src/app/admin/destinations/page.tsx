@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import * as destinationsApi from "@/lib/api/destinations"
 import * as imagesApi from "@/lib/api/images"
+import { resolveImageUrl } from "@/lib/image-utils"
 import { CardGridSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
@@ -276,24 +277,6 @@ export default function AdminDestinations() {
       setImageFiles([])
       setDialogError(null)
       setEditLoadError(null)
-    }
-  }
-
-  const resolveImageUrl = (url: string) => {
-    if (!url) return ""
-    if (url.startsWith("http")) return url
-    const normalized = url.startsWith("/") ? url : `/${url}`
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "https://duckapi.alefmenu.com/api/v1"
-    if (!apiUrl) return normalized
-    try {
-      const parsedUrl = new URL(apiUrl)
-      if (parsedUrl.hostname === "localhost" && parsedUrl.port === "8080") {
-        return normalized
-      }
-      return `${parsedUrl.origin}${normalized}`
-    } catch {
-      return normalized
     }
   }
 

@@ -10,16 +10,16 @@ import { GoogleOAuthProviderWrapper } from "@/lib/auth/google-oauth-provider"
 import { GA_MEASUREMENT_ID } from "@/lib/analytics"
 import { SITE_NAME, SITE_URL } from "@/lib/site"
 
-/** Origin serving destination/trip images — preconnecting saves ~300ms on LCP. */
-const API_ORIGIN = (() => {
-  try {
-    return new URL(
-      process.env.NEXT_PUBLIC_API_URL ?? "https://duckapi.alefmenu.com",
-    ).origin
-  } catch {
-    return null
-  }
-})()
+/**
+ * Origin serving destination/trip images — preconnecting saves ~300ms on LCP.
+ *
+ * Uploads go to Cloudinary (see src/server/lib/cloudinary.ts), so this is the
+ * host worth warming. It used to derive from NEXT_PUBLIC_API_URL, falling back
+ * to the old Go API host — but the API is same-origin now (that var is unset),
+ * which made the hint a wasted DNS + TCP + TLS handshake to a host the page
+ * never contacts.
+ */
+const IMAGE_ORIGIN = "https://res.cloudinary.com"
 
 const fedraSerif = localFont({
   src: [
@@ -98,12 +98,8 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} suppressHydrationWarning>
       <head>
-        {API_ORIGIN && (
-          <>
-            <link rel="preconnect" href={API_ORIGIN} />
-            <link rel="dns-prefetch" href={API_ORIGIN} />
-          </>
-        )}
+        <link rel="preconnect" href={IMAGE_ORIGIN} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href={IMAGE_ORIGIN} />
       </head>
       <body
         className={`${fedraSerif.variable} font-serif antialiased`}
