@@ -204,7 +204,10 @@ export function bookingsToCsv(bookings: Booking[]): string {
     .join("\n")
 }
 
-export function useBookingFilters(role: "admin" | "supplier") {
+export function useBookingFilters(
+  role: "admin" | "supplier",
+  suppliers: Supplier[] = [],
+) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const filters = useMemo(
@@ -279,6 +282,17 @@ export function useBookingFilters(role: "admin" | "supplier") {
         onRemove: () => setFilters({ paymentMethod: "all" }),
       })
     }
+    if (filters.supplierId !== "all") {
+      // Selecting a supplier from the toolbar filtered the list correctly but
+      // showed no confirmation chip like every other filter did — from a
+      // glance at the toolbar it looked like nothing had happened.
+      const supplier = suppliers.find((s) => s.id === filters.supplierId)
+      chips.push({
+        key: "supplier",
+        label: supplier ? supplierDisplayName(supplier) : filters.supplierId,
+        onRemove: () => setFilters({ supplierId: "all" }),
+      })
+    }
     if (filters.datePreset !== "all") {
       const dateLabels: Record<DatePreset, string> = {
         all: "الكل",
@@ -295,7 +309,7 @@ export function useBookingFilters(role: "admin" | "supplier") {
     }
 
     return chips
-  }, [filters, setFilters])
+  }, [filters, setFilters, suppliers])
 
   return {
     filters,

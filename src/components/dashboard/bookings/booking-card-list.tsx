@@ -15,12 +15,15 @@ import {
 import {
   formatCurrency,
   formatDateShort,
+  formatDurationHours,
+  formatGuestsCount,
   formatRelativeTime,
+  formatTimeShort,
 } from "@/lib/constants"
 import type { Booking, Supplier, Trip } from "@/lib/types"
 import type { BookingActionType } from "./booking-actions"
 import { cn } from "@/lib/utils"
-import { Calendar, ChevronLeft, User } from "lucide-react"
+import { Calendar, ChevronLeft, Clock, User, Users } from "lucide-react"
 
 interface BookingCardListProps {
   bookings: Booking[]
@@ -62,15 +65,10 @@ export function BookingCardList({
           >
             <CardContent className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-xs text-text-muted">
-                    #{bookingRowId(booking)}
-                  </p>
-                  <p className="font-semibold text-text-dark flex items-center gap-1.5 mt-0.5">
-                    <User className="size-3.5 text-text-muted" />
-                    {booking.full_name}
-                  </p>
-                </div>
+                <p className="font-semibold text-text-dark flex items-center gap-1.5">
+                  <User className="size-3.5 text-text-muted" />
+                  {booking.full_name}
+                </p>
                 <StatusBadge status={booking.status} type="booking" />
               </div>
 
@@ -85,27 +83,46 @@ export function BookingCardList({
                 </p>
               )}
 
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1.5 text-text-muted">
-                  <Calendar className="size-3.5" />
-                  {booking.booking_date ? (
-                    <span>
-                      {formatDateShort(booking.booking_date)}
-                      <span className="text-xs ms-1">
-                        ({formatRelativeTime(booking.booking_date)})
-                      </span>
+              <div className="flex items-center gap-1.5 text-sm text-text-muted">
+                <Calendar className="size-3.5" />
+                {booking.booking_date ? (
+                  <span>
+                    {formatDateShort(booking.booking_date)}{" "}
+                    {formatTimeShort(booking.booking_date)}
+                    <span className="text-xs ms-1">
+                      ({formatRelativeTime(booking.booking_date)})
                     </span>
-                  ) : (
-                    "—"
-                  )}
-                </div>
-                <span className="font-bold text-duck-navy">
-                  {formatCurrency(booking.amount, booking.currency)}
-                </span>
+                  </span>
+                ) : (
+                  "—"
+                )}
               </div>
 
+              {(formatDurationHours(trip?.duration) ||
+                formatGuestsCount(booking.quantity)) && (
+                <div className="flex items-center gap-3 text-xs text-text-muted">
+                  {formatDurationHours(trip?.duration) && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="size-3" />
+                      {formatDurationHours(trip?.duration)}
+                    </span>
+                  )}
+                  {formatGuestsCount(booking.quantity) && (
+                    <span className="flex items-center gap-1">
+                      <Users className="size-3" />
+                      {formatGuestsCount(booking.quantity)}
+                    </span>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-between pt-1">
-                <PaymentMethodBadge method={booking.payment_method} />
+                <div className="flex items-center gap-2">
+                  <PaymentMethodBadge method={booking.payment_method} />
+                  <span className="font-bold text-duck-navy">
+                    {formatCurrency(booking.amount, booking.currency)}
+                  </span>
+                </div>
                 <div className="flex items-center gap-1">
                   <div data-prevent-row-click onClick={(e) => e.stopPropagation()}>
                     <BookingActions

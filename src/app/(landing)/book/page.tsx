@@ -1546,7 +1546,7 @@ function BookPageContent() {
                     href={INSTAPAY_LINK}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full bg-duck-cyan text-duck-navy rounded-full py-3 px-6 font-semibold hover:bg-duck-cyan/90 transition-colors"
+                    className="flex items-center justify-center gap-2 w-full bg-duck-cyan text-duck-navy rounded-full py-3 px-6 font-semibold hover:bg-duck-cyan/90 transition-colors text-white"
                   >
                     {t("payViaInstapay")}
                   </a>
@@ -1592,7 +1592,7 @@ function BookPageContent() {
                       )}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white rounded-full py-3 px-6 font-semibold hover:bg-[#20bd5a] transition-colors"
+                      className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white rounded-full p-3 font-semibold hover:bg-[#20bd5a] transition-colors"
                     >
                       {t("instapaySendReceiptBtn")}
                     </a>

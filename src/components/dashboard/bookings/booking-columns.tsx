@@ -15,7 +15,10 @@ import {
 import {
   formatCurrency,
   formatDateShort,
+  formatDurationHours,
+  formatGuestsCount,
   formatRelativeTime,
+  formatTimeShort,
 } from "@/lib/constants"
 import type { Booking, Supplier, Trip } from "@/lib/types"
 import type { BookingActionType } from "./booking-actions"
@@ -81,11 +84,19 @@ export function getBookingColumns({
       cell: ({ row }) => {
         const date = row.original.booking_date
         if (!date) return "—"
+        const trip = row.original.trip ?? tripMap.get(row.original.trip_id)
+        const duration = formatDurationHours(trip?.duration)
+        const guests = formatGuestsCount(row.original.quantity)
         return (
           <div>
-            <div>{formatDateShort(date)}</div>
+            <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+              <span>{formatDateShort(date)}</span>
+              <span className="text-text-muted">{formatTimeShort(date)}</span>
+            </div>
             <div className="text-xs text-text-muted">
               {formatRelativeTime(date)}
+              {duration && ` · ${duration}`}
+              {guests && ` · ${guests}`}
             </div>
           </div>
         )

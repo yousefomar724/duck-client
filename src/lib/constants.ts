@@ -248,3 +248,40 @@ export function formatRelativeTime(dateString: string): string {
   const diffMinutes = Math.round(diffMs / (1000 * 60))
   return rtf.format(diffMinutes, "minute")
 }
+
+/** Time-only, for pairing with formatDateShort when a booking's date alone isn't enough. */
+export function formatTimeShort(dateString: string): string {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "—"
+  return new Intl.DateTimeFormat("ar-EG", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date)
+}
+
+/**
+ * "١ ساعة" / "٣ ساعات" for a trip's duration. Trips are hour-long river
+ * activities (matches the "N hour(s)" label already shown on the public
+ * offers section) even though the field is named/stored generically.
+ */
+export function formatDurationHours(hours: number | undefined): string | null {
+  if (!hours || hours <= 0) return null
+  const arabicHourLabels: Record<number, string> = {
+    1: "ساعة واحدة",
+    2: "ساعتان",
+    3: "٣ ساعات",
+    4: "٤ ساعات",
+    5: "٥ ساعات",
+    6: "٦ ساعات",
+  }
+  return arabicHourLabels[hours] ?? `${hours} ساعة`
+}
+
+/** "ضيف واحد" / "ضيفان" / "٣ ضيوف" for a booking's guest count. */
+export function formatGuestsCount(quantity: number | undefined): string | null {
+  if (!quantity || quantity <= 0) return null
+  if (quantity === 1) return "ضيف واحد"
+  if (quantity === 2) return "ضيفان"
+  if (quantity <= 10) return `${quantity} ضيوف`
+  return `${quantity} ضيف`
+}

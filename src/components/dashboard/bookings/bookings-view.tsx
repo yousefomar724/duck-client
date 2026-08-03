@@ -80,6 +80,10 @@ interface BookingsViewProps {
 
 export function BookingsView({ role }: BookingsViewProps) {
   const { addToast } = useToast()
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [trips, setTrips] = useState<Trip[]>([])
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [tourGuides, setTourGuides] = useState<TourGuide[]>([])
   const {
     filters,
     setFilters,
@@ -87,12 +91,7 @@ export function BookingsView({ role }: BookingsViewProps) {
     hasActiveFilters,
     filterBookings,
     activeFilterChips,
-  } = useBookingFilters(role)
-
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [trips, setTrips] = useState<Trip[]>([])
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [tourGuides, setTourGuides] = useState<TourGuide[]>([])
+  } = useBookingFilters(role, suppliers)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)

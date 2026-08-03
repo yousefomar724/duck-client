@@ -36,7 +36,10 @@ function AlertDialogOverlay({
     <AlertDialogPrimitive.Overlay
       data-slot="alert-dialog-overlay"
       className={cn(
-        "src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:fixed src:inset-0 src:z-50 src:bg-black/50",
+        // z-1000 (not z-50) so a confirmation opened from inside a Sheet is
+        // not buried under it — SheetContent sits at z-999. An alert dialog is
+        // always the topmost layer: it is modal and blocks whatever opened it.
+        "src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:fixed src:inset-0 src:z-1000 src:bg-black/50",
         className,
       )}
       {...props}
@@ -58,7 +61,8 @@ function AlertDialogContent({
         data-slot="alert-dialog-content"
         data-size={size}
         className={cn(
-          "src:bg-background src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:group/alert-dialog-content src:fixed src:top-[50%] src:start-[50%] src:z-50 src:grid src:w-full src:max-w-[calc(100%-2rem)] src:max-h-[85vh] src:overflow-y-auto src:translate-x-[-50%] rtl:src:translate-x-[50%] src:translate-y-[-50%] src:gap-4 src:rounded-lg src:border src:p-6 src:shadow-lg src:duration-200 src:data-[size=sm]:max-w-xs src:data-[size=default]:sm:max-w-lg",
+          // z-1000 must stay in step with the overlay above.
+          "src:bg-background src:data-[state=open]:animate-in src:data-[state=closed]:animate-out src:data-[state=closed]:fade-out-0 src:data-[state=open]:fade-in-0 src:data-[state=closed]:zoom-out-95 src:data-[state=open]:zoom-in-95 src:group/alert-dialog-content src:fixed src:top-[50%] src:start-[50%] src:z-1000 src:grid src:w-full src:max-w-[calc(100%-2rem)] src:max-h-[85vh] src:overflow-y-auto src:translate-x-[-50%] rtl:src:translate-x-[50%] src:translate-y-[-50%] src:gap-4 src:rounded-lg src:border src:p-6 src:shadow-lg src:duration-200 src:data-[size=sm]:max-w-xs src:data-[size=default]:sm:max-w-lg",
           className,
         )}
         {...props}
