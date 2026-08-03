@@ -518,7 +518,11 @@
     "playedBeforeLabel": "Have you tried kayak with us before?",
     "selectYesNo": "Select Yes or No",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "metadata": {
+      "title": "Book a Kayak Tour in Aswan",
+      "description": "Reserve a free-style or private captain-led kayak tour on the Nile at Elephantine Island, Aswan. Available dawn to sunset, seven days a week, by advance booking."
+    }
   },
   "contact": {
     "heroSubtitle": "Partnerships & Collaboration",
@@ -541,7 +545,11 @@
     "messagePlaceholder": "Tell us about your requirements and how we can help...",
     "submit": "Send Inquiry",
     "successTitle": "Your message has been sent successfully!",
-    "successDescription": "Thank you for contacting us. Our team will get back to you as soon as possible."
+    "successDescription": "Thank you for contacting us. Our team will get back to you as soon as possible.",
+    "metadata": {
+      "title": "Contact Us — Aswan",
+      "description": "Get in touch with Duck Entertainment in Aswan. Find us at the Nagaa El Qibli ferry on Elephantine Island, beside Makani Cafe, or reach us by phone or WhatsApp."
+    }
   },
   "profile": {
     "title": "Profile",

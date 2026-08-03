@@ -44,30 +44,67 @@ const fedraSerif = localFont({
   display: "swap",
 })
 
-const SITE_DESCRIPTION = "Duck Entertainment — Water Sports in Aswan"
+const SITE_DESCRIPTION =
+  "Kayaking, stand-up paddleboarding and water bike trips on the Nile around Elephantine Island, Aswan. Book with Duck Entertainment."
+
+/** Social/preview card. 1200x630 is the size Facebook, WhatsApp and X expect. */
+const OG_IMAGE = {
+  url: "/og-image.jpg",
+  width: 1200,
+  height: 630,
+  alt: "Kayaking on the Nile at Elephantine Island, Aswan",
+}
+
+/**
+ * Google has ignored <meta name="keywords"> since 2009, so this moves no
+ * rankings there — it is kept only because Bing/Yandex still read it weakly
+ * and it costs a few bytes. The terms that actually rank live in the title,
+ * description, on-page headings and the JSON-LD in (landing)/layout.tsx.
+ */
+const KEYWORDS = [
+  "kayaking in Aswan",
+  "Aswan kayak tour",
+  "Nile kayaking",
+  "kayak Egypt",
+  "Elephantine Island activities",
+  "water sports Aswan",
+  "stand up paddleboarding Aswan",
+  "things to do in Aswan",
+  "Nile river activities",
+  "Aswan tours",
+  "كاياك أسوان",
+  "تأجير كاياك أسوان",
+  "رحلات نيلية أسوان",
+  "رياضات مائية أسوان",
+  "جزيرة إلفنتين",
+  "أنشطة أسوان",
+]
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: SITE_NAME,
+    default: `${SITE_NAME} — Kayaking & Water Sports in Aswan`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
+  keywords: KEYWORDS,
   applicationName: SITE_NAME,
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: SITE_NAME,
+    title: `${SITE_NAME} — Kayaking & Water Sports in Aswan`,
     description: SITE_DESCRIPTION,
     url: "/",
-    images: [{ url: "/logo-transparent.png", width: 512, height: 512 }],
+    locale: "en_US",
+    alternateLocale: ["ar_EG"],
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_NAME,
+    title: `${SITE_NAME} — Kayaking & Water Sports in Aswan`,
     description: SITE_DESCRIPTION,
-    images: ["/logo-transparent.png"],
+    images: [OG_IMAGE.url],
   },
   robots: {
     index: true,
