@@ -1,10 +1,11 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import localFont from "next/font/local"
 import "./globals.css"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale, getMessages } from "next-intl/server"
 import { GoogleAnalytics } from "@next/third-parties/google"
 import { ToastContainer } from "@/components/shared/toast-container"
+import { ServiceWorkerRegister } from "@/components/shared/service-worker-register"
 import { AuthHydrator } from "@/lib/auth/auth-hydrator"
 import { GoogleOAuthProviderWrapper } from "@/lib/auth/google-oauth-provider"
 import { GA_MEASUREMENT_ID } from "@/lib/analytics"
@@ -124,9 +125,26 @@ export const metadata: Metadata = {
   },
   // Next omits the meta tag entirely when GOOGLE_SITE_VERIFICATION is unset.
   verification: { google: process.env.GOOGLE_SITE_VERIFICATION },
-  other: {
-    "color-scheme": "light",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
+  appleWebApp: {
+    capable: true,
+    title: "Duck",
+    statusBarStyle: "default",
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: "#121528",
+  colorScheme: "light",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 }
 
 export default async function RootLayout({
@@ -151,6 +169,7 @@ export default async function RootLayout({
           <AuthHydrator />
           <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
           <ToastContainer />
+          <ServiceWorkerRegister />
         </GoogleOAuthProviderWrapper>
         {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
       </body>

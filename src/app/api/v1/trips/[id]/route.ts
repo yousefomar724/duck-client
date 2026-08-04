@@ -3,8 +3,9 @@ import { dbConnect } from '@/server/db/connect';
 import { requireAuth } from '@/server/auth/guard';
 import { Trip } from '@/server/models/trip';
 import { toTripResponse, applyTripUpdate, type CreateTripBody } from '@/server/services/trip';
-import { errorResponse, messageResponse } from '@/server/lib/json';
+import { errorResponse, messageResponse, validationErrorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
+import { updateTripBodySchema, flattenFieldErrors } from '@/server/validation/trip';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await dbConnect();
@@ -33,15 +34,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   if (!isValidObjectId(id)) return errorResponse(400, 'Invalid ID');
 
-  let body: Partial<CreateTripBody>;
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return errorResponse(400, 'Invalid input');
   }
 
+  const parsed = updateTripBodySchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return validationErrorResponse(flattenFieldErrors(parsed.error));
+  }
+  const body: Partial<CreateTripBody> = parsed.data;
+
   const trip = await Trip.findById(id);
-  if (!trip) return errorResponse(500, 'trip not found');
+  if (!trip) return errorResponse(404, 'trip not found');
 
   try {
     applyTripUpdate(trip, body);

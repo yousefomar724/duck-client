@@ -6,7 +6,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 export type ApiResponse<T> =
   | { data: T; error: null }
-  | { data: null; error: string };
+  | { data: null; error: string; fields?: Record<string, string> };
 
 interface RequestOptions extends Omit<RequestInit, 'headers'> {
   lang?: string;
@@ -82,7 +82,8 @@ async function apiClient<T>(
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       const errorMessage = typeof body.error === 'string' ? body.error : `HTTP ${response.status}`;
-      return { data: null, error: errorMessage };
+      const fields = body.fields && typeof body.fields === 'object' ? body.fields : undefined;
+      return { data: null, error: errorMessage, ...(fields ? { fields } : {}) };
     }
 
     const data = await response.json() as T;

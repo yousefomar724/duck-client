@@ -4,8 +4,9 @@ import { requireAuth } from '@/server/auth/guard';
 import { findActiveUserById } from '@/server/services/user';
 import { Trip } from '@/server/models/trip';
 import { toTripResponse, createTripFromRequest, type CreateTripBody } from '@/server/services/trip';
-import { errorResponse } from '@/server/lib/json';
+import { errorResponse, validationErrorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
+import { createTripBodySchema, flattenFieldErrors } from '@/server/validation/trip';
 
 export async function GET(request: Request) {
   await dbConnect();
@@ -47,16 +48,22 @@ export async function POST(request: Request) {
   const user = await findActiveUserById(session.user_id);
   if (!user) return errorResponse(401, 'Invalid user ID');
 
-  let body: CreateTripBody;
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return errorResponse(400, 'Invalid input');
   }
 
   if (!user.supplier_id && user.role !== 2) {
-    return errorResponse(500, 'user is not a supplier');
+    return errorResponse(403, 'الحساب غير مرتبط بمورد بعد — يرجى إكمال بيانات المورد أولاً');
   }
+
+  const parsed = createTripBodySchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return validationErrorResponse(flattenFieldErrors(parsed.error));
+  }
+  const body: CreateTripBody = parsed.data;
 
   const supplierId = user.supplier_id ? user.supplier_id.toString() : (body.supplier_id ?? '');
 

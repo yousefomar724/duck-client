@@ -23,6 +23,7 @@ export interface DateTimePickerProps {
   required?: boolean
   id?: string
   className?: string
+  "aria-invalid"?: boolean
 }
 
 /** Format Date to HH:mm for input[type="time"] (24h). */
@@ -45,6 +46,7 @@ export function DateTimePicker({
   required = false,
   id,
   className,
+  "aria-invalid": ariaInvalid,
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false)
   const timeStr = value ? toTimeInputValue(value) : "00:00"
@@ -83,13 +85,17 @@ export function DateTimePicker({
           <PopoverTrigger asChild>
             <Button
               id={id}
+              name={id}
               type="button"
               variant="outline"
               className={cn(
                 "w-full justify-between font-normal text-right",
                 !value && "text-muted-foreground",
+                ariaInvalid &&
+                  "border-destructive ring-destructive/20 dark:ring-destructive/40",
               )}
               aria-required={required}
+              aria-invalid={ariaInvalid}
             >
               {value ? (
                 format(value, "PPP", { locale: arSA })

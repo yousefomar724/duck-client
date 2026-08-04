@@ -34,6 +34,10 @@ export async function createTripFromRequest(supplierId: string, body: CreateTrip
   if (duration === 0 && !body.is_tour) duration = 1;
 
   const from = new Date(body.from);
+  if (isNaN(from.getTime())) {
+    throw new Error('تاريخ البدء غير صحيح');
+  }
+
   let to = body.to ? new Date(body.to) : null;
   if (!to || isNaN(to.getTime())) {
     to = new Date(from);

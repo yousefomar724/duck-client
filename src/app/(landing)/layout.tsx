@@ -1,6 +1,7 @@
 import Navbar from "@/components/landing/Navbar"
 import { WhatsAppSupportFab } from "@/components/shared/whatsapp-support-fab"
 import { SkipToContent } from "@/components/shared/skip-to-content"
+import { InstallPrompt } from "@/components/shared/install-prompt"
 import { SITE_CONTACT, SITE_NAME, SITE_URL } from "@/lib/site"
 
 const businessJsonLd = {
@@ -79,6 +80,7 @@ export default function LandingLayout({
           the direct children of its wrapper. */}
       <main id="main-content">{children}</main>
       <WhatsAppSupportFab />
+      <InstallPrompt />
     </>
   )
 }

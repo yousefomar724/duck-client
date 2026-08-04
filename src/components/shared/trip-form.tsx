@@ -1,7 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useEffect, useCallback, useState } from "react"
+import { useForm, type Resolver } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Info,
   DollarSign,
@@ -23,14 +24,36 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form"
 import { currencies } from "@/lib/constants"
 import * as tripsApi from "@/lib/api/trips"
 import * as imagesApi from "@/lib/api/images"
 import * as destinationsApi from "@/lib/api/destinations"
 import * as tourGuidesApi from "@/lib/api/tour-guides"
+import type { ApiResponse } from "@/lib/api/client"
 import { DateTimePicker } from "@/components/shared/date-time-picker"
 import { ErrorDisplay } from "@/components/shared/error-display"
-import type { Trip, Destination, Supplier, TourGuide } from "@/lib/types"
+import { useToast } from "@/lib/stores/toast-store"
+import { focusFirstError } from "@/lib/trips/focus-first-error"
+import {
+  createTripFormSchema,
+  type TripFormInput,
+  type TripFormValues,
+} from "@/lib/trips/form-schema"
+import type {
+  Trip,
+  Destination,
+  Supplier,
+  TourGuide,
+  CreateTripRequest,
+} from "@/lib/types"
 import { resolveImageUrl } from "@/lib/image-utils"
 import {
   ImageWithLogoFallback,
@@ -47,6 +70,109 @@ function normalizeTourGuides(list: TourGuide[]): TourGuide[] {
       return { ...g, ID: id }
     })
     .filter((g): g is TourGuide => g != null)
+}
+
+/** Arabic labels for the error summary — keep in sync with the schema's field names. */
+const FIELD_LABELS: Record<string, string> = {
+  name_ar: "اسم الرحلة (عربي)",
+  name_en: "اسم الرحلة (English)",
+  description_ar: "الوصف (عربي)",
+  description_en: "الوصف (English)",
+  price: "السعر للمصريين",
+  foreigner_price: "السعر للأجانب",
+  guide_price: "سعر المرشد",
+  display_order: "ترتيب العرض",
+  currency: "العملة",
+  cancelation_policy_ar: "سياسة الإلغاء (عربي)",
+  cancelation_policy_en: "سياسة الإلغاء (English)",
+  duration: "المدة",
+  max_guests: "عدد الاشخاص الأقصى",
+  supplier_id: "المورد",
+  tour_guide_id: "المرشد",
+  from: "من تاريخ",
+  to: "إلى تاريخ",
+  destination_ids: "الوجهات",
+}
+
+const EMPTY_FORM_VALUES: TripFormInput = {
+  name_ar: "",
+  name_en: "",
+  description_ar: "",
+  description_en: "",
+  destination_ids: [],
+  price: "",
+  foreigner_price: "",
+  guide_mandatory: false,
+  guide_price: "",
+  display_order: "0",
+  currency: "EGP",
+  refundable: true,
+  cancelation_policy_ar: "",
+  cancelation_policy_en: "",
+  duration: "1",
+  max_guests: "",
+  supplier_id: "",
+  is_tour: true,
+  tour_guide_id: "",
+  from: undefined,
+  to: undefined,
+}
+
+/** Maps an existing `Trip` (API shape) onto the form's flat, string-based input shape. */
+function mapTripToFormValues(tripData: Trip): TripFormInput {
+  const tripName =
+    typeof tripData.name === "string"
+      ? { ar: tripData.name, en: "" }
+      : tripData.name
+  const tripDesc =
+    typeof tripData.description === "string"
+      ? { ar: tripData.description, en: "" }
+      : tripData.description
+  const tripPolicy =
+    typeof tripData.cancelation_policy === "string"
+      ? { ar: tripData.cancelation_policy, en: "" }
+      : tripData.cancelation_policy
+
+  return {
+    name_ar: tripName.ar || "",
+    name_en: tripName.en || "",
+    description_ar: tripDesc.ar || "",
+    description_en: tripDesc.en || "",
+    destination_ids: tripData.destinations?.map((d) => d.id) || [],
+    price: tripData.price.toString(),
+    foreigner_price: (tripData.foreigner_price ?? 0).toString(),
+    guide_mandatory: tripData.guide_mandatory ?? false,
+    guide_price: (tripData.guide_price ?? 0).toString(),
+    display_order: (tripData.display_order ?? 0).toString(),
+    currency: tripData.currency,
+    refundable: tripData.refundable,
+    cancelation_policy_ar: tripPolicy?.ar || "",
+    cancelation_policy_en: tripPolicy?.en || "",
+    duration: (tripData.duration ?? 1).toString(),
+    max_guests: tripData.max_guests.toString(),
+    supplier_id: tripData.supplier_id?.toString() || "",
+    is_tour: tripData.is_tour ?? false,
+    tour_guide_id: tripData.tour_guide_id?.toString() || "",
+    from: tripData.from ? new Date(tripData.from) : undefined,
+    to: tripData.to ? new Date(tripData.to) : undefined,
+  }
+}
+
+/** Extracts existing image URLs from the various shapes the API has returned over time. */
+function extractImageUrls(tripData: Trip): string[] {
+  const imageUrls: string[] = []
+  if (Array.isArray(tripData.images)) {
+    imageUrls.push(...(tripData.images as string[]))
+  } else if (typeof tripData.images === "string") {
+    imageUrls.push(tripData.images)
+  } else if (
+    tripData.images &&
+    typeof tripData.images === "object" &&
+    !Array.isArray(tripData.images)
+  ) {
+    imageUrls.push(...Object.values(tripData.images as Record<string, string>))
+  }
+  return imageUrls
 }
 
 interface TripFormProps {
@@ -68,102 +194,47 @@ export default function TripForm({
   suppliers = [],
   useAdminImageUpload = false,
 }: TripFormProps) {
+  const { addToast } = useToast()
+
   const getSupplierName = (supplier: Supplier) =>
     typeof supplier.name === "string"
       ? supplier.name
       : supplier.name.ar || supplier.name.en || "Unknown Supplier"
 
-  const [formData, setFormData] = useState({
-    name_ar: "",
-    name_en: "",
-    description_ar: "",
-    description_en: "",
-    destination_ids: [] as string[],
-    price: "",
-    foreigner_price: "",
-    guide_mandatory: false,
-    guide_price: "",
-    display_order: "0",
-    currency: "EGP",
-    refundable: true,
-    cancelation_policy_ar: "",
-    cancelation_policy_en: "",
-    duration: "1",
-    max_guests: "",
-    supplier_id: "",
-    is_tour: true,
-    tour_guide_id: "",
+  const form = useForm<TripFormInput, unknown, TripFormValues>({
+    // The schema types numeric fields as their coerced (number) output; the
+    // inputs here write strings so an emptied field can show a placeholder
+    // instead of "0". zodResolver only models a schema's single input/output
+    // pair, so bridge that gap with a cast — zod still coerces the raw string
+    // values at parse time regardless of what TypeScript believes here.
+    resolver: zodResolver(
+      createTripFormSchema({ mode, requireSupplier: showSupplierField }),
+    ) as unknown as Resolver<TripFormInput, unknown, TripFormValues>,
+    defaultValues:
+      mode === "edit" && initialData
+        ? mapTripToFormValues(initialData)
+        : EMPTY_FORM_VALUES,
+    mode: "onBlur",
+    reValidateMode: "onChange",
   })
-  const [fromDate, setFromDate] = useState<Date | undefined>(undefined)
-  const [toDate, setToDate] = useState<Date | undefined>(undefined)
+
   const [imageFiles, setImageFiles] = useState<File[]>([])
-  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([])
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>(
+    mode === "edit" && initialData ? extractImageUrls(initialData) : [],
+  )
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [tourGuides, setTourGuides] = useState<TourGuide[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingDestinations, setIsLoadingDestinations] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const populateForm = useCallback((tripData: Trip) => {
-    const tripName =
-      typeof tripData.name === "string"
-        ? { ar: tripData.name, en: "" }
-        : tripData.name
-    const tripDesc =
-      typeof tripData.description === "string"
-        ? { ar: tripData.description, en: "" }
-        : tripData.description
-    const tripPolicy =
-      typeof tripData.cancelation_policy === "string"
-        ? { ar: tripData.cancelation_policy, en: "" }
-        : tripData.cancelation_policy
-
-    const imageUrls: string[] = []
-    if (Array.isArray(tripData.images)) {
-      imageUrls.push(...(tripData.images as string[]))
-    } else if (typeof tripData.images === "string") {
-      imageUrls.push(tripData.images)
-    } else if (
-      tripData.images &&
-      typeof tripData.images === "object" &&
-      !Array.isArray(tripData.images)
-    ) {
-      imageUrls.push(
-        ...Object.values(tripData.images as Record<string, string>),
-      )
-    }
-
-    setFormData({
-      name_ar: tripName.ar || "",
-      name_en: tripName.en || "",
-      description_ar: tripDesc.ar || "",
-      description_en: tripDesc.en || "",
-      destination_ids: tripData.destinations?.map((d) => d.id) || [],
-      price: tripData.price.toString(),
-      foreigner_price: (tripData.foreigner_price ?? 0).toString(),
-      guide_mandatory: tripData.guide_mandatory ?? false,
-      guide_price: (tripData.guide_price ?? 0).toString(),
-      display_order: (tripData.display_order ?? 0).toString(),
-      currency: tripData.currency,
-      refundable: tripData.refundable,
-      cancelation_policy_ar: tripPolicy?.ar || "",
-      cancelation_policy_en: tripPolicy?.en || "",
-      duration: (tripData.duration ?? 1).toString(),
-      max_guests: tripData.max_guests.toString(),
-      supplier_id: tripData.supplier_id?.toString() || "",
-      is_tour: tripData.is_tour ?? false,
-      tour_guide_id: tripData.tour_guide_id?.toString() || "",
-    })
-    setFromDate(tripData.from ? new Date(tripData.from) : undefined)
-    setToDate(tripData.to ? new Date(tripData.to) : undefined)
-    setExistingImageUrls(imageUrls)
-  }, [])
-
   useEffect(() => {
     if (mode === "edit" && initialData) {
-      populateForm(initialData)
+      form.reset(mapTripToFormValues(initialData))
+      setExistingImageUrls(extractImageUrls(initialData))
     }
-  }, [mode, initialData, populateForm])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, initialData])
 
   useEffect(() => {
     const fetchDestinations = async () => {
@@ -196,8 +267,15 @@ export default function TripForm({
     setImageFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onInvalid = useCallback(
+    (errors: Record<string, unknown>) => {
+      addToast("يرجى تصحيح الحقول المميزة بالأحمر", "error")
+      focusFirstError(Object.keys(errors))
+    },
+    [addToast],
+  )
+
+  const onValid = async (values: TripFormValues) => {
     setError(null)
     setIsLoading(true)
 
@@ -210,7 +288,7 @@ export default function TripForm({
           ? imagesApi.uploadImageForAdmin(file)
           : imagesApi.uploadImage(file))
         if (uploadErr) {
-          throw new Error(`خطأ في تحميل الصورة: ${uploadErr}`)
+          throw new Error(`خطأ في تحميل الصورة رقم ${i + 1}: ${uploadErr}`)
         }
         if (imageData?.image_url) {
           uploadedImageUrls.push(imageData.image_url)
@@ -225,650 +303,813 @@ export default function TripForm({
       )
       const allImageUrls = [...existingImageUrls, ...fullUrls]
 
-      const payload: any = {
-        name: { ar: formData.name_ar, en: formData.name_en },
-        description: {
-          ar: formData.description_ar,
-          en: formData.description_en,
-        },
-        destination: formData.destination_ids.length > 0,
+      // Guaranteed defined: the schema's superRefine rejects a missing `from`
+      // before react-hook-form ever calls onValid.
+      const from = values.from as Date
+
+      const payload: CreateTripRequest = {
+        name: { ar: values.name_ar, en: values.name_en },
+        description: { ar: values.description_ar, en: values.description_en },
+        destination: values.destination_ids.length > 0,
         location: false,
-        is_tour: formData.is_tour,
-        price: parseFloat(formData.price),
-        foreigner_price: parseFloat(formData.foreigner_price) || 0,
-        guide_mandatory: formData.guide_mandatory,
-        guide_price: parseFloat(formData.guide_price) || 0,
-        display_order: parseInt(formData.display_order, 10) || 0,
-        currency: formData.currency,
-        refundable: formData.refundable,
+        is_tour: values.is_tour,
+        price: values.price,
+        foreigner_price: values.foreigner_price,
+        guide_mandatory: values.guide_mandatory,
+        guide_price: values.guide_price,
+        display_order: values.display_order,
+        currency: values.currency,
+        refundable: values.refundable,
         cancelation_policy: {
-          ar: formData.cancelation_policy_ar,
-          en: formData.cancelation_policy_en,
+          ar: values.cancelation_policy_ar,
+          en: values.cancelation_policy_en,
         },
-        from: fromDate?.toISOString(),
-        to: toDate?.toISOString() ?? undefined,
-        duration: parseInt(formData.duration, 10) || (formData.is_tour ? 0 : 1),
-        max_guests: parseInt(formData.max_guests, 10),
+        from: from.toISOString(),
+        to: values.to ? values.to.toISOString() : undefined,
+        duration: values.duration,
+        max_guests: values.max_guests,
         images: allImageUrls,
-        destination_ids: formData.destination_ids,
+        destination_ids: values.destination_ids,
       }
 
-      if (formData.tour_guide_id) {
-        payload.tour_guide_id = formData.tour_guide_id
+      if (values.tour_guide_id) {
+        payload.tour_guide_id = values.tour_guide_id
       }
 
-      if (showSupplierField && formData.supplier_id) {
-        payload.supplier_id = formData.supplier_id
+      if (showSupplierField && values.supplier_id) {
+        payload.supplier_id = values.supplier_id
       }
 
-      if (mode === "create") {
-        const { error: createError } = await tripsApi.createTrip(payload)
-        if (createError) throw new Error(createError)
-      } else if (initialData) {
-        const { error: updateError } = await tripsApi.updateTrip(
-          initialData.id,
-          payload,
-        )
-        if (updateError) throw new Error(updateError)
+      const result: ApiResponse<unknown> =
+        mode === "create"
+          ? await tripsApi.createTrip(payload)
+          : initialData
+            ? await tripsApi.updateTrip(initialData.id, payload)
+            : { data: null, error: "لا يمكن تحديث رحلة غير موجودة" }
+
+      if (result.error) {
+        if (result.fields) {
+          Object.entries(result.fields).forEach(([key, message]) => {
+            form.setError(key as keyof TripFormInput, {
+              type: "server",
+              message,
+            })
+          })
+          focusFirstError(Object.keys(result.fields))
+        }
+        throw new Error(result.error)
       }
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع")
+      const message = err instanceof Error ? err.message : "حدث خطأ غير متوقع"
+      setError(message)
+      addToast(message, "error")
+      requestAnimationFrame(() => {
+        document
+          .getElementById("trip-form-error-banner")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" })
+      })
     } finally {
       setIsLoading(false)
     }
   }
 
+  const fieldErrors = form.formState.errors
+
   return (
     <Card className="p-0!">
       <CardContent className="p-6">
         {error && (
-          <ErrorDisplay
-            error={error}
-            onRetry={() => setError(null)}
-            showRetry={false}
-          />
+          <div id="trip-form-error-banner">
+            <ErrorDisplay
+              error={error}
+              onRetry={() => setError(null)}
+              showRetry={false}
+            />
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Supplier Assignment (admin only) */}
-          {showSupplierField && suppliers.length > 0 && (
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onValid, onInvalid)}
+            className="space-y-8"
+            noValidate
+          >
+            {/* Supplier Assignment (admin only) */}
+            {showSupplierField && suppliers.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  تعيين المورد
+                </h2>
+                <FormField
+                  control={form.control}
+                  name="supplier_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>المورد</FormLabel>
+                      <Select
+                        dir="rtl"
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger name={field.name}>
+                            <SelectValue placeholder="اختر المورد" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {suppliers.map((supplier) => (
+                            <SelectItem
+                              key={supplier.id}
+                              value={supplier.id.toString()}
+                            >
+                              {getSupplierName(supplier)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Type Toggle */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                نوع العرض
+              </h2>
+              <FormField
+                control={form.control}
+                name="is_tour"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-3">
+                      <FormControl>
+                        <Checkbox
+                          id="is_tour"
+                          name={field.name}
+                          checked={field.value}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked === true)
+                          }
+                        />
+                      </FormControl>
+                      <Label
+                        htmlFor="is_tour"
+                        className="cursor-pointer font-normal"
+                      >
+                        جولة سياحية (Tour)
+                      </Label>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <p className="text-xs text-text-muted">
+                {form.watch("is_tour")
+                  ? "الجولة: يتم حساب السعر بناءً على عدد الأشخاص × عدد الساعات"
+                  : "الرحلة: يتم حساب السعر بناءً على الكمية"}
+              </p>
+            </div>
+
+            {/* Basic Info Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+                <Info className="w-5 h-5" />
+                المعلومات الأساسية
+              </h2>
+              <div className="grid gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>اسم الرحلة (عربي)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="مثال: جولة الكاياك على النيل"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="name_en"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>اسم الرحلة (English)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Example: Kayak Tour on the Nile"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="description_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>الوصف (عربي)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="وصف تفصيلي للرحلة..."
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description_en"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>الوصف (English)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Detailed description of the trip..."
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Destinations */}
+                <FormField
+                  control={form.control}
+                  name="destination_ids"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>اختر الوجهات (اختياري)</FormLabel>
+                      {isLoadingDestinations ? (
+                        <p className="text-sm text-text-muted">
+                          جاري التحميل...
+                        </p>
+                      ) : destinations.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {destinations.map((dest) => (
+                            <div
+                              key={dest.id}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="checkbox"
+                                id={`dest-${dest.id}`}
+                                checked={field.value.includes(dest.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    field.onChange([...field.value, dest.id])
+                                  } else {
+                                    field.onChange(
+                                      field.value.filter(
+                                        (id) => id !== dest.id,
+                                      ),
+                                    )
+                                  }
+                                }}
+                                className="w-4 h-4 rounded border-gray-300"
+                              />
+                              <Label
+                                htmlFor={`dest-${dest.id}`}
+                                className="mb-0 text-sm cursor-pointer"
+                              >
+                                {typeof dest.name === "string"
+                                  ? dest.name
+                                  : dest.name?.ar || "Destination"}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-text-muted">
+                          لا توجد وجهات متاحة
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Tour Guide */}
+                <FormField
+                  control={form.control}
+                  name="tour_guide_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>المرشد (اختياري)</FormLabel>
+                      <Select
+                        dir="rtl"
+                        value={field.value || "none"}
+                        onValueChange={(value) =>
+                          field.onChange(value === "none" ? "" : value)
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger name={field.name}>
+                            <SelectValue placeholder="اختر المرشد" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">بدون مرشد</SelectItem>
+                          {tourGuides.map((guide) => (
+                            <SelectItem key={guide.ID} value={String(guide.ID)}>
+                              {guide.name} — {guide.price} ج.م
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Pricing Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                الأسعار والإلغاء
+              </h2>
+              <div className="grid gap-4">
+                <div className="grid md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>السعر للمصريين</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="180"
+                            {...field}
+                          />
+                        </FormControl>
+                        {form.watch("is_tour") && (
+                          <p className="text-xs text-duck-cyan">
+                            السعر لكل ضيف في الساعة
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="foreigner_price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>السعر للأجانب</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="250"
+                            {...field}
+                          />
+                        </FormControl>
+                        {form.watch("is_tour") && (
+                          <p className="text-xs text-duck-cyan">
+                            السعر لكل ضيف في الساعة
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>العملة</FormLabel>
+                        <Select
+                          dir="rtl"
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger name={field.name}>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {currencies.map((currency) => (
+                              <SelectItem
+                                key={currency.value}
+                                value={currency.value}
+                              >
+                                {currency.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="refundable"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Checkbox
+                            id="refundable"
+                            name={field.name}
+                            checked={field.value}
+                            onCheckedChange={(checked) =>
+                              field.onChange(checked === true)
+                            }
+                          />
+                        </FormControl>
+                        <Label
+                          htmlFor="refundable"
+                          className="cursor-pointer font-normal"
+                        >
+                          قابل للاسترداد
+                        </Label>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="cancelation_policy_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>سياسة الإلغاء (عربي)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="مثال: يمكن الإلغاء قبل 24 ساعة من موعد الرحلة"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="cancelation_policy_en"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>سياسة الإلغاء (English)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Example: Cancellation allowed 24 hours before trip"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Guide Section */}
             <div className="space-y-4">
               <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                تعيين المورد
+                المرشد
               </h2>
-              <div className="space-y-2">
-                <Label htmlFor="supplier_id">المورد</Label>
-                <Select
-                  dir="rtl"
-                  value={formData.supplier_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, supplier_id: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر المورد" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem
-                        key={supplier.id}
-                        value={supplier.id.toString()}
-                      >
-                        {getSupplierName(supplier)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          {/* Type Toggle */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              نوع العرض
-            </h2>
-            <div className="flex items-center gap-3">
-              <Checkbox
-                id="is_tour"
-                checked={formData.is_tour}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_tour: checked === true })
-                }
-              />
-              <Label htmlFor="is_tour" className="cursor-pointer font-normal">
-                جولة سياحية (Tour)
-              </Label>
-            </div>
-            <p className="text-xs text-text-muted">
-              {formData.is_tour
-                ? "الجولة: يتم حساب السعر بناءً على عدد الأشخاص × عدد الساعات"
-                : "الرحلة: يتم حساب السعر بناءً على الكمية"}
-            </p>
-          </div>
-
-          {/* Basic Info Section */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
-              <Info className="w-5 h-5" />
-              المعلومات الأساسية
-            </h2>
-            <div className="grid gap-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name_ar">اسم الرحلة (عربي)</Label>
-                  <Input
-                    id="name_ar"
-                    value={formData.name_ar}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name_ar: e.target.value })
-                    }
-                    placeholder="مثال: جولة الكاياك على النيل"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name_en">اسم الرحلة (English)</Label>
-                  <Input
-                    id="name_en"
-                    value={formData.name_en}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name_en: e.target.value })
-                    }
-                    placeholder="Example: Kayak Tour on the Nile"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="description_ar">الوصف (عربي)</Label>
-                  <Textarea
-                    id="description_ar"
-                    value={formData.description_ar}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        description_ar: e.target.value,
-                      })
-                    }
-                    placeholder="وصف تفصيلي للرحلة..."
-                    rows={3}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description_en">الوصف (English)</Label>
-                  <Textarea
-                    id="description_en"
-                    value={formData.description_en}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        description_en: e.target.value,
-                      })
-                    }
-                    placeholder="Detailed description of the trip..."
-                    rows={3}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Destinations */}
-              <div className="space-y-2">
-                <Label>اختر الوجهات (اختياري)</Label>
-                {isLoadingDestinations ? (
-                  <p className="text-sm text-text-muted">جاري التحميل...</p>
-                ) : destinations.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {destinations.map((dest) => (
-                      <div key={dest.id} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id={`dest-${dest.id}`}
-                          checked={formData.destination_ids.includes(dest.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormData({
-                                ...formData,
-                                destination_ids: [
-                                  ...formData.destination_ids,
-                                  dest.id,
-                                ],
-                              })
-                            } else {
-                              setFormData({
-                                ...formData,
-                                destination_ids:
-                                  formData.destination_ids.filter(
-                                    (id) => id !== dest.id,
-                                  ),
-                              })
+              <div className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="guide_mandatory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Checkbox
+                            id="guide_mandatory"
+                            name={field.name}
+                            checked={field.value}
+                            onCheckedChange={(checked) =>
+                              field.onChange(checked === true)
                             }
-                          }}
-                          className="w-4 h-4 rounded border-gray-300"
-                        />
+                          />
+                        </FormControl>
                         <Label
-                          htmlFor={`dest-${dest.id}`}
-                          className="mb-0 text-sm cursor-pointer"
+                          htmlFor="guide_mandatory"
+                          className="cursor-pointer font-normal"
                         >
-                          {typeof dest.name === "string"
-                            ? dest.name
-                            : dest.name?.ar || "Destination"}
+                          المرشد إلزامي لهذه الرحلة
                         </Label>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-text-muted">لا توجد وجهات متاحة</p>
-                )}
-              </div>
-
-              {/* Tour Guide */}
-              <div className="space-y-2">
-                <Label htmlFor="tour_guide_id">المرشد (اختياري)</Label>
-                <Select
-                  dir="rtl"
-                  value={formData.tour_guide_id}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      tour_guide_id: value === "none" ? "" : value,
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر المرشد" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">بدون مرشد</SelectItem>
-                    {tourGuides.map((guide) => (
-                      <SelectItem key={guide.ID} value={String(guide.ID)}>
-                        {guide.name} — {guide.price} ج.م
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="guide_price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>سعر المرشد (اختياري)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0"
+                          {...field}
+                        />
+                      </FormControl>
+                      <p className="text-xs text-text-muted">
+                        {form.watch("guide_mandatory")
+                          ? "يُضاف هذا السعر إلى إجمالي كل حجز."
+                          : "يُضاف هذا السعر فقط عند اختيار العميل لمرشد أثناء الحجز."}
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
-          </div>
 
-          {/* Pricing Section */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
-              الأسعار والإلغاء
-            </h2>
-            <div className="grid gap-4">
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">السعر للمصريين</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price: e.target.value })
-                    }
-                    placeholder="180"
-                    required
+            {/* Schedule Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                الجدول الزمني
+              </h2>
+              <div className="grid gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="from"
+                    render={({ field, fieldState }) => (
+                      <FormItem>
+                        <FormLabel>من تاريخ</FormLabel>
+                        <FormControl>
+                          <DateTimePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="تاريخ البدء"
+                            required
+                            id="from"
+                            aria-invalid={!!fieldState.error}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {formData.is_tour && (
-                    <p className="text-xs text-duck-cyan">
-                      السعر لكل ضيف في الساعة
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="foreigner_price">السعر للأجانب</Label>
-                  <Input
-                    id="foreigner_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.foreigner_price}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        foreigner_price: e.target.value,
-                      })
-                    }
-                    placeholder="250"
+                  <FormField
+                    control={form.control}
+                    name="to"
+                    render={({ field, fieldState }) => (
+                      <FormItem>
+                        <FormLabel>إلى تاريخ</FormLabel>
+                        <FormControl>
+                          <DateTimePicker
+                            value={field.value ?? undefined}
+                            onChange={field.onChange}
+                            placeholder="تاريخ الانتهاء"
+                            id="to"
+                            aria-invalid={!!fieldState.error}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {formData.is_tour && (
-                    <p className="text-xs text-duck-cyan">
-                      السعر لكل ضيف في الساعة
-                    </p>
-                  )}
+                  <FormField
+                    control={form.control}
+                    name="duration"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {form.watch("is_tour")
+                            ? "المدة الافتراضية (ساعات)"
+                            : "المدة (ساعات)"}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={form.watch("is_tour") ? 0 : 1}
+                            placeholder={form.watch("is_tour") ? "0" : "1"}
+                            {...field}
+                          />
+                        </FormControl>
+                        {form.watch("is_tour") && (
+                          <p className="text-xs text-text-muted">
+                            العميل يحدد عدد الساعات عند الحجز
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="max_guests"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>عدد الاشخاص الأقصى</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="10" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="display_order"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ترتيب العرض</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            {...field}
+                          />
+                        </FormControl>
+                        <p className="text-xs text-text-muted">
+                          الأقل يظهر أولاً في قائمة الرحلات.
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currency">العملة</Label>
-                  <Select
-                    dir="rtl"
-                    value={formData.currency}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, currency: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currencies.map((currency) => (
-                        <SelectItem key={currency.value} value={currency.value}>
-                          {currency.label}
-                        </SelectItem>
+              </div>
+            </div>
+
+            {/* Images Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5" />
+                الصور
+              </h2>
+              <div className="grid gap-4">
+                {/* Existing images (edit mode) */}
+                {mode === "edit" && existingImageUrls.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">الصور الحالية</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {existingImageUrls.map((url, index) => (
+                        <div
+                          key={`existing-${index}`}
+                          className="relative aspect-square rounded border border-gray-300 overflow-hidden bg-gray-100"
+                        >
+                          <ImageWithLogoFallback
+                            fill
+                            sizes="(max-width: 768px) 33vw, 200px"
+                            src={resolveImageUrl(url) ?? url}
+                            alt={`صورة الرحلة ${index + 1}`}
+                            className="object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeExistingImage(index)}
+                            className="absolute top-1 start-1 rounded bg-red-500 text-white text-xs px-2 py-1"
+                          >
+                            حذف
+                          </button>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                    </div>
+                  </div>
+                )}
 
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="refundable"
-                  checked={formData.refundable}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, refundable: checked === true })
-                  }
-                />
-                <Label
-                  htmlFor="refundable"
-                  className="cursor-pointer font-normal"
-                >
-                  قابل للاسترداد
-                </Label>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cancelation_policy_ar">
-                    سياسة الإلغاء (عربي)
-                  </Label>
-                  <Textarea
-                    id="cancelation_policy_ar"
-                    value={formData.cancelation_policy_ar}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        cancelation_policy_ar: e.target.value,
-                      })
-                    }
-                    placeholder="مثال: يمكن الإلغاء قبل 24 ساعة من موعد الرحلة"
-                    rows={3}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cancelation_policy_en">
-                    سياسة الإلغاء (English)
-                  </Label>
-                  <Textarea
-                    id="cancelation_policy_en"
-                    value={formData.cancelation_policy_en}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        cancelation_policy_en: e.target.value,
-                      })
-                    }
-                    placeholder="Example: Cancellation allowed 24 hours before trip"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Guide Section */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              المرشد
-            </h2>
-            <div className="grid gap-4">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="guide_mandatory"
-                  checked={formData.guide_mandatory}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      guide_mandatory: checked === true,
-                    })
-                  }
-                />
-                <Label
-                  htmlFor="guide_mandatory"
-                  className="cursor-pointer font-normal"
-                >
-                  المرشد إلزامي لهذه الرحلة
-                </Label>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="guide_price">سعر المرشد (اختياري)</Label>
-                <Input
-                  id="guide_price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.guide_price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, guide_price: e.target.value })
-                  }
-                  placeholder="0"
-                />
-                <p className="text-xs text-text-muted">
-                  {formData.guide_mandatory
-                    ? "يُضاف هذا السعر إلى إجمالي كل حجز."
-                    : "يُضاف هذا السعر فقط عند اختيار العميل لمرشد أثناء الحجز."}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Schedule Section */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              الجدول الزمني
-            </h2>
-            <div className="grid gap-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label>من تاريخ</Label>
-                  <DateTimePicker
-                    value={fromDate}
-                    onChange={setFromDate}
-                    placeholder="تاريخ البدء"
-                    required
-                    id="from"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>إلى تاريخ</Label>
-                  <DateTimePicker
-                    value={toDate}
-                    onChange={setToDate}
-                    placeholder="تاريخ الانتهاء"
-                    id="to"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="duration">
-                    {formData.is_tour
-                      ? "المدة الافتراضية (ساعات)"
-                      : "المدة (ساعات)"}
+                  <Label htmlFor="images">
+                    {mode === "edit" ? "اضافة صور جديدة" : "اختر صور الرحلة"}
                   </Label>
                   <Input
-                    id="duration"
-                    type="number"
-                    min={formData.is_tour ? 0 : 1}
-                    value={formData.duration}
-                    onChange={(e) =>
-                      setFormData({ ...formData, duration: e.target.value })
-                    }
-                    placeholder={formData.is_tour ? "0" : "1"}
-                  />
-                  {formData.is_tour && (
-                    <p className="text-xs text-text-muted">
-                      العميل يحدد عدد الساعات عند الحجز
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="max_guests">عدد الاشخاص الأقصى</Label>
-                  <Input
-                    id="max_guests"
-                    type="number"
-                    value={formData.max_guests}
-                    onChange={(e) =>
-                      setFormData({ ...formData, max_guests: e.target.value })
-                    }
-                    placeholder="10"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="display_order">ترتيب العرض</Label>
-                  <Input
-                    id="display_order"
-                    type="number"
-                    min="0"
-                    value={formData.display_order}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        display_order: e.target.value,
-                      })
-                    }
-                    placeholder="0"
+                    id="images"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="cursor-pointer"
                   />
                   <p className="text-xs text-text-muted">
-                    الأقل يظهر أولاً في قائمة الرحلات.
+                    يمكنك اختيار عدة صور. سيتم تحميلها تلقائياً عند حفظ الرحلة.
                   </p>
                 </div>
+
+                {imageFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">الصور المختارة:</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {imageFiles.map((file, index) => (
+                        <div
+                          key={`new-${index}`}
+                          className="relative w-full aspect-square bg-gray-100 rounded border border-gray-300 flex items-center justify-center overflow-hidden"
+                        >
+                          {file.type.startsWith("image/") && (
+                            <ImgWithLogoFallback
+                              src={URL.createObjectURL(file)}
+                              alt={`معاينة ${index + 1}`}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeNewImage(index)}
+                            className="absolute top-1 start-1 rounded bg-red-500 text-white text-xs px-2 py-1"
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
 
-          {/* Images Section */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
-              <ImageIcon className="w-5 h-5" />
-              الصور
-            </h2>
-            <div className="grid gap-4">
-              {/* Existing images (edit mode) */}
-              {mode === "edit" && existingImageUrls.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">الصور الحالية</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {existingImageUrls.map((url, index) => (
-                      <div
-                        key={`existing-${index}`}
-                        className="relative aspect-square rounded border border-gray-300 overflow-hidden bg-gray-100"
-                      >
-                        <ImageWithLogoFallback
-                          fill
-                          sizes="(max-width: 768px) 33vw, 200px"
-                          src={resolveImageUrl(url) ?? url}
-                          alt={`صورة الرحلة ${index + 1}`}
-                          className="object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeExistingImage(index)}
-                          className="absolute top-1 start-1 rounded bg-red-500 text-white text-xs px-2 py-1"
-                        >
-                          حذف
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="images">
-                  {mode === "edit" ? "اضافة صور جديدة" : "اختر صور الرحلة"}
-                </Label>
-                <Input
-                  id="images"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="cursor-pointer"
-                />
-                <p className="text-xs text-text-muted">
-                  يمكنك اختيار عدة صور. سيتم تحميلها تلقائياً عند حفظ الرحلة.
+            {/* Validation error summary — appears where the user's eyes already are */}
+            {Object.keys(fieldErrors).length > 0 && (
+              <div
+                role="alert"
+                aria-live="polite"
+                className="border border-red-200 bg-red-50 rounded-lg p-4"
+              >
+                <p className="font-semibold text-red-900 mb-2">
+                  يوجد أخطاء في الحقول التالية:
                 </p>
-              </div>
-
-              {imageFiles.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">الصور المختارة:</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {imageFiles.map((file, index) => (
-                      <div
-                        key={`new-${index}`}
-                        className="relative w-full aspect-square bg-gray-100 rounded border border-gray-300 flex items-center justify-center overflow-hidden"
+                <ul className="space-y-1">
+                  {Object.entries(fieldErrors).map(([key, err]) => (
+                    <li key={key}>
+                      <button
+                        type="button"
+                        onClick={() => focusFirstError([key])}
+                        className="text-red-700 text-sm underline hover:text-red-900 text-start"
                       >
-                        {file.type.startsWith("image/") && (
-                          <ImgWithLogoFallback
-                            src={URL.createObjectURL(file)}
-                            alt={`معاينة ${index + 1}`}
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeNewImage(index)}
-                          className="absolute top-1 start-1 rounded bg-red-500 text-white text-xs px-2 py-1"
-                        >
-                          حذف
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+                        {FIELD_LABELS[key] ?? key}
+                        {err?.message ? `: ${String(err.message)}` : ""}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          {/* Submit Buttons */}
-          <div className="flex gap-4">
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy font-bold"
-            >
-              {isLoading
-                ? "جاري الحفظ..."
-                : mode === "edit"
-                  ? "حفظ التغييرات"
-                  : formData.is_tour
-                    ? "حفظ الجولة"
-                    : "حفظ الرحلة"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={isLoading}
-            >
-              إلغاء
-            </Button>
-          </div>
-        </form>
+            {/* Submit Buttons */}
+            <div className="flex gap-4">
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy font-bold"
+              >
+                {isLoading
+                  ? "جاري الحفظ..."
+                  : mode === "edit"
+                    ? "حفظ التغييرات"
+                    : form.watch("is_tour")
+                      ? "حفظ الجولة"
+                      : "حفظ الرحلة"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={isLoading}
+              >
+                إلغاء
+              </Button>
+            </div>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   )
