@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { X } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -19,6 +20,7 @@ interface BeforeInstallPromptEvent extends Event {
  * naturally stays hidden on iOS Safari and for already-installed users.
  */
 export function InstallPrompt() {
+  const t = useTranslations("installPrompt")
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null)
 
@@ -61,20 +63,20 @@ export function InstallPrompt() {
           className="h-10 w-10 rounded-lg"
         />
         <div className="flex-1 text-sm">
-          <p className="font-bold text-duck-navy">ثبّت التطبيق</p>
-          <p className="text-text-muted">وصول أسرع من شاشتك الرئيسية</p>
+          <p className="font-bold text-duck-navy">{t("title")}</p>
+          <p className="text-text-muted">{t("description")}</p>
         </div>
         <Button
           onClick={install}
           size="sm"
           className="bg-duck-yellow text-duck-navy font-bold hover:bg-duck-yellow-hover"
         >
-          تثبيت
+          {t("install")}
         </Button>
         <button
           type="button"
           onClick={dismiss}
-          aria-label="إغلاق"
+          aria-label={t("dismiss")}
           className="text-text-muted hover:text-text-dark"
         >
           <X className="h-4 w-4" />

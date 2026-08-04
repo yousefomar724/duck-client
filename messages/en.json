@@ -702,5 +702,11 @@
       "title": "Water Sports & Nile Adventures in Aswan",
       "description": "Kayak, stand up paddle and water bike trips on the Nile around Elephantine Island, Aswan. Book guided water adventures with Duck Entertainment."
     }
+  },
+  "installPrompt": {
+    "title": "Install the app",
+    "description": "Faster access from your home screen",
+    "install": "Install",
+    "dismiss": "Close"
   }
 }
