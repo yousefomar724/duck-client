@@ -124,17 +124,28 @@ export default function Footer() {
             <h3 className="text-base font-bold mb-6">{t("company")}</h3>
             <ul className="space-y-3 text-white/70 text-sm">
               {[
-                t("aboutUs"),
-                t("ourTeam"),
-                t("safetyInfo"),
-                t("bookingPolicy"),
-              ].map((link) => (
-                <li key={link}>
-                  <a href="#" className="hover:text-white transition-colors">
-                    {link}
-                  </a>
-                </li>
-              ))}
+                { label: t("aboutUs"), href: "/about" },
+                { label: t("ourTeam"), href: "#" },
+                { label: t("safetyInfo"), href: "#" },
+                { label: t("bookingPolicy"), href: "#" },
+              ].map(({ label, href }) =>
+                href === "#" ? (
+                  <li key={label}>
+                    <a href="#" className="hover:text-white transition-colors">
+                      {label}
+                    </a>
+                  </li>
+                ) : (
+                  <li key={label}>
+                    <Link
+                      href={href}
+                      className="hover:text-white transition-colors"
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                ),
+              )}
             </ul>
           </div>
 

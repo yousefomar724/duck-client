@@ -70,7 +70,8 @@ export default function MapPageClient() {
   }, [locations, activeFilter])
 
   const handleMarkerClick = useCallback((event: MarkerClickEvent) => {
-    mapRef.current?.setView(event.location.coordinates, FOCUSED_ZOOM)
+    const [lat, lng] = event.location.coordinates
+    mapRef.current?.flyTo({ center: [lng, lat], zoom: FOCUSED_ZOOM })
     setSelectedLocation(event.location)
     setAnchorPoint(event.point)
     setPopoverOpen(true)

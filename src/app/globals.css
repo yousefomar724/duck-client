@@ -146,6 +146,24 @@
     width: 100% !important;
     height: 100% !important;
   }
+  .maplibregl-popup-content {
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+  }
+  .maplibregl-popup-tip {
+    @apply hidden!;
+  }
+  .maplibregl-ctrl-attrib {
+    @apply bg-background! text-muted-foreground! border-border! rounded-md! border! shadow-sm!;
+  }
+  .maplibregl-ctrl-attrib a {
+    @apply text-muted-foreground!;
+  }
+  .maplibregl-ctrl-attrib a:hover {
+    @apply text-foreground!;
+  }
+  .maplibregl-ctrl-attrib-button {
+    @apply bg-transparent! dark:invert;
+  }
 }
 
 @layer utilities {
@@ -178,22 +196,10 @@
   }
 }
 
-/* Leaflet — inherit our Arabic typography and tone down the required
-   OpenStreetMap/CARTO attribution so it reads as a caption, not a control. */
-.leaflet-container {
+/* MapLibre — inherit our Arabic typography. The required OpenStreetMap/CARTO
+   attribution chip is themed via the .maplibregl-ctrl-attrib rules above
+   (added by the mapcn install), using the same semantic tokens as the rest
+   of the site, so it already tracks light/dark automatically. */
+.maplibregl-map {
   font-family: inherit;
-  font-size: inherit;
-}
-
-.leaflet-control-attribution {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(4px);
-  color: var(--text-muted);
-  font-size: 10px;
-  line-height: 1.6;
-  padding: 0 6px;
-}
-
-.leaflet-control-attribution a {
-  color: var(--text-body);
 }

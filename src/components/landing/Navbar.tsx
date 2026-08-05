@@ -81,6 +81,7 @@ export default function Navbar() {
     { key: "locations", href: "/#locations" },
     { key: "experiences", href: "/#experiences" },
     { key: "faq", href: "/#faq" },
+    { key: "about", href: "/about" },
     { key: "contact", href: "/contact" },
   ] as const
 

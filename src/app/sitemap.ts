@@ -14,6 +14,7 @@ const ROUTES: Array<{
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/book", priority: 0.9, changeFrequency: "weekly" },
   { path: "/map", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/about", priority: 0.6, changeFrequency: "yearly" },
   { path: "/contact", priority: 0.5, changeFrequency: "yearly" },
 ]
 

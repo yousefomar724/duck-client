@@ -20,6 +20,7 @@
     "hooks": "@/hooks"
   },
   "registries": {
+    "@mapcn": "https://mapcn.vercel.app/r/{name}.json",
     "@aceternity": "https://ui.aceternity.com/registry/{name}.json",
     "@abui": "https://abui.io/r/{name}.json",
     "@8starlabs-ui": "https://ui.8starlabs.com/r/{name}.json",

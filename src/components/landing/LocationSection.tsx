@@ -148,7 +148,7 @@ export default function LocationSection() {
       <div className="max-w-[1920px] mx-auto px-4 md:px-10">
         {/* Header */}
         <div className="text-center mb-12">
-          <span className="text-teal-primary text-base block mb-3">
+          <span className="text-duck-cyan text-base block mb-3">
             {t("subtitle")}
           </span>
           <h2 className="text-text-dark text-4xl md:text-5xl font-bold mb-4">
@@ -182,8 +182,8 @@ export default function LocationSection() {
           ref={mapContainerRef}
           className="relative w-full aspect-video max-h-[600px] mb-4 rounded-3xl shadow-sm overflow-hidden max-w-5xl mx-auto"
         >
-          {/* z-0 isolates Leaflet's internal panes (z-index 400+) so the
-              overlay link below still paints on top of the map. */}
+          {/* z-0 isolates the map's own stacking context so the overlay link
+              below still paints on top of it. */}
           <div className="absolute inset-0 z-0">
             <MapView
               locations={filteredLocations}

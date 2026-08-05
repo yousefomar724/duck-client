@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored third-party script (self-hosted MapLibre RTL text plugin).
+    "public/mapbox-gl-rtl-text.js",
   ]),
 ]);
 
