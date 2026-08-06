@@ -34,13 +34,26 @@ const MAX_ZOOM = 19
  */
 const RTL_PLUGIN_URL = "/mapbox-gl-rtl-text.js"
 
-if (
-  typeof window !== "undefined" &&
-  maplibregl.getRTLTextPluginStatus() === "unavailable"
-) {
-  void maplibregl.setRTLTextPlugin(RTL_PLUGIN_URL, true).catch(() => {
-    // Arabic labels fall back to default shaping; non-fatal.
-  })
+/**
+ * MapLibre decodes vector tiles in a Web Worker whose URL it derives from
+ * `import.meta.url`, assuming `maplibre-gl-worker.mjs` sits next to the main
+ * bundle. Turbopack emits the bundle into `_next/static/chunks/` without that
+ * sibling, so the worker 404s (the dev server answers with an HTML page, which
+ * fails module MIME checking), every tile request hangs in `loading` forever,
+ * and the map paints as an empty background with no error on the map itself.
+ * `scripts/copy-maplibre-worker.mjs` copies the worker into `public/maplibre/`
+ * on postinstall so this path is always present and version-matched.
+ */
+const WORKER_URL = "/maplibre/maplibre-gl-worker.mjs"
+
+if (typeof window !== "undefined") {
+  maplibregl.setWorkerUrl(WORKER_URL)
+
+  if (maplibregl.getRTLTextPluginStatus() === "unavailable") {
+    void maplibregl.setRTLTextPlugin(RTL_PLUGIN_URL, true).catch(() => {
+      // Arabic labels fall back to default shaping; non-fatal.
+    })
+  }
 }
 
 function toLngLat([lat, lng]: [number, number]): [number, number] {
@@ -182,49 +195,13 @@ function MapReadyBridge({
   return null
 }
 
-const REPAINT_NUDGE_INTERVAL_MS = 250
-const REPAINT_NUDGE_MAX_ATTEMPTS = 40
-
 /**
- * MapLibre's own render loop schedules repaints via requestAnimationFrame,
- * which some hosting contexts (embedded/backgrounded preview panes, hidden
- * tabs on initial mount) throttle or fully suspend — leaving the canvas
- * blank forever even though the style, source, and tiles all loaded fine.
- * Leaflet's `<img>`-tile rendering never depended on rAF, so this class of
- * bug didn't exist before this migration.
- *
- * `map.triggerRepaint()` alone doesn't help here: it only queues another
- * rAF-bound render, and if rAF itself never fires, none of those queued
- * renders ever run either — confirmed by directly instrumenting a stuck map
- * in a hidden/non-compositing context. Calling the internal `_render` pass
- * directly bypasses rAF entirely and reliably paints a frame; it's
- * undocumented (no public "force render now" API exists), but is the
- * standard workaround cited across maplibre-gl/mapbox-gl issues for maps
- * mounted while hidden (e.g. inside a collapsed tab or modal).
+ * A map mounted while its tab/pane is hidden can leave its render loop idle,
+ * and becoming visible again doesn't itself schedule a repaint.
  */
-function RenderKickstart() {
-  const { map, isLoaded } = useMap()
+function VisibilityRepaint() {
+  const { map } = useMap()
 
-  useEffect(() => {
-    if (!map || isLoaded) return
-
-    const forceRender = map as unknown as { _render: (time: number) => void }
-    let attempts = 0
-    const interval = setInterval(() => {
-      attempts += 1
-      if (map.loaded() || attempts >= REPAINT_NUDGE_MAX_ATTEMPTS) {
-        clearInterval(interval)
-        return
-      }
-      forceRender._render(performance.now())
-    }, REPAINT_NUDGE_INTERVAL_MS)
-
-    return () => clearInterval(interval)
-  }, [map, isLoaded])
-
-  // Resuming from a hidden tab (or an embedded preview pane becoming visible)
-  // doesn't automatically repaint a canvas whose render loop went idle while
-  // hidden.
   useEffect(() => {
     if (!map) return
     const handleVisibilityChange = () => {
@@ -367,7 +344,7 @@ export default function MapView({
       >
         <FitBounds locations={locations} />
         <BrandTint mapStyle={mapStyle} locale={locale} />
-        <RenderKickstart />
+        <VisibilityRepaint />
         {onMapReady ? <MapReadyBridge onMapReady={onMapReady} /> : null}
         {locations.map((location) => (
           <LocationMarker
