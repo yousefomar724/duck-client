@@ -226,8 +226,19 @@ export default function Footer() {
 
       {/* Footer Bottom */}
       <div className="bg-dark-bg-deeper py-6 px-4 md:px-10 border-t border-white/5">
-        <div className="text-center text-sm text-white/50">
-          {t("copyright", { year: new Date().getFullYear() })}
+        <div className="text-center text-sm text-white/50 space-y-1">
+          <p>{t("copyright", { year: new Date().getFullYear() })}</p>
+          <p>
+            {t("poweredBy")}{" "}
+            <a
+              href="https://alefmenu.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/70 hover:text-white transition-colors"
+            >
+              Alef
+            </a>
+          </p>
         </div>
       </div>
     </footer>

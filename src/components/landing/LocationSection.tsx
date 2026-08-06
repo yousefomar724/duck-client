@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils"
 import { getDestinations } from "@/lib/api/destinations"
 import { getTrips } from "@/lib/api/trips"
 import { getSuppliers } from "@/lib/api/suppliers"
-import { getTourGuides } from "@/lib/api/tour-guides"
+import { CLIENTS_COUNT } from "@/lib/constants"
+import { CountUpNumber } from "@/components/shared/count-up-number"
+import { useInViewOnce } from "@/hooks/use-in-view-once"
 import {
   type ActivityFilter,
   destinationsToMapLocations,
@@ -49,13 +51,14 @@ export default function LocationSection() {
     destinations: number | null
     trips: number | null
     suppliers: number | null
-    tourGuides: number | null
   }>({
     destinations: null,
     trips: null,
     suppliers: null,
-    tourGuides: null,
   })
+
+  const statsRef = useRef<HTMLDivElement | null>(null)
+  const statsInView = useInViewOnce(statsRef)
 
   const statCards = useMemo(
     () => [
@@ -75,9 +78,10 @@ export default function LocationSection() {
         desc: t("statSuppliersDesc"),
       },
       {
-        value: statCounts.tourGuides,
-        unit: t("statGuidesUnit"),
-        desc: t("statGuidesDesc"),
+        value: CLIENTS_COUNT,
+        suffix: "+",
+        unit: t("statClientsUnit"),
+        desc: t("statClientsDesc"),
       },
     ],
     [statCounts, t],
@@ -114,11 +118,10 @@ export default function LocationSection() {
   useEffect(() => {
     let cancelled = false
     void (async () => {
-      const [destRes, tripsRes, suppliersRes, guidesRes] = await Promise.all([
+      const [destRes, tripsRes, suppliersRes] = await Promise.all([
         getDestinations(locale, "active"),
         getTrips(locale),
         getSuppliers(locale),
-        getTourGuides(),
       ])
       if (cancelled) return
       if (destRes.data) {
@@ -130,7 +133,6 @@ export default function LocationSection() {
         destinations: destRes.error ? null : (destRes.data?.length ?? 0),
         trips: tripsRes.error ? null : (tripsRes.data?.length ?? 0),
         suppliers: suppliersRes.error ? null : (suppliersRes.data?.length ?? 0),
-        tourGuides: guidesRes.error ? null : (guidesRes.data?.length ?? 0),
       })
     })()
     return () => {
@@ -213,6 +215,7 @@ export default function LocationSection() {
 
         {/* Access Info */}
         <div
+          ref={statsRef}
           className="flex flex-wrap justify-center gap-4 mb-8"
           dir={locale === "ar" ? "rtl" : "ltr"}
         >
@@ -222,7 +225,11 @@ export default function LocationSection() {
               className="flex-1 min-w-[200px] max-w-[240px] bg-text-body text-white p-6 rounded-xl text-center flex flex-col items-center justify-center"
             >
               <div className="text-4xl font-bold mb-1 tabular-nums">
-                {item.value === null ? "—" : item.value}
+                <CountUpNumber
+                  value={item.value}
+                  active={statsInView}
+                  suffix={"suffix" in item ? item.suffix : undefined}
+                />
               </div>
               <div className="text-lg mb-2">{item.unit}</div>
               <div className="text-white/70 text-xs">{item.desc}</div>

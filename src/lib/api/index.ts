@@ -9,3 +9,4 @@ export * as destinationsApi from './destinations';
 export * as payoutsApi from './payouts';
 export * as tourGuidesApi from './tour-guides';
 export * as supplierStorageApi from './supplier-storage';
+export * as feedbackApi from './feedback';

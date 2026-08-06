@@ -115,8 +115,8 @@
     "statTripsDesc": "Bookable experiences available",
     "statSuppliersUnit": "Partners",
     "statSuppliersDesc": "Verified service providers",
-    "statGuidesUnit": "Tour guides",
-    "statGuidesDesc": "Professional guides available"
+    "statClientsUnit": "Clients",
+    "statClientsDesc": "Happy adventurers served"
   },
   "mapPage": {
     "metadata": {
@@ -215,6 +215,7 @@
     "faqLink": "FAQ",
     "contactUs": "Contact Us",
     "copyright": "© {year} Duck Entertainment. All rights reserved.",
+    "poweredBy": "Powered by",
     "backToTop": "Back to top",
     "instagram": "Duck Entertainment on Instagram",
     "facebook": "Duck Entertainment on Facebook",
@@ -748,6 +749,28 @@
       "title": "Water Sports & Nile Adventures in Aswan",
       "description": "Kayak, stand up paddle and water bike trips on the Nile around Elephantine Island, Aswan. Book guided water adventures with Duck Entertainment."
     }
+  },
+  "feedback": {
+    "titleGeneral": "Share your feedback",
+    "titleBooking": "How was your booking experience?",
+    "subtitle": "Your feedback helps us improve",
+    "ratingLabel": "Your rating",
+    "ratingOption": "{value} stars",
+    "commentLabel": "Tell us more (optional)",
+    "commentPlaceholder": "What did you enjoy? What could be better?",
+    "addContact": "Add your name or contact (optional)",
+    "nameLabel": "Name",
+    "namePlaceholder": "Your name",
+    "contactLabel": "Email or phone",
+    "contactPlaceholder": "So we can follow up if needed",
+    "submit": "Send feedback",
+    "submitting": "Sending...",
+    "thankYou": "Thank you!",
+    "thankYouBody": "We appreciate you taking the time to share your thoughts.",
+    "fabAriaLabel": "Give feedback",
+    "promptTitle": "How was your experience?",
+    "promptBody": "We'd love to hear from you. It only takes a moment.",
+    "promptCta": "Share feedback"
   },
   "installPrompt": {
     "title": "Install the app",

@@ -115,8 +115,8 @@
     "statTripsDesc": "خيارات حجز متاحة",
     "statSuppliersUnit": "شركاء",
     "statSuppliersDesc": "مزودو خدمات معتمدون",
-    "statGuidesUnit": "مرشدين",
-    "statGuidesDesc": "مرشدون سياحيون متاحون"
+    "statClientsUnit": "عملاء",
+    "statClientsDesc": "مغامرون سعداء"
   },
   "mapPage": {
     "metadata": {
@@ -215,6 +215,7 @@
     "faqLink": "الأسئلة الشائعة",
     "contactUs": "تواصل معنا",
     "copyright": "© {year} Duck Entertainment. جميع الحقوق محفوظة.",
+    "poweredBy": "مدعوم من",
     "backToTop": "العودة إلى الأعلى",
     "instagram": "داك إنترتينمنت على إنستغرام",
     "facebook": "داك إنترتينمنت على فيسبوك",
@@ -748,6 +749,28 @@
       "title": "الرياضات المائية ومغامرات النيل في أسوان",
       "description": "رحلات الكاياك والتجديف ودراجات الماء على نهر النيل حول جزيرة إلفنتين بأسوان. احجز مغامراتك المائية مع داك إنترتينمنت."
     }
+  },
+  "feedback": {
+    "titleGeneral": "شاركنا رأيك",
+    "titleBooking": "كيف كانت تجربة الحجز؟",
+    "subtitle": "ملاحظاتك تساعدنا على التحسين",
+    "ratingLabel": "تقييمك",
+    "ratingOption": "{value} نجوم",
+    "commentLabel": "أخبرنا المزيد (اختياري)",
+    "commentPlaceholder": "ما الذي أعجبك؟ وما الذي يمكن تحسينه؟",
+    "addContact": "أضف اسمك أو وسيلة التواصل (اختياري)",
+    "nameLabel": "الاسم",
+    "namePlaceholder": "اسمك",
+    "contactLabel": "البريد أو الهاتف",
+    "contactPlaceholder": "لنتواصل معك عند الحاجة",
+    "submit": "إرسال الملاحظات",
+    "submitting": "جارٍ الإرسال...",
+    "thankYou": "شكراً لك!",
+    "thankYouBody": "نقدّر وقتك في مشاركة رأيك معنا.",
+    "fabAriaLabel": "إرسال ملاحظات",
+    "promptTitle": "كيف كانت تجربتك؟",
+    "promptBody": "يسعدنا سماع رأيك. لن يستغرق الأمر سوى لحظات.",
+    "promptCta": "شارك رأيك"
   },
   "installPrompt": {
     "title": "ثبّت التطبيق",

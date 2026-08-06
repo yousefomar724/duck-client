@@ -36,6 +36,7 @@ import { formatCurrency } from "@/lib/constants"
 import { useToast } from "@/lib/stores/toast-store"
 import { cn } from "@/lib/utils"
 import { buildWhatsAppHref } from "@/lib/support-contact"
+import { FeedbackPromptCard } from "@/components/feedback/feedback-prompt-card"
 
 const OFFICE_MAPS_URL = "https://maps.app.goo.gl/FPt8JJ8VgaTTzBir6"
 const SUPPORT_PHONE_DISPLAY = "+20 15 5006 1006"
@@ -420,6 +421,12 @@ function BookingSuccessContent() {
               <li>{t("tipBringSwimwear")}</li>
               <li>{t("tipLifeJacket")}</li>
             </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="border-duck-cyan/30 bg-white shadow-xl">
+          <CardContent className="pt-6">
+            <FeedbackPromptCard bookingRef={orderRef || undefined} />
           </CardContent>
         </Card>
 

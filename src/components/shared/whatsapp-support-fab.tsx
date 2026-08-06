@@ -31,26 +31,16 @@ export function WhatsAppSupportFab() {
       rel="noopener noreferrer"
       aria-label={t("supportWhatsappAriaLabel")}
       className={cn(
-        "group fixed z-50 flex h-12 min-h-12 min-w-12 items-center gap-2 rounded-full border border-duck-cyan/40 bg-white/95 p-1 text-duck-navy shadow-[0_8px_30px_rgba(18,21,40,0.12)] backdrop-blur-sm",
+        "fixed z-50 flex h-12 min-h-12 min-w-12 items-center gap-2 rounded-full border border-duck-cyan/40 bg-white/95 p-1 text-duck-navy shadow-[0_8px_30px_rgba(18,21,40,0.12)] backdrop-blur-sm",
         "bottom-[max(1rem,env(safe-area-inset-bottom,0px))]",
         "inset-e-[max(1rem,env(safe-area-inset-end,0px))]",
-        "motion-reduce:transition-none",
-        "motion-safe:transition-[transform,box-shadow,border-color] motion-safe:duration-320",
-        "motion-safe:ease-[cubic-bezier(0.28,1.18,0.4,1)]",
-        "motion-safe:hover:-translate-y-1.5 motion-safe:hover:scale-[1.04]",
-        "motion-safe:hover:border-duck-cyan/65",
-        "motion-safe:hover:shadow-[0_14px_36px_rgba(6,123,161,0.22)]",
-        "motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99]",
+        "transition-[box-shadow,border-color] duration-200",
+        "hover:border-duck-cyan/65 hover:shadow-[0_14px_36px_rgba(6,123,161,0.22)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-duck-cyan focus-visible:ring-offset-2",
       )}
     >
       <span
-        className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white",
-          "motion-reduce:transition-none",
-          "motion-safe:transition-transform motion-safe:duration-320 motion-safe:ease-[cubic-bezier(0.28,1.18,0.4,1)]",
-          "motion-safe:group-hover:scale-110 motion-reduce:group-hover:scale-100",
-        )}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white"
         aria-hidden
       >
         <WhatsappIcon className="h-5 w-5" />

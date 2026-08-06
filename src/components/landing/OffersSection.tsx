@@ -243,7 +243,7 @@ export default function OffersSection() {
               Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex-[0_0_90%] md:max-w-280 min-w-0 me-6 rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row animate-pulse"
+                  className="flex-[0_0_80%] sm:flex-[0_0_85%] lg:flex-[0_0_90%] md:max-w-280 min-w-0 me-6 rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col md:flex-row animate-pulse"
                 />
               ))
             ) : error ? (
@@ -288,7 +288,7 @@ export default function OffersSection() {
                 return (
                   <div
                     key={trip.id}
-                    className="flex-[0_0_90%] lg:max-w-280 min-w-0 me-6 relative rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col lg:flex-row min-h-0 group"
+                    className="flex-[0_0_80%] sm:flex-[0_0_85%] lg:flex-[0_0_90%] lg:max-w-280 min-w-0 me-6 relative rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] bg-white flex flex-col lg:flex-row min-h-0 group"
                   >
                     {/* Image Side — aspect box gives real height; fill images do not size the flex row (Embla would be 0px otherwise) */}
                     <div
@@ -325,7 +325,7 @@ export default function OffersSection() {
                                       src={imageUrl}
                                       alt={`${tripName} - ${t("imageAlt", { index: i + 1 })}`}
                                       fill
-                                      sizes="(max-width: 768px) 90vw, min(560px, 40vw)"
+                                      sizes="(max-width: 768px) 80vw, min(560px, 40vw)"
                                       className={
                                         isPlaceholderSlide
                                           ? "object-contain bg-gray-100 p-6"

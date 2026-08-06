@@ -251,11 +251,6 @@ function LocationMarker({
   const dimmed = isComingSoon && !isSelected
   const [lng, lat] = toLngLat(location.coordinates)
 
-  const dropShadow =
-    mapStyle === "dark"
-      ? "drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 1px 3px rgba(0,0,0,0.5))"
-      : "none"
-
   const handleClick = useCallback(() => {
     if (!map) return
     const point = map.project([lng, lat])
@@ -271,6 +266,17 @@ function LocationMarker({
     >
       <MarkerContent>
         <div className="relative" style={{ width: size, height: size }}>
+          {mapStyle === "dark" && (
+            <span
+              className="pointer-events-none absolute left-1/2 top-[35%] z-0 inline-flex -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/25 blur-[6px]"
+              style={{ width: size * 0.7, height: size * 0.7 }}
+              aria-hidden="true"
+            />
+          )}
+          <span
+            className="pointer-events-none absolute bottom-0 left-1/2 z-0 inline-block h-1 w-[60%] -translate-x-1/2 rounded-full bg-black/30 blur-[3px]"
+            aria-hidden="true"
+          />
           {dimmed && (
             <span
               className="pointer-events-none absolute left-1/2 top-1/2 z-0 inline-flex size-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-duck-cyan/40 opacity-75 animate-ping"
@@ -283,7 +289,7 @@ function LocationMarker({
             width={size}
             height={size}
             className="relative z-10 h-full w-full object-contain"
-            style={{ filter: dropShadow, opacity: dimmed ? 0.7 : 1 }}
+            style={{ opacity: dimmed ? 0.7 : 1 }}
           />
         </div>
       </MarkerContent>

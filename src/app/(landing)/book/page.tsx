@@ -18,6 +18,7 @@ import {
   buildWhatsAppHref,
   SUPPORT_WHATSAPP_NUMBER,
 } from "@/lib/support-contact"
+import { FeedbackPromptCard } from "@/components/feedback/feedback-prompt-card"
 import { formatISO, set, startOfDay } from "date-fns"
 import {
   Select,
@@ -1611,6 +1612,10 @@ function BookPageContent() {
                     {t("viewMyBookings")}
                   </a>
                 </div>
+
+                <FeedbackPromptCard
+                  bookingRef={String(manualBookingResult.booking.ID)}
+                />
               </div>
             )}
           </div>

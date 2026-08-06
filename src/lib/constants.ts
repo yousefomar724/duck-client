@@ -7,6 +7,7 @@ import {
   Users,
   Package,
   User,
+  MessageSquare,
   type LucideIcon,
 } from "lucide-react"
 import type { BookingStatus, Payout, PayoutStatus } from "./types"
@@ -16,6 +17,9 @@ export interface NavItem {
   href: string
   icon: LucideIcon
 }
+
+/** Manually maintained marketing stat shown on the landing page location section. */
+export const CLIENTS_COUNT = 1200
 
 export const adminNavItems: NavItem[] = [
   {
@@ -52,6 +56,11 @@ export const adminNavItems: NavItem[] = [
     title: "المرشدين",
     href: "/admin/tour-guides",
     icon: User,
+  },
+  {
+    title: "الآراء",
+    href: "/admin/feedback",
+    icon: MessageSquare,
   },
 ]
 

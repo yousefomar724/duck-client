@@ -154,6 +154,25 @@ export interface TourGuide {
   created_at?: string
 }
 
+export type FeedbackContext = "booking" | "general"
+export type FeedbackStatus = "new" | "read" | "archived"
+
+export interface Feedback {
+  id: string
+  ID: string
+  rating: number
+  comment?: string
+  name?: string
+  contact?: string
+  context: FeedbackContext
+  booking_ref?: string
+  page?: string
+  locale?: string
+  status: FeedbackStatus
+  created_at?: string
+  CreatedAt?: string
+}
+
 export interface ImageStorage {
   id: string
   user_id: string
