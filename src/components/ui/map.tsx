@@ -303,6 +303,16 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       setIsStyleLoaded(true);
     };
     const loadHandler = () => setIsLoaded(true);
+    // `load` requires MapLibre's own fully-settled bookkeeping (no pending
+    // tiles/placement), which some hosting contexts (embedded/backgrounded
+    // preview panes) never reach even once real frames are painting — e.g.
+    // via a manual repaint nudge that bypasses a stalled requestAnimationFrame
+    // loop. The first `render` event means a frame has actually been drawn,
+    // which is a good enough definition of "not loading" for the spinner.
+    const renderHandler = () => {
+      setIsLoaded(true);
+      map.off("render", renderHandler);
+    };
 
     // Viewport change handler - skip if triggered by internal update
     const handleMove = () => {
@@ -312,12 +322,14 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
     map.on("load", loadHandler);
     map.on("style.load", styleLoadHandler);
+    map.on("render", renderHandler);
     map.on("move", handleMove);
     setMapInstance(map);
 
     return () => {
       map.off("load", loadHandler);
       map.off("style.load", styleLoadHandler);
+      map.off("render", renderHandler);
       map.off("move", handleMove);
       map.remove();
       setIsLoaded(false);

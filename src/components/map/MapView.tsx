@@ -182,6 +182,64 @@ function MapReadyBridge({
   return null
 }
 
+const REPAINT_NUDGE_INTERVAL_MS = 250
+const REPAINT_NUDGE_MAX_ATTEMPTS = 40
+
+/**
+ * MapLibre's own render loop schedules repaints via requestAnimationFrame,
+ * which some hosting contexts (embedded/backgrounded preview panes, hidden
+ * tabs on initial mount) throttle or fully suspend — leaving the canvas
+ * blank forever even though the style, source, and tiles all loaded fine.
+ * Leaflet's `<img>`-tile rendering never depended on rAF, so this class of
+ * bug didn't exist before this migration.
+ *
+ * `map.triggerRepaint()` alone doesn't help here: it only queues another
+ * rAF-bound render, and if rAF itself never fires, none of those queued
+ * renders ever run either — confirmed by directly instrumenting a stuck map
+ * in a hidden/non-compositing context. Calling the internal `_render` pass
+ * directly bypasses rAF entirely and reliably paints a frame; it's
+ * undocumented (no public "force render now" API exists), but is the
+ * standard workaround cited across maplibre-gl/mapbox-gl issues for maps
+ * mounted while hidden (e.g. inside a collapsed tab or modal).
+ */
+function RenderKickstart() {
+  const { map, isLoaded } = useMap()
+
+  useEffect(() => {
+    if (!map || isLoaded) return
+
+    const forceRender = map as unknown as { _render: (time: number) => void }
+    let attempts = 0
+    const interval = setInterval(() => {
+      attempts += 1
+      if (map.loaded() || attempts >= REPAINT_NUDGE_MAX_ATTEMPTS) {
+        clearInterval(interval)
+        return
+      }
+      forceRender._render(performance.now())
+    }, REPAINT_NUDGE_INTERVAL_MS)
+
+    return () => clearInterval(interval)
+  }, [map, isLoaded])
+
+  // Resuming from a hidden tab (or an embedded preview pane becoming visible)
+  // doesn't automatically repaint a canvas whose render loop went idle while
+  // hidden.
+  useEffect(() => {
+    if (!map) return
+    const handleVisibilityChange = () => {
+      if (document.hidden) return
+      map.resize()
+      map.triggerRepaint()
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+  }, [map])
+
+  return null
+}
+
 export interface MarkerClickEvent {
   location: WaterActivityLocation
   point: { x: number; y: number }
@@ -309,6 +367,7 @@ export default function MapView({
       >
         <FitBounds locations={locations} />
         <BrandTint mapStyle={mapStyle} locale={locale} />
+        <RenderKickstart />
         {onMapReady ? <MapReadyBridge onMapReady={onMapReady} /> : null}
         {locations.map((location) => (
           <LocationMarker
