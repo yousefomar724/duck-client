@@ -526,12 +526,12 @@ export default function OffersSection() {
               {/* Image carousel */}
               <div
                 dir="ltr"
-                className="relative w-full aspect-4/3 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
+                className="relative w-full aspect-4/3 sm:aspect-16/10 shrink-0 overflow-hidden"
               >
                 <Carousel
                   setApi={setDialogCarouselApi}
                   opts={{ align: "start", loop: true, direction: "ltr" }}
-                  className="h-full w-full relative"
+                  className="absolute inset-0 h-full w-full [&_[data-slot=carousel-content]]:h-full"
                 >
                   <CarouselContent className="h-full ms-0 min-h-full">
                     {dialogDisplayUrls.map((imageUrl, i) => (
@@ -593,7 +593,7 @@ export default function OffersSection() {
               </div>
 
               {/* Content section */}
-              <div className="flex flex-col min-h-0 flex-1">
+              <div className="relative z-10 flex flex-col min-h-0 flex-1 bg-white">
                 <div className="p-4 flex flex-col gap-3">
                   {/* Title */}
                   <div className="mb-0">
@@ -785,7 +785,7 @@ export default function OffersSection() {
         <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogContent
             className={cn(
-              "sm:max-w-2xl! p-0! overflow-hidden text-start",
+              "sm:max-w-2xl! p-0! gap-0! flex flex-col overflow-hidden text-start",
               "bg-white! text-text-dark border-none",
             )}
             dir={locale === "ar" ? "rtl" : "ltr"}
@@ -793,12 +793,12 @@ export default function OffersSection() {
             {/* Image carousel */}
             <div
               dir="ltr"
-              className="relative w-full aspect-4/3 sm:aspect-16/10 shrink-0 overflow-hidden **:data-[slot=carousel-content]:h-full"
+              className="relative w-full aspect-4/3 sm:aspect-16/10 shrink-0 overflow-hidden"
             >
               <Carousel
                 setApi={setDialogCarouselApi}
                 opts={{ align: "start", loop: true, direction: "ltr" }}
-                className="h-full w-full relative"
+                className="absolute inset-0 h-full w-full [&_[data-slot=carousel-content]]:h-full"
               >
                 <CarouselContent className="h-full ms-0 min-h-full">
                   {dialogDisplayUrls.map((imageUrl, i) => (
@@ -860,7 +860,7 @@ export default function OffersSection() {
             </div>
 
             {/* Content section */}
-            <div className="flex flex-col min-h-0 flex-1">
+            <div className="relative z-10 flex flex-col min-h-0 flex-1 overflow-y-auto bg-white">
               <div className="p-4 flex flex-col gap-3">
                 {/* Title */}
                 <DialogHeader className="mb-0">
