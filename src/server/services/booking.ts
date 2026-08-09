@@ -3,6 +3,7 @@ import { Trip } from '../models/trip';
 import type { BookingDoc } from '../models/booking';
 import { isValidResourceType } from './resource-type';
 import { checkAvailability } from './availability';
+import { minimumDeposit } from '@/lib/booking/pricing';
 
 export interface CreateBookingInput {
   trip_id: string;
@@ -18,6 +19,8 @@ export interface CreateBookingInput {
   played_before?: boolean | null;
   hear_about_us?: string;
   referral_text?: string;
+  /** Amount the customer chose to send now (deposit or full); clamped server-side. */
+  declared_amount?: number;
 }
 
 export interface BuiltBooking {
@@ -40,6 +43,8 @@ export interface BuiltBooking {
   played_before?: boolean | null;
   hear_about_us: string;
   referral_text: string;
+  declared_amount: number;
+  amount_paid: number;
 }
 
 export interface ComputeBookingAmountInput {
@@ -148,6 +153,15 @@ export async function buildBooking(
   );
   quantity = computedQuantity;
 
+  // The client-side `min` attribute on the deposit input is not a security
+  // boundary — clamp here to [minimumDeposit(amount), amount]. Anything
+  // outside that range (including omitted/zero) is treated as full payment.
+  const minDeposit = minimumDeposit(amount);
+  const declaredAmount =
+    req.declared_amount && req.declared_amount >= minDeposit && req.declared_amount <= amount
+      ? req.declared_amount
+      : amount;
+
   return {
     order_ref: randomUUID(),
     user_id: userId,
@@ -168,6 +182,8 @@ export async function buildBooking(
     played_before: req.played_before ?? null,
     hear_about_us: req.hear_about_us ?? '',
     referral_text: req.referral_text ?? '',
+    declared_amount: declaredAmount,
+    amount_paid: 0,
   };
 }
 
@@ -229,6 +245,7 @@ export function toBookingEmailData(booking: BookingDoc) {
     hear_about_us: booking.hear_about_us,
     amount: booking.amount,
     currency: booking.currency,
+    declared_amount: booking.declared_amount,
     status: booking.status,
     user_email: populatedUser?.email,
     destination_names: destinationNames,

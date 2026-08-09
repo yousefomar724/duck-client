@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button"
 import StatusBadge from "@/components/shared/status-badge"
 import { TripTypeBadge } from "@/components/shared/trip-type-badge"
 import { PaymentMethodBadge } from "@/components/shared/payment-method-badge"
+import { PaymentStateBadge } from "@/components/shared/payment-state-badge"
 import { DetailField } from "@/components/dashboard/detail-field"
 import { BookingActions, hasBookingActions, type BookingActionType } from "./booking-actions"
 import { bookingStrings } from "./booking-strings"
@@ -36,6 +37,7 @@ import {
   resourceLabels,
   supplierDisplayName,
 } from "@/lib/bookings/status"
+import { amountPaid, remainingAmount } from "@/lib/bookings/payment"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
 import type { Booking, Supplier, TourGuide, Trip } from "@/lib/types"
 import { ChevronDown } from "lucide-react"
@@ -91,9 +93,16 @@ export function BookingDetailSheet({
             </div>
             <StatusBadge status={booking.status} type="booking" />
           </div>
-          <p className="text-xl font-bold text-duck-navy mt-2">
-            {formatCurrency(booking.amount, booking.currency)}
-          </p>
+          <div className="flex items-baseline gap-2 flex-wrap mt-2">
+            <p className="text-xl font-bold text-duck-navy">
+              {formatCurrency(booking.amount, booking.currency)}
+            </p>
+            {remainingAmount(booking) > 0 && (
+              <span className="text-sm font-medium text-amber-700">
+                متبقي {formatCurrency(remainingAmount(booking), booking.currency)}
+              </span>
+            )}
+          </div>
         </SheetHeader>
 
         <ScrollArea className="flex-1 px-6">
@@ -222,6 +231,39 @@ export function BookingDetailSheet({
                   value={<PaymentMethodBadge method={booking.payment_method} />}
                 />
                 <DetailField
+                  label={bookingStrings.paymentState}
+                  value={<PaymentStateBadge booking={booking} />}
+                />
+                <DetailField
+                  label={bookingStrings.amount}
+                  value={formatCurrency(booking.amount, booking.currency)}
+                />
+                <DetailField
+                  label={bookingStrings.paid}
+                  value={formatCurrency(amountPaid(booking), booking.currency)}
+                />
+                <DetailField
+                  label={bookingStrings.remaining}
+                  value={
+                    <span
+                      className={
+                        remainingAmount(booking) > 0
+                          ? "text-amber-700 font-semibold"
+                          : undefined
+                      }
+                    >
+                      {formatCurrency(remainingAmount(booking), booking.currency)}
+                    </span>
+                  }
+                />
+                {booking.status === "PENDING" && (booking.declared_amount ?? 0) > 0 && (
+                  <DetailField
+                    label={bookingStrings.declaredAmount}
+                    value={formatCurrency(booking.declared_amount!, booking.currency)}
+                    className="sm:col-span-2"
+                  />
+                )}
+                <DetailField
                   label={bookingStrings.createdAt}
                   value={
                     booking.created_at
@@ -232,6 +274,41 @@ export function BookingDetailSheet({
                   }
                 />
               </div>
+              {booking.status === "PENDING" && (booking.declared_amount ?? 0) > 0 && (
+                <p className="text-xs text-text-muted mt-2">
+                  {bookingStrings.declaredAmountHint}
+                </p>
+              )}
+              {(booking.payment_entries?.length ?? 0) > 0 && (
+                <div className="mt-4">
+                  <div className="text-xs font-medium text-text-muted mb-2">
+                    {bookingStrings.paymentHistory}
+                  </div>
+                  <div className="space-y-1.5">
+                    {booking.payment_entries!.map((entry, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between text-xs bg-muted/50 rounded-md px-2.5 py-1.5"
+                      >
+                        <span
+                          className={
+                            entry.amount < 0
+                              ? "text-destructive font-medium"
+                              : "font-medium"
+                          }
+                        >
+                          {entry.amount < 0 ? "-" : "+"}
+                          {formatCurrency(Math.abs(entry.amount), booking.currency)}
+                        </span>
+                        <span className="text-text-muted">
+                          {formatDateTime(entry.recorded_at)}
+                          {entry.note && ` · ${entry.note}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
             {resolvedTrip && (

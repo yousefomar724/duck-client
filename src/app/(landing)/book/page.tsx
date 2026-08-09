@@ -411,6 +411,10 @@ function BookPageContent() {
     const needsReferral =
       values.hear_about_us === "friend" || values.hear_about_us === "other"
 
+    const minPayment = minimumDeposit(totalAmount)
+    const chosenAmount =
+      paymentAmount >= minPayment ? paymentAmount : totalAmount
+
     const bookingPayload = {
       trip_id: selectedTrip.id,
       full_name: values.full_name.trim(),
@@ -425,12 +429,12 @@ function BookPageContent() {
       played_before: values.played_before,
       hear_about_us: values.hear_about_us || "",
       referral_text: needsReferral ? values.referral_text.trim() : "",
+      ...(PAYMENT_METHOD === "instapay"
+        ? { declared_amount: chosenAmount }
+        : {}),
     }
 
     if (PAYMENT_METHOD === "instapay") {
-      const minPayment = minimumDeposit(totalAmount)
-      const chosenAmount =
-        paymentAmount >= minPayment ? paymentAmount : totalAmount
       const { data, error } =
         await bookingsApi.createManualBooking(bookingPayload)
       setSubmitLoading(false)

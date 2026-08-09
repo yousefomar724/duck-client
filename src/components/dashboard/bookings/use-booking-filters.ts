@@ -19,6 +19,12 @@ import {
   type BookingStatusGroup,
 } from "@/lib/bookings/status"
 import { localizedTripName, supplierDisplayName } from "@/lib/bookings/status"
+import {
+  amountPaid,
+  paymentState,
+  remainingAmount,
+  type PaymentState,
+} from "@/lib/bookings/payment"
 
 export type DatePreset = "all" | "today" | "week" | "month" | "upcoming"
 
@@ -27,6 +33,7 @@ export interface BookingFilters {
   statusGroup: BookingStatusGroup | "all"
   status: BookingStatus | "all"
   paymentMethod: "all" | "MANUAL" | "KASHIER"
+  paymentState: "all" | PaymentState
   supplierId: string
   tripType: "all" | "trip" | "tour"
   datePreset: DatePreset
@@ -37,6 +44,7 @@ const DEFAULT_FILTERS: BookingFilters = {
   statusGroup: "all",
   status: "all",
   paymentMethod: "all",
+  paymentState: "all",
   supplierId: "all",
   tripType: "all",
   datePreset: "all",
@@ -46,6 +54,7 @@ export function parseFilters(params: URLSearchParams): BookingFilters {
   const statusGroup = params.get("group") as BookingStatusGroup | "all" | null
   const status = params.get("status") as BookingStatus | "all" | null
   const payment = params.get("payment") as BookingFilters["paymentMethod"] | null
+  const paymentStateParam = params.get("paymentState") as BookingFilters["paymentState"] | null
   const supplierId = params.get("supplier")
   const tripType = params.get("tripType") as BookingFilters["tripType"] | null
   const datePreset = params.get("date") as DatePreset | null
@@ -59,6 +68,10 @@ export function parseFilters(params: URLSearchParams): BookingFilters {
     status: status && status !== "all" ? status : "all",
     paymentMethod:
       payment && ["all", "MANUAL", "KASHIER"].includes(payment) ? payment : "all",
+    paymentState:
+      paymentStateParam && ["all", "UNPAID", "PARTIAL", "PAID"].includes(paymentStateParam)
+        ? paymentStateParam
+        : "all",
     supplierId: supplierId ?? "all",
     tripType:
       tripType && ["all", "trip", "tour"].includes(tripType) ? tripType : "all",
@@ -75,6 +88,7 @@ export function filtersToParams(filters: BookingFilters): URLSearchParams {
   if (filters.statusGroup !== "all") params.set("group", filters.statusGroup)
   if (filters.status !== "all") params.set("status", filters.status)
   if (filters.paymentMethod !== "all") params.set("payment", filters.paymentMethod)
+  if (filters.paymentState !== "all") params.set("paymentState", filters.paymentState)
   if (filters.supplierId !== "all") params.set("supplier", filters.supplierId)
   if (filters.tripType !== "all") params.set("tripType", filters.tripType)
   if (filters.datePreset !== "all") params.set("date", filters.datePreset)
@@ -139,6 +153,12 @@ export function filterBookingsList(
       return false
     }
     if (
+      filters.paymentState !== "all" &&
+      paymentState(booking) !== filters.paymentState
+    ) {
+      return false
+    }
+    if (
       filters.supplierId !== "all" &&
       booking.supplier_id !== filters.supplierId
     ) {
@@ -179,6 +199,8 @@ export function bookingsToCsv(bookings: Booking[]): string {
     "الرحلة",
     "تاريخ الحجز",
     "المبلغ",
+    "المدفوع",
+    "المتبقي",
     "العملة",
     "الحالة",
     "طريقة الدفع",
@@ -191,6 +213,8 @@ export function bookingsToCsv(bookings: Booking[]): string {
     localizedTripName(b.trip),
     b.booking_date ?? "",
     String(b.amount),
+    String(amountPaid(b)),
+    String(remainingAmount(b)),
     b.currency,
     bookingStatusMeta[b.status]?.label ?? b.status,
     b.payment_method ?? "",
@@ -237,6 +261,7 @@ export function useBookingFilters(
       filters.statusGroup !== "all" ||
       filters.status !== "all" ||
       filters.paymentMethod !== "all" ||
+      filters.paymentState !== "all" ||
       filters.supplierId !== "all" ||
       filters.tripType !== "all" ||
       filters.datePreset !== "all"
@@ -280,6 +305,18 @@ export function useBookingFilters(
         key: "payment",
         label: filters.paymentMethod === "MANUAL" ? "يدوي" : "كاشير",
         onRemove: () => setFilters({ paymentMethod: "all" }),
+      })
+    }
+    if (filters.paymentState !== "all") {
+      const labels: Record<PaymentState, string> = {
+        PAID: "مدفوع بالكامل",
+        PARTIAL: "مدفوع جزئياً",
+        UNPAID: "غير مدفوع",
+      }
+      chips.push({
+        key: "paymentState",
+        label: labels[filters.paymentState],
+        onRemove: () => setFilters({ paymentState: "all" }),
       })
     }
     if (filters.supplierId !== "all") {

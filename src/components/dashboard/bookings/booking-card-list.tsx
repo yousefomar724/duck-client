@@ -12,6 +12,7 @@ import {
   needsAction,
   supplierDisplayName,
 } from "@/lib/bookings/status"
+import { remainingAmount } from "@/lib/bookings/payment"
 import {
   formatCurrency,
   formatDateShort,
@@ -117,11 +118,16 @@ export function BookingCardList({
               )}
 
               <div className="flex items-center justify-between pt-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <PaymentMethodBadge method={booking.payment_method} />
                   <span className="font-bold text-duck-navy">
                     {formatCurrency(booking.amount, booking.currency)}
                   </span>
+                  {remainingAmount(booking) > 0 && (
+                    <span className="text-xs font-semibold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">
+                      متبقي {formatCurrency(remainingAmount(booking), booking.currency)}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <div data-prevent-row-click onClick={(e) => e.stopPropagation()}>

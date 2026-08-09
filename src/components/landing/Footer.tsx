@@ -160,11 +160,19 @@ export default function Footer() {
                 t("privateTours"),
               ].map((link) => (
                 <li key={link}>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <Link href="/trips" className="hover:text-white transition-colors">
                     {link}
-                  </a>
+                  </Link>
                 </li>
               ))}
+              <li>
+                <Link
+                  href="/destinations"
+                  className="hover:text-white transition-colors"
+                >
+                  {t("destinationsLink")}
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -173,9 +181,9 @@ export default function Footer() {
             <h3 className="text-base font-bold mb-6">{t("support")}</h3>
             <ul className="space-y-3 text-white/70 text-sm mb-3">
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link href="/faq" className="hover:text-white transition-colors">
                   {t("faqLink")}
-                </a>
+                </Link>
               </li>
               <li>
                 <Link

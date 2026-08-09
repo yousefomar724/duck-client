@@ -24,10 +24,15 @@ export async function createManualBooking(
 
 export async function confirmManualPayment(
   id: string,
+  amountPaid?: number,
+  note?: string,
 ): Promise<ApiResponse<{ message: string; booking: Booking }>> {
   return apiClient<{ message: string; booking: Booking }>(
     `/bookings/${id}/manual-confirm`,
-    { method: 'POST' },
+    {
+      method: 'POST',
+      body: JSON.stringify({ amount_paid: amountPaid, note }),
+    },
   );
 }
 
@@ -37,6 +42,20 @@ export async function refundManualPayment(
   return apiClient<{ message: string; booking: Booking }>(
     `/bookings/${id}/manual-refund`,
     { method: 'POST' },
+  );
+}
+
+export async function collectBalance(
+  id: string,
+  amount?: number,
+  note?: string,
+): Promise<ApiResponse<{ message: string; booking: Booking }>> {
+  return apiClient<{ message: string; booking: Booking }>(
+    `/bookings/${id}/collect-balance`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ amount, note }),
+    },
   );
 }
 

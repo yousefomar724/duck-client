@@ -16,6 +16,7 @@ import {
   resolveImageUrl,
 } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
+import { tripSlug } from "@/lib/seo/slug"
 import {
   Carousel,
   CarouselContent,
@@ -445,6 +446,26 @@ export default function OffersSection() {
                         >
                           {t("details")}
                         </button>
+                        {(() => {
+                          // getTrips(locale) resolves `name` server-side to a
+                          // plain string for the active locale (despite the
+                          // `{ar,en}` type) — kebab() degrades non-Latin
+                          // script to nothing, so the slug helper's ObjectId
+                          // fallback still resolves correctly either way.
+                          const rawName =
+                            typeof trip.name === "string"
+                              ? trip.name
+                              : (trip.name as { en?: string })?.en
+                          if (!rawName) return null
+                          return (
+                            <Link
+                              href={`/trips/${tripSlug({ id: trip.id, name: rawName })}`}
+                              className="text-text-muted hover:text-text-dark underline underline-offset-4 text-sm px-2"
+                            >
+                              {t("viewFullPage")}
+                            </Link>
+                          )
+                        })()}
                       </div>
                     </div>
                   </div>

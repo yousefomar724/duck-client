@@ -7,6 +7,9 @@ import OurGoals from "@/components/about/OurGoals"
 import WhyDuck from "@/components/about/WhyDuck"
 import OurPromise from "@/components/about/OurPromise"
 import Footer from "@/components/landing/Footer"
+import { JsonLd } from "@/components/seo/json-ld"
+import { buildBreadcrumbJsonLd } from "@/lib/seo/json-ld"
+import { SITE_URL } from "@/lib/site"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("about.metadata")
@@ -22,9 +25,20 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const t = await getTranslations()
+  const pageUrl = `${SITE_URL}/about`
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(
+    [
+      { name: t("common.home"), url: SITE_URL },
+      { name: t("navbar.about"), url: pageUrl },
+    ],
+    pageUrl,
+  )
+
   return (
     <>
+      <JsonLd data={{ "@context": "https://schema.org", ...breadcrumbJsonLd }} />
       <AboutHero />
       <VisionMission />
       <CoreValues />

@@ -17,6 +17,7 @@ import {
   Clock,
   Download,
   RefreshCw,
+  Wallet,
 } from "lucide-react"
 import PageHeader from "@/components/shared/page-header"
 import StatCard from "@/components/shared/stat-card"
@@ -65,6 +66,7 @@ import {
   type BookingStatusGroup,
 } from "@/lib/bookings/status"
 import { formatCurrency } from "@/lib/constants"
+import { remainingAmount } from "@/lib/bookings/payment"
 import type { Booking, BookingStatus, Supplier, TourGuide, Trip } from "@/lib/types"
 import { useToast } from "@/lib/stores/toast-store"
 import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
@@ -168,6 +170,9 @@ export function BookingsView({ role }: BookingsViewProps) {
     const pendingAmount = bookings
       .filter((b) => b.status === "PENDING")
       .reduce((sum, b) => sum + b.amount, 0)
+    const totalRemaining = bookings
+      .filter((b) => b.status === "CONFIRMED")
+      .reduce((sum, b) => sum + remainingAmount(b), 0)
 
     return {
       total: bookings.length,
@@ -176,6 +181,7 @@ export function BookingsView({ role }: BookingsViewProps) {
       refundPending: refundPendingCount,
       needsAction: needsActionCount,
       pendingAmount,
+      totalRemaining,
     }
   }, [bookings])
 
@@ -185,7 +191,12 @@ export function BookingsView({ role }: BookingsViewProps) {
   }, [])
 
   const handleAction = useCallback(
-    async (type: BookingActionType, booking: Booking, note?: string) => {
+    async (
+      type: BookingActionType,
+      booking: Booking,
+      note?: string,
+      amount?: number,
+    ) => {
       const id = booking.ID
       setLoadingAction(id)
       try {
@@ -215,7 +226,11 @@ export function BookingsView({ role }: BookingsViewProps) {
             break
           }
           case "confirmPayment": {
-            const { error: err } = await bookingsApi.confirmManualPayment(id)
+            const { error: err } = await bookingsApi.confirmManualPayment(
+              id,
+              amount,
+              note,
+            )
             if (err) {
               addToast(err, "error")
               return
@@ -230,6 +245,19 @@ export function BookingsView({ role }: BookingsViewProps) {
               return
             }
             addToast(bookingStrings.paymentRefunded, "success")
+            break
+          }
+          case "collectBalance": {
+            const { error: err } = await bookingsApi.collectBalance(
+              id,
+              amount,
+              note,
+            )
+            if (err) {
+              addToast(err, "error")
+              return
+            }
+            addToast(bookingStrings.balanceCollected, "success")
             break
           }
         }
@@ -350,7 +378,7 @@ export function BookingsView({ role }: BookingsViewProps) {
       </PageHeader>
 
       <div
-        className={`grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 ${role === "admin" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+        className={`grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 ${role === "admin" ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}
       >
         <StatCard
           title={bookingStrings.totalBookings}
@@ -379,6 +407,14 @@ export function BookingsView({ role }: BookingsViewProps) {
           }
           onClick={() => setFilters({ status: "PENDING", statusGroup: "all" })}
           isActive={filters.status === "PENDING"}
+        />
+        <StatCard
+          title={bookingStrings.totalRemaining}
+          value={formatCurrency(stats.totalRemaining)}
+          icon={Wallet}
+          tone="warning"
+          onClick={() => setFilters({ status: "CONFIRMED", statusGroup: "all" })}
+          isActive={filters.status === "CONFIRMED"}
         />
         {role === "admin" && (
           <StatCard
@@ -500,6 +536,25 @@ export function BookingsView({ role }: BookingsViewProps) {
                 <SelectItem value="all">{bookingStrings.allPayments}</SelectItem>
                 <SelectItem value="MANUAL">يدوي</SelectItem>
                 <SelectItem value="KASHIER">كاشير</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={filters.paymentState}
+              onValueChange={(v) =>
+                setFilters({
+                  paymentState: v as typeof filters.paymentState,
+                })
+              }
+            >
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue placeholder={bookingStrings.paymentState} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{bookingStrings.allPaymentStates}</SelectItem>
+                <SelectItem value="PAID">مدفوع بالكامل</SelectItem>
+                <SelectItem value="PARTIAL">مدفوع جزئياً</SelectItem>
+                <SelectItem value="UNPAID">غير مدفوع</SelectItem>
               </SelectContent>
             </Select>
 

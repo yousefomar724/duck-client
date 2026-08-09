@@ -54,6 +54,12 @@ export interface Trip {
 
 export type ResourceType = "kayak" | "water_cycle" | "sup"
 
+export interface PaymentEntry {
+  amount: number
+  recorded_at: string
+  note?: string
+}
+
 export interface Booking {
   ID: string
   session_id: string
@@ -84,6 +90,11 @@ export interface Booking {
   wants_guide?: boolean
   played_before?: boolean
   payment_method?: "KASHIER" | "MANUAL"
+  /** What the customer declared they'd send at checkout (0/unset = full amount). */
+  declared_amount?: number
+  /** What has actually been confirmed received. */
+  amount_paid?: number
+  payment_entries?: PaymentEntry[]
 }
 
 export interface Wallet {
@@ -222,6 +233,8 @@ export interface CreateBookingRequest {
   hear_about_us?: string
   /** Free-text referral detail; required when hear_about_us is "friend" or "other". */
   referral_text?: string
+  /** Amount the customer chose to send now (deposit or full); server clamps to a valid range. */
+  declared_amount?: number
 }
 
 export interface CreateTripRequest {

@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { canAdminCancelBooking } from "@/lib/bookings/status"
+import { expectedAmount, remainingAmount } from "@/lib/bookings/payment"
 import type { Booking } from "@/lib/types"
 import { bookingStrings } from "./booking-strings"
 import {
@@ -28,6 +29,7 @@ import {
   Loader2,
   MoreHorizontal,
   RefreshCw,
+  Wallet,
   XCircle,
 } from "lucide-react"
 
@@ -36,13 +38,19 @@ export type BookingActionType =
   | "processRefund"
   | "confirmPayment"
   | "refundPayment"
+  | "collectBalance"
 
 interface BookingActionsProps {
   booking: Booking
   role: "admin" | "supplier"
   loadingAction?: string | null
   variant?: "inline" | "dropdown" | "footer"
-  onAction: (type: BookingActionType, booking: Booking, note?: string) => void
+  onAction: (
+    type: BookingActionType,
+    booking: Booking,
+    note?: string,
+    amount?: number,
+  ) => void
 }
 
 export function hasBookingActions(
@@ -59,11 +67,17 @@ export function hasBookingActions(
     role === "supplier" &&
     booking.payment_method === "MANUAL" &&
     booking.status === "CONFIRMED"
+  const collectBalanceEnabled =
+    role === "supplier" &&
+    booking.payment_method === "MANUAL" &&
+    booking.status === "CONFIRMED" &&
+    remainingAmount(booking) > 0
 
   return (
     (role === "admin" && (adminCancelEnabled || refundEnabled)) ||
     confirmPaymentEnabled ||
-    refundPaymentEnabled
+    refundPaymentEnabled ||
+    collectBalanceEnabled
   )
 }
 
@@ -76,6 +90,7 @@ export function BookingActions({
 }: BookingActionsProps) {
   const [dialog, setDialog] = useState<BookingActionType | null>(null)
   const [note, setNote] = useState("")
+  const [amount, setAmount] = useState("")
   const rowId = booking.ID
   const isLoading = loadingAction === rowId
 
@@ -89,21 +104,40 @@ export function BookingActions({
     role === "supplier" &&
     booking.payment_method === "MANUAL" &&
     booking.status === "CONFIRMED"
+  const remaining = remainingAmount(booking)
+  const collectBalanceEnabled =
+    role === "supplier" &&
+    booking.payment_method === "MANUAL" &&
+    booking.status === "CONFIRMED" &&
+    remaining > 0
 
   const hasAnyAction = hasBookingActions(booking, role)
 
   if (!hasAnyAction) return null
 
+  const amountDialogs: BookingActionType[] = ["confirmPayment", "collectBalance"]
+
   const openDialog = (type: BookingActionType) => {
     setNote("")
+    if (type === "confirmPayment") {
+      setAmount(String(expectedAmount(booking)))
+    } else if (type === "collectBalance") {
+      setAmount(String(remaining))
+    } else {
+      setAmount("")
+    }
     setDialog(type)
   }
 
   const confirm = () => {
     if (!dialog) return
-    onAction(dialog, booking, note.trim() || undefined)
+    const parsedAmount = amountDialogs.includes(dialog)
+      ? Number(amount) || undefined
+      : undefined
+    onAction(dialog, booking, note.trim() || undefined, parsedAmount)
     setDialog(null)
     setNote("")
+    setAmount("")
   }
 
   const dialogConfig: Record<
@@ -131,6 +165,11 @@ export function BookingActions({
       description: bookingStrings.refundPaymentDescription,
       confirmLabel: bookingStrings.refundPayment,
       variant: "destructive",
+    },
+    collectBalance: {
+      title: bookingStrings.collectBalanceTitle,
+      description: bookingStrings.collectBalanceDescription,
+      confirmLabel: bookingStrings.collectBalance,
     },
   }
 
@@ -196,6 +235,22 @@ export function BookingActions({
           {bookingStrings.refundPayment}
         </Button>
       )}
+      {collectBalanceEnabled && (
+        <Button
+          type="button"
+          size="sm"
+          className="bg-duck-cyan hover:bg-duck-cyan/90 text-white"
+          disabled={isLoading}
+          onClick={() => openDialog("collectBalance")}
+        >
+          {isLoading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Wallet className="size-4" />
+          )}
+          {bookingStrings.collectBalance}
+        </Button>
+      )}
     </>
   )
 
@@ -219,6 +274,11 @@ export function BookingActions({
       {refundPaymentEnabled && (
         <DropdownMenuItem onClick={() => openDialog("refundPayment")}>
           {bookingStrings.refundPayment}
+        </DropdownMenuItem>
+      )}
+      {collectBalanceEnabled && (
+        <DropdownMenuItem onClick={() => openDialog("collectBalance")}>
+          {bookingStrings.collectBalance}
         </DropdownMenuItem>
       )}
     </>
@@ -269,18 +329,40 @@ export function BookingActions({
                   {dialogConfig[dialog].description}
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <div className="space-y-2 py-2">
-                <Label htmlFor="action-note">
-                  {dialog === "processRefund"
-                    ? bookingStrings.reasonOptional
-                    : bookingStrings.noteOptional}
-                </Label>
-                <Input
-                  id="action-note"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="مثال: طلب العميل"
-                />
+              <div className="space-y-3 py-2">
+                {amountDialogs.includes(dialog) && (
+                  <div className="space-y-2">
+                    <Label htmlFor="action-amount">
+                      {dialog === "confirmPayment"
+                        ? bookingStrings.amountReceivedLabel
+                        : bookingStrings.amountToCollectLabel}
+                    </Label>
+                    <Input
+                      id="action-amount"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      max={
+                        dialog === "confirmPayment" ? booking.amount : remaining
+                      }
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="action-note">
+                    {dialog === "processRefund"
+                      ? bookingStrings.reasonOptional
+                      : bookingStrings.noteOptional}
+                  </Label>
+                  <Input
+                    id="action-note"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="مثال: طلب العميل"
+                  />
+                </div>
               </div>
               <AlertDialogFooter className="gap-2 sm:gap-0">
                 <AlertDialogCancel disabled={isLoading}>

@@ -13,6 +13,7 @@ interface BookingEmailData {
   hear_about_us?: string;
   amount: number;
   currency: string;
+  declared_amount?: number;
   status: string;
   user_email?: string;
   destination_names: string[];
@@ -165,7 +166,13 @@ function formatBookingEmailBody(
             </table>
             <div style="margin-top: 20px; font-size: 14px; color: #777; border-top: 1px solid #f0f0f0; padding-top: 15px; line-height: 1.8;">
               <strong>رقم الحجز:</strong> <span dir="ltr">${booking.id}</span><br>
-              <strong>المبلغ:</strong> ${formatCurrency(booking.amount, booking.currency, 'ar')}<br>
+              <strong>المبلغ الإجمالي:</strong> ${formatCurrency(booking.amount, booking.currency, 'ar')}<br>
+              ${
+                booking.declared_amount && booking.declared_amount > 0 && booking.declared_amount < booking.amount
+                  ? `<strong>المبلغ المعلن من العميل:</strong> ${formatCurrency(booking.declared_amount, booking.currency, 'ar')}<br>
+              <strong>المتبقي المتوقع:</strong> ${formatCurrency(booking.amount - booking.declared_amount, booking.currency, 'ar')}<br>`
+                  : ''
+              }
               <strong>الحالة:</strong> ${formatBookingStatusAr(booking.status)}
             </div>
             ${confirmLinkBlock}

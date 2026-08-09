@@ -4,6 +4,7 @@ import { type ColumnDef } from "@tanstack/react-table"
 import StatusBadge from "@/components/shared/status-badge"
 import { TripTypeBadge } from "@/components/shared/trip-type-badge"
 import { PaymentMethodBadge } from "@/components/shared/payment-method-badge"
+import { PaymentStateBadge } from "@/components/shared/payment-state-badge"
 import { DataTableColumnHeader } from "@/components/dashboard/data-table-column-header"
 import { BookingActions } from "./booking-actions"
 import { bookingStrings } from "./booking-strings"
@@ -12,6 +13,7 @@ import {
   needsAction,
   supplierDisplayName,
 } from "@/lib/bookings/status"
+import { amountPaid, remainingAmount } from "@/lib/bookings/payment"
 import {
   formatCurrency,
   formatDateShort,
@@ -114,11 +116,47 @@ export function getBookingColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={bookingStrings.amount} />
       ),
-      cell: ({ row }) => (
-        <span className="font-semibold text-duck-navy whitespace-nowrap">
-          {formatCurrency(row.original.amount, row.original.currency)}
-        </span>
+      cell: ({ row }) => {
+        const booking = row.original
+        const paid = amountPaid(booking)
+        const remaining = remainingAmount(booking)
+        return (
+          <div>
+            <span className="font-semibold text-duck-navy whitespace-nowrap">
+              {formatCurrency(booking.amount, booking.currency)}
+            </span>
+            {paid > 0 && (
+              <div className="text-xs text-text-muted whitespace-nowrap">
+                مدفوع {formatCurrency(paid, booking.currency)}
+                {remaining > 0 && (
+                  <>
+                    {" · "}
+                    <span className="text-amber-700 font-medium">
+                      متبقي {formatCurrency(remaining, booking.currency)}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      id: "remaining",
+      accessorFn: (row) => remainingAmount(row),
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={bookingStrings.remaining} />
       ),
+      cell: ({ row }) => {
+        const remaining = remainingAmount(row.original)
+        if (remaining <= 0) return <span className="text-text-muted">—</span>
+        return (
+          <span className="font-medium text-amber-700 whitespace-nowrap">
+            {formatCurrency(remaining, row.original.currency)}
+          </span>
+        )
+      },
     },
     {
       id: "payment_method",
@@ -127,6 +165,12 @@ export function getBookingColumns({
       cell: ({ row }) => (
         <PaymentMethodBadge method={row.original.payment_method} />
       ),
+    },
+    {
+      id: "payment_state",
+      accessorFn: (row) => remainingAmount(row) <= 0 ? "PAID" : amountPaid(row) > 0 ? "PARTIAL" : "UNPAID",
+      header: bookingStrings.paymentState,
+      cell: ({ row }) => <PaymentStateBadge booking={row.original} />,
     },
     {
       id: "status",

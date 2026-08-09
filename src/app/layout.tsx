@@ -115,6 +115,12 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    // Top-level (not just googleBot) so Bing and AI answer engines also see
+    // max-snippet: -1 — the directive that permits long verbatim excerpting,
+    // which is exactly what AI Overviews and answer engines rely on.
+    "max-image-preview": "large",
+    "max-snippet": -1,
+    "max-video-preview": -1,
     googleBot: {
       index: true,
       follow: true,

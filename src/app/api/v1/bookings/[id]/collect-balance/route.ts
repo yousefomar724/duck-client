@@ -7,6 +7,12 @@ import { creditWalletBySupplierId } from '@/server/services/wallet';
 import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
 
+/**
+ * Settles some or all of the outstanding balance on a booking that was
+ * already confirmed with a partial payment (e.g. cash collected on the
+ * meeting day). Only the newly-collected delta is credited to the wallet —
+ * the deposit was already credited by manual-confirm.
+ */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = requireAuth(request);
   if (session instanceof NextResponse) return session;
@@ -21,42 +27,44 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const booking = await Booking.findById(id);
   if (!booking) return errorResponse(400, 'booking not found');
 
-  if (booking.status !== 'PENDING') {
-    return errorResponse(400, `cannot confirm booking with status: ${booking.status}`);
+  if (booking.status !== 'CONFIRMED') {
+    return errorResponse(400, `cannot collect balance on booking with status: ${booking.status}`);
   }
   if (booking.supplier_id.toString() !== user.supplier_id.toString()) {
     return errorResponse(403, 'unauthorized: booking does not belong to your supplier account');
   }
 
-  let body: { amount_paid?: number; note?: string } = {};
+  const remaining = booking.amount - booking.amount_paid;
+  if (remaining <= 0) {
+    return errorResponse(400, 'booking is already fully paid');
+  }
+
+  let body: { amount?: number; note?: string } = {};
   try {
     body = await request.json();
   } catch {
-    // no body is fine — falls back to the declared/full amount below
+    // no body is fine — defaults to collecting the full remaining balance
   }
 
-  const fallback = booking.declared_amount > 0 ? booking.declared_amount : booking.amount;
-  const amountPaid = body.amount_paid && body.amount_paid > 0 ? body.amount_paid : fallback;
-
-  if (amountPaid <= 0 || amountPaid > booking.amount) {
-    return errorResponse(400, `invalid amount_paid: must be between 0 and ${booking.amount}`);
+  const collected = body.amount && body.amount > 0 ? body.amount : remaining;
+  if (collected <= 0 || collected > remaining) {
+    return errorResponse(400, `invalid amount: must be between 0 and ${remaining}`);
   }
 
-  booking.status = 'CONFIRMED';
-  booking.amount_paid = amountPaid;
+  booking.amount_paid += collected;
   booking.payment_entries.push({
-    amount: amountPaid,
+    amount: collected,
     recorded_at: new Date(),
     note: body.note ?? '',
   });
   await booking.save();
 
   try {
-    await creditWalletBySupplierId(booking.supplier_id.toString(), amountPaid);
+    await creditWalletBySupplierId(booking.supplier_id.toString(), collected);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'failed to update wallet';
     return errorResponse(500, message);
   }
 
-  return NextResponse.json({ message: 'Manual payment confirmed successfully.', booking });
+  return NextResponse.json({ message: 'Balance collected successfully.', booking });
 }

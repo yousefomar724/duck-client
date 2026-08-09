@@ -6,6 +6,7 @@ import { ChevronDown, Car, MessageCircle } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { buildWhatsAppHref } from "@/lib/support-contact"
+import { FAQ_COUNT } from "@/lib/seo/faq-count"
 import { useTranslations } from "next-intl"
 
 const CONTENT_EASE_OPEN = [0.22, 1, 0.36, 1] as const
@@ -14,7 +15,7 @@ const CONTENT_EASE_CLOSE = [0.4, 0, 0.2, 1] as const
 export default function FAQSection() {
   const t = useTranslations("faq")
 
-  const faqs = Array.from({ length: 12 }, (_, i) => ({
+  const faqs = Array.from({ length: FAQ_COUNT }, (_, i) => ({
     question: t(`q${i + 1}`),
     answer: t(`a${i + 1}`),
   }))

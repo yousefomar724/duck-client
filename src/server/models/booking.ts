@@ -13,6 +13,12 @@ export type BookingStatus =
   | 'COMPLETED'
   | 'PAID';
 
+export interface PaymentEntry {
+  amount: number;
+  recorded_at: Date;
+  note?: string;
+}
+
 export interface BookingDoc extends mongoose.Document {
   session_id?: string;
   user_id?: Types.ObjectId | null;
@@ -36,6 +42,11 @@ export interface BookingDoc extends mongoose.Document {
   wants_guide: boolean;
   played_before?: boolean | null;
   payment_data?: string;
+  /** What the customer told us they'd send at checkout (0/unset = full amount). */
+  declared_amount: number;
+  /** What has actually been confirmed received by the supplier. */
+  amount_paid: number;
+  payment_entries: PaymentEntry[];
   deletedAt: Date | null;
 }
 
@@ -63,6 +74,21 @@ const BookingSchema = new Schema<BookingDoc>(
     wants_guide: { type: Boolean, default: false },
     played_before: { type: Boolean, default: null },
     payment_data: { type: String, default: '', select: false },
+    declared_amount: { type: Number, default: 0 },
+    amount_paid: { type: Number, default: 0 },
+    payment_entries: {
+      type: [
+        new Schema<PaymentEntry>(
+          {
+            amount: { type: Number, required: true },
+            recorded_at: { type: Date, required: true, default: () => new Date() },
+            note: { type: String, default: '' },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
   },
   schemaOptions,
 );

@@ -1,5 +1,8 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
+import { JsonLd } from "@/components/seo/json-ld"
+import { buildBreadcrumbJsonLd } from "@/lib/seo/json-ld"
+import { SITE_URL } from "@/lib/site"
 
 /** The page itself is a client component, so metadata lives here. */
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,10 +19,25 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function BookLayout({
+export default async function BookLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return <>{children}</>
+  const t = await getTranslations()
+  const pageUrl = `${SITE_URL}/book`
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(
+    [
+      { name: t("common.home"), url: SITE_URL },
+      { name: t("navbar.book"), url: pageUrl },
+    ],
+    pageUrl,
+  )
+
+  return (
+    <>
+      <JsonLd data={{ "@context": "https://schema.org", ...breadcrumbJsonLd }} />
+      {children}
+    </>
+  )
 }
