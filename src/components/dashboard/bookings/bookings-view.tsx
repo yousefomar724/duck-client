@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { BookingDetailSheet } from "./booking-detail-sheet"
+import { BookingEditDialog } from "./booking-edit-dialog"
 import { BookingCardList } from "./booking-card-list"
 import {
   getBookingColumns,
@@ -66,7 +67,7 @@ import {
   type BookingStatusGroup,
 } from "@/lib/bookings/status"
 import { formatCurrency } from "@/lib/constants"
-import { remainingAmount } from "@/lib/bookings/payment"
+import { refundOwed, remainingAmount } from "@/lib/bookings/payment"
 import type { Booking, BookingStatus, Supplier, TourGuide, Trip } from "@/lib/types"
 import { useToast } from "@/lib/stores/toast-store"
 import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
@@ -100,6 +101,9 @@ export function BookingsView({ role }: BookingsViewProps) {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
+  const [editBooking, setEditBooking] = useState<Booking | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
   const [guideUpdating, setGuideUpdating] = useState<string | null>(null)
   const [sorting, setSorting] = useState<SortingState>([
     { id: "booking_date", desc: true },
@@ -167,6 +171,7 @@ export function BookingsView({ role }: BookingsViewProps) {
     const refundPendingCount = bookings.filter(
       (b) => b.status === "REFUND_PENDING",
     ).length
+    const refundOwedCount = bookings.filter((b) => refundOwed(b) > 0).length
     const pendingAmount = bookings
       .filter((b) => b.status === "PENDING")
       .reduce((sum, b) => sum + b.amount, 0)
@@ -182,6 +187,7 @@ export function BookingsView({ role }: BookingsViewProps) {
       needsAction: needsActionCount,
       pendingAmount,
       totalRemaining,
+      refundOwedCount,
     }
   }, [bookings])
 
@@ -260,6 +266,34 @@ export function BookingsView({ role }: BookingsViewProps) {
             addToast(bookingStrings.balanceCollected, "success")
             break
           }
+          case "supplierCancel": {
+            const { error: err } = await bookingsApi.supplierCancelBooking(id, note)
+            if (err) {
+              addToast(err, "error")
+              return
+            }
+            addToast(bookingStrings.supplierCancelSuccess, "success")
+            break
+          }
+          case "refundSent": {
+            const { error: err } = await bookingsApi.markRefundSent(id, note)
+            if (err) {
+              addToast(err, "error")
+              return
+            }
+            addToast(bookingStrings.refundSentSuccess, "success")
+            break
+          }
+          case "adminDelete": {
+            const { error: err } = await bookingsApi.deleteBooking(id)
+            if (err) {
+              addToast(err, "error")
+              return
+            }
+            addToast(bookingStrings.adminDeleteSuccess, "success")
+            setSheetOpen(false)
+            break
+          }
         }
         await fetchData()
       } finally {
@@ -290,6 +324,31 @@ export function BookingsView({ role }: BookingsViewProps) {
     [addToast, fetchData],
   )
 
+  const handleEditOpen = useCallback((booking: Booking) => {
+    setEditBooking(booking)
+    setEditOpen(true)
+  }, [])
+
+  const handleEditSubmit = useCallback(
+    async (id: string, data: bookingsApi.UpdateBookingRequest) => {
+      setEditLoading(true)
+      try {
+        const { error: err } = await bookingsApi.updateBooking(id, data)
+        if (err) {
+          addToast(err, "error")
+          return
+        }
+        addToast(bookingStrings.editSuccess, "success")
+        setEditOpen(false)
+        setEditBooking(null)
+        await fetchData()
+      } finally {
+        setEditLoading(false)
+      }
+    },
+    [addToast, fetchData],
+  )
+
   const columns = useMemo(
     () =>
       getBookingColumns({
@@ -298,8 +357,9 @@ export function BookingsView({ role }: BookingsViewProps) {
         suppliers,
         loadingAction,
         onAction: handleAction,
+        onEdit: handleEditOpen,
       }),
-    [role, trips, suppliers, loadingAction, handleAction],
+    [role, trips, suppliers, loadingAction, handleAction, handleEditOpen],
   )
 
   const table = useReactTable({
@@ -416,6 +476,17 @@ export function BookingsView({ role }: BookingsViewProps) {
           onClick={() => setFilters({ status: "CONFIRMED", statusGroup: "all" })}
           isActive={filters.status === "CONFIRMED"}
         />
+        {stats.refundOwedCount > 0 && (
+          <StatCard
+            title={bookingStrings.refundOwed}
+            value={stats.refundOwedCount}
+            icon={Banknote}
+            tone="danger"
+            hint={bookingStrings.refundOwedCount(stats.refundOwedCount)}
+            onClick={() => setFilters({ paymentState: "REFUND_OWED", statusGroup: "all" })}
+            isActive={filters.paymentState === "REFUND_OWED"}
+          />
+        )}
         {role === "admin" && (
           <StatCard
             title={bookingStrings.refundPendingBookings}
@@ -555,6 +626,7 @@ export function BookingsView({ role }: BookingsViewProps) {
                 <SelectItem value="PAID">مدفوع بالكامل</SelectItem>
                 <SelectItem value="PARTIAL">مدفوع جزئياً</SelectItem>
                 <SelectItem value="UNPAID">غير مدفوع</SelectItem>
+                <SelectItem value="REFUND_OWED">مسترد مستحق</SelectItem>
               </SelectContent>
             </Select>
 
@@ -663,6 +735,7 @@ export function BookingsView({ role }: BookingsViewProps) {
                 suppliers={suppliers}
                 loadingAction={loadingAction}
                 onAction={handleAction}
+                onEdit={handleEditOpen}
                 onViewDetails={handleViewDetails}
               />
               <DataTablePagination table={table} />
@@ -683,6 +756,24 @@ export function BookingsView({ role }: BookingsViewProps) {
         loadingAction={loadingAction}
         onGuideChange={handleGuideChange}
         onAction={handleAction}
+        onEdit={handleEditOpen}
+      />
+
+      <BookingEditDialog
+        booking={editBooking}
+        trip={
+          editBooking
+            ? trips.find((t) => t.id === editBooking.trip_id) ?? editBooking.trip
+            : undefined
+        }
+        role={role}
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open)
+          if (!open) setEditBooking(null)
+        }}
+        onSubmit={handleEditSubmit}
+        loading={editLoading}
       />
     </div>
   )

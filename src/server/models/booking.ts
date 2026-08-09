@@ -19,6 +19,27 @@ export interface PaymentEntry {
   note?: string;
 }
 
+export interface PricingSnapshot {
+  price: number;
+  foreigner_price: number;
+  guide_price: number;
+}
+
+export interface BookingRevisionChange {
+  from: unknown;
+  to: unknown;
+}
+
+export interface BookingRevision {
+  at: Date;
+  by_user_id: Types.ObjectId;
+  by_role: number;
+  note?: string;
+  amount_before: number;
+  amount_after: number;
+  changes: Map<string, BookingRevisionChange>;
+}
+
 export interface BookingDoc extends mongoose.Document {
   session_id?: string;
   user_id?: Types.ObjectId | null;
@@ -47,6 +68,17 @@ export interface BookingDoc extends mongoose.Document {
   /** What has actually been confirmed received by the supplier. */
   amount_paid: number;
   payment_entries: PaymentEntry[];
+  /** Tour duration (hours/days) used in pricing — persisted so edits can recompute. */
+  duration: number;
+  pricing_snapshot: PricingSnapshot;
+  /** When true, auto-repricing is blocked; admin must use amount_override. */
+  pricing_locked: boolean;
+  /** Amount owed back to the customer after a downward edit (off-platform refund). */
+  refund_owed: number;
+  cancelled_at?: Date | null;
+  cancelled_by?: Types.ObjectId | null;
+  cancel_reason?: string;
+  revisions: BookingRevision[];
   deletedAt: Date | null;
 }
 
@@ -83,6 +115,50 @@ const BookingSchema = new Schema<BookingDoc>(
             amount: { type: Number, required: true },
             recorded_at: { type: Date, required: true, default: () => new Date() },
             note: { type: String, default: '' },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+    duration: { type: Number, default: 0 },
+    pricing_snapshot: {
+      type: new Schema<PricingSnapshot>(
+        {
+          price: { type: Number, required: true, default: 0 },
+          foreigner_price: { type: Number, required: true, default: 0 },
+          guide_price: { type: Number, required: true, default: 0 },
+        },
+        { _id: false },
+      ),
+      default: () => ({ price: 0, foreigner_price: 0, guide_price: 0 }),
+    },
+    pricing_locked: { type: Boolean, default: false },
+    refund_owed: { type: Number, default: 0 },
+    cancelled_at: { type: Date, default: null },
+    cancelled_by: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    cancel_reason: { type: String, default: '' },
+    revisions: {
+      type: [
+        new Schema<BookingRevision>(
+          {
+            at: { type: Date, required: true, default: () => new Date() },
+            by_user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+            by_role: { type: Number, required: true },
+            note: { type: String, default: '' },
+            amount_before: { type: Number, required: true },
+            amount_after: { type: Number, required: true },
+            changes: {
+              type: Map,
+              of: new Schema<BookingRevisionChange>(
+                {
+                  from: { type: Schema.Types.Mixed },
+                  to: { type: Schema.Types.Mixed },
+                },
+                { _id: false },
+              ),
+              default: () => new Map(),
+            },
           },
           { _id: false },
         ),

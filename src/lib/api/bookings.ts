@@ -109,7 +109,7 @@ export async function processRefund(
   });
 }
 
-/** Admin-only: cancel booking (e.g. guest, weather) → REFUND_PENDING; no 24h rule */
+/** Admin-only: cancel booking (e.g. guest, weather) → REFUND_PENDING or CANCELLED */
 export async function adminCancelBooking(
   id: string,
   reason?: string,
@@ -121,4 +121,62 @@ export async function adminCancelBooking(
       body: JSON.stringify({ reason: reason?.trim() ?? '' }),
     },
   );
+}
+
+export interface UpdateBookingRequest {
+  quantity?: number;
+  local_guests?: number;
+  foreigner_guests?: number;
+  duration?: number;
+  wants_guide?: boolean;
+  resource_type?: 'kayak' | 'water_cycle' | 'sup';
+  booking_date?: string;
+  full_name?: string;
+  phone_number?: string;
+  amount_override?: number;
+  note?: string;
+}
+
+export async function updateBooking(
+  id: string,
+  data: UpdateBookingRequest,
+): Promise<ApiResponse<{ message: string; booking: Booking }>> {
+  return apiClient<{ message: string; booking: Booking }>(`/bookings/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function supplierCancelBooking(
+  id: string,
+  reason?: string,
+): Promise<ApiResponse<{ message: string; booking: Booking }>> {
+  return apiClient<{ message: string; booking: Booking }>(
+    `/bookings/${id}/supplier-cancel`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason?.trim() ?? '' }),
+    },
+  );
+}
+
+export async function markRefundSent(
+  id: string,
+  note?: string,
+): Promise<ApiResponse<{ message: string; booking: Booking }>> {
+  return apiClient<{ message: string; booking: Booking }>(
+    `/bookings/${id}/refund-sent`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ note: note?.trim() ?? '' }),
+    },
+  );
+}
+
+export async function deleteBooking(
+  id: string,
+): Promise<ApiResponse<{ message: string }>> {
+  return apiClient<{ message: string }>(`/bookings/${id}`, {
+    method: 'DELETE',
+  });
 }

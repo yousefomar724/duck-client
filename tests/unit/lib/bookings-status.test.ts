@@ -17,8 +17,9 @@ describe('bookings status', () => {
     expect(needsAction({ status: 'COMPLETED' })).toBe(false);
   });
 
-  it('allows admin cancel for active paid statuses', () => {
+  it('allows admin cancel for pending and active paid statuses', () => {
+    expect(canAdminCancelBooking('PENDING')).toBe(true);
     expect(canAdminCancelBooking('CONFIRMED')).toBe(true);
-    expect(canAdminCancelBooking('PENDING')).toBe(false);
+    expect(canAdminCancelBooking('COMPLETED')).toBe(false);
   });
 });

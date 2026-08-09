@@ -16,20 +16,25 @@ export async function countActiveByResourceAndDate(
   supplierId: string,
   resourceType: string,
   bookingDate: Date,
+  excludeBookingId?: string,
 ): Promise<number> {
   const startOfDay = new Date(bookingDate);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
+  const match: Record<string, unknown> = {
+    supplier_id: new Types.ObjectId(supplierId),
+    resource_type: resourceType,
+    booking_date: { $gte: startOfDay, $lt: endOfDay },
+    status: { $in: ['PENDING', 'CONFIRMED', 'SUCCESS'] },
+  };
+
+  if (excludeBookingId) {
+    match._id = { $ne: new Types.ObjectId(excludeBookingId) };
+  }
+
   const result = await Booking.aggregate([
-    {
-      $match: {
-        supplier_id: new Types.ObjectId(supplierId),
-        resource_type: resourceType,
-        booking_date: { $gte: startOfDay, $lt: endOfDay },
-        status: { $in: ['PENDING', 'CONFIRMED', 'SUCCESS'] },
-      },
-    },
+    { $match: match },
     { $group: { _id: null, total: { $sum: '$quantity' } } },
   ]);
 
@@ -42,6 +47,7 @@ export async function checkAvailability(
   resourceType: string,
   bookingDate: Date,
   requestedQty: number,
+  excludeBookingId?: string,
 ): Promise<void> {
   const storage = await SupplierStorage.findOne({ supplier_id: supplierId });
   if (!storage) throw new Error('supplier storage not configured');
@@ -51,7 +57,12 @@ export async function checkAvailability(
     throw new NoAvailabilityError('resource type not found in supplier storage');
   }
 
-  const currentBooked = await countActiveByResourceAndDate(supplierId, resourceType, bookingDate);
+  const currentBooked = await countActiveByResourceAndDate(
+    supplierId,
+    resourceType,
+    bookingDate,
+    excludeBookingId,
+  );
 
   if (currentBooked + requestedQty > limit) {
     throw new NoAvailabilityError(

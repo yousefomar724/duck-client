@@ -7,16 +7,18 @@ const paymentStateLabels: Record<PaymentState, string> = {
   PAID: "مدفوع بالكامل",
   PARTIAL: "مدفوع جزئياً",
   UNPAID: "غير مدفوع",
+  REFUND_OWED: "مسترد مستحق",
 }
 
 const paymentStateStyles: Record<PaymentState, string> = {
   PAID: "bg-green-100 text-green-800",
   PARTIAL: "bg-amber-100 text-amber-900",
   UNPAID: "bg-slate-100 text-slate-700",
+  REFUND_OWED: "bg-rose-100 text-rose-900",
 }
 
 interface PaymentStateBadgeProps {
-  booking: Pick<Booking, "amount" | "amount_paid">
+  booking: Pick<Booking, "amount" | "amount_paid" | "refund_owed">
   className?: string
 }
 

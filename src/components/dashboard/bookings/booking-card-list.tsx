@@ -33,6 +33,7 @@ interface BookingCardListProps {
   suppliers: Supplier[]
   loadingAction?: string | null
   onAction: (type: BookingActionType, booking: Booking, note?: string) => void
+  onEdit?: (booking: Booking) => void
   onViewDetails: (booking: Booking) => void
 }
 
@@ -43,6 +44,7 @@ export function BookingCardList({
   suppliers,
   loadingAction,
   onAction,
+  onEdit,
   onViewDetails,
 }: BookingCardListProps) {
   const tripMap = new Map(trips.map((t) => [t.id, t]))
@@ -137,6 +139,7 @@ export function BookingCardList({
                       variant="dropdown"
                       loadingAction={loadingAction}
                       onAction={onAction}
+                      onEdit={onEdit}
                     />
                   </div>
                   <ChevronLeft className="size-4 text-text-muted rtl:rotate-180" />

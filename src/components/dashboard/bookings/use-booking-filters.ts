@@ -69,7 +69,7 @@ export function parseFilters(params: URLSearchParams): BookingFilters {
     paymentMethod:
       payment && ["all", "MANUAL", "KASHIER"].includes(payment) ? payment : "all",
     paymentState:
-      paymentStateParam && ["all", "UNPAID", "PARTIAL", "PAID"].includes(paymentStateParam)
+      paymentStateParam && ["all", "UNPAID", "PARTIAL", "PAID", "REFUND_OWED"].includes(paymentStateParam)
         ? paymentStateParam
         : "all",
     supplierId: supplierId ?? "all",
@@ -312,6 +312,7 @@ export function useBookingFilters(
         PAID: "مدفوع بالكامل",
         PARTIAL: "مدفوع جزئياً",
         UNPAID: "غير مدفوع",
+        REFUND_OWED: "مسترد مستحق",
       }
       chips.push({
         key: "paymentState",

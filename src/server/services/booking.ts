@@ -45,6 +45,10 @@ export interface BuiltBooking {
   referral_text: string;
   declared_amount: number;
   amount_paid: number;
+  duration: number;
+  pricing_snapshot: { price: number; foreigner_price: number; guide_price: number };
+  pricing_locked: boolean;
+  refund_owed: number;
 }
 
 export interface ComputeBookingAmountInput {
@@ -53,11 +57,6 @@ export interface ComputeBookingAmountInput {
   foreigner_price: number;
   guide_price: number;
   guide_mandatory: boolean;
-  quantity?: number;
-  local_guests?: number;
-  foreigner_guests?: number;
-  duration?: number;
-  wants_guide?: boolean;
 }
 
 export interface ComputeBookingAmountResult {
@@ -153,6 +152,8 @@ export async function buildBooking(
   );
   quantity = computedQuantity;
 
+  const duration = trip.is_tour ? (req.duration ?? 1) : 0;
+
   // The client-side `min` attribute on the deposit input is not a security
   // boundary — clamp here to [minimumDeposit(amount), amount]. Anything
   // outside that range (including omitted/zero) is treated as full payment.
@@ -184,6 +185,14 @@ export async function buildBooking(
     referral_text: req.referral_text ?? '',
     declared_amount: declaredAmount,
     amount_paid: 0,
+    duration,
+    pricing_snapshot: {
+      price: trip.price,
+      foreigner_price: trip.foreigner_price,
+      guide_price: trip.guide_price,
+    },
+    pricing_locked: false,
+    refund_owed: 0,
   };
 }
 

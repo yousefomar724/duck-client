@@ -133,7 +133,24 @@ export function matchesStatusGroup(
 }
 
 export function canAdminCancelBooking(status: string): boolean {
-  return status === "CONFIRMED" || status === "SUCCESS" || status === "PAID"
+  return (
+    status === "PENDING" ||
+    status === "CONFIRMED" ||
+    status === "SUCCESS" ||
+    status === "PAID"
+  )
+}
+
+export function canSupplierCancelBooking(status: string): boolean {
+  return status === "PENDING" || status === "CONFIRMED"
+}
+
+export function canEditBooking(status: string): boolean {
+  return status === "PENDING" || status === "CONFIRMED"
+}
+
+export function canDeleteBooking(status: string): boolean {
+  return status === "CANCELLED" || status === "REFUNDED" || status === "FAILED"
 }
 
 export const resourceLabels: Record<string, string> = {

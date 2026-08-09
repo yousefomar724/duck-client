@@ -37,7 +37,7 @@ import {
   resourceLabels,
   supplierDisplayName,
 } from "@/lib/bookings/status"
-import { amountPaid, remainingAmount } from "@/lib/bookings/payment"
+import { amountPaid, refundOwed, remainingAmount } from "@/lib/bookings/payment"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
 import type { Booking, Supplier, TourGuide, Trip } from "@/lib/types"
 import { ChevronDown } from "lucide-react"
@@ -54,6 +54,7 @@ interface BookingDetailSheetProps {
   loadingAction?: string | null
   onGuideChange?: (tripId: string, guideId: string) => void
   onAction: (type: BookingActionType, booking: Booking, note?: string) => void
+  onEdit?: (booking: Booking) => void
 }
 
 export function BookingDetailSheet({
@@ -68,6 +69,7 @@ export function BookingDetailSheet({
   loadingAction,
   onGuideChange,
   onAction,
+  onEdit,
 }: BookingDetailSheetProps) {
   if (!booking) return null
 
@@ -100,6 +102,12 @@ export function BookingDetailSheet({
             {remainingAmount(booking) > 0 && (
               <span className="text-sm font-medium text-amber-700">
                 متبقي {formatCurrency(remainingAmount(booking), booking.currency)}
+              </span>
+            )}
+            {refundOwed(booking) > 0 && (
+              <span className="text-sm font-medium text-rose-700">
+                {bookingStrings.refundOwed}{" "}
+                {formatCurrency(refundOwed(booking), booking.currency)}
               </span>
             )}
           </div>
@@ -311,6 +319,38 @@ export function BookingDetailSheet({
               )}
             </section>
 
+            {(booking.revisions?.length ?? 0) > 0 && (
+              <>
+                <Separator />
+                <section>
+                  <h3 className="text-sm font-semibold text-duck-navy mb-3">
+                    {bookingStrings.revisionHistory}
+                  </h3>
+                  <div className="space-y-2">
+                    {booking.revisions!.map((rev, i) => (
+                      <div
+                        key={i}
+                        className="text-xs bg-muted/50 rounded-md px-2.5 py-2 space-y-1"
+                      >
+                        <div className="flex justify-between gap-2">
+                          <span className="font-medium">
+                            {formatCurrency(rev.amount_before, booking.currency)} →{" "}
+                            {formatCurrency(rev.amount_after, booking.currency)}
+                          </span>
+                          <span className="text-text-muted">
+                            {formatDateTime(rev.at)}
+                          </span>
+                        </div>
+                        {rev.note && (
+                          <p className="text-text-muted">{rev.note}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </>
+            )}
+
             {resolvedTrip && (
               <>
                 <Separator />
@@ -425,6 +465,7 @@ export function BookingDetailSheet({
               variant="footer"
               loadingAction={loadingAction}
               onAction={onAction}
+              onEdit={onEdit}
             />
           </SheetFooter>
         ) : null}

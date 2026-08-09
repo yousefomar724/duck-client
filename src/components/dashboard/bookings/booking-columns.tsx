@@ -13,7 +13,7 @@ import {
   needsAction,
   supplierDisplayName,
 } from "@/lib/bookings/status"
-import { amountPaid, remainingAmount } from "@/lib/bookings/payment"
+import { amountPaid, paymentState, remainingAmount } from "@/lib/bookings/payment"
 import {
   formatCurrency,
   formatDateShort,
@@ -32,6 +32,7 @@ interface BookingColumnsOptions {
   suppliers: Supplier[]
   loadingAction?: string | null
   onAction: (type: BookingActionType, booking: Booking, note?: string) => void
+  onEdit?: (booking: Booking) => void
 }
 
 export function getBookingColumns({
@@ -40,6 +41,7 @@ export function getBookingColumns({
   suppliers,
   loadingAction,
   onAction,
+  onEdit,
 }: BookingColumnsOptions): ColumnDef<Booking>[] {
   const tripMap = new Map(trips.map((t) => [t.id, t]))
   const supplierMap = new Map(suppliers.map((s) => [s.id, s]))
@@ -168,7 +170,7 @@ export function getBookingColumns({
     },
     {
       id: "payment_state",
-      accessorFn: (row) => remainingAmount(row) <= 0 ? "PAID" : amountPaid(row) > 0 ? "PARTIAL" : "UNPAID",
+      accessorFn: (row) => paymentState(row),
       header: bookingStrings.paymentState,
       cell: ({ row }) => <PaymentStateBadge booking={row.original} />,
     },
@@ -211,6 +213,7 @@ export function getBookingColumns({
         variant="dropdown"
         loadingAction={loadingAction}
         onAction={onAction}
+        onEdit={onEdit}
       />
     ),
   })

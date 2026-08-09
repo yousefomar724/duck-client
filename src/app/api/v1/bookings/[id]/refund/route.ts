@@ -28,10 +28,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return errorResponse(500, `booking is not pending refund, current status: ${booking.status}`);
   }
 
+  const refundedAmount = booking.amount_paid;
+
   booking.status = 'REFUNDED';
+  booking.amount_paid = 0;
+  if (refundedAmount > 0) {
+    booking.payment_entries.push({
+      amount: -refundedAmount,
+      recorded_at: new Date(),
+      note: 'admin refund',
+    });
+  }
   await booking.save();
 
-  await creditWalletBySupplierId(booking.supplier_id.toString(), -booking.amount).catch(() => {});
+  try {
+    if (refundedAmount > 0) {
+      await creditWalletBySupplierId(booking.supplier_id.toString(), -refundedAmount);
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'failed to update wallet';
+    return errorResponse(500, message);
+  }
 
   return NextResponse.json({
     message: 'Refund processed',

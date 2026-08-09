@@ -140,6 +140,12 @@ export async function createBooking(overrides: Record<string, unknown> = {}) {
     hear_about_us: '',
     referral_text: '',
     order_ref: `ref-${Date.now()}`,
+    duration: 0,
+    pricing_snapshot: { price: 180, foreigner_price: 500, guide_price: 0 },
+    pricing_locked: false,
+    refund_owed: 0,
+    declared_amount: 0,
+    amount_paid: 0,
     ...overrides,
   });
 }

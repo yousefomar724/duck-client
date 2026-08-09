@@ -60,6 +60,22 @@ export interface PaymentEntry {
   note?: string
 }
 
+export interface PricingSnapshot {
+  price: number
+  foreigner_price: number
+  guide_price: number
+}
+
+export interface BookingRevision {
+  at: string
+  by_user_id: string
+  by_role: number
+  note?: string
+  amount_before: number
+  amount_after: number
+  changes: Record<string, { from: unknown; to: unknown }>
+}
+
 export interface Booking {
   ID: string
   session_id: string
@@ -95,6 +111,14 @@ export interface Booking {
   /** What has actually been confirmed received. */
   amount_paid?: number
   payment_entries?: PaymentEntry[]
+  duration?: number
+  pricing_snapshot?: PricingSnapshot
+  pricing_locked?: boolean
+  refund_owed?: number
+  cancelled_at?: string
+  cancelled_by?: string
+  cancel_reason?: string
+  revisions?: BookingRevision[]
 }
 
 export interface Wallet {

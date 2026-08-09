@@ -20,15 +20,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { canAdminCancelBooking } from "@/lib/bookings/status"
-import { expectedAmount, remainingAmount } from "@/lib/bookings/payment"
+import { canAdminCancelBooking, canDeleteBooking, canEditBooking, canSupplierCancelBooking } from "@/lib/bookings/status"
+import { expectedAmount, refundOwed, remainingAmount } from "@/lib/bookings/payment"
 import type { Booking } from "@/lib/types"
 import { bookingStrings } from "./booking-strings"
 import {
   CheckCircle,
   Loader2,
   MoreHorizontal,
+  Pencil,
   RefreshCw,
+  Trash2,
   Wallet,
   XCircle,
 } from "lucide-react"
@@ -39,6 +41,10 @@ export type BookingActionType =
   | "confirmPayment"
   | "refundPayment"
   | "collectBalance"
+  | "edit"
+  | "supplierCancel"
+  | "refundSent"
+  | "adminDelete"
 
 interface BookingActionsProps {
   booking: Booking
@@ -51,14 +57,15 @@ interface BookingActionsProps {
     note?: string,
     amount?: number,
   ) => void
+  onEdit?: (booking: Booking) => void
 }
 
 export function hasBookingActions(
   booking: Booking,
   role: "admin" | "supplier",
 ): boolean {
-  const adminCancelEnabled = canAdminCancelBooking(booking.status)
-  const refundEnabled = booking.status === "REFUND_PENDING"
+  const adminCancelEnabled = role === "admin" && canAdminCancelBooking(booking.status)
+  const refundEnabled = role === "admin" && booking.status === "REFUND_PENDING"
   const confirmPaymentEnabled =
     role === "supplier" &&
     booking.payment_method === "MANUAL" &&
@@ -72,12 +79,22 @@ export function hasBookingActions(
     booking.payment_method === "MANUAL" &&
     booking.status === "CONFIRMED" &&
     remainingAmount(booking) > 0
+  const editEnabled = canEditBooking(booking.status)
+  const supplierCancelEnabled =
+    role === "supplier" && canSupplierCancelBooking(booking.status)
+  const refundSentEnabled = refundOwed(booking) > 0
+  const deleteEnabled = role === "admin" && canDeleteBooking(booking.status)
 
   return (
-    (role === "admin" && (adminCancelEnabled || refundEnabled)) ||
+    adminCancelEnabled ||
+    refundEnabled ||
     confirmPaymentEnabled ||
     refundPaymentEnabled ||
-    collectBalanceEnabled
+    collectBalanceEnabled ||
+    editEnabled ||
+    supplierCancelEnabled ||
+    refundSentEnabled ||
+    deleteEnabled
   )
 }
 
@@ -87,6 +104,7 @@ export function BookingActions({
   loadingAction,
   variant = "inline",
   onAction,
+  onEdit,
 }: BookingActionsProps) {
   const [dialog, setDialog] = useState<BookingActionType | null>(null)
   const [note, setNote] = useState("")
@@ -94,8 +112,8 @@ export function BookingActions({
   const rowId = booking.ID
   const isLoading = loadingAction === rowId
 
-  const adminCancelEnabled = canAdminCancelBooking(booking.status)
-  const refundEnabled = booking.status === "REFUND_PENDING"
+  const adminCancelEnabled = role === "admin" && canAdminCancelBooking(booking.status)
+  const refundEnabled = role === "admin" && booking.status === "REFUND_PENDING"
   const confirmPaymentEnabled =
     role === "supplier" &&
     booking.payment_method === "MANUAL" &&
@@ -110,6 +128,11 @@ export function BookingActions({
     booking.payment_method === "MANUAL" &&
     booking.status === "CONFIRMED" &&
     remaining > 0
+  const editEnabled = canEditBooking(booking.status)
+  const supplierCancelEnabled =
+    role === "supplier" && canSupplierCancelBooking(booking.status)
+  const refundSentEnabled = refundOwed(booking) > 0
+  const deleteEnabled = role === "admin" && canDeleteBooking(booking.status)
 
   const hasAnyAction = hasBookingActions(booking, role)
 
@@ -171,10 +194,44 @@ export function BookingActions({
       description: bookingStrings.collectBalanceDescription,
       confirmLabel: bookingStrings.collectBalance,
     },
+    edit: {
+      title: bookingStrings.editBookingTitle,
+      description: bookingStrings.editBookingDescription,
+      confirmLabel: bookingStrings.saveChanges,
+    },
+    supplierCancel: {
+      title: bookingStrings.supplierCancelTitle,
+      description: bookingStrings.supplierCancelDescription,
+      confirmLabel: bookingStrings.supplierCancel,
+      variant: "destructive",
+    },
+    refundSent: {
+      title: bookingStrings.refundSentTitle,
+      description: bookingStrings.refundSentDescription,
+      confirmLabel: bookingStrings.refundSent,
+    },
+    adminDelete: {
+      title: bookingStrings.adminDeleteTitle,
+      description: bookingStrings.adminDeleteDescription,
+      confirmLabel: bookingStrings.adminDelete,
+      variant: "destructive",
+    },
   }
 
   const actionButtons = (
     <>
+      {editEnabled && onEdit && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={isLoading}
+          onClick={() => onEdit(booking)}
+        >
+          <Pencil className="size-4" />
+          {bookingStrings.editBooking}
+        </Button>
+      )}
       {role === "admin" && adminCancelEnabled && (
         <Button
           type="button"
@@ -251,11 +308,51 @@ export function BookingActions({
           {bookingStrings.collectBalance}
         </Button>
       )}
+      {supplierCancelEnabled && (
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          disabled={isLoading}
+          onClick={() => openDialog("supplierCancel")}
+        >
+          {bookingStrings.supplierCancel}
+        </Button>
+      )}
+      {refundSentEnabled && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="border-rose-300 text-rose-800"
+          disabled={isLoading}
+          onClick={() => openDialog("refundSent")}
+        >
+          {bookingStrings.refundSent}
+        </Button>
+      )}
+      {deleteEnabled && (
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          disabled={isLoading}
+          onClick={() => openDialog("adminDelete")}
+        >
+          <Trash2 className="size-4" />
+          {bookingStrings.adminDelete}
+        </Button>
+      )}
     </>
   )
 
   const dropdownItems = (
     <>
+      {editEnabled && onEdit && (
+        <DropdownMenuItem onClick={() => onEdit(booking)}>
+          {bookingStrings.editBooking}
+        </DropdownMenuItem>
+      )}
       {role === "admin" && adminCancelEnabled && (
         <DropdownMenuItem onClick={() => openDialog("adminCancel")}>
           {bookingStrings.adminCancel}
@@ -279,6 +376,21 @@ export function BookingActions({
       {collectBalanceEnabled && (
         <DropdownMenuItem onClick={() => openDialog("collectBalance")}>
           {bookingStrings.collectBalance}
+        </DropdownMenuItem>
+      )}
+      {supplierCancelEnabled && (
+        <DropdownMenuItem onClick={() => openDialog("supplierCancel")}>
+          {bookingStrings.supplierCancel}
+        </DropdownMenuItem>
+      )}
+      {refundSentEnabled && (
+        <DropdownMenuItem onClick={() => openDialog("refundSent")}>
+          {bookingStrings.refundSent}
+        </DropdownMenuItem>
+      )}
+      {deleteEnabled && (
+        <DropdownMenuItem onClick={() => openDialog("adminDelete")}>
+          {bookingStrings.adminDelete}
         </DropdownMenuItem>
       )}
     </>
