@@ -45,7 +45,7 @@ export default function EditTripPage({ params }: EditTripPageProps) {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="space-y-6">
         <PageHeader title="تعديل الرحلة" />
         <Card>
           <CardContent className="p-6">
@@ -58,7 +58,7 @@ export default function EditTripPage({ params }: EditTripPageProps) {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="space-y-6">
         <PageHeader title="تعديل الرحلة" />
         <ErrorDisplay
           error={error}
@@ -69,7 +69,7 @@ export default function EditTripPage({ params }: EditTripPageProps) {
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       <PageHeader title="تعديل الرحلة" />
       <TripForm
         mode="edit"

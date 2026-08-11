@@ -2,6 +2,11 @@ import mongoose, { Schema, Types } from 'mongoose';
 import { softDeletePlugin, schemaOptions } from '../db/plugins';
 import type { LocalizedText } from './supplier';
 
+export interface TripFaq {
+  q: LocalizedText;
+  a: LocalizedText;
+}
+
 export interface TripDoc extends mongoose.Document {
   supplier_id: Types.ObjectId;
   is_tour: boolean;
@@ -23,6 +28,10 @@ export interface TripDoc extends mongoose.Document {
   availability: LocalizedText;
   images: string[];
   cancelation_policy: LocalizedText;
+  meeting_point: LocalizedText;
+  map_url: string;
+  faqs: TripFaq[];
+  hide_default_faqs: boolean;
   max_guests: number;
   refundable: boolean;
   tour_guide_id?: Types.ObjectId | null;
@@ -34,6 +43,14 @@ const LocalizedSchema = new Schema<LocalizedText>(
   {
     en: { type: String, default: '' },
     ar: { type: String, default: '' },
+  },
+  { _id: false },
+);
+
+const TripFaqSchema = new Schema<TripFaq>(
+  {
+    q: { type: LocalizedSchema, required: true },
+    a: { type: LocalizedSchema, required: true },
   },
   { _id: false },
 );
@@ -57,9 +74,13 @@ const TripSchema = new Schema<TripDoc>(
     itinerary: { type: LocalizedSchema, default: () => ({ en: '', ar: '' }) },
     name: { type: LocalizedSchema, required: true },
     description: { type: LocalizedSchema, required: true },
-    availability: { type: LocalizedSchema, default: () => ({ en: '[]', ar: '[]' }) },
+    availability: { type: LocalizedSchema, default: () => ({ en: '', ar: '' }) },
     images: { type: [String], default: [] },
     cancelation_policy: { type: LocalizedSchema, default: () => ({ en: '', ar: '' }) },
+    meeting_point: { type: LocalizedSchema, default: () => ({ en: '', ar: '' }) },
+    map_url: { type: String, default: '' },
+    faqs: { type: [TripFaqSchema], default: [] },
+    hide_default_faqs: { type: Boolean, default: false },
     max_guests: { type: Number, required: true },
     refundable: { type: Boolean, required: true, default: true },
     tour_guide_id: { type: Schema.Types.ObjectId, ref: 'TourGuide', default: null },

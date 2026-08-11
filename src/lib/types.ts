@@ -45,6 +45,10 @@ export interface Trip {
   max_guests: number
   images?: string[] | { [key: string]: string }
   cancelation_policy: { ar: string; en: string }
+  meeting_point?: { ar: string; en: string }
+  map_url?: string
+  faqs?: { q: { ar: string; en: string }; a: { ar: string; en: string } }[]
+  hide_default_faqs?: boolean
   refundable: boolean
   tour_guide_id?: string
   tour_guide?: TourGuide
@@ -283,6 +287,10 @@ export interface CreateTripRequest {
   images?: string[]
   destination_ids?: string[]
   cancelation_policy?: { ar: string; en: string }
+  meeting_point?: { ar: string; en: string }
+  map_url?: string
+  faqs?: { q: { ar: string; en: string }; a: { ar: string; en: string } }[]
+  hide_default_faqs?: boolean
   refundable: boolean
   tour_guide_id?: string
 }

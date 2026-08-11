@@ -1,5 +1,5 @@
 import { resolveLocalized } from '../lib/localize';
-import { Trip, type TripDoc } from '../models/trip';
+import { Trip, type TripDoc, type TripFaq } from '../models/trip';
 import type { LocalizedText } from '../models/supplier';
 
 export interface CreateTripBody {
@@ -23,6 +23,10 @@ export interface CreateTripBody {
   max_guests: number;
   images?: unknown;
   cancelation_policy?: LocalizedText;
+  meeting_point?: LocalizedText;
+  map_url?: string;
+  faqs?: TripFaq[];
+  hide_default_faqs?: boolean;
   refundable?: boolean;
   tour_guide_id?: string | null;
   destination_ids?: string[];
@@ -44,7 +48,7 @@ export async function createTripFromRequest(supplierId: string, body: CreateTrip
     to.setDate(to.getDate() + duration);
   }
 
-  const availability = body.availability ?? { en: '[]', ar: '[]' };
+  const availability = body.availability ?? { en: '', ar: '' };
 
   const trip = await Trip.create({
     supplier_id: supplierId,
@@ -68,6 +72,10 @@ export async function createTripFromRequest(supplierId: string, body: CreateTrip
     itinerary: body.itinerary ?? { en: '', ar: '' },
     availability,
     cancelation_policy: body.cancelation_policy ?? { en: '', ar: '' },
+    meeting_point: body.meeting_point ?? { en: '', ar: '' },
+    map_url: body.map_url ?? '',
+    faqs: body.faqs ?? [],
+    hide_default_faqs: body.hide_default_faqs ?? false,
     images: normalizeImageUrls(body.images),
     destination_ids: body.destination_ids ?? [],
   });
@@ -109,6 +117,10 @@ export function applyTripUpdate(trip: TripDoc, body: Partial<CreateTripBody>): v
   if (body.images !== undefined) trip.images = normalizeImageUrls(body.images);
   if (body.cancelation_policy) trip.cancelation_policy = body.cancelation_policy;
   if (body.availability) trip.availability = body.availability;
+  if (body.meeting_point) trip.meeting_point = body.meeting_point;
+  if (body.map_url !== undefined) trip.map_url = body.map_url;
+  if (body.faqs !== undefined) trip.faqs = body.faqs as unknown as TripDoc['faqs'];
+  if (body.hide_default_faqs !== undefined) trip.hide_default_faqs = body.hide_default_faqs;
   if (body.destination_ids && body.destination_ids.length > 0) {
     trip.destination_ids = body.destination_ids as unknown as TripDoc['destination_ids'];
   }
@@ -136,6 +148,13 @@ export function normalizeImageUrls(raw: unknown): string[] {
  * is returned unchanged.
  */
 export function toTripResponse(trip: Record<string, unknown>, lang: string): Record<string, unknown> {
+  const faqs = Array.isArray(trip.faqs)
+    ? (trip.faqs as Record<string, unknown>[]).map((f) => ({
+        q: resolveLocalized(f.q, lang),
+        a: resolveLocalized(f.a, lang),
+      }))
+    : [];
+
   return {
     ...trip,
     itinerary: resolveLocalized(trip.itinerary, lang),
@@ -143,6 +162,8 @@ export function toTripResponse(trip: Record<string, unknown>, lang: string): Rec
     description: resolveLocalized(trip.description, lang),
     availability: resolveLocalized(trip.availability, lang),
     cancelation_policy: resolveLocalized(trip.cancelation_policy, lang),
+    meeting_point: resolveLocalized(trip.meeting_point, lang),
+    faqs,
   };
 }
 

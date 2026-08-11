@@ -8,7 +8,7 @@ export default function CreateTripPage() {
   const router = useRouter()
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       <PageHeader title="اضافة رحلة جديدة" />
       <TripForm
         mode="create"

@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
+import { RichText } from "@/components/shared/rich-text"
 import Footer from "@/components/landing/Footer"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildBreadcrumbJsonLd, buildTripJsonLd } from "@/lib/seo/json-ld"
@@ -138,39 +139,43 @@ export default async function TripDetailPage({ params }: PageProps) {
   )
   const tripJsonLd = buildTripJsonLd(trip)
 
-  const faqEntries = [
-    {
-      q: t("faqPriceQ", { name: trip.name }),
-      a: hasForeignerPrice
-        ? t("faqPriceADual", {
-            name: trip.name,
-            priceLocal: trip.price,
-            priceForeign: trip.foreigner_price,
-          })
-        : t("faqPriceASingle", { name: trip.name, priceLocal: trip.price }),
-    },
-    {
-      q: t("faqDurationQ", { name: trip.name }),
-      a: t("faqDurationA", { name: trip.name, duration }),
-    },
-    {
-      q: t("faqGroupQ", { name: trip.name }),
-      a: t("faqGroupA", { name: trip.name, maxGuests: trip.max_guests }),
-    },
-    destination
-      ? {
-          q: t("faqMeetQ", { name: trip.name }),
-          a: t("faqMeetA", { name: trip.name, destination }),
-        }
-      : null,
-    trip.cancelation_policy
-      ? {
-          q: t("faqCancelQ", { name: trip.name }),
-          a: trip.cancelation_policy,
-        }
-      : null,
-    { q: tFaq("q2"), a: tFaq("a2") },
-  ].filter((e): e is { q: string; a: string } => e != null)
+  const defaultFaqEntries = trip.hide_default_faqs
+    ? []
+    : [
+        {
+          q: t("faqPriceQ", { name: trip.name }),
+          a: hasForeignerPrice
+            ? t("faqPriceADual", {
+                name: trip.name,
+                priceLocal: trip.price,
+                priceForeign: trip.foreigner_price,
+              })
+            : t("faqPriceASingle", { name: trip.name, priceLocal: trip.price }),
+        },
+        {
+          q: t("faqDurationQ", { name: trip.name }),
+          a: t("faqDurationA", { name: trip.name, duration }),
+        },
+        {
+          q: t("faqGroupQ", { name: trip.name }),
+          a: t("faqGroupA", { name: trip.name, maxGuests: trip.max_guests }),
+        },
+        destination
+          ? {
+              q: t("faqMeetQ", { name: trip.name }),
+              a: t("faqMeetA", { name: trip.name, destination }),
+            }
+          : null,
+        trip.cancelation_policy
+          ? {
+              q: t("faqCancelQ", { name: trip.name }),
+              a: trip.cancelation_policy,
+            }
+          : null,
+        { q: tFaq("q2"), a: tFaq("a2") },
+      ].filter((e): e is { q: string; a: string } => e != null)
+
+  const faqEntries = [...trip.faqs, ...defaultFaqEntries]
 
   const faqJsonLd = {
     "@type": "FAQPage",
@@ -194,7 +199,7 @@ export default async function TripDetailPage({ params }: PageProps) {
       <section className="bg-duck-navy pt-28 md:pt-40 pb-10 px-4 md:px-10">
         <div className="max-w-4xl mx-auto">
           <Breadcrumb className="mb-6">
-            <BreadcrumbList className="text-white/60">
+            <BreadcrumbList className="text-white/70">
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Link href="/" className="hover:text-white">
@@ -212,7 +217,12 @@ export default async function TripDetailPage({ params }: PageProps) {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="text-white">{trip.name}</BreadcrumbPage>
+                <BreadcrumbPage
+                  className="text-white max-w-[60vw] truncate md:max-w-none"
+                  title={trip.name}
+                >
+                  {trip.name}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -314,9 +324,7 @@ export default async function TripDetailPage({ params }: PageProps) {
                 <h2 className="text-text-dark text-xl font-bold mb-3">
                   {t("includedTitle")}
                 </h2>
-                <p className="text-text-body leading-relaxed whitespace-pre-line">
-                  {trip.description}
-                </p>
+                <RichText text={trip.description} className="text-text-body leading-relaxed" />
               </div>
             )}
 
@@ -325,9 +333,7 @@ export default async function TripDetailPage({ params }: PageProps) {
                 <h2 className="text-text-dark text-xl font-bold mb-3">
                   {t("itineraryTitle")}
                 </h2>
-                <p className="text-text-body leading-relaxed whitespace-pre-line">
-                  {trip.itinerary}
-                </p>
+                <RichText text={trip.itinerary} className="text-text-body leading-relaxed" />
               </div>
             )}
 
@@ -336,9 +342,7 @@ export default async function TripDetailPage({ params }: PageProps) {
                 <h2 className="text-text-dark text-xl font-bold mb-3">
                   {t("availabilityTitle")}
                 </h2>
-                <p className="text-text-body leading-relaxed whitespace-pre-line">
-                  {trip.availability}
-                </p>
+                <RichText text={trip.availability} className="text-text-body leading-relaxed" />
               </div>
             )}
 
@@ -347,22 +351,21 @@ export default async function TripDetailPage({ params }: PageProps) {
                 <h2 className="text-text-dark text-xl font-bold mb-3">
                   {t("cancellationTitle")}
                 </h2>
-                <p className="text-text-body leading-relaxed whitespace-pre-line">
-                  {trip.cancelation_policy}
-                </p>
+                <RichText text={trip.cancelation_policy} className="text-text-body leading-relaxed" />
               </div>
             )}
 
-            {destination && (
+            {(trip.meeting_point || destination) && (
               <div>
                 <h2 className="text-text-dark text-xl font-bold mb-3">
                   {t("meetingTitle")}
                 </h2>
                 <p className="text-text-body leading-relaxed mb-3">
-                  {destination}, {SITE_CONTACT.city}, {SITE_CONTACT.country}
+                  {trip.meeting_point ||
+                    `${destination}, ${SITE_CONTACT.city}, ${SITE_CONTACT.country}`}
                 </p>
                 <a
-                  href={SITE_CONTACT.mapUrl}
+                  href={trip.map_url || SITE_CONTACT.mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center text-duck-cyan font-medium hover:underline"
@@ -385,17 +388,15 @@ export default async function TripDetailPage({ params }: PageProps) {
                     <h3 className="text-text-dark font-semibold mb-1.5">
                       {q}
                     </h3>
-                    <p className="text-text-body text-sm leading-relaxed whitespace-pre-line">
-                      {a}
-                    </p>
+                    <RichText text={a} className="text-text-body text-sm leading-relaxed" />
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <aside>
-            <div className="sticky top-24 rounded-2xl bg-off-white border border-black/5 p-6 space-y-5">
+          <aside className="order-first md:order-none">
+            <div className="sticky top-24 md:top-32 max-h-[calc(100dvh-9rem)] overflow-y-auto rounded-2xl bg-off-white border border-black/5 p-6 space-y-5">
               <h2 className="sr-only">{t("factsTitle")}</h2>
               <dl className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">

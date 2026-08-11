@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useCallback, useState } from "react"
-import { useForm, type Resolver } from "react-hook-form"
+import { useForm, useFieldArray, type Resolver } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Info,
@@ -10,6 +10,9 @@ import {
   ImageIcon,
   Users,
   MapPin,
+  HelpCircle,
+  Plus,
+  Trash2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -85,6 +88,7 @@ const FIELD_LABELS: Record<string, string> = {
   currency: "العملة",
   cancelation_policy_ar: "سياسة الإلغاء (عربي)",
   cancelation_policy_en: "سياسة الإلغاء (English)",
+  map_url: "رابط الموقع على الخريطة",
   duration: "المدة",
   max_guests: "عدد الاشخاص الأقصى",
   supplier_id: "المورد",
@@ -109,6 +113,15 @@ const EMPTY_FORM_VALUES: TripFormInput = {
   refundable: true,
   cancelation_policy_ar: "",
   cancelation_policy_en: "",
+  itinerary_ar: "",
+  itinerary_en: "",
+  availability_ar: "",
+  availability_en: "",
+  meeting_point_ar: "",
+  meeting_point_en: "",
+  map_url: "",
+  hide_default_faqs: false,
+  faqs: [],
   duration: "1",
   max_guests: "",
   supplier_id: "",
@@ -116,6 +129,16 @@ const EMPTY_FORM_VALUES: TripFormInput = {
   tour_guide_id: "",
   from: undefined,
   to: undefined,
+}
+
+/** Normalizes a possibly-unresolved `{ar, en}` localized field (or legacy plain string) to a safe pair. */
+function asLocalizedPair(value: unknown): { ar: string; en: string } {
+  if (typeof value === "string") return { ar: value, en: "" }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const v = value as { ar?: string; en?: string }
+    return { ar: v.ar || "", en: v.en || "" }
+  }
+  return { ar: "", en: "" }
 }
 
 /** Maps an existing `Trip` (API shape) onto the form's flat, string-based input shape. */
@@ -132,6 +155,16 @@ function mapTripToFormValues(tripData: Trip): TripFormInput {
     typeof tripData.cancelation_policy === "string"
       ? { ar: tripData.cancelation_policy, en: "" }
       : tripData.cancelation_policy
+  const tripItinerary = asLocalizedPair(tripData.itinerary)
+  const tripAvailability = asLocalizedPair(tripData.availability)
+  const tripMeetingPoint = asLocalizedPair(tripData.meeting_point)
+  const tripFaqs = Array.isArray(tripData.faqs)
+    ? tripData.faqs.map((f) => {
+        const q = asLocalizedPair(f.q)
+        const a = asLocalizedPair(f.a)
+        return { q_ar: q.ar, q_en: q.en, a_ar: a.ar, a_en: a.en }
+      })
+    : []
 
   return {
     name_ar: tripName.ar || "",
@@ -148,6 +181,15 @@ function mapTripToFormValues(tripData: Trip): TripFormInput {
     refundable: tripData.refundable,
     cancelation_policy_ar: tripPolicy?.ar || "",
     cancelation_policy_en: tripPolicy?.en || "",
+    itinerary_ar: tripItinerary.ar,
+    itinerary_en: tripItinerary.en,
+    availability_ar: tripAvailability.ar,
+    availability_en: tripAvailability.en,
+    meeting_point_ar: tripMeetingPoint.ar,
+    meeting_point_en: tripMeetingPoint.en,
+    map_url: tripData.map_url || "",
+    hide_default_faqs: tripData.hide_default_faqs ?? false,
+    faqs: tripFaqs,
     duration: (tripData.duration ?? 1).toString(),
     max_guests: tripData.max_guests.toString(),
     supplier_id: tripData.supplier_id?.toString() || "",
@@ -217,6 +259,12 @@ export default function TripForm({
     mode: "onBlur",
     reValidateMode: "onChange",
   })
+
+  const {
+    fields: faqFields,
+    append: appendFaq,
+    remove: removeFaq,
+  } = useFieldArray({ control: form.control, name: "faqs" })
 
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>(
@@ -324,6 +372,15 @@ export default function TripForm({
           ar: values.cancelation_policy_ar,
           en: values.cancelation_policy_en,
         },
+        itinerary: { ar: values.itinerary_ar, en: values.itinerary_en },
+        availability: { ar: values.availability_ar, en: values.availability_en },
+        meeting_point: { ar: values.meeting_point_ar, en: values.meeting_point_en },
+        map_url: values.map_url,
+        hide_default_faqs: values.hide_default_faqs,
+        faqs: values.faqs.map((f) => ({
+          q: { ar: f.q_ar, en: f.q_en },
+          a: { ar: f.a_ar, en: f.a_en },
+        })),
         from: from.toISOString(),
         to: values.to ? values.to.toISOString() : undefined,
         duration: values.duration,
@@ -797,6 +854,269 @@ export default function TripForm({
                     )}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Trip Page Content */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+                <Info className="w-5 h-5" />
+                محتوى صفحة الرحلة
+              </h2>
+              <div className="grid gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="itinerary_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>خط سير الرحلة (عربي)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={"مثال:\n* التجمع عند الميناء\n* التجديف حتى الجزيرة"}
+                            rows={4}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="itinerary_en"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>خط سير الرحلة (English)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={"Example:\n* Meet at the harbor\n* Kayak to the island"}
+                            rows={4}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="availability_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>المواعيد المتاحة (عربي)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={"مثال:\n* يوميًا من 8 صباحًا حتى 5 مساءً\n* عدا أيام الجمعة"}
+                            rows={4}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="availability_en"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>المواعيد المتاحة (English)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={"Example:\n* Daily from 8am to 5pm\n* Except Fridays"}
+                            rows={4}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="meeting_point_ar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>مكان اللقاء (عربي)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="مثال: جزيرة أسوان، بجوار مرسى القوارب"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="meeting_point_en"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>مكان اللقاء (English)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Example: Aswan Island, next to the boat dock"
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="map_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>رابط الموقع على الخريطة (اختياري)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="url"
+                          placeholder="https://maps.google.com/..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* FAQ Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-duck-navy border-b pb-2 flex items-center gap-2">
+                <HelpCircle className="w-5 h-5" />
+                الأسئلة الشائعة
+              </h2>
+              <div className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="hide_default_faqs"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Checkbox
+                            id="hide_default_faqs"
+                            name={field.name}
+                            checked={field.value}
+                            onCheckedChange={(checked) =>
+                              field.onChange(checked === true)
+                            }
+                          />
+                        </FormControl>
+                        <Label
+                          htmlFor="hide_default_faqs"
+                          className="cursor-pointer font-normal"
+                        >
+                          إخفاء الأسئلة الافتراضية (السعر، المدة، عدد الأشخاص...)
+                        </Label>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {faqFields.map((faqField, index) => (
+                  <div
+                    key={faqField.id}
+                    className="rounded-lg border p-4 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-text-muted">
+                        سؤال {index + 1}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFaq(index)}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={`faqs.${index}.q_ar`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>السؤال (عربي)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="مثال: هل الرحلة مناسبة للأطفال؟" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`faqs.${index}.q_en`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>السؤال (English)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Example: Is the trip suitable for kids?" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={`faqs.${index}.a_ar`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>الإجابة (عربي)</FormLabel>
+                            <FormControl>
+                              <Textarea rows={2} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`faqs.${index}.a_en`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>الإجابة (English)</FormLabel>
+                            <FormControl>
+                              <Textarea rows={2} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    appendFaq({ q_ar: "", q_en: "", a_ar: "", a_en: "" })
+                  }
+                  className="w-fit"
+                >
+                  <Plus className="w-4 h-4 me-1" />
+                  إضافة سؤال
+                </Button>
               </div>
             </div>
 

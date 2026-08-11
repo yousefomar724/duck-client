@@ -38,6 +38,24 @@ export function createTripFormSchema({ mode, requireSupplier }: TripFormSchemaOp
     refundable: z.boolean().default(true),
     cancelation_policy_ar: z.string().trim().min(1, "سياسة الإلغاء بالعربي مطلوبة"),
     cancelation_policy_en: z.string().default(""),
+    itinerary_ar: z.string().default(""),
+    itinerary_en: z.string().default(""),
+    availability_ar: z.string().default(""),
+    availability_en: z.string().default(""),
+    meeting_point_ar: z.string().default(""),
+    meeting_point_en: z.string().default(""),
+    map_url: z.union([z.string().url("رابط غير صحيح"), z.literal("")]).default(""),
+    hide_default_faqs: z.boolean().default(false),
+    faqs: z
+      .array(
+        z.object({
+          q_ar: z.string().trim().min(1, "السؤال بالعربي مطلوب"),
+          q_en: z.string().default(""),
+          a_ar: z.string().trim().min(1, "الإجابة بالعربي مطلوبة"),
+          a_en: z.string().default(""),
+        }),
+      )
+      .default([]),
     duration: z.coerce
       .number({ invalid_type_error: "أدخل مدة صحيحة" })
       .int("يجب أن تكون المدة رقمًا صحيحًا")
@@ -120,6 +138,15 @@ export interface TripFormInput {
   refundable: boolean
   cancelation_policy_ar: string
   cancelation_policy_en: string
+  itinerary_ar: string
+  itinerary_en: string
+  availability_ar: string
+  availability_en: string
+  meeting_point_ar: string
+  meeting_point_en: string
+  map_url: string
+  hide_default_faqs: boolean
+  faqs: { q_ar: string; q_en: string; a_ar: string; a_en: string }[]
   duration: string
   max_guests: string
   supplier_id: string

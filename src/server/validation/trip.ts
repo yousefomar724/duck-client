@@ -15,8 +15,10 @@ const cancelationPolicyText = z.object({
   en: z.string(),
 });
 
-/** Legacy/unused-by-the-UI localized fields (itinerary, availability) — any strings, including empty. */
+/** Optional freeform localized fields (itinerary, availability, meeting point) — any strings, including empty. */
 const looseLocalizedText = z.object({ ar: z.string(), en: z.string() });
+
+const faqEntry = z.object({ q: looseLocalizedText, a: looseLocalizedText });
 
 const isoDate = z
   .string()
@@ -44,6 +46,10 @@ export const createTripBodySchema = z.object({
   max_guests: z.number().int().min(1, 'يجب أن يكون شخصًا واحدًا على الأقل'),
   images: z.unknown().optional(),
   cancelation_policy: cancelationPolicyText.optional(),
+  meeting_point: looseLocalizedText.optional(),
+  map_url: z.string().url().or(z.literal('')).optional(),
+  faqs: z.array(faqEntry).optional(),
+  hide_default_faqs: z.boolean().optional(),
   refundable: z.boolean().optional(),
   tour_guide_id: objectId.nullable().optional(),
   destination_ids: z.array(objectId).optional(),

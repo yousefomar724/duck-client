@@ -5,6 +5,7 @@ import { Destination } from '../models/destination';
 import { toTripResponse, toDestinationResponse } from './trip';
 import { resolveLocalized } from '../lib/localize';
 import { extractObjectId, kebab } from '@/lib/seo/slug';
+import { cleanLegacy } from '@/lib/trips/clean-legacy';
 
 /**
  * Server Components must not HTTP-fetch their own /api/v1 routes — these
@@ -43,6 +44,10 @@ export interface PublicTrip {
   itinerary: string;
   availability: string;
   cancelation_policy: string;
+  meeting_point: string;
+  map_url: string;
+  faqs: { q: string; a: string }[];
+  hide_default_faqs: boolean;
   price: number;
   foreigner_price: number;
   currency: string;
@@ -59,6 +64,7 @@ export interface PublicTrip {
   supplier?: { id: string; name: string };
   updated_at?: string;
 }
+
 
 function toPublicDestination(json: Record<string, unknown>): PublicDestination {
   return {
@@ -90,13 +96,23 @@ function toPublicTrip(json: Record<string, unknown>, locale: string): PublicTrip
   const supplier = json.supplier as { id?: string; name?: unknown } | undefined;
   const supplierName = supplier?.name != null ? resolveLocalized(supplier.name, locale) : undefined;
 
+  const faqs = Array.isArray(json.faqs)
+    ? (json.faqs as { q?: unknown; a?: unknown }[])
+        .map((f) => ({ q: (f.q as string) ?? '', a: (f.a as string) ?? '' }))
+        .filter((f) => f.q && f.a)
+    : [];
+
   return {
     id: json.id as string,
     name: json.name as string,
     description: json.description as string,
-    itinerary: (json.itinerary as string) ?? '',
-    availability: (json.availability as string) ?? '',
+    itinerary: cleanLegacy((json.itinerary as string) ?? ''),
+    availability: cleanLegacy((json.availability as string) ?? ''),
     cancelation_policy: (json.cancelation_policy as string) ?? '',
+    meeting_point: (json.meeting_point as string) ?? '',
+    map_url: (json.map_url as string) ?? '',
+    faqs,
+    hide_default_faqs: Boolean(json.hide_default_faqs),
     price: json.price as number,
     foreigner_price: (json.foreigner_price as number) ?? 0,
     currency: (json.currency as string) ?? 'EGP',
