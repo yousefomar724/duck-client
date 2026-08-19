@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
-import { User, Map, Globe, Sun, Menu } from "lucide-react"
+import { Map, Globe, Sun, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import SettingsDialog from "@/components/landing/SettingsDialog"
+import { UserMenu } from "@/components/shared/user-menu"
 import { useAuth } from "@/lib/stores/auth-store"
 
 const SOLID_NAVBAR_PATHS = ["/profile", "/my-bookings", "/map"]
@@ -32,7 +33,7 @@ export default function Navbar() {
   const { scrollY } = useScroll()
   const t = useTranslations("navbar")
   const locale = useLocale()
-  const { isAuthenticated, effectiveRole } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   const isNavbarSolid = forceSolid || isSolid
 
@@ -205,7 +206,7 @@ export default function Navbar() {
                     }}
                   >
                     <Globe className="size-4" />
-                    {t("language")} / EGP
+                    {locale === "ar" ? "عربي" : "English"} / EGP
                   </Button>
                   <Button
                     variant="outline"
@@ -222,30 +223,11 @@ export default function Navbar() {
                     </Link>
                   </Button>
                   {isAuthenticated ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        className="justify-center rounded-full gap-2"
-                        asChild
-                      >
-                        <Link
-                          href={
-                            effectiveRole === 2
-                              ? "/admin/dashboard"
-                              : effectiveRole === 1
-                                ? "/supplier/my-trips"
-                                : "/profile"
-                          }
-                          className="cursor-pointer"
-                          onClick={() => setSheetOpen(false)}
-                        >
-                          <User className="size-4" />
-                          {effectiveRole === 2 || effectiveRole === 1
-                            ? t("dashboard")
-                            : t("profile")}
-                        </Link>
-                      </Button>
-                    </>
+                    <UserMenu
+                      variant="landing"
+                      isNavbarSolid
+                      onNavigate={() => setSheetOpen(false)}
+                    />
                   ) : (
                     <>
                       <Button
@@ -291,7 +273,9 @@ export default function Navbar() {
               )}
             >
               <Globe className="w-4 h-4 shrink-0" />
-              <span className="truncate">{t("language")} / EGP</span>
+              <span className="truncate">
+                {locale === "ar" ? "عربي" : "English"} / EGP
+              </span>
             </button>
             <div
               className={cn(
@@ -352,25 +336,9 @@ export default function Navbar() {
               <span>{t("map")}</span>
             </Link>
             {isAuthenticated ? (
-              <Link
-                href={
-                  effectiveRole === 2
-                    ? "/admin/dashboard"
-                    : effectiveRole === 1
-                      ? "/supplier/my-trips"
-                      : "/profile"
-                }
-                className={cn("hidden! md:flex!", actionButtonClass)}
-              >
-                <User className="w-4 h-4 shrink-0" />
-                <span>
-                  {effectiveRole === 2
-                    ? t("dashboard")
-                    : effectiveRole === 1
-                      ? t("dashboard")
-                      : t("profile")}
-                </span>
-              </Link>
+              <div className="hidden md:block">
+                <UserMenu variant="landing" isNavbarSolid={isNavbarSolid} />
+              </div>
             ) : (
               <>
                 <Link
@@ -397,13 +365,13 @@ export default function Navbar() {
               }}
               aria-label={t("switchLanguage")}
               className={cn(
-                "md:hidden flex items-center justify-center w-10 h-10 rounded-full shrink-0 transition-colors text-xs font-semibold tracking-wide",
+                "md:hidden flex items-center justify-center h-10 min-w-10 px-3 rounded-full shrink-0 transition-colors text-xs font-semibold tracking-wide",
                 isNavbarSolid
                   ? "text-text-dark hover:bg-black/5"
                   : "text-white hover:bg-white/10",
               )}
             >
-              {locale === "ar" ? "EN" : "AR"}
+              {locale === "ar" ? "English" : "عربي"}
             </button>
           </div>
         </div>

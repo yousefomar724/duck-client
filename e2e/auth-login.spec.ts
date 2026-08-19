@@ -13,4 +13,5 @@ test('login page authenticates user', async ({ page }) => {
   );
   const token = await page.evaluate(() => localStorage.getItem('duck_auth_token'));
   expect(token).toBeTruthy();
+  await page.waitForURL(/\/supplier\/bookings/, { timeout: 15_000 });
 });

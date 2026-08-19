@@ -68,8 +68,19 @@ export async function createBooking(
   });
 }
 
-export async function getBookings(): Promise<ApiResponse<Booking[]>> {
-  return apiClient<Booking[]>('/bookings', { method: 'GET' });
+export async function getBookings(params?: {
+  supplier_id?: string
+  status?: string
+  from?: string
+  to?: string
+}): Promise<ApiResponse<Booking[]>> {
+  const search = new URLSearchParams()
+  if (params?.supplier_id) search.set('supplier_id', params.supplier_id)
+  if (params?.status) search.set('status', params.status)
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  const qs = search.toString()
+  return apiClient<Booking[]>(`/bookings${qs ? `?${qs}` : ''}`, { method: 'GET' })
 }
 
 export async function getMyBookings(): Promise<ApiResponse<Booking[]>> {
@@ -127,6 +138,9 @@ export interface UpdateBookingRequest {
   quantity?: number;
   local_guests?: number;
   foreigner_guests?: number;
+  adults?: number;
+  kids_1_6?: number;
+  kids_7_12?: number;
   duration?: number;
   wants_guide?: boolean;
   resource_type?: 'kayak' | 'water_cycle' | 'sup';
@@ -175,8 +189,13 @@ export async function markRefundSent(
 
 export async function deleteBooking(
   id: string,
-): Promise<ApiResponse<{ message: string }>> {
-  return apiClient<{ message: string }>(`/bookings/${id}`, {
-    method: 'DELETE',
-  });
+  reason?: string,
+): Promise<ApiResponse<{ message: string; wallet_adjustment?: number }>> {
+  return apiClient<{ message: string; wallet_adjustment?: number }>(
+    `/bookings/${id}`,
+    {
+      method: 'DELETE',
+      body: JSON.stringify({ reason: reason?.trim() ?? '' }),
+    },
+  );
 }

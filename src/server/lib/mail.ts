@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { formatCurrency } from '@/lib/constants';
+import { SITE_TIME_ZONE } from '@/lib/time';
 
 interface BookingEmailData {
   id: string;
@@ -8,6 +9,9 @@ interface BookingEmailData {
   booking_date: Date;
   updated_at: Date;
   quantity: number;
+  adults?: number;
+  kids_1_6?: number;
+  kids_7_12?: number;
   wants_guide: boolean;
   played_before?: boolean | null;
   hear_about_us?: string;
@@ -39,15 +43,17 @@ function formatBookingStatusAr(status: string): string {
 function formatBookingDateAr(date: Date): string {
   return new Intl.DateTimeFormat('ar-EG', {
     numberingSystem: 'latn',
+    timeZone: SITE_TIME_ZONE,
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   }).format(date);
 }
 
-function formatBookingTimeAr(date: Date): string {
+export function formatBookingTimeAr(date: Date): string {
   return new Intl.DateTimeFormat('ar-EG', {
     numberingSystem: 'latn',
+    timeZone: SITE_TIME_ZONE,
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
@@ -128,6 +134,11 @@ function formatBookingEmailBody(
         : 'لا';
   const guestsLabel =
     booking.quantity === 1 ? 'ضيف واحد' : `${booking.quantity} ضيوف`;
+  const kids = (booking.kids_1_6 ?? 0) + (booking.kids_7_12 ?? 0);
+  const kidsRow =
+    kids > 0
+      ? `<tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 15px 0; color: #555555; font-weight: bold;">تفصيل الأعمار</td><td style="padding: 15px 0; color: #333333;">${booking.adults ?? Math.max(0, booking.quantity - kids)} بالغ · ${booking.kids_1_6 ?? 0} أطفال (1–6) · ${booking.kids_7_12 ?? 0} أطفال (7–12)</td></tr>`
+      : '';
   const confirmLinkBlock =
     options?.showConfirmLink !== false
       ? `
@@ -160,6 +171,7 @@ function formatBookingEmailBody(
               <tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 15px 0; color: #555555; font-weight: bold;">وقت الحجز</td><td style="padding: 15px 0; color: #333333;">${formatBookingTimeAr(booking.booking_date)}</td></tr>
               <tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 15px 0; color: #555555; font-weight: bold;">تاريخ الإنشاء</td><td style="padding: 15px 0; color: #333333;">${formatDateTimeAr(booking.updated_at)}</td></tr>
               <tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 15px 0; color: #555555; font-weight: bold;">عدد الضيوف</td><td style="padding: 15px 0; color: #333333;">${guestsLabel}</td></tr>
+              ${kidsRow}
               <tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 15px 0; color: #555555; font-weight: bold;">المتطلبات</td><td style="padding: 15px 0; color: #333333;">${requirements}</td></tr>
               <tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 15px 0; color: #555555; font-weight: bold;">سبق التجربة</td><td style="padding: 15px 0; color: #333333;">${playedBefore}</td></tr>
               <tr><td style="padding: 15px 0; color: #555555; font-weight: bold;">كيف سمع عنا</td><td style="padding: 15px 0; color: #333333;">${hearAboutUs}</td></tr>

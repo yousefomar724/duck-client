@@ -46,7 +46,7 @@ const fedraSerif = localFont({
 })
 
 const SITE_DESCRIPTION =
-  "Kayaking, stand-up paddleboarding and water bike trips on the Nile around Elephantine Island, Aswan. Book with Duck Entertainment."
+  "Kayaking and water sports on the Nile in Aswan. Book with Duck Entertainment."
 
 /**
  * Social/preview card. 1200x630 is the size Facebook, WhatsApp and X expect.
@@ -58,7 +58,7 @@ const OG_IMAGE = {
   url: "/og-nile-sunset.jpg",
   width: 1200,
   height: 630,
-  alt: "Kayaking on the Nile at sunset near Elephantine Island, Aswan",
+  alt: "Kayaking on the Nile at sunset in Aswan",
 }
 
 /**
@@ -72,18 +72,19 @@ const KEYWORDS = [
   "Aswan kayak tour",
   "Nile kayaking",
   "kayak Egypt",
-  "Elephantine Island activities",
   "water sports Aswan",
   "stand up paddleboarding Aswan",
   "things to do in Aswan",
   "Nile river activities",
   "Aswan tours",
+  "kayaking Nile Aswan",
+  "water bike Aswan",
   "كاياك أسوان",
   "تأجير كاياك أسوان",
   "رحلات نيلية أسوان",
   "رياضات مائية أسوان",
-  "جزيرة إلفنتين",
   "أنشطة أسوان",
+  "الكاياك على النيل",
 ]
 
 export const metadata: Metadata = {

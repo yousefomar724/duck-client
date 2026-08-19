@@ -11,7 +11,6 @@ import {
 } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
-import { z } from "zod/v3"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Check, ChevronLeft, Clock, Copy, User } from "lucide-react"
 import {
@@ -35,13 +34,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import {
-  BookingScheduleField,
-  BOOKING_MIN_MINUTES,
-  BOOKING_MAX_MINUTES,
-} from "@/components/booking/booking-schedule-field"
+import { BookingScheduleField } from "@/components/booking/booking-schedule-field"
 import {
   formatBookingDayPhrase,
   formatBookingTime,
@@ -51,10 +47,11 @@ import {
   localEgyptMobileToE164,
 } from "@/lib/booking/phone"
 import {
+  calculateBookingBreakdown,
   calculateBookingTotal,
   minimumDeposit,
 } from "@/lib/booking/pricing"
-import { createBookingFormSchema } from "@/lib/booking/form-schema"
+import { createBookingFormSchema, type BookingFormValues } from "@/lib/booking/form-schema"
 import { getTrips } from "@/lib/api/trips"
 import * as bookingsApi from "@/lib/api/bookings"
 import {
@@ -97,22 +94,6 @@ const HEAR_ABOUT_OPTIONS: readonly HearAboutUs[] = [
   "friend",
   "other",
 ] as const
-
-type ContactFormValues = {
-  full_name: string
-  phone: string
-  booking_date: Date
-  resource_type: ResourceType
-  guests: number
-  guest_mix: GuestMix
-  local_guests: number
-  foreigner_guests: number
-  duration: number
-  wants_guide: boolean
-  played_before?: boolean
-  hear_about_us: HearAboutUs | ""
-  referral_text: string
-}
 
 function getLocalizedText(value: any, locale: string, fallback = ""): string {
   return typeof value === "string"
@@ -211,6 +192,7 @@ function BookPageContent() {
           numberInvalid: tv("numberInvalid"),
           minOneGuest: tv("minOneGuest"),
           minOne: tv("minOne"),
+          kidsMinOne: t("kidsMinOne"),
           maxGuestsError: (max) => t("maxGuestsError", { max }),
           guestMixSumError: (total) => t("guestMixSumError", { total }),
         },
@@ -268,7 +250,7 @@ function BookPageContent() {
     })
   }, [])
 
-  const form = useForm<ContactFormValues>({
+  const form = useForm<BookingFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: "",
@@ -276,6 +258,10 @@ function BookPageContent() {
       booking_date: defaultTomorrow,
       resource_type: "kayak",
       guests: 1,
+      has_kids_1_6: false,
+      kids_1_6: 0,
+      has_kids_7_12: false,
+      kids_7_12: 0,
       guest_mix: "local",
       local_guests: 1,
       foreigner_guests: 0,
@@ -299,19 +285,12 @@ function BookPageContent() {
     // Only update if necessary, to avoid unnecessary renders
     setGuestsMode((prevMode) => {
       if (maxG <= 5) {
-        // Only switch to "preset" if not already
         return prevMode !== "preset" ? "preset" : prevMode
       } else {
-        // Do not force mode for >5 guests, the component logic handles switching to "custom" as needed
         return prevMode
       }
     })
 
-    // Cap guests value if it exceeds max_guests
-    const currentGuests = form.getValues("guests")
-    if (currentGuests > maxG) form.setValue("guests", maxG)
-
-    // Update previous trip id
     prevTripIdRef.current = selectedTrip.id
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTrip?.id, form])
@@ -325,6 +304,16 @@ function BookPageContent() {
     name: "resource_type",
   })
   const watchedGuests = useWatch({ control: form.control, name: "guests" })
+  const watchedHasKids16 = useWatch({
+    control: form.control,
+    name: "has_kids_1_6",
+  })
+  const watchedKids16 = useWatch({ control: form.control, name: "kids_1_6" })
+  const watchedHasKids712 = useWatch({
+    control: form.control,
+    name: "has_kids_7_12",
+  })
+  const watchedKids712 = useWatch({ control: form.control, name: "kids_7_12" })
   const watchedGuestMix = useWatch({
     control: form.control,
     name: "guest_mix",
@@ -349,16 +338,32 @@ function BookPageContent() {
     name: "referral_text",
   })
 
+  const kids1to6 = watchedHasKids16 ? Number(watchedKids16) || 0 : 0
+  const kids7to12 = watchedHasKids712 ? Number(watchedKids712) || 0 : 0
+  const totalGuests = (Number(watchedGuests) || 0) + kids1to6 + kids7to12
+
+  useEffect(() => {
+    if (!selectedTrip) return
+    const maxG = selectedTrip.max_guests
+    const adults = Number(form.getValues("guests")) || 0
+    const kids =
+      (form.getValues("has_kids_1_6") ? Number(form.getValues("kids_1_6")) || 0 : 0) +
+      (form.getValues("has_kids_7_12") ? Number(form.getValues("kids_7_12")) || 0 : 0)
+    if (adults + kids <= maxG) return
+    const nextAdults = Math.max(1, maxG - kids)
+    if (nextAdults !== adults) form.setValue("guests", nextAdults)
+  }, [selectedTrip, totalGuests, form])
+
   // When guest_mix changes, keep local/foreigner in sync with total.
   useEffect(() => {
     if (watchedGuestMix === "local") {
-      form.setValue("local_guests", Number(watchedGuests) || 0)
+      form.setValue("local_guests", totalGuests)
       form.setValue("foreigner_guests", 0)
     } else if (watchedGuestMix === "foreigner") {
-      form.setValue("foreigner_guests", Number(watchedGuests) || 0)
+      form.setValue("foreigner_guests", totalGuests)
       form.setValue("local_guests", 0)
     }
-  }, [watchedGuestMix, watchedGuests, form])
+  }, [watchedGuestMix, totalGuests, form])
 
   const handleUseMyData = () => {
     if (!user) return
@@ -379,6 +384,8 @@ function BookPageContent() {
         localGuests: Number(watchedLocalGuests) || 0,
         foreignerGuests: Number(watchedForeignerGuests) || 0,
         duration: Number(watchedDuration) || 1,
+        kids1to6,
+        kids7to12,
       }),
     [
       selectedTrip,
@@ -387,6 +394,8 @@ function BookPageContent() {
       watchedLocalGuests,
       watchedForeignerGuests,
       watchedDuration,
+      kids1to6,
+      kids7to12,
     ],
   )
 
@@ -398,15 +407,17 @@ function BookPageContent() {
 
     let localGuests = 0
     let foreignerGuests = 0
+    const kids_1_6 = values.has_kids_1_6 ? values.kids_1_6 : 0
+    const kids_7_12 = values.has_kids_7_12 ? values.kids_7_12 : 0
+    const totalGuests = values.guests + kids_1_6 + kids_7_12
     if (values.guest_mix === "local") {
-      localGuests = values.guests
+      localGuests = totalGuests
     } else if (values.guest_mix === "foreigner") {
-      foreignerGuests = values.guests
+      foreignerGuests = totalGuests
     } else {
       localGuests = values.local_guests
       foreignerGuests = values.foreigner_guests
     }
-    const totalGuests = localGuests + foreignerGuests
 
     const needsReferral =
       values.hear_about_us === "friend" || values.hear_about_us === "other"
@@ -424,6 +435,9 @@ function BookPageContent() {
       quantity: totalGuests,
       local_guests: localGuests,
       foreigner_guests: foreignerGuests,
+      adults: values.guests,
+      kids_1_6,
+      kids_7_12,
       duration: values.duration,
       wants_guide: false,
       played_before: values.played_before,
@@ -493,6 +507,9 @@ function BookPageContent() {
             quantity: b.quantity ?? totalGuests,
             local_guests: localGuests,
             foreigner_guests: foreignerGuests,
+            adults: values.guests,
+            kids_1_6,
+            kids_7_12,
             amount: b.amount ?? 0,
           },
         }
@@ -819,7 +836,7 @@ function BookPageContent() {
                       return (
                         <FormItem>
                           <FormLabel className="text-text-dark font-medium">
-                            {t("guests")}{" "}
+                            {t("adults")}{" "}
                             <span className="text-red-500">*</span>
                           </FormLabel>
                           {guestsMode === "preset" ? (
@@ -894,6 +911,7 @@ function BookPageContent() {
                           <FormMessage />
                           {selectedTrip ? (
                             <p className="text-xs text-text-muted">
+                              {t("adultsHint")}{" "}
                               {t("maxGuests", { max: selectedTrip.max_guests })}
                             </p>
                           ) : null}
@@ -901,6 +919,126 @@ function BookPageContent() {
                       )
                     }}
                   />
+
+                  <div className="space-y-3 rounded-xl border border-black/10 p-4">
+                    <p className="text-text-dark font-medium">
+                      {t("kidsSectionTitle")}
+                    </p>
+                    <FormField
+                      control={form.control}
+                      name="has_kids_1_6"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-3">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={(checked) => {
+                                  const on = Boolean(checked)
+                                  field.onChange(on)
+                                  if (!on) form.setValue("kids_1_6", 0)
+                                  else if (!form.getValues("kids_1_6")) {
+                                    form.setValue("kids_1_6", 1)
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {t("kids1to6Label")}
+                            </FormLabel>
+                          </div>
+                          {field.value ? (
+                            <FormField
+                              control={form.control}
+                              name="kids_1_6"
+                              render={({ field: countField }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs text-text-muted">
+                                    {t("kidsCountLabel")}
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      inputMode="numeric"
+                                      min={1}
+                                      className="rounded-lg border-black/20 max-w-32"
+                                      value={countField.value}
+                                      onChange={(e) => {
+                                        const v = e.target.value
+                                        countField.onChange(
+                                          v === "" ? 0 : Number(v),
+                                        )
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          ) : null}
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="has_kids_7_12"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-3">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={(checked) => {
+                                  const on = Boolean(checked)
+                                  field.onChange(on)
+                                  if (!on) form.setValue("kids_7_12", 0)
+                                  else if (!form.getValues("kids_7_12")) {
+                                    form.setValue("kids_7_12", 1)
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {t("kids7to12Label")}
+                            </FormLabel>
+                          </div>
+                          {field.value ? (
+                            <FormField
+                              control={form.control}
+                              name="kids_7_12"
+                              render={({ field: countField }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs text-text-muted">
+                                    {t("kidsCountLabel")}
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      inputMode="numeric"
+                                      min={1}
+                                      className="rounded-lg border-black/20 max-w-32"
+                                      value={countField.value}
+                                      onChange={(e) => {
+                                        const v = e.target.value
+                                        countField.onChange(
+                                          v === "" ? 0 : Number(v),
+                                        )
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          ) : null}
+                        </FormItem>
+                      )}
+                    />
+                    <p className="text-xs text-text-muted">{t("kidsPriceHint")}</p>
+                    <p className="text-sm font-medium text-text-dark">
+                      {t("totalGuestsLabel", { count: totalGuests })}
+                    </p>
+                  </div>
 
                   {/* Guest mix: locals / foreigners split */}
                   <FormField
@@ -995,7 +1133,7 @@ function BookPageContent() {
                       />
                       <p className="text-xs text-text-muted sm:col-span-2">
                         {t("guestMixSumHint", {
-                          total: Number(watchedGuests) || 0,
+                          total: totalGuests,
                           sum:
                             (Number(watchedLocalGuests) || 0) +
                             (Number(watchedForeignerGuests) || 0),
@@ -1253,54 +1391,66 @@ function BookPageContent() {
                     </span>
                   </div>
                   {(() => {
-                    const localCount =
-                      watchedGuestMix === "local"
-                        ? Number(watchedGuests) || 0
-                        : watchedGuestMix === "mixed"
-                          ? Number(watchedLocalGuests) || 0
-                          : 0
-                    const foreignerCount =
-                      watchedGuestMix === "foreigner"
-                        ? Number(watchedGuests) || 0
-                        : watchedGuestMix === "mixed"
-                          ? Number(watchedForeignerGuests) || 0
-                          : 0
-                    const duration = selectedTrip.is_tour
-                      ? Number(watchedDuration) || 1
-                      : 1
-                    const localTotal =
-                      selectedTrip.price * localCount * duration
-                    const foreignerTotal =
-                      (selectedTrip.foreigner_price ?? 0) *
-                      foreignerCount *
-                      duration
-                    const total = localTotal + foreignerTotal
+                    const breakdown = calculateBookingBreakdown({
+                      trip: selectedTrip,
+                      guestMix: watchedGuestMix,
+                      guests: Number(watchedGuests) || 0,
+                      localGuests: Number(watchedLocalGuests) || 0,
+                      foreignerGuests: Number(watchedForeignerGuests) || 0,
+                      duration: Number(watchedDuration) || 1,
+                      kids1to6,
+                      kids7to12,
+                    })
                     return (
                       <>
-                        {localCount > 0 ? (
+                        <div className="flex justify-between">
+                          <span className="text-text-muted">
+                            {t("reviewAdults")}
+                          </span>
+                          <span>{Number(watchedGuests) || 0}</span>
+                        </div>
+                        {kids1to6 > 0 ? (
                           <div className="flex justify-between">
                             <span className="text-text-muted">
-                              {t("reviewLocalGuests", { count: localCount })}
+                              {t("reviewKids1to6")}
+                            </span>
+                            <span>{kids1to6}</span>
+                          </div>
+                        ) : null}
+                        {kids7to12 > 0 ? (
+                          <div className="flex justify-between">
+                            <span className="text-text-muted">
+                              {t("reviewKids7to12")}
+                            </span>
+                            <span>{kids7to12}</span>
+                          </div>
+                        ) : null}
+                        {breakdown.localCount > 0 ? (
+                          <div className="flex justify-between">
+                            <span className="text-text-muted">
+                              {t("reviewLocalGuests", {
+                                count: breakdown.localCount,
+                              })}
                             </span>
                             <span>
                               {formatCurrency(
-                                localTotal,
+                                breakdown.localTotal,
                                 selectedTrip.currency,
                                 locale,
                               )}
                             </span>
                           </div>
                         ) : null}
-                        {foreignerCount > 0 ? (
+                        {breakdown.foreignerCount > 0 ? (
                           <div className="flex justify-between">
                             <span className="text-text-muted">
                               {t("reviewForeignerGuests", {
-                                count: foreignerCount,
+                                count: breakdown.foreignerCount,
                               })}
                             </span>
                             <span>
                               {formatCurrency(
-                                foreignerTotal,
+                                breakdown.foreignerTotal,
                                 selectedTrip.currency,
                                 locale,
                               )}
@@ -1312,7 +1462,11 @@ function BookPageContent() {
                             {t("reviewTotal")}
                           </span>
                           <span className="font-bold text-duck-cyan">
-                            {formatCurrency(total, selectedTrip.currency, locale)}
+                            {formatCurrency(
+                              breakdown.total,
+                              selectedTrip.currency,
+                              locale,
+                            )}
                           </span>
                         </div>
                       </>

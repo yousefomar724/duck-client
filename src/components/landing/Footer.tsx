@@ -225,7 +225,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 className="hover:text-white hover:underline"
               >
-                Aswan, Egypt, Elephantine Island
+                Aswan, Egypt
               </a>
             </div>
           </div>

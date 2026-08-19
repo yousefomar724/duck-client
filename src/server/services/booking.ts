@@ -4,6 +4,7 @@ import type { BookingDoc } from '../models/booking';
 import { isValidResourceType } from './resource-type';
 import { checkAvailability } from './availability';
 import { minimumDeposit } from '@/lib/booking/pricing';
+import { resolveGuestBreakdown } from '@/lib/bookings/guests';
 
 export interface CreateBookingInput {
   trip_id: string;
@@ -21,6 +22,9 @@ export interface CreateBookingInput {
   referral_text?: string;
   /** Amount the customer chose to send now (deposit or full); clamped server-side. */
   declared_amount?: number;
+  adults?: number;
+  kids_1_6?: number;
+  kids_7_12?: number;
 }
 
 export interface BuiltBooking {
@@ -38,6 +42,9 @@ export interface BuiltBooking {
   quantity: number;
   local_guests: number;
   foreigner_guests: number;
+  adults: number;
+  kids_1_6: number;
+  kids_7_12: number;
   resource_type: string;
   wants_guide: boolean;
   played_before?: boolean | null;
@@ -131,6 +138,20 @@ export async function buildBooking(
     throw new Error(`guests exceed maximum allowed: ${trip.max_guests}`);
   }
 
+  const guestBreakdown =
+    guests > 0
+      ? resolveGuestBreakdown({
+          guests,
+          adults: req.adults,
+          kids_1_6: req.kids_1_6,
+          kids_7_12: req.kids_7_12,
+        })
+      : {
+          adults: req.adults ?? quantity,
+          kids_1_6: 0,
+          kids_7_12: 0,
+        };
+
   if (req.resource_type) {
     await checkAvailability(
       trip.supplier_id.toString(),
@@ -178,6 +199,9 @@ export async function buildBooking(
     quantity,
     local_guests: computedLocal,
     foreigner_guests: computedForeigner,
+    adults: guestBreakdown.adults,
+    kids_1_6: guestBreakdown.kids_1_6,
+    kids_7_12: guestBreakdown.kids_7_12,
     resource_type: req.resource_type ?? '',
     wants_guide: req.wants_guide ?? false,
     played_before: req.played_before ?? null,
@@ -249,6 +273,9 @@ export function toBookingEmailData(booking: BookingDoc) {
     booking_date: booking.booking_date,
     updated_at: (booking as unknown as { updated_at: Date }).updated_at,
     quantity: booking.quantity,
+    adults: booking.adults,
+    kids_1_6: booking.kids_1_6,
+    kids_7_12: booking.kids_7_12,
     wants_guide: booking.wants_guide,
     played_before: booking.played_before,
     hear_about_us: booking.hear_about_us,

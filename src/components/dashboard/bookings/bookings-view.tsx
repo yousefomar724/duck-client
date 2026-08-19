@@ -13,6 +13,7 @@ import {
 import {
   Banknote,
   CalendarCheck,
+  CalendarIcon,
   CheckCircle,
   Clock,
   Download,
@@ -32,9 +33,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -45,6 +44,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { BookingDetailSheet } from "./booking-detail-sheet"
 import { BookingEditDialog } from "./booking-edit-dialog"
 import { BookingCardList } from "./booking-card-list"
@@ -55,6 +62,7 @@ import {
 import { bookingStrings, bookingColumnLabels } from "./booking-strings"
 import {
   exportBookingsCsv,
+  matchesDateFilter,
   useBookingFilters,
   type DatePreset,
 } from "./use-booking-filters"
@@ -62,13 +70,15 @@ import type { BookingActionType } from "./booking-actions"
 import {
   ALL_BOOKING_STATUSES,
   bookingStatusMeta,
-  needsAction,
   statusGroupLabels,
+  STATUS_GROUP_KEYS,
   type BookingStatusGroup,
 } from "@/lib/bookings/status"
 import { formatCurrency } from "@/lib/constants"
-import { refundOwed, remainingAmount } from "@/lib/bookings/payment"
+import { computeBookingStats } from "@/lib/bookings/stats"
+import { supplierDisplayName } from "@/lib/bookings/status"
 import type { Booking, BookingStatus, Supplier, TourGuide, Trip } from "@/lib/types"
+import type { DateRange } from "react-day-picker"
 import { useToast } from "@/lib/stores/toast-store"
 import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
 import { resolveLocalizedField } from "@/lib/dashboard/localize"
@@ -79,6 +89,18 @@ import * as tourGuidesApi from "@/lib/api/tour-guides"
 
 interface BookingsViewProps {
   role: "admin" | "supplier"
+}
+
+function ymdToLocalDate(ymd: string): Date {
+  const [year, month, day] = ymd.split("-").map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function localDateToYmd(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
 export function BookingsView({ role }: BookingsViewProps) {
@@ -164,32 +186,56 @@ export function BookingsView({ role }: BookingsViewProps) {
     [bookings, trips, suppliers, filterBookings],
   )
 
-  const stats = useMemo(() => {
-    const needsActionCount = bookings.filter(needsAction).length
-    const confirmedCount = bookings.filter((b) => b.status === "CONFIRMED").length
-    const pendingCount = bookings.filter((b) => b.status === "PENDING").length
-    const refundPendingCount = bookings.filter(
-      (b) => b.status === "REFUND_PENDING",
-    ).length
-    const refundOwedCount = bookings.filter((b) => refundOwed(b) > 0).length
-    const pendingAmount = bookings
-      .filter((b) => b.status === "PENDING")
-      .reduce((sum, b) => sum + b.amount, 0)
-    const totalRemaining = bookings
-      .filter((b) => b.status === "CONFIRMED")
-      .reduce((sum, b) => sum + remainingAmount(b), 0)
+  const dateScoped = useMemo(
+    () =>
+      bookings.filter((booking) => {
+        if (
+          filters.supplierId !== "all" &&
+          booking.supplier_id !== filters.supplierId
+        ) {
+          return false
+        }
+        return matchesDateFilter(booking.booking_date, filters)
+      }),
+    [bookings, filters],
+  )
 
-    return {
-      total: bookings.length,
-      confirmed: confirmedCount,
-      pending: pendingCount,
-      refundPending: refundPendingCount,
-      needsAction: needsActionCount,
-      pendingAmount,
-      totalRemaining,
-      refundOwedCount,
+  const stats = useMemo(
+    () => computeBookingStats(dateScoped),
+    [dateScoped],
+  )
+
+  const statsPeriodLabel = useMemo(() => {
+    if (filters.dateFrom || filters.dateTo) {
+      return `من ${filters.dateFrom || "…"} إلى ${filters.dateTo || "…"}`
     }
-  }, [bookings])
+    switch (filters.datePreset) {
+      case "today":
+        return bookingStrings.today
+      case "week":
+        return bookingStrings.thisWeek
+      case "month":
+        return bookingStrings.thisMonth
+      case "upcoming":
+        return bookingStrings.upcoming
+      default:
+        return bookingStrings.allPeriods
+    }
+  }, [filters.dateFrom, filters.dateTo, filters.datePreset])
+
+  const statsSupplierLabel = useMemo(() => {
+    if (filters.supplierId === "all") return undefined
+    const supplier = suppliers.find((item) => item.id === filters.supplierId)
+    return supplier ? supplierDisplayName(supplier) : filters.supplierId
+  }, [filters.supplierId, suppliers])
+
+  const dateRange: DateRange | undefined =
+    filters.dateFrom || filters.dateTo
+      ? {
+          from: filters.dateFrom ? ymdToLocalDate(filters.dateFrom) : undefined,
+          to: filters.dateTo ? ymdToLocalDate(filters.dateTo) : undefined,
+        }
+      : undefined
 
   const handleViewDetails = useCallback((booking: Booking) => {
     setSelectedBooking(booking)
@@ -285,7 +331,7 @@ export function BookingsView({ role }: BookingsViewProps) {
             break
           }
           case "adminDelete": {
-            const { error: err } = await bookingsApi.deleteBooking(id)
+            const { error: err } = await bookingsApi.deleteBooking(id, note)
             if (err) {
               addToast(err, "error")
               return
@@ -437,71 +483,74 @@ export function BookingsView({ role }: BookingsViewProps) {
         )}
       </PageHeader>
 
-      <div
-        className={`grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 ${role === "admin" ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}
-      >
+      <p className="text-sm text-text-muted">
+        {bookingStrings.statsCaption(statsPeriodLabel, statsSupplierLabel)}
+      </p>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           title={bookingStrings.totalBookings}
           value={stats.total}
           icon={CalendarCheck}
-          onClick={() => setFilters({ statusGroup: "all", status: "all" })}
-          isActive={filters.statusGroup === "all" && filters.status === "all"}
+          onClick={() =>
+            setFilters({ statusGroup: "all", status: "all", paymentState: "all" })
+          }
+          isActive={
+            filters.statusGroup === "all" &&
+            filters.status === "all" &&
+            filters.paymentState === "all"
+          }
         />
         <StatCard
           title={bookingStrings.confirmedBookings}
-          value={stats.confirmed}
+          value={stats.upcoming}
           icon={CheckCircle}
           tone="success"
-          onClick={() => setFilters({ statusGroup: "active", status: "all" })}
-          isActive={filters.statusGroup === "active"}
+          onClick={() => setFilters({ statusGroup: "upcoming", status: "all" })}
+          isActive={filters.statusGroup === "upcoming"}
         />
         <StatCard
-          title={bookingStrings.pendingBookings}
-          value={stats.pending}
+          title={bookingStrings.needsActionBookings}
+          value={stats.needsAction}
           icon={Clock}
           tone="warning"
           hint={
-            stats.pendingAmount > 0
-              ? formatCurrency(stats.pendingAmount)
+            stats.pipeline > 0
+              ? formatCurrency(stats.pipeline)
               : undefined
           }
-          onClick={() => setFilters({ status: "PENDING", statusGroup: "all" })}
-          isActive={filters.status === "PENDING"}
+          onClick={() =>
+            setFilters({ statusGroup: "needsAction", status: "all" })
+          }
+          isActive={filters.statusGroup === "needsAction"}
+        />
+        <StatCard
+          title={bookingStrings.netCollected}
+          value={formatCurrency(stats.netCollected)}
+          icon={Banknote}
+          tone="success"
+          hint={bookingStrings.grossMinusRefundHint(
+            formatCurrency(stats.grossCollected),
+            formatCurrency(stats.refundDueTotal),
+          )}
         />
         <StatCard
           title={bookingStrings.totalRemaining}
-          value={formatCurrency(stats.totalRemaining)}
+          value={formatCurrency(stats.outstanding)}
           icon={Wallet}
           tone="warning"
-          onClick={() => setFilters({ status: "CONFIRMED", statusGroup: "all" })}
-          isActive={filters.status === "CONFIRMED"}
+          onClick={() => setFilters({ paymentState: "PARTIAL", statusGroup: "all" })}
+          isActive={filters.paymentState === "PARTIAL"}
         />
-        {stats.refundOwedCount > 0 && (
+        {role === "admin" && stats.refundDueTotal > 0 && (
           <StatCard
-            title={bookingStrings.refundOwed}
-            value={stats.refundOwedCount}
+            title={bookingStrings.refundDueCard}
+            value={formatCurrency(stats.refundDueTotal)}
             icon={Banknote}
             tone="danger"
-            hint={bookingStrings.refundOwedCount(stats.refundOwedCount)}
-            onClick={() => setFilters({ paymentState: "REFUND_OWED", statusGroup: "all" })}
-            isActive={filters.paymentState === "REFUND_OWED"}
-          />
-        )}
-        {role === "admin" && (
-          <StatCard
-            title={bookingStrings.refundPendingBookings}
-            value={stats.refundPending}
-            icon={Banknote}
-            tone="danger"
-            hint={
-              stats.needsAction > 0
-                ? bookingStrings.needsActionCount(stats.needsAction)
-                : undefined
-            }
             onClick={() =>
-              setFilters({ statusGroup: "needsAction", status: "all" })
+              setFilters({ paymentState: "REFUND_OWED", statusGroup: "all" })
             }
-            isActive={filters.statusGroup === "needsAction"}
+            isActive={filters.paymentState === "REFUND_OWED"}
           />
         )}
       </div>
@@ -521,6 +570,40 @@ export function BookingsView({ role }: BookingsViewProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Tabs
+            value={filters.statusGroup}
+            onValueChange={(value) =>
+              setFilters({
+                statusGroup: value as BookingStatusGroup | "all",
+                status: "all",
+              })
+            }
+            className="w-full"
+          >
+            <div className="-mx-4 md:mx-0 md:px-0 overflow-x-auto px-4">
+              <TabsList className="w-max h-auto flex-nowrap justify-start">
+                {(["all", ...STATUS_GROUP_KEYS] as const).map((group) => {
+                  const count =
+                    group === "all"
+                      ? stats.total
+                      : stats[group]
+                  return (
+                    <TabsTrigger
+                      key={group}
+                      value={group}
+                      className="flex-none gap-1.5"
+                    >
+                      {statusGroupLabels[group]}
+                      <Badge variant="secondary" className="rounded-full px-1.5">
+                        {count}
+                      </Badge>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+            </div>
+          </Tabs>
+
           <DataTableToolbar
             searchValue={filters.search}
             onSearchChange={(v) => setFilters({ search: v })}
@@ -529,6 +612,7 @@ export function BookingsView({ role }: BookingsViewProps) {
             onClearFilters={clearFilters}
             filteredCount={filteredBookings.length}
             totalCount={bookings.length}
+            collapsibleFilters
             actions={
               <Button
                 type="button"
@@ -543,52 +627,24 @@ export function BookingsView({ role }: BookingsViewProps) {
             }
           >
             <Select
-              value={
-                filters.status !== "all"
-                  ? filters.status
-                  : filters.statusGroup
+              value={filters.status}
+              onValueChange={(v) =>
+                setFilters({
+                  status: v as BookingStatus | "all",
+                  statusGroup: "all",
+                })
               }
-              onValueChange={(v) => {
-                if (
-                  ["all", "needsAction", "active", "done", "dead"].includes(v)
-                ) {
-                  setFilters({
-                    statusGroup: v as BookingStatusGroup | "all",
-                    status: "all",
-                  })
-                } else {
-                  setFilters({
-                    status: v as BookingStatus,
-                    statusGroup: "all",
-                  })
-                }
-              }}
             >
               <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder={bookingStrings.filterByStatus} />
+                <SelectValue placeholder={bookingStrings.exactStatus} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{bookingStrings.allStatuses}</SelectItem>
-                {(
-                  Object.entries(statusGroupLabels) as [
-                    BookingStatusGroup | "all",
-                    string,
-                  ][]
-                )
-                  .filter(([k]) => k !== "all")
-                  .map(([group, label]) => (
-                    <SelectItem key={group} value={group}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                <SelectGroup>
-                  <SelectLabel>حالة محددة</SelectLabel>
-                  {ALL_BOOKING_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {bookingStatusMeta[s].label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
+                {ALL_BOOKING_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {bookingStatusMeta[s].label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -676,13 +732,14 @@ export function BookingsView({ role }: BookingsViewProps) {
             </DropdownMenu>
           </DataTableToolbar>
 
+          <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
           <ToggleGroup
             type="single"
-            value={filters.datePreset}
+            value={filters.dateFrom || filters.dateTo ? "" : filters.datePreset}
             onValueChange={(v) => {
               if (v) setFilters({ datePreset: v as DatePreset })
             }}
-            className="flex-wrap justify-start"
+            className="flex-nowrap justify-start"
           >
             <ToggleGroupItem value="all" size="sm" className="!min-w-fit">
               الكل
@@ -700,6 +757,50 @@ export function BookingsView({ role }: BookingsViewProps) {
               {bookingStrings.upcoming}
             </ToggleGroupItem>
           </ToggleGroup>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+              >
+                <CalendarIcon className="size-4" />
+                {filters.dateFrom || filters.dateTo
+                  ? `من ${filters.dateFrom || "…"} إلى ${filters.dateTo || "…"}`
+                  : bookingStrings.dateRange}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="start">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={(range) => {
+                  setFilters({
+                    dateFrom: range?.from ? localDateToYmd(range.from) : "",
+                    dateTo: range?.to
+                      ? localDateToYmd(range.to)
+                      : range?.from
+                        ? localDateToYmd(range.from)
+                        : "",
+                  })
+                }}
+                numberOfMonths={1}
+              />
+              {(filters.dateFrom || filters.dateTo) && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 w-full"
+                  onClick={() => setFilters({ dateFrom: "", dateTo: "" })}
+                >
+                  {bookingStrings.clearDateRange}
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
+          </div>
 
           {isEmpty ? (
             <EmptyState

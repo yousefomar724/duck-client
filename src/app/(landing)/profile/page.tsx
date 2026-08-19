@@ -81,7 +81,7 @@ function ProfileContent() {
                 <Button
                   variant="destructive"
                   type="button"
-                  onClick={logout}
+                  onClick={() => logout({ redirectTo: "/" })}
                   className="gap-2"
                 >
                   <LogOut className="size-4" />

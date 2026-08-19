@@ -14,6 +14,7 @@ import {
   supplierDisplayName,
 } from "@/lib/bookings/status"
 import { amountPaid, paymentState, remainingAmount } from "@/lib/bookings/payment"
+import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import {
   formatCurrency,
   formatDateShort,
@@ -31,6 +32,7 @@ interface BookingColumnsOptions {
   trips: Trip[]
   suppliers: Supplier[]
   loadingAction?: string | null
+  hideSupplier?: boolean
   onAction: (type: BookingActionType, booking: Booking, note?: string) => void
   onEdit?: (booking: Booking) => void
 }
@@ -40,6 +42,7 @@ export function getBookingColumns({
   trips,
   suppliers,
   loadingAction,
+  hideSupplier = false,
   onAction,
   onEdit,
 }: BookingColumnsOptions): ColumnDef<Booking>[] {
@@ -110,7 +113,15 @@ export function getBookingColumns({
       id: "guests",
       accessorFn: (row) => row.quantity ?? 0,
       header: bookingStrings.guests,
-      cell: ({ row }) => row.original.quantity ?? "—",
+      cell: ({ row }) => {
+        const { kids } = guestAgeBreakdown(row.original)
+        return (
+          <span>
+            {row.original.quantity ?? "—"}
+            {kids > 0 ? ` · ${kids} طفل` : ""}
+          </span>
+        )
+      },
     },
     {
       id: "amount",
@@ -179,12 +190,12 @@ export function getBookingColumns({
       accessorKey: "status",
       header: bookingStrings.status,
       cell: ({ row }) => (
-        <StatusBadge status={row.original.status} type="booking" />
+        <StatusBadge status={row.original.status} type="booking" short />
       ),
     },
   ]
 
-  if (role === "admin") {
+  if (role === "admin" && !hideSupplier) {
     cols.splice(2, 0, {
       id: "supplier",
       accessorFn: (row) => {

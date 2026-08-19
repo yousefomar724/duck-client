@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: `${SITE_NAME} — Kayaking & Water Sports in Aswan`,
     short_name: "Duck",
     description:
-      "Kayaking, stand-up paddleboarding and water bike trips on the Nile around Elephantine Island, Aswan.",
+      "Kayaking and water sports on the Nile in Aswan.",
     start_url: "/",
     scope: "/",
     display: "standalone",

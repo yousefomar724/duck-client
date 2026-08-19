@@ -1405,11 +1405,11 @@ export default function TripForm({
             )}
 
             {/* Submit Buttons */}
-            <div className="flex gap-4">
+            <div className="sticky bottom-0 z-20 -mx-4 flex gap-3 border-t bg-background/95 px-4 py-3 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy font-bold"
+                className="h-11! flex-1 bg-duck-yellow font-bold text-duck-navy hover:bg-duck-yellow-hover sm:flex-none"
               >
                 {isLoading
                   ? "جاري الحفظ..."
@@ -1422,6 +1422,7 @@ export default function TripForm({
               <Button
                 type="button"
                 variant="outline"
+                className="h-11!"
                 onClick={onCancel}
                 disabled={isLoading}
               >

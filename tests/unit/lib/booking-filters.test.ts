@@ -3,6 +3,7 @@ import {
   parseFilters,
   filtersToParams,
   matchesDatePreset,
+  matchesDateFilter,
   filterBookingsList,
   bookingsToCsv,
 } from '@/components/dashboard/bookings/use-booking-filters';
@@ -27,6 +28,8 @@ describe('booking filters', () => {
       supplierId: 'all',
       tripType: 'all',
       datePreset: 'today',
+      dateFrom: '',
+      dateTo: '',
     });
     expect(params.get('q')).toBe('abc');
     expect(params.get('date')).toBe('today');
@@ -36,6 +39,40 @@ describe('booking filters', () => {
     const today = new Date().toISOString();
     expect(matchesDatePreset(today, 'today')).toBe(true);
     expect(matchesDatePreset(today, 'all')).toBe(true);
+  });
+
+  it('parses an explicit date range and ignores the preset', () => {
+    const params = new URLSearchParams('from=2026-03-01&to=2026-03-10&date=today');
+    expect(parseFilters(params)).toMatchObject({
+      dateFrom: '2026-03-01',
+      dateTo: '2026-03-10',
+      datePreset: 'all',
+    });
+  });
+
+  it('prefers an explicit date range over a preset', () => {
+    expect(
+      matchesDateFilter('2026-03-10T08:00:00Z', {
+        datePreset: 'today',
+        dateFrom: '2026-03-10',
+        dateTo: '2026-03-10',
+      }),
+    ).toBe(true);
+    expect(
+      matchesDateFilter('2026-03-11T08:00:00Z', {
+        datePreset: 'today',
+        dateFrom: '2026-03-10',
+        dateTo: '2026-03-10',
+      }),
+    ).toBe(false);
+  });
+
+  it('parses from/to query params and ignores a conflicting preset', () => {
+    const params = new URLSearchParams('from=2026-03-01&to=2026-03-15&date=week');
+    const filters = parseFilters(params);
+    expect(filters.dateFrom).toBe('2026-03-01');
+    expect(filters.dateTo).toBe('2026-03-15');
+    expect(filters.datePreset).toBe('all');
   });
 
   it('filters bookings by status', () => {
@@ -54,6 +91,8 @@ describe('booking filters', () => {
         supplierId: 'all',
         tripType: 'all',
         datePreset: 'all',
+        dateFrom: '',
+        dateTo: '',
       },
       [],
       [],

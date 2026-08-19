@@ -13,6 +13,7 @@ import {
   supplierDisplayName,
 } from "@/lib/bookings/status"
 import { remainingAmount } from "@/lib/bookings/payment"
+import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import {
   formatCurrency,
   formatDateShort,
@@ -72,7 +73,7 @@ export function BookingCardList({
                   <User className="size-3.5 text-text-muted" />
                   {booking.full_name}
                 </p>
-                <StatusBadge status={booking.status} type="booking" />
+                <StatusBadge status={booking.status} type="booking" short />
               </div>
 
               <div className="flex items-center gap-2 text-sm">
@@ -114,6 +115,9 @@ export function BookingCardList({
                     <span className="flex items-center gap-1">
                       <Users className="size-3" />
                       {formatGuestsCount(booking.quantity)}
+                      {guestAgeBreakdown(booking).kids > 0
+                        ? ` · ${guestAgeBreakdown(booking).kids} طفل`
+                        : ""}
                     </span>
                   )}
                 </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod/v3"
@@ -25,6 +25,7 @@ import {
 import { bookingStrings } from "./booking-strings"
 import { calculateBookingTotal } from "@/lib/booking/pricing"
 import { amountPaid } from "@/lib/bookings/payment"
+import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import { formatCurrency } from "@/lib/constants"
 import type { Booking, Trip } from "@/lib/types"
 import type { UpdateBookingRequest } from "@/lib/api/bookings"
@@ -37,6 +38,9 @@ const editSchema = z.object({
   resource_type: z.enum(["kayak", "water_cycle", "sup"]),
   local_guests: z.coerce.number().int().min(0),
   foreigner_guests: z.coerce.number().int().min(0),
+  adults: z.coerce.number().int().min(1),
+  kids_1_6: z.coerce.number().int().min(0),
+  kids_7_12: z.coerce.number().int().min(0),
   duration: z.coerce.number().int().min(1).optional(),
   wants_guide: z.boolean(),
   amount_override: z.coerce.number().positive().optional().or(z.literal("")),
@@ -119,6 +123,9 @@ export function BookingEditDialog({
       resource_type: "kayak",
       local_guests: 0,
       foreigner_guests: 0,
+      adults: 1,
+      kids_1_6: 0,
+      kids_7_12: 0,
       duration: 1,
       wants_guide: false,
       amount_override: "",
@@ -135,6 +142,9 @@ export function BookingEditDialog({
       resource_type: (booking.resource_type as EditFormValues["resource_type"]) ?? "kayak",
       local_guests: booking.local_guests ?? 0,
       foreigner_guests: booking.foreigner_guests ?? 0,
+      adults: guestAgeBreakdown(booking).adults,
+      kids_1_6: guestAgeBreakdown(booking).kids_1_6,
+      kids_7_12: guestAgeBreakdown(booking).kids_7_12,
       duration: booking.duration && booking.duration > 0 ? booking.duration : 1,
       wants_guide: booking.wants_guide ?? false,
       amount_override: "",
@@ -161,6 +171,13 @@ export function BookingEditDialog({
 
   const handleSubmit = form.handleSubmit(async (data) => {
     if (!booking) return
+    const kids = data.kids_1_6 + data.kids_7_12
+    if (data.adults + kids !== data.local_guests + data.foreigner_guests) {
+      form.setError("adults", {
+        message: bookingStrings.guestBreakdownMismatch,
+      })
+      return
+    }
     const payload: UpdateBookingRequest = {
       full_name: data.full_name.trim(),
       phone_number: data.phone_number.trim(),
@@ -168,6 +185,9 @@ export function BookingEditDialog({
       resource_type: data.resource_type,
       local_guests: data.local_guests,
       foreigner_guests: data.foreigner_guests,
+      adults: data.adults,
+      kids_1_6: data.kids_1_6,
+      kids_7_12: data.kids_7_12,
       quantity: data.local_guests + data.foreigner_guests,
       wants_guide: data.wants_guide,
       note: data.note?.trim() || undefined,
@@ -185,7 +205,7 @@ export function BookingEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{bookingStrings.editBookingTitle}</DialogTitle>
           <DialogDescription>
@@ -242,6 +262,33 @@ export function BookingEditDialog({
                 type="number"
                 min={0}
                 {...form.register("foreigner_guests")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-adults">{bookingStrings.adults}</Label>
+              <Input id="edit-adults" type="number" min={1} {...form.register("adults")} />
+              {form.formState.errors.adults?.message ? (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.adults.message}
+                </p>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-kids-16">{bookingStrings.kids1to6}</Label>
+              <Input
+                id="edit-kids-16"
+                type="number"
+                min={0}
+                {...form.register("kids_1_6")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-kids-712">{bookingStrings.kids7to12}</Label>
+              <Input
+                id="edit-kids-712"
+                type="number"
+                min={0}
+                {...form.register("kids_7_12")}
               />
             </div>
             {trip?.is_tour && (

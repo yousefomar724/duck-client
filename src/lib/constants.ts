@@ -10,6 +10,7 @@ import {
   MessageSquare,
   type LucideIcon,
 } from "lucide-react"
+import { SITE_TIME_ZONE } from "./time"
 import type { BookingStatus, Payout, PayoutStatus } from "./types"
 
 export interface NavItem {
@@ -211,6 +212,7 @@ export function formatDate(dateString: string): string {
   const date = new Date(dateString)
   if (isNaN(date.getTime())) return "-"
   return new Intl.DateTimeFormat("ar-EG", {
+    timeZone: SITE_TIME_ZONE,
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -221,6 +223,7 @@ export function formatDateTime(dateString: string): string {
   const date = new Date(dateString)
   if (isNaN(date.getTime())) return "-"
   return new Intl.DateTimeFormat("ar-EG", {
+    timeZone: SITE_TIME_ZONE,
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -233,6 +236,7 @@ export function formatDateShort(dateString: string): string {
   const date = new Date(dateString)
   if (isNaN(date.getTime())) return "—"
   return new Intl.DateTimeFormat("ar-EG", {
+    timeZone: SITE_TIME_ZONE,
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -263,6 +267,7 @@ export function formatTimeShort(dateString: string): string {
   const date = new Date(dateString)
   if (isNaN(date.getTime())) return "—"
   return new Intl.DateTimeFormat("ar-EG", {
+    timeZone: SITE_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   }).format(date)

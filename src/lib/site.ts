@@ -34,7 +34,7 @@ export const SITE_NAME = "Duck Entertainment"
 export const SITE_CONTACT = {
   phone: "+201550061006",
   email: "duck.asw@gmail.com",
-  street: "Elephantine Island",
+  street: "Nile Corniche",
   city: "Aswan",
   country: "EG",
   mapUrl: "https://maps.app.goo.gl/FPt8JJ8VgaTTzBir6",

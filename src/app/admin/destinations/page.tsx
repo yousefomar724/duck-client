@@ -402,7 +402,7 @@ export default function AdminDestinations() {
       )}
 
       {/* Destinations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
         {destinations.map((destination) => {
           const primaryImage =
             destination.images?.[0] ?? destination.image ?? ""
@@ -465,7 +465,7 @@ export default function AdminDestinations() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="ms-2 rounded-full! p-1!"
+                        className="ms-2 size-11! rounded-full!"
                         disabled={isDeleting}
                       >
                         <MoreVertical className="h-4 w-4" />

@@ -37,7 +37,7 @@ export function buildBusinessJsonLd(priceRange: string) {
     parentOrganization: { "@id": ORGANIZATION_ID },
     name: SITE_NAME,
     description:
-      "Kayaking, stand-up paddleboarding and water bike trips on the Nile around Elephantine Island in Aswan, Egypt.",
+      "Kayaking and water sports on the Nile in Aswan, Egypt.",
     url: SITE_URL,
     image: `${SITE_URL}/og-nile-sunset.jpg`,
     logo: `${SITE_URL}/logo-transparent.png`,
@@ -50,14 +50,14 @@ export function buildBusinessJsonLd(priceRange: string) {
       addressLocality: SITE_CONTACT.city,
       addressCountry: SITE_CONTACT.country,
     },
-    // Matches the seeded Elephantine Island meeting point. Coordinates are
-    // what let Google place the business on the map for "near me" searches.
+    // Aswan Governorate seat — used for "near me" placement, not a
+    // specific island meeting point (those live on destination records).
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 24.0867,
-      longitude: 32.8895,
+      latitude: 24.0889,
+      longitude: 32.8998,
     },
-    areaServed: { "@type": "City", name: "Aswan" },
+    areaServed: { "@type": "AdministrativeArea", name: "Aswan Governorate" },
     // "Dawn to sunset, daily, by advance booking" — approximated to the
     // widest civil-daylight window in Aswan so it reads as open year-round.
     openingHoursSpecification: [

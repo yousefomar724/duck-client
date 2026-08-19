@@ -116,14 +116,20 @@ export default function SupplierSidebar() {
               isCollapsedIcon ? "py-1.5" : "py-2",
             )}
           >
-            <Logo
-              width={isCollapsedIcon ? 36 : 100}
-              height={isCollapsedIcon ? 18 : 50}
-              className={cn(
-                isCollapsedIcon &&
-                  "max-h-8 w-auto max-w-11 object-contain",
-              )}
-            />
+            <Link
+              href="/"
+              aria-label="Duck Entertainment"
+              onClick={handleNavClick}
+            >
+              <Logo
+                width={isCollapsedIcon ? 36 : 100}
+                height={isCollapsedIcon ? 18 : 50}
+                className={cn(
+                  isCollapsedIcon &&
+                    "max-h-8 w-auto max-w-11 object-contain",
+                )}
+              />
+            </Link>
           </div>
           {isCollapsedIcon ? (
             <div className="flex justify-center pb-1">

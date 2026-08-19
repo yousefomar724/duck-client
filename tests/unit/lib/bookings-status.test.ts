@@ -8,7 +8,7 @@ import {
 describe('bookings status', () => {
   it('matches status groups', () => {
     expect(matchesStatusGroup('PENDING', 'needsAction')).toBe(true);
-    expect(matchesStatusGroup('PENDING', 'done')).toBe(false);
+    expect(matchesStatusGroup('PENDING', 'completed')).toBe(false);
     expect(matchesStatusGroup('PENDING', 'all')).toBe(true);
   });
 

@@ -18,14 +18,14 @@ describe('BookingActions', () => {
         onAction={onAction}
       />,
     );
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /إلغاء من الإدارة/ })).toBeInTheDocument();
   });
 
-  it('hides actions for non-actionable status', () => {
+  it('hides actions for supplier on a completed booking', () => {
     const { container } = renderWithIntl(
       <BookingActions
-        booking={{ ID: 'b1', status: 'PENDING', payment_method: 'MANUAL' } as never}
-        role="admin"
+        booking={{ ID: 'b1', status: 'COMPLETED', payment_method: 'MANUAL' } as never}
+        role="supplier"
         onAction={vi.fn()}
       />,
     );

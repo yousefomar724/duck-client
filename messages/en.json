@@ -23,6 +23,7 @@
     "cancel": "Cancel",
     "dashboard": "Dashboard",
     "profile": "Profile",
+    "logout": "Log out",
     "login": "Login",
     "joinAsSupplier": "Join as Supplier"
   },
@@ -443,10 +444,22 @@
     "resourceType": "Equipment Type",
     "selectType": "Select Type",
     "guests": "Number of Guests",
+    "adults": "Number of adults",
+    "adultsHint": "Children are added on top of this number.",
+    "kidsSectionTitle": "Children",
+    "kids1to6Label": "Kids aged 1–6",
+    "kids7to12Label": "Kids aged 7–12",
+    "kidsCountLabel": "How many?",
+    "kidsPriceHint": "Kids are charged at the same rate as adults.",
+    "kidsMinOne": "Enter at least 1 child for the selected age group",
+    "totalGuestsLabel": "Total guests: {count}",
+    "reviewAdults": "Adults",
+    "reviewKids1to6": "Kids 1–6",
+    "reviewKids7to12": "Kids 7–12",
     "guestsMore": "More than 5",
     "guestsBackToSelect": "Back to quick select",
     "guestsCustomPlaceholder": "Enter number of guests",
-    "maxGuests": "Maximum: {max} guests",
+    "maxGuests": "Maximum {max} guests in total (adults + children)",
     "step3Title": "Confirm Booking",
     "reviewTrip": "Trip",
     "reviewDuration": "Duration",
@@ -461,7 +474,7 @@
     "proceedToPayment": "Proceed to Payment",
     "submitLoading": "Loading...",
     "noAvailability": "Insufficient availability for this date or equipment type. Try a different date or lower quantity.",
-    "maxGuestsError": "Maximum guests allowed is {max}",
+    "maxGuestsError": "Total guests (adults + children) cannot exceed {max}",
     "resourceKayak": "Kayak",
     "resourceWaterCycle": "Water Bike",
     "resourceSup": "SUP",
@@ -494,7 +507,7 @@
     "guestsMixMixed": "Mixed (Egyptians & foreigners)",
     "localGuestsLabel": "Number of Egyptians",
     "foreignerGuestsLabel": "Number of foreigners",
-    "guestMixSumHint": "Egyptians + foreigners = {sum} / {total}",
+    "guestMixSumHint": "Egyptians + foreigners = {sum} / {total} total guests",
     "guestMixSumError": "Egyptians and foreigners must total {total} guests",
     "guideMandatoryBanner": "A tour guide is required for this trip (+{price}).",
     "guideOptionalFee": "(+{price})",
@@ -540,7 +553,7 @@
     "no": "No",
     "metadata": {
       "title": "Book a Kayak Tour in Aswan",
-      "description": "Reserve a free-style or private captain-led kayak tour on the Nile at Elephantine Island, Aswan. Available dawn to sunset, seven days a week, by advance booking."
+      "description": "Reserve a free-style or private captain-led kayak tour on the Nile in Aswan. Available dawn to sunset, seven days a week, by advance booking."
     },
     "bookingNotConfirmedYet": "Your booking is reserved but NOT confirmed yet. Complete the two steps below to secure it.",
     "instapayStep1": "Step 1 — Pay {amount} via InstaPay",
@@ -573,7 +586,7 @@
     "successDescription": "Thank you for contacting us. Our team will get back to you as soon as possible.",
     "metadata": {
       "title": "Contact Us — Aswan",
-      "description": "Get in touch with Duck Entertainment in Aswan. Find us at the Nagaa El Qibli ferry on Elephantine Island, beside Makani Cafe, or reach us by phone or WhatsApp."
+      "description": "Get in touch with Duck Entertainment in Aswan. Reach us by phone or WhatsApp for kayaking and water sports on the Nile."
     }
   },
   "about": {
@@ -691,7 +704,7 @@
     "copyMapsLink": "Copy link",
     "linkCopied": "Link copied to clipboard",
     "noDestinationFallbackTitle": "Our location (Aswan)",
-    "noDestinationFallbackBody": "Elephantine Island — tap to open in Google Maps or copy the link.",
+    "noDestinationFallbackBody": "Aswan, Egypt — tap to open in Google Maps or copy the link.",
     "refundPolicy": "Cancellation & refund",
     "genericRefundPolicy": "Cancellations follow the terms shown on your selected trip. If you cancel at least 24 hours before the trip, you may be eligible for a refund according to that policy.",
     "refundable": "This trip is marked as refundable; refund eligibility depends on timing and the trip policy above.",
@@ -765,7 +778,7 @@
   "home": {
     "metadata": {
       "title": "Water Sports & Nile Adventures in Aswan",
-      "description": "Kayak, stand up paddle and water bike trips on the Nile around Elephantine Island, Aswan. Book guided water adventures with Duck Entertainment."
+      "description": "Kayak, stand up paddle and water bike trips on the Nile in Aswan. Book guided water adventures with Duck Entertainment."
     }
   },
   "tripsPage": {
@@ -776,7 +789,7 @@
     "breadcrumbHome": "Home",
     "breadcrumbTrips": "Trips",
     "title": "Trips & Tours",
-    "description": "All our water sports trips on the Nile around Elephantine Island, Aswan — pick one to see pricing, duration and what's included.",
+    "description": "All our water sports trips on the Nile in Aswan — pick one to see pricing, duration and what's included.",
     "viewDetails": "View details",
     "fromPrice": "From {price}",
     "noTrips": "No trips are available right now — please check back soon."

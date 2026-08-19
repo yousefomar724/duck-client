@@ -5,6 +5,8 @@ import { MoreVertical, Star, Trash2 } from "lucide-react"
 import PageHeader from "@/components/shared/page-header"
 import StatCard from "@/components/shared/stat-card"
 import { EmptyState } from "@/components/dashboard/empty-state"
+import { DataCardList } from "@/components/dashboard/data-card-list"
+import { FilterSheet } from "@/components/dashboard/filter-sheet"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -161,7 +163,7 @@ export default function AdminFeedbackPage() {
         description="عرض وإدارة ملاحظات العملاء"
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard title="إجمالي الآراء" value={items.length} icon={Star} />
         <StatCard
           title="متوسط التقييم"
@@ -186,6 +188,12 @@ export default function AdminFeedbackPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="sm:max-w-xs"
             />
+            <FilterSheet
+              activeCount={
+                (statusFilter !== "all" ? 1 : 0) +
+                (ratingFilter !== "all" ? 1 : 0)
+              }
+            >
             <Select
               value={statusFilter}
               onValueChange={(v) =>
@@ -215,6 +223,7 @@ export default function AdminFeedbackPage() {
                 ))}
               </SelectContent>
             </Select>
+            </FilterSheet>
           </div>
 
           {isLoading ? (
@@ -228,7 +237,8 @@ export default function AdminFeedbackPage() {
               description="لم يتم إرسال أي ملاحظات بعد"
             />
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -296,7 +306,7 @@ export default function AdminFeedbackPage() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="size-11!">
                               <MoreVertical className="size-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -316,6 +326,59 @@ export default function AdminFeedbackPage() {
                 </TableBody>
               </Table>
             </div>
+            <DataCardList
+              items={filtered.map((item) => ({
+                id: item.id,
+                title: item.name || item.comment || "رأي",
+                subtitle: item.comment || "—",
+                fields: [
+                  {
+                    label: "التقييم",
+                    value: <RatingStars rating={item.rating} />,
+                  },
+                  {
+                    label: "السياق",
+                    value: item.context === "booking" ? "حجز" : "عام",
+                  },
+                  {
+                    label: "التاريخ",
+                    value: formatDate(item.created_at || item.CreatedAt),
+                  },
+                ],
+                actions: (
+                  <div className="flex items-center gap-1">
+                    <Select
+                      value={item.status}
+                      onValueChange={(v) =>
+                        void handleStatusChange(item.id, v as FeedbackStatus)
+                      }
+                    >
+                      <SelectTrigger className="h-11! w-28 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(STATUS_LABELS) as FeedbackStatus[]).map(
+                          (status) => (
+                            <SelectItem key={status} value={status}>
+                              {STATUS_LABELS[status]}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11! text-red-600"
+                      onClick={() => setDeleteId(item.id)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                ),
+              }))}
+            />
+            </>
           )}
         </CardContent>
       </Card>

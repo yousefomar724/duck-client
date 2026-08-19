@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { FilterSheet } from "@/components/dashboard/filter-sheet"
 
 export interface ActiveFilter {
   key: string
@@ -24,6 +25,7 @@ interface DataTableToolbarProps {
   children?: React.ReactNode
   actions?: React.ReactNode
   className?: string
+  collapsibleFilters?: boolean
 }
 
 export function DataTableToolbar({
@@ -37,6 +39,7 @@ export function DataTableToolbar({
   children,
   actions,
   className,
+  collapsibleFilters = false,
 }: DataTableToolbarProps) {
   const [localSearch, setLocalSearch] = useState(searchValue)
 
@@ -82,7 +85,11 @@ export function DataTableToolbar({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {children}
+          {collapsibleFilters ? (
+            <FilterSheet activeCount={activeFilters.length}>{children}</FilterSheet>
+          ) : (
+            children
+          )}
           {actions}
         </div>
       </div>

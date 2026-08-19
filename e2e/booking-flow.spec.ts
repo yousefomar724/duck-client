@@ -9,5 +9,7 @@ test('booking flow reaches contact step', async ({ page }) => {
     await tripCard.click();
   }
 
-  await expect(page.getByText(/guest|ضيف|contact|تواصل/i).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/guest|ضيف|contact|تواصل|بالغ|adult/i).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/Kids aged 1–6|أطفال من 1 إلى 6/i).first()).toBeVisible();
+  await expect(page.getByText(/Kids aged 7–12|أطفال من 7 إلى 12/i).first()).toBeVisible();
 });

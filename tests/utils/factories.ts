@@ -119,6 +119,15 @@ export async function createTourGuide(overrides: Record<string, unknown> = {}) {
   });
 }
 
+export function futureBookingDate(hoursAhead = 72): Date {
+  const d = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
+  d.setHours(12, 0, 0, 0);
+  if (d.getTime() <= Date.now()) {
+    d.setDate(d.getDate() + 1);
+  }
+  return d;
+}
+
 export async function createBooking(overrides: Record<string, unknown> = {}) {
   return Booking.create({
     session_id: 'test-session',
@@ -131,7 +140,7 @@ export async function createBooking(overrides: Record<string, unknown> = {}) {
     phone_number: '+201000000000',
     status: 'PENDING',
     payment_method: 'MANUAL',
-    booking_date: new Date(Date.now() + 48 * 60 * 60 * 1000),
+    booking_date: futureBookingDate(),
     quantity: 1,
     local_guests: 1,
     foreigner_guests: 0,

@@ -73,8 +73,8 @@ export default function SettingsDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ar">{t("arabic")}</SelectItem>
-                <SelectItem value="en">{t("english")}</SelectItem>
+                <SelectItem value="ar">عربي</SelectItem>
+                <SelectItem value="en">English</SelectItem>
               </SelectContent>
             </Select>
           </div>

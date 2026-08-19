@@ -38,12 +38,12 @@ function getRedirectPath(
     }
   }
   const role = userRole != null ? Number(userRole) : NaN
-  if (role === 2) return "/admin/dashboard"
+  if (role === 2) return "/admin/bookings"
   if (role === 1) {
     const needsOnboarding =
       onboardingComplete === false || onboardingComplete == null
     if (needsOnboarding && !onboardingSkipped) return "/supplier/onboarding"
-    return "/supplier/my-trips"
+    return "/supplier/bookings"
   }
   return "/"
 }

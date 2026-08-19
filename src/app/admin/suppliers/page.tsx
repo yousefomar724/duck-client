@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Users } from "lucide-react"
 import PageHeader from "@/components/shared/page-header"
 import StatCard from "@/components/shared/stat-card"
@@ -33,6 +35,8 @@ import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import * as authApi from "@/lib/api/auth"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
+import { DataCardList } from "@/components/dashboard/data-card-list"
+import { Input } from "@/components/ui/input"
 import type { Supplier } from "@/lib/types"
 
 function getSupplierName(supplier: Supplier): string {
@@ -61,6 +65,7 @@ function getSupplierAbout(supplier: Supplier): string {
 }
 
 export default function AdminSuppliersPage() {
+  const router = useRouter()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [activeTab, setActiveTab] = useState<"all" | "active" | "inactive">(
     "all",
@@ -70,6 +75,7 @@ export default function AdminSuppliersPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     fetchData()
@@ -139,18 +145,26 @@ export default function AdminSuppliersPage() {
   const activeCount = suppliers.filter((s) => s.active !== false).length
   const inactiveCount = suppliers.filter((s) => s.active === false).length
 
-  const filteredSuppliers =
+  const filteredSuppliers = (
     activeTab === "all"
       ? suppliers
       : activeTab === "active"
         ? suppliers.filter((s) => s.active !== false)
         : suppliers.filter((s) => s.active === false)
+  ).filter((s) => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return (
+      getSupplierName(s).toLowerCase().includes(q) ||
+      getSupplierAbout(s).toLowerCase().includes(q)
+    )
+  })
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <PageHeader title="الموردين" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="border rounded-lg p-4 h-24" />
           ))}
@@ -173,7 +187,7 @@ export default function AdminSuppliersPage() {
     <div className="space-y-6">
       <PageHeader title="الموردين" />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard title="إجمالي الموردين" value={totalCount} icon={Users} />
         <StatCard title="موردين نشطين" value={activeCount} icon={Users} />
         <StatCard title="موردين غير نشطين" value={inactiveCount} icon={Users} />
@@ -186,18 +200,28 @@ export default function AdminSuppliersPage() {
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as typeof activeTab)}
           >
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">الكل</TabsTrigger>
-              <TabsTrigger value="active">نشط</TabsTrigger>
-              <TabsTrigger value="inactive">غير نشط</TabsTrigger>
-            </TabsList>
+            <div className="mb-4 overflow-x-auto">
+              <TabsList className="w-max h-auto flex-nowrap justify-start">
+                <TabsTrigger value="all">الكل</TabsTrigger>
+                <TabsTrigger value="active">نشط</TabsTrigger>
+                <TabsTrigger value="inactive">غير نشط</TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value={activeTab}>
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="بحث بالاسم..."
+                className="mb-4 max-w-md"
+              />
               {filteredSuppliers.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-text-muted">لا يوجد موردين</p>
                 </div>
               ) : (
+                <>
+                <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
@@ -216,19 +240,36 @@ export default function AdminSuppliersPage() {
                       return (
                         <TableRow
                           key={supplier.id}
-                          className="hover:bg-duck-cyan/5 transition-colors"
+                          className="hover:bg-duck-cyan/5 cursor-pointer transition-colors"
+                          onClick={(e) => {
+                            if (
+                              (e.target as HTMLElement).closest(
+                                "[data-prevent-row-click]",
+                              )
+                            ) {
+                              return
+                            }
+                            router.push(`/admin/suppliers/${supplier.id}`)
+                          }}
                         >
                           <TableCell>
                             <SupplierTableAvatar supplier={supplier} />
                           </TableCell>
-                          <TableCell className="font-medium">
+                          <TableCell>
                             {getSupplierName(supplier)}
+                            <Link
+                              href={`/admin/suppliers/${supplier.id}`}
+                              className="mt-1 block text-xs text-duck-cyan hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              عرض
+                            </Link>
                           </TableCell>
                           <TableCell className="text-text-muted max-w-[200px] truncate">
                             {getSupplierAbout(supplier)}
                           </TableCell>
                           <TableCell>{supplier.rate ?? 0}</TableCell>
-                          <TableCell>
+                          <TableCell data-prevent-row-click>
                             <Switch
                               checked={isActive}
                               onCheckedChange={() =>
@@ -239,7 +280,7 @@ export default function AdminSuppliersPage() {
                               }
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell data-prevent-row-click>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -259,6 +300,58 @@ export default function AdminSuppliersPage() {
                     })}
                   </TableBody>
                 </Table>
+                </div>
+                <DataCardList
+                  items={filteredSuppliers.map((supplier) => {
+                    const hasUserId = supplier.user_id != null
+                    const isActive = supplier.active !== false
+                    return {
+                      id: supplier.id,
+                      title: getSupplierName(supplier),
+                      subtitle: getSupplierAbout(supplier),
+                      badge: (
+                        <span className="text-xs text-text-muted">
+                          {supplier.rate ?? 0} ★
+                        </span>
+                      ),
+                      fields: [
+                        {
+                          label: "الحالة",
+                          value: (
+                            <label className="flex items-center gap-2 text-sm">
+                              <Switch
+                                checked={isActive}
+                                onCheckedChange={() =>
+                                  handleActivateToggle(supplier)
+                                }
+                                disabled={
+                                  !hasUserId || updatingId === supplier.id
+                                }
+                              />
+                              {isActive ? "نشط" : "غير نشط"}
+                            </label>
+                          ),
+                        },
+                      ],
+                      actions: (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-11! text-red-600 hover:text-red-700"
+                          onClick={() =>
+                            hasUserId && setDeleteId(supplier.user_id!)
+                          }
+                          disabled={!hasUserId || updatingId === supplier.id}
+                        >
+                          حذف
+                        </Button>
+                      ),
+                      onClick: () =>
+                        router.push(`/admin/suppliers/${supplier.id}`),
+                    }
+                  })}
+                />
+                </>
               )}
             </TabsContent>
           </Tabs>

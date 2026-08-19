@@ -80,7 +80,7 @@ type AuthStore = {
     role: 0 | 1,
   ) => Promise<{ error?: string; user?: User }>
   register: (input: RegisterInput) => Promise<{ error?: string }>
-  logout: () => void
+  logout: (options?: { redirectTo?: string }) => void
   /** Clear stored token and user state without navigating (e.g. wrong role after Google). */
   clearSession: () => void
 
@@ -304,7 +304,7 @@ export const useAuth = create<AuthStore>((set, get) => ({
     return { error: loginResult.error }
   },
 
-  logout: () => {
+  logout: (options?: { redirectTo?: string }) => {
     clearToken()
     set({
       user: null,
@@ -315,7 +315,7 @@ export const useAuth = create<AuthStore>((set, get) => ({
       onboardingSkipped: false,
     })
     if (typeof window !== "undefined") {
-      window.location.href = "/login"
+      window.location.href = options?.redirectTo ?? "/login"
     }
   },
 

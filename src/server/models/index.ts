@@ -9,3 +9,4 @@ export * from './payout';
 export * from './image-storage';
 export * from './supplier-storage';
 export * from './comment';
+export * from './deleted-booking';

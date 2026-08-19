@@ -57,6 +57,9 @@ export interface BookingDoc extends mongoose.Document {
   quantity: number;
   local_guests: number;
   foreigner_guests: number;
+  adults: number;
+  kids_1_6: number;
+  kids_7_12: number;
   hear_about_us?: string;
   referral_text?: string;
   resource_type?: string;
@@ -100,6 +103,9 @@ const BookingSchema = new Schema<BookingDoc>(
     quantity: { type: Number, default: 1 },
     local_guests: { type: Number, default: 0 },
     foreigner_guests: { type: Number, default: 0 },
+    adults: { type: Number, default: 0 },
+    kids_1_6: { type: Number, default: 0 },
+    kids_7_12: { type: Number, default: 0 },
     hear_about_us: { type: String, default: '' },
     referral_text: { type: String, default: '' },
     resource_type: { type: String, default: '' },

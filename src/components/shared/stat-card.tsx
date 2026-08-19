@@ -79,11 +79,11 @@ export default function StatCard({
           : undefined
       }
     >
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <p className="text-sm font-medium text-text-muted">{title}</p>
-            <p className="text-2xl font-bold tracking-tight text-text-dark mt-2">
+            <p className="mt-2 text-xl font-bold tracking-tight text-text-dark sm:text-2xl">
               {value}
             </p>
             {hint && (
@@ -103,7 +103,7 @@ export default function StatCard({
           <div className="me-4">
             <div
               className={cn(
-                "w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center",
+                "flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br sm:h-12 sm:w-12",
                 styles.iconBg,
               )}
             >

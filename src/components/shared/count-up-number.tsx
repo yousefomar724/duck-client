@@ -28,14 +28,15 @@ export function CountUpNumber({
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
+    let frameId = 0
+
     if (prefersReducedMotion) {
-      setDisplay(value)
-      return
+      frameId = requestAnimationFrame(() => setDisplay(value))
+      return () => cancelAnimationFrame(frameId)
     }
 
     const duration = 1500
     const start = performance.now()
-    let frameId = 0
 
     const tick = (now: number) => {
       const elapsed = now - start
@@ -46,7 +47,6 @@ export function CountUpNumber({
       }
     }
 
-    setDisplay(0)
     frameId = requestAnimationFrame(tick)
 
     return () => cancelAnimationFrame(frameId)

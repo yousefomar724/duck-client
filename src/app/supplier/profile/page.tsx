@@ -15,6 +15,7 @@ import * as suppliersApi from "@/lib/api/suppliers"
 import * as supplierStorageApi from "@/lib/api/supplier-storage"
 import * as imagesApi from "@/lib/api/images"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
+import { QuantityStepper } from "@/components/dashboard/quantity-stepper"
 import { DetailPageSkeleton } from "@/components/shared/loading-skeletons"
 import { resolveImageUrl } from "@/lib/image-utils"
 import { supplierProfileStrings as s } from "@/lib/dashboard/strings"
@@ -175,7 +176,7 @@ export default function SupplierProfilePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-4">
       <PageHeader title={s.title} description={s.businessProfileHint} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -274,7 +275,7 @@ export default function SupplierProfilePage() {
 
             <Button
               type="button"
-              className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover"
+              className="sticky bottom-3 z-20 h-11! w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover"
               onClick={() => void handleSaveProfile()}
               disabled={savingProfile}
             >
@@ -301,42 +302,25 @@ export default function SupplierProfilePage() {
             <div className="space-y-4 rounded-xl border bg-white p-6">
               <div className="space-y-2">
                 <Label htmlFor="kayak">{labels.kayak}</Label>
-                <Input
-                  id="kayak"
-                  type="number"
-                  min={0}
-                  dir="ltr"
-                  value={kayak}
-                  onChange={(e) => setKayak(e.target.value)}
-                />
+                <QuantityStepper id="kayak" value={kayak} onChange={setKayak} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="water_cycle">{labels.water_cycle}</Label>
-                <Input
+                <QuantityStepper
                   id="water_cycle"
-                  type="number"
-                  min={0}
-                  dir="ltr"
                   value={waterCycle}
-                  onChange={(e) => setWaterCycle(e.target.value)}
+                  onChange={setWaterCycle}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sup">{labels.sup}</Label>
-                <Input
-                  id="sup"
-                  type="number"
-                  min={0}
-                  dir="ltr"
-                  value={sup}
-                  onChange={(e) => setSup(e.target.value)}
-                />
+                <QuantityStepper id="sup" value={sup} onChange={setSup} />
               </div>
             </div>
 
             <Button
               type="button"
-              className="w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover"
+              className="sticky bottom-3 z-20 h-11! w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover"
               onClick={() => void handleSaveStorage()}
               disabled={savingStorage}
             >

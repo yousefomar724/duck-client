@@ -20,6 +20,7 @@ import { usePathname } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 import { dashboardStrings } from "@/lib/dashboard/strings"
+import { UserMenu } from "@/components/shared/user-menu"
 
 export default function SupplierLayout({
   children,
@@ -41,23 +42,24 @@ export default function SupplierLayout({
     <SidebarProvider dir="rtl">
       <SupplierSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="ms-1" />
+        <header className="flex h-14 sm:h-16 shrink-0 items-center gap-2 border-b px-4 min-w-0">
+          <SidebarTrigger className="ms-1 size-11! sm:size-9!" />
           <Separator orientation="vertical" className="ms-2 h-4" />
-          <Breadcrumb>
+          <Breadcrumb className="min-w-0">
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>لوحة المزود</BreadcrumbPage>
+                <BreadcrumbPage className="truncate">لوحة المزود</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          <div className="ms-auto shrink-0">
-            <Button asChild size="sm" className="font-semibold shadow-sm">
+          <div className="ms-auto flex shrink-0 items-center gap-2">
+            <Button asChild size="sm" className="hidden! font-semibold shadow-sm sm:inline-flex!">
               <Link href="/">{dashboardStrings.backToHome}</Link>
             </Button>
+            <UserMenu variant="dashboard" />
           </div>
         </header>
-        <main className="flex-1 p-6">{content}</main>
+        <main className="flex-1 p-4 sm:p-6">{content}</main>
       </SidebarInset>
     </SidebarProvider>
     </RtlPanel>
@@ -68,7 +70,7 @@ export default function SupplierLayout({
       allowedRoles={[1]}
       loadingFallback={
         isOnboarding ? (
-          <main className="min-h-screen p-6" dir="rtl">
+          <main className="min-h-screen p-4 sm:p-6" dir="rtl">
             {loadingContent}
           </main>
         ) : (

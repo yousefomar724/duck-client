@@ -7,14 +7,15 @@ import { cn } from "@/lib/utils"
 interface StatusBadgeProps {
   status: BookingStatus | PayoutStatus
   type: "booking" | "payout"
+  short?: boolean
 }
 
-export default function StatusBadge({ status, type }: StatusBadgeProps) {
+export default function StatusBadge({ status, type, short = false }: StatusBadgeProps) {
   if (type === "booking") {
     const meta = bookingStatusMeta[status as BookingStatus]
     const Icon = meta?.icon
     const label =
-      meta?.label ??
+      (short ? meta?.shortLabel : meta?.label) ??
       (typeof status === "string" ? status : String(status ?? "—"))
 
     return (

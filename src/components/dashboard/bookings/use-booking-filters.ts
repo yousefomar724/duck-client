@@ -16,6 +16,8 @@ import type { Booking, BookingStatus, Supplier, Trip } from "@/lib/types"
 import {
   bookingStatusMeta,
   matchesStatusGroup,
+  STATUS_GROUP_KEYS,
+  statusGroupLabels,
   type BookingStatusGroup,
 } from "@/lib/bookings/status"
 import { localizedTripName, supplierDisplayName } from "@/lib/bookings/status"
@@ -25,6 +27,7 @@ import {
   remainingAmount,
   type PaymentState,
 } from "@/lib/bookings/payment"
+import { endOfSiteDay, isValidYmd, startOfSiteDay } from "@/lib/time"
 
 export type DatePreset = "all" | "today" | "week" | "month" | "upcoming"
 
@@ -37,7 +40,11 @@ export interface BookingFilters {
   supplierId: string
   tripType: "all" | "trip" | "tour"
   datePreset: DatePreset
+  dateFrom: string
+  dateTo: string
 }
+
+const GROUP_ALLOW = new Set(["all", ...STATUS_GROUP_KEYS])
 
 const DEFAULT_FILTERS: BookingFilters = {
   search: "",
@@ -48,6 +55,8 @@ const DEFAULT_FILTERS: BookingFilters = {
   supplierId: "all",
   tripType: "all",
   datePreset: "all",
+  dateFrom: "",
+  dateTo: "",
 }
 
 export function parseFilters(params: URLSearchParams): BookingFilters {
@@ -58,13 +67,16 @@ export function parseFilters(params: URLSearchParams): BookingFilters {
   const supplierId = params.get("supplier")
   const tripType = params.get("tripType") as BookingFilters["tripType"] | null
   const datePreset = params.get("date") as DatePreset | null
+  const dateFromRaw = params.get("from") ?? ""
+  const dateToRaw = params.get("to") ?? ""
+  const dateFrom = isValidYmd(dateFromRaw) ? dateFromRaw : ""
+  const dateTo = isValidYmd(dateToRaw) ? dateToRaw : ""
+  const hasRange = Boolean(dateFrom || dateTo)
 
   return {
     search: params.get("q") ?? "",
     statusGroup:
-      statusGroup && ["all", "needsAction", "active", "done", "dead"].includes(statusGroup)
-        ? statusGroup
-        : "all",
+      statusGroup && GROUP_ALLOW.has(statusGroup) ? statusGroup : "all",
     status: status && status !== "all" ? status : "all",
     paymentMethod:
       payment && ["all", "MANUAL", "KASHIER"].includes(payment) ? payment : "all",
@@ -75,10 +87,13 @@ export function parseFilters(params: URLSearchParams): BookingFilters {
     supplierId: supplierId ?? "all",
     tripType:
       tripType && ["all", "trip", "tour"].includes(tripType) ? tripType : "all",
-    datePreset:
-      datePreset && ["all", "today", "week", "month", "upcoming"].includes(datePreset)
+    datePreset: hasRange
+      ? "all"
+      : datePreset && ["all", "today", "week", "month", "upcoming"].includes(datePreset)
         ? datePreset
         : "all",
+    dateFrom,
+    dateTo,
   }
 }
 
@@ -92,6 +107,8 @@ export function filtersToParams(filters: BookingFilters): URLSearchParams {
   if (filters.supplierId !== "all") params.set("supplier", filters.supplierId)
   if (filters.tripType !== "all") params.set("tripType", filters.tripType)
   if (filters.datePreset !== "all") params.set("date", filters.datePreset)
+  if (filters.dateFrom) params.set("from", filters.dateFrom)
+  if (filters.dateTo) params.set("to", filters.dateTo)
   return params
 }
 
@@ -122,6 +139,21 @@ export function matchesDatePreset(bookingDate: string | undefined, preset: DateP
     default:
       return true
   }
+}
+
+export function matchesDateFilter(
+  bookingDate: string | undefined,
+  filters: Pick<BookingFilters, "datePreset" | "dateFrom" | "dateTo">,
+): boolean {
+  if (filters.dateFrom || filters.dateTo) {
+    if (!bookingDate) return false
+    const date = new Date(bookingDate)
+    if (isNaN(date.getTime())) return false
+    if (filters.dateFrom && date < startOfSiteDay(filters.dateFrom)) return false
+    if (filters.dateTo && date > endOfSiteDay(filters.dateTo)) return false
+    return true
+  }
+  return matchesDatePreset(bookingDate, filters.datePreset)
 }
 
 export function filterBookingsList(
@@ -166,7 +198,7 @@ export function filterBookingsList(
     }
     if (filters.tripType === "trip" && trip?.is_tour) return false
     if (filters.tripType === "tour" && !trip?.is_tour) return false
-    if (!matchesDatePreset(booking.booking_date, filters.datePreset)) {
+    if (!matchesDateFilter(booking.booking_date, filters)) {
       return false
     }
 
@@ -205,6 +237,9 @@ export function bookingsToCsv(bookings: Booking[]): string {
     "الحالة",
     "طريقة الدفع",
     "الكمية",
+    "البالغون",
+    "أطفال 1–6",
+    "أطفال 7–12",
   ]
   const rows = bookings.map((b) => [
     b.ID,
@@ -219,6 +254,9 @@ export function bookingsToCsv(bookings: Booking[]): string {
     bookingStatusMeta[b.status]?.label ?? b.status,
     b.payment_method ?? "",
     String(b.quantity ?? ""),
+    String(b.adults ?? Math.max(0, (b.quantity ?? 0) - (b.kids_1_6 ?? 0) - (b.kids_7_12 ?? 0))),
+    String(b.kids_1_6 ?? 0),
+    String(b.kids_7_12 ?? 0),
   ])
 
   return [headers, ...rows]
@@ -242,6 +280,9 @@ export function useBookingFilters(
   const setFilters = useCallback(
     (patch: Partial<BookingFilters>) => {
       const next = { ...filters, ...patch }
+      if (next.dateFrom || next.dateTo) {
+        next.datePreset = "all"
+      }
       const params = filtersToParams(next)
       const qs = params.toString()
       const base = role === "admin" ? "/admin/bookings" : "/supplier/bookings"
@@ -264,7 +305,9 @@ export function useBookingFilters(
       filters.paymentState !== "all" ||
       filters.supplierId !== "all" ||
       filters.tripType !== "all" ||
-      filters.datePreset !== "all"
+      filters.datePreset !== "all" ||
+      filters.dateFrom !== "" ||
+      filters.dateTo !== ""
     )
   }, [filters])
 
@@ -281,15 +324,9 @@ export function useBookingFilters(
     const chips: { key: string; label: string; onRemove: () => void }[] = []
 
     if (filters.statusGroup !== "all") {
-      const labels: Record<BookingStatusGroup, string> = {
-        needsAction: "تحتاج إجراء",
-        active: "نشط",
-        done: "منتهي",
-        dead: "ملغي / فشل",
-      }
       chips.push({
         key: "group",
-        label: labels[filters.statusGroup],
+        label: statusGroupLabels[filters.statusGroup],
         onRemove: () => setFilters({ statusGroup: "all" }),
       })
     }
@@ -321,9 +358,6 @@ export function useBookingFilters(
       })
     }
     if (filters.supplierId !== "all") {
-      // Selecting a supplier from the toolbar filtered the list correctly but
-      // showed no confirmation chip like every other filter did — from a
-      // glance at the toolbar it looked like nothing had happened.
       const supplier = suppliers.find((s) => s.id === filters.supplierId)
       chips.push({
         key: "supplier",
@@ -331,7 +365,13 @@ export function useBookingFilters(
         onRemove: () => setFilters({ supplierId: "all" }),
       })
     }
-    if (filters.datePreset !== "all") {
+    if (filters.dateFrom || filters.dateTo) {
+      chips.push({
+        key: "range",
+        label: `من ${filters.dateFrom || "…"} إلى ${filters.dateTo || "…"}`,
+        onRemove: () => setFilters({ dateFrom: "", dateTo: "" }),
+      })
+    } else if (filters.datePreset !== "all") {
       const dateLabels: Record<DatePreset, string> = {
         all: "الكل",
         today: "اليوم",

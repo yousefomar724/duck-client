@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState } from "react"
 import PageHeader from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import * as supplierStorageApi from "@/lib/api/supplier-storage"
 import { useAuth } from "@/lib/stores/auth-store"
 import { useToast } from "@/lib/stores/toast-store"
+import { QuantityStepper } from "@/components/dashboard/quantity-stepper"
+import { MobileActionBar } from "@/components/dashboard/mobile-action-bar"
 import { DetailPageSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { ResourceType } from "@/lib/types"
@@ -138,7 +139,7 @@ export default function SupplierStoragePage() {
   }
 
   return (
-    <div className="space-y-8 max-w-lg">
+    <div className="max-w-lg space-y-8 pb-24 md:pb-0">
       <PageHeader
         title="سعة المعدات"
         description="حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة (كاياك، دراجة مائية، SUP). يُستخدم ذلك لاحتساب التوفر عند الحجز."
@@ -147,47 +148,40 @@ export default function SupplierStoragePage() {
       <div className="space-y-4 rounded-xl border bg-white p-6">
         <div className="space-y-2">
           <Label htmlFor="kayak">{labels.kayak}</Label>
-          <Input
-            id="kayak"
-            type="number"
-            min={0}
-            dir="ltr"
-            value={kayak}
-            onChange={(e) => setKayak(e.target.value)}
-          />
+          <QuantityStepper id="kayak" value={kayak} onChange={setKayak} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="water_cycle">{labels.water_cycle}</Label>
-          <Input
+          <QuantityStepper
             id="water_cycle"
-            type="number"
-            min={0}
-            dir="ltr"
             value={waterCycle}
-            onChange={(e) => setWaterCycle(e.target.value)}
+            onChange={setWaterCycle}
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="sup">{labels.sup}</Label>
-          <Input
-            id="sup"
-            type="number"
-            min={0}
-            dir="ltr"
-            value={sup}
-            onChange={(e) => setSup(e.target.value)}
-          />
+          <QuantityStepper id="sup" value={sup} onChange={setSup} />
         </div>
 
         <Button
           type="button"
-          className="bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover"
+          className="hidden! h-11! bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover md:inline-flex!"
           onClick={() => void handleSave()}
           disabled={saving}
         >
           {saving ? "جاري الحفظ..." : "حفظ"}
         </Button>
       </div>
+      <MobileActionBar>
+        <Button
+          type="button"
+          className="h-11! w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover"
+          onClick={() => void handleSave()}
+          disabled={saving}
+        >
+          {saving ? "جاري الحفظ..." : "حفظ"}
+        </Button>
+      </MobileActionBar>
     </div>
   )
 }

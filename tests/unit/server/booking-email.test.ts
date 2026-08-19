@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { formatBookingTimeAr } from '@/server/lib/mail';
 import { toBookingEmailData } from '@/server/services/booking';
 
 describe('toBookingEmailData', () => {
@@ -10,6 +11,9 @@ describe('toBookingEmailData', () => {
       booking_date: new Date('2026-08-10T10:00:00Z'),
       updated_at: new Date('2026-08-03T10:00:00Z'),
       quantity: 2,
+      adults: 1,
+      kids_1_6: 1,
+      kids_7_12: 0,
       wants_guide: false,
       played_before: true,
       hear_about_us: 'google',
@@ -32,6 +36,9 @@ describe('toBookingEmailData', () => {
       is_tour: false,
       destination_names: ['أسوان'],
       user_email: 'guest@test.com',
+      adults: 1,
+      kids_1_6: 1,
+      kids_7_12: 0,
     });
   });
 
@@ -77,5 +84,14 @@ describe('toBookingEmailData', () => {
     } as unknown as Parameters<typeof toBookingEmailData>[0];
 
     expect(toBookingEmailData(booking).destination_names).toEqual([]);
+  });
+});
+
+describe('formatBookingTimeAr', () => {
+  it('renders Cairo time for a UTC instant (Africa/Cairo, summer UTC+3)', () => {
+    // 02:00Z is 05:00 in Cairo during EEST. Run under TZ=UTC.
+    const formatted = formatBookingTimeAr(new Date('2026-07-10T02:00:00Z'));
+    expect(formatted).toMatch(/05:00/);
+    expect(formatted).toMatch(/ص/);
   });
 });

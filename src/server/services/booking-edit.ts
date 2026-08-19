@@ -4,7 +4,9 @@ import { Trip } from '../models/trip';
 import { computeBookingAmount } from './booking';
 import { checkAvailability, NoAvailabilityError } from './availability';
 import { isValidResourceType } from './resource-type';
+import { DeletedBooking } from '../models/deleted-booking';
 import { creditWalletBySupplierId } from './wallet';
+import { resolveGuestBreakdown } from '@/lib/bookings/guests';
 import {
   BOOKING_MAX_MINUTES,
   BOOKING_MIN_MINUTES,
@@ -14,6 +16,9 @@ export interface BookingEditPatch {
   quantity?: number;
   local_guests?: number;
   foreigner_guests?: number;
+  adults?: number;
+  kids_1_6?: number;
+  kids_7_12?: number;
   duration?: number;
   wants_guide?: boolean;
   resource_type?: string;
@@ -101,6 +106,9 @@ export async function applyBookingEdit(
     quantity: booking.quantity,
     local_guests: booking.local_guests,
     foreigner_guests: booking.foreigner_guests,
+    adults: booking.adults ?? 0,
+    kids_1_6: booking.kids_1_6 ?? 0,
+    kids_7_12: booking.kids_7_12 ?? 0,
     duration: booking.duration,
     wants_guide: booking.wants_guide,
     resource_type: booking.resource_type,
@@ -131,6 +139,27 @@ export async function applyBookingEdit(
   const guests = nextLocalGuests + nextForeignerGuests;
   if (guests > trip.max_guests) {
     throw new BookingEditError(`guests exceed maximum allowed: ${trip.max_guests}`);
+  }
+
+  let guestBreakdown: { adults: number; kids_1_6: number; kids_7_12: number };
+  try {
+    guestBreakdown =
+      guests > 0
+        ? resolveGuestBreakdown({
+            guests,
+            adults: patch.adults,
+            kids_1_6: patch.kids_1_6 ?? booking.kids_1_6 ?? 0,
+            kids_7_12: patch.kids_7_12 ?? booking.kids_7_12 ?? 0,
+          })
+        : {
+            adults: patch.adults ?? booking.adults ?? nextQuantity,
+            kids_1_6: 0,
+            kids_7_12: 0,
+          };
+  } catch (err) {
+    throw new BookingEditError(
+      err instanceof Error ? err.message : 'guest breakdown mismatch',
+    );
   }
 
   if (nextBookingDate.getTime() < Date.now() - 60_000) {
@@ -221,6 +250,9 @@ export async function applyBookingEdit(
   booking.quantity = computedQuantity;
   booking.local_guests = nextLocalGuests;
   booking.foreigner_guests = nextForeignerGuests;
+  booking.adults = guestBreakdown.adults;
+  booking.kids_1_6 = guestBreakdown.kids_1_6;
+  booking.kids_7_12 = guestBreakdown.kids_7_12;
   booking.duration = trip.is_tour ? nextDuration : 0;
   booking.wants_guide = nextWantsGuide;
   booking.resource_type = nextResourceType;
@@ -237,6 +269,9 @@ export async function applyBookingEdit(
     quantity: booking.quantity,
     local_guests: booking.local_guests,
     foreigner_guests: booking.foreigner_guests,
+    adults: booking.adults,
+    kids_1_6: booking.kids_1_6,
+    kids_7_12: booking.kids_7_12,
     duration: booking.duration,
     wants_guide: booking.wants_guide,
     resource_type: booking.resource_type,
@@ -327,16 +362,55 @@ export async function cancelBookingByStaff(
   return booking;
 }
 
-const DELETABLE_STATUSES = ['CANCELLED', 'REFUNDED', 'FAILED'] as const;
-
-export async function softDeleteBooking(
-  booking: BookingDoc,
-): Promise<void> {
-  if (!DELETABLE_STATUSES.includes(booking.status as (typeof DELETABLE_STATUSES)[number])) {
-    throw new BookingEditError(
-      `cannot delete booking with status: ${booking.status}. Only CANCELLED, REFUNDED, or FAILED bookings can be deleted.`,
-    );
-  }
+/** Kept for tests / emergencies. The UI never sends `mode: 'soft'`. */
+export async function softDeleteBooking(booking: BookingDoc): Promise<void> {
   booking.deletedAt = new Date();
   await booking.save();
+}
+
+export async function deleteBookingByAdmin(
+  booking: BookingDoc,
+  actor: BookingEditActor,
+  options?: { reason?: string; mode?: 'hard' | 'soft' },
+): Promise<{ wallet_adjustment: number }> {
+  if (actor.role !== 2) {
+    throw new BookingEditError('unauthorized', 403);
+  }
+
+  if (options?.mode === 'soft') {
+    await softDeleteBooking(booking);
+    return { wallet_adjustment: 0 };
+  }
+
+  const walletExposure =
+    booking.status === 'REFUNDED' ? 0 : (booking.amount_paid ?? 0);
+  const supplierId = booking.supplier_id.toString();
+
+  if (walletExposure !== 0) {
+    await creditWalletBySupplierId(supplierId, -walletExposure, {
+      allowNegative: true,
+    });
+  }
+
+  try {
+    await DeletedBooking.create({
+      original_id: booking._id,
+      snapshot: booking.toObject(),
+      deleted_at: new Date(),
+      deleted_by: new Types.ObjectId(actor.user_id),
+      deleted_by_role: actor.role,
+      reason: options?.reason?.trim() ?? '',
+      wallet_adjustment: -walletExposure,
+    });
+    await booking.deleteOne();
+  } catch (err) {
+    if (walletExposure !== 0) {
+      await creditWalletBySupplierId(supplierId, walletExposure, {
+        allowNegative: true,
+      }).catch(() => {});
+    }
+    throw err;
+  }
+
+  return { wallet_adjustment: -walletExposure };
 }

@@ -10,6 +10,7 @@ import {
   createTrip,
   createSupplierStorage,
   createBooking,
+  futureBookingDate,
   authHeader,
 } from '../utils/factories';
 import { jsonRequest } from '../utils/http';
@@ -33,7 +34,7 @@ describe('booking edit cancel delete routes', () => {
       foreigner_guests: 0,
       resource_type: 'kayak',
       pricing_snapshot: { price: 180, foreigner_price: 500, guide_price: 0 },
-      booking_date: new Date(Date.now() + 72 * 60 * 60 * 1000),
+      booking_date: futureBookingDate(),
     });
 
     await Wallet.updateOne({ _id: wallet._id }, { amount: 540 });
@@ -74,7 +75,7 @@ describe('booking edit cancel delete routes', () => {
       local_guests: 3,
       resource_type: 'kayak',
       pricing_snapshot: { price: 180, foreigner_price: 500, guide_price: 0 },
-      booking_date: new Date(Date.now() + 72 * 60 * 60 * 1000),
+      booking_date: futureBookingDate(),
     });
 
     const res = await updateBooking(
@@ -177,43 +178,51 @@ describe('booking edit cancel delete routes', () => {
     expect((await paidRes.json()).booking.status).toBe('REFUND_PENDING');
   });
 
-  it('admin can soft-delete terminal bookings only', async () => {
-    const { supplier } = await createSupplierUser();
+  it('admin can hard-delete a confirmed booking and debit the wallet', async () => {
+    const { supplier, user: supplierUser, wallet } = await createSupplierUser();
     const { user: admin } = await createAdminUser();
     const trip = await createTrip(supplier._id);
 
-    const active = await createBooking({
+    await Wallet.updateOne({ _id: wallet._id }, { amount: 500 });
+    const booking = await createBooking({
       trip_id: trip._id,
       supplier_id: supplier._id,
       status: 'CONFIRMED',
-    });
-
-    const rejectRes = await deleteBooking(
-      jsonRequest(`http://localhost/api/v1/bookings/${active.id}`, {
-        method: 'DELETE',
-        headers: authHeader(admin.id, admin.role),
-      }),
-      { params: Promise.resolve({ id: active.id }) },
-    );
-    expect(rejectRes.status).toBe(400);
-
-    const cancelled = await createBooking({
-      trip_id: trip._id,
-      supplier_id: supplier._id,
-      status: 'CANCELLED',
+      amount: 500,
+      amount_paid: 500,
     });
 
     const okRes = await deleteBooking(
-      jsonRequest(`http://localhost/api/v1/bookings/${cancelled.id}`, {
+      jsonRequest(`http://localhost/api/v1/bookings/${booking.id}`, {
         method: 'DELETE',
         headers: authHeader(admin.id, admin.role),
+        body: { reason: 'test delete' },
       }),
-      { params: Promise.resolve({ id: cancelled.id }) },
+      { params: Promise.resolve({ id: booking.id }) },
     );
     expect(okRes.status).toBe(200);
+    const body = await okRes.json();
+    expect(body.wallet_adjustment).toBe(-500);
 
-    const gone = await Booking.findById(cancelled.id);
-    expect(gone).toBeNull();
+    expect(await Booking.findById(booking.id)).toBeNull();
+    const updatedWallet = await Wallet.findById(wallet._id);
+    expect(updatedWallet?.amount).toBe(0);
+
+    const live = await createBooking({
+      trip_id: trip._id,
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      amount: 180,
+    });
+    const forbidden = await deleteBooking(
+      jsonRequest(`http://localhost/api/v1/bookings/${live.id}`, {
+        method: 'DELETE',
+        headers: authHeader(supplierUser.id, supplierUser.role),
+      }),
+      { params: Promise.resolve({ id: live.id }) },
+    );
+    expect(forbidden.status).toBe(403);
+    expect(await Booking.findById(live.id)).not.toBeNull();
   });
 
   it('marks refund sent and clears refund_owed', async () => {
@@ -277,5 +286,64 @@ describe('booking edit cancel delete routes', () => {
 
     const updatedWallet = await Wallet.findOne({ supplier_id: supplier._id });
     expect(updatedWallet?.amount).toBe(0);
+  });
+
+  it('rejects an adults plus kids mismatch and stores a valid kids breakdown', async () => {
+    const { supplier, user: supplierUser } = await createSupplierUser();
+    const trip = await createTrip(supplier._id, { price: 180, foreigner_price: 500, max_guests: 10 });
+    await createSupplierStorage(supplier._id, { kayak: 10 });
+
+    const booking = await createBooking({
+      trip_id: trip._id,
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      amount: 360,
+      quantity: 2,
+      local_guests: 2,
+      foreigner_guests: 0,
+      adults: 2,
+      kids_1_6: 0,
+      kids_7_12: 0,
+      resource_type: 'kayak',
+      pricing_snapshot: { price: 180, foreigner_price: 500, guide_price: 0 },
+      booking_date: futureBookingDate(),
+    });
+
+    const mismatch = await updateBooking(
+      jsonRequest(`http://localhost/api/v1/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: authHeader(supplierUser.id, supplierUser.role),
+        body: {
+          local_guests: 3,
+          foreigner_guests: 0,
+          quantity: 3,
+          adults: 1,
+          kids_1_6: 1,
+        },
+      }),
+      { params: Promise.resolve({ id: booking.id }) },
+    );
+    expect(mismatch.status).toBe(400);
+
+    const ok = await updateBooking(
+      jsonRequest(`http://localhost/api/v1/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: authHeader(supplierUser.id, supplierUser.role),
+        body: {
+          local_guests: 3,
+          foreigner_guests: 0,
+          quantity: 3,
+          adults: 2,
+          kids_1_6: 1,
+          kids_7_12: 0,
+        },
+      }),
+      { params: Promise.resolve({ id: booking.id }) },
+    );
+    expect(ok.status).toBe(200);
+    const body = await ok.json();
+    expect(body.booking.adults).toBe(2);
+    expect(body.booking.kids_1_6).toBe(1);
+    expect(body.booking.quantity).toBe(3);
   });
 });

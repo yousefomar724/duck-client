@@ -20,10 +20,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { canAdminCancelBooking, canDeleteBooking, canEditBooking, canSupplierCancelBooking } from "@/lib/bookings/status"
-import { expectedAmount, refundOwed, remainingAmount } from "@/lib/bookings/payment"
+import { canAdminCancelBooking, canAdminDeleteBooking, canEditBooking, canSupplierCancelBooking, bookingStatusMeta, deleteNeedsStrongConfirm } from "@/lib/bookings/status"
+import { amountPaid, expectedAmount, refundOwed, remainingAmount } from "@/lib/bookings/payment"
 import type { Booking } from "@/lib/types"
 import { bookingStrings } from "./booking-strings"
+import { formatCurrency } from "@/lib/constants"
 import {
   CheckCircle,
   Loader2,
@@ -83,7 +84,7 @@ export function hasBookingActions(
   const supplierCancelEnabled =
     role === "supplier" && canSupplierCancelBooking(booking.status)
   const refundSentEnabled = refundOwed(booking) > 0
-  const deleteEnabled = role === "admin" && canDeleteBooking(booking.status)
+  const deleteEnabled = canAdminDeleteBooking(role)
 
   return (
     adminCancelEnabled ||
@@ -109,6 +110,7 @@ export function BookingActions({
   const [dialog, setDialog] = useState<BookingActionType | null>(null)
   const [note, setNote] = useState("")
   const [amount, setAmount] = useState("")
+  const [confirmText, setConfirmText] = useState("")
   const rowId = booking.ID
   const isLoading = loadingAction === rowId
 
@@ -132,7 +134,7 @@ export function BookingActions({
   const supplierCancelEnabled =
     role === "supplier" && canSupplierCancelBooking(booking.status)
   const refundSentEnabled = refundOwed(booking) > 0
-  const deleteEnabled = role === "admin" && canDeleteBooking(booking.status)
+  const deleteEnabled = canAdminDeleteBooking(role)
 
   const hasAnyAction = hasBookingActions(booking, role)
 
@@ -142,6 +144,7 @@ export function BookingActions({
 
   const openDialog = (type: BookingActionType) => {
     setNote("")
+    setConfirmText("")
     if (type === "confirmPayment") {
       setAmount(String(expectedAmount(booking)))
     } else if (type === "collectBalance") {
@@ -161,6 +164,7 @@ export function BookingActions({
     setDialog(null)
     setNote("")
     setAmount("")
+    setConfirmText("")
   }
 
   const dialogConfig: Record<
@@ -402,7 +406,7 @@ export function BookingActions({
         <div data-prevent-row-click>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="icon-sm">
+              <Button type="button" variant="ghost" size="icon-sm" className="size-11!">
                 <MoreHorizontal className="size-4" />
                 <span className="sr-only">{bookingStrings.actions}</span>
               </Button>
@@ -429,6 +433,7 @@ export function BookingActions({
           if (!open) {
             setDialog(null)
             setNote("")
+            setConfirmText("")
           }
         }}
       >
@@ -442,6 +447,44 @@ export function BookingActions({
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="space-y-3 py-2">
+                {dialog === "adminDelete" && deleteNeedsStrongConfirm(booking.status) && (
+                  <div className="space-y-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+                    <p>
+                      {bookingStrings.customer}: {booking.full_name}
+                    </p>
+                    <p>
+                      {bookingStrings.status}:{" "}
+                      {bookingStatusMeta[booking.status]?.label ?? booking.status}
+                    </p>
+                    <p>
+                      {bookingStrings.amount}:{" "}
+                      {formatCurrency(booking.amount, booking.currency)}
+                    </p>
+                    <p>
+                      {bookingStrings.paid}:{" "}
+                      {formatCurrency(amountPaid(booking), booking.currency)}
+                    </p>
+                    {booking.status !== "REFUNDED" && amountPaid(booking) > 0 && (
+                      <p className="font-semibold">
+                        {bookingStrings.adminDeleteWalletImpact(
+                          formatCurrency(amountPaid(booking), booking.currency),
+                        )}
+                      </p>
+                    )}
+                    <p className="font-bold">{bookingStrings.adminDeleteWarning}</p>
+                    <div className="space-y-2 pt-1">
+                      <Label htmlFor="delete-confirm">
+                        {bookingStrings.adminDeleteTypeToConfirm}
+                      </Label>
+                      <Input
+                        id="delete-confirm"
+                        value={confirmText}
+                        onChange={(e) => setConfirmText(e.target.value)}
+                        placeholder="حذف"
+                      />
+                    </div>
+                  </div>
+                )}
                 {amountDialogs.includes(dialog) && (
                   <div className="space-y-2">
                     <Label htmlFor="action-amount">
@@ -490,7 +533,12 @@ export function BookingActions({
                     e.preventDefault()
                     confirm()
                   }}
-                  disabled={isLoading}
+                  disabled={
+                    isLoading ||
+                    (dialog === "adminDelete" &&
+                      deleteNeedsStrongConfirm(booking.status) &&
+                      confirmText !== "حذف")
+                  }
                 >
                   {isLoading
                     ? bookingStrings.confirming

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod/v3';
 import { dbConnect } from '@/server/db/connect';
 import { optionalAuth } from '@/server/auth/guard';
 import { Booking } from '@/server/models/booking';
@@ -7,6 +8,26 @@ import { buildBooking, toBookingEmailData, type CreateBookingInput } from '@/ser
 import { NoAvailabilityError } from '@/server/services/availability';
 import { sendSupplierNewManualBookingEmail } from '@/server/lib/mail';
 import { errorResponse } from '@/server/lib/json';
+
+const manualBookingSchema = z.object({
+  trip_id: z.string().min(1),
+  full_name: z.string().min(2),
+  phone_number: z.string().min(1),
+  booking_date: z.string().min(1),
+  resource_type: z.enum(['kayak', 'water_cycle', 'sup']).optional(),
+  quantity: z.number().int().positive().optional(),
+  local_guests: z.number().int().min(0).optional(),
+  foreigner_guests: z.number().int().min(0).optional(),
+  duration: z.number().int().min(1).optional(),
+  wants_guide: z.boolean().optional(),
+  played_before: z.boolean().nullable().optional(),
+  hear_about_us: z.string().optional(),
+  referral_text: z.string().optional(),
+  declared_amount: z.number().min(0).optional(),
+  adults: z.number().int().min(0).optional(),
+  kids_1_6: z.number().int().min(0).optional(),
+  kids_7_12: z.number().int().min(0).optional(),
+});
 
 export async function POST(request: Request) {
   await dbConnect();
@@ -18,12 +39,18 @@ export async function POST(request: Request) {
   // that while keeping guest checkout working.
   const session = optionalAuth(request);
 
-  let body: CreateBookingInput;
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return errorResponse(400, 'Invalid input');
   }
+
+  const parsed = manualBookingSchema.safeParse(raw);
+  if (!parsed.success) {
+    return errorResponse(400, 'Invalid input');
+  }
+  const body = parsed.data as CreateBookingInput;
 
   try {
     const built = await buildBooking(session?.user_id ?? null, body);

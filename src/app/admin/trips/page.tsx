@@ -7,6 +7,7 @@ import PageHeader from "@/components/shared/page-header"
 import StatCard from "@/components/shared/stat-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DataCardList } from "@/components/dashboard/data-card-list"
 import {
   Table,
   TableBody,
@@ -128,7 +129,7 @@ export default function AdminTripsPage() {
         <PageHeader title="الرحلات والجولات">
           <Button disabled>+ اضافة رحلة / جولة</Button>
         </PageHeader>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="border rounded-lg p-4 h-24" />
           ))}
@@ -179,7 +180,7 @@ export default function AdminTripsPage() {
           value={supplierFilter}
           onValueChange={setSupplierFilter}
         >
-          <SelectTrigger className="w-[250px]">
+          <SelectTrigger className="w-full sm:w-[250px]">
             <SelectValue placeholder="تصفية حسب المورد" />
           </SelectTrigger>
           <SelectContent>
@@ -192,7 +193,7 @@ export default function AdminTripsPage() {
           </SelectContent>
         </Select>
         <Select dir="rtl" value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="تصفية حسب النوع" />
           </SelectTrigger>
           <SelectContent>
@@ -216,6 +217,8 @@ export default function AdminTripsPage() {
               <p className="text-text-muted">لا توجد رحلات متاحة</p>
             </div>
           ) : (
+            <>
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
@@ -288,7 +291,7 @@ export default function AdminTripsPage() {
                       <TableCell>
                         <DropdownMenu dir="rtl">
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="size-11!">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -314,6 +317,58 @@ export default function AdminTripsPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
+            <DataCardList
+              items={filteredTrips.map((trip) => {
+                const supplier = suppliers.find((s) => s.id === trip.supplier_id)
+                const duration = trip.duration ?? 1
+                return {
+                  id: trip.id,
+                  title: resolveLocalizedField(trip.name, "-"),
+                  subtitle: getSupplierName(supplier),
+                  badge: <TripTypeBadge isTour={trip.is_tour} />,
+                  fields: [
+                    {
+                      label: "سعر المصريين",
+                      value: formatCurrency(trip.price, trip.currency),
+                    },
+                    {
+                      label: "الأشخاص",
+                      value: String(trip.max_guests),
+                    },
+                    {
+                      label: "المدة",
+                      value: `${duration} ${duration === 1 ? "ساعة" : "ساعات"}`,
+                    },
+                  ],
+                  actions: (
+                    <DropdownMenu dir="rtl">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-11!">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/admin/trips/${trip.id}/edit`}>
+                            <Pencil className="me-2 h-4 w-4" />
+                            تعديل
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => setDeleteId(trip.id)}
+                        >
+                          <Trash2 className="me-2 h-4 w-4" />
+                          حذف
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ),
+                }
+              })}
+            />
+            </>
           )}
         </CardContent>
       </Card>

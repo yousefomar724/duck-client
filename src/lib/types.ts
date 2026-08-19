@@ -102,6 +102,9 @@ export interface Booking {
   quantity?: number
   local_guests?: number
   foreigner_guests?: number
+  adults?: number
+  kids_1_6?: number
+  kids_7_12?: number
   hear_about_us?: string
   referral_text?: string
   resource_type?: string
@@ -263,6 +266,9 @@ export interface CreateBookingRequest {
   referral_text?: string
   /** Amount the customer chose to send now (deposit or full); server clamps to a valid range. */
   declared_amount?: number
+  adults?: number
+  kids_1_6?: number
+  kids_7_12?: number
 }
 
 export interface CreateTripRequest {

@@ -48,6 +48,14 @@ import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
 import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
+import { DataCardList } from "@/components/dashboard/data-card-list"
+import { MobileActionBar } from "@/components/dashboard/mobile-action-bar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import type { PayoutStatus, Payout, Supplier } from "@/lib/types"
 
 const ROW_STATUS_ORDER: PayoutStatus[] = [
@@ -79,6 +87,7 @@ export default function AdminPayouts() {
   const [payouts, setPayouts] = useState<Payout[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [activeTab, setActiveTab] = useState<"all" | PayoutStatus>("all")
+  const [supplierFilter, setSupplierFilter] = useState("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -242,16 +251,22 @@ export default function AdminPayouts() {
   )
 
   const filteredPayouts = useMemo(() => {
-    if (activeTab === "all") return payouts
+    let list = payouts
     if (activeTab === "paid") {
-      return payouts.filter((p) => isPaidPayoutStatus(String(p.status)))
+      list = list.filter((p) => isPaidPayoutStatus(String(p.status)))
+    } else if (activeTab !== "all") {
+      list = list.filter((p) => p.status === activeTab)
     }
-    return payouts.filter((p) => p.status === activeTab)
-  }, [payouts, activeTab])
+    if (supplierFilter !== "all") {
+      list = list.filter((p) => String(p.supplier_id) === supplierFilter)
+    }
+    return list
+  }, [payouts, activeTab, supplierFilter])
 
   const addPayoutButton = (
     <Button
       type="button"
+      className="hidden! h-11! md:inline-flex!"
       onClick={() => {
         setFormError(null)
         setCreateOpen(true)
@@ -265,7 +280,7 @@ export default function AdminPayouts() {
   return (
     <>
       <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
-        <DialogContent dir="rtl" className="sm:max-w-md">
+        <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
           <form onSubmit={handleCreateSubmit}>
             <DialogHeader>
               <DialogTitle>إضافة دفعة جديدة</DialogTitle>
@@ -373,12 +388,12 @@ export default function AdminPayouts() {
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24 md:pb-0">
         <PageHeader title="المدفوعات">{addPayoutButton}</PageHeader>
 
         {isLoading ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="border rounded-lg p-4 h-24" />
               ))}
@@ -389,7 +404,7 @@ export default function AdminPayouts() {
           <ErrorDisplay error={error} onRetry={fetchData} />
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
               <StatCard
                 title="إجمالي المدفوعات"
                 value={formatCurrency(totalPaid)}
@@ -414,19 +429,40 @@ export default function AdminPayouts() {
                   value={activeTab}
                   onValueChange={(v) => setActiveTab(v as typeof activeTab)}
                 >
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="all">الكل</TabsTrigger>
-                    <TabsTrigger value="pending">قيد الانتظار</TabsTrigger>
-                    <TabsTrigger value="paid">مدفوع</TabsTrigger>
-                    <TabsTrigger value="failed">فشل</TabsTrigger>
-                  </TabsList>
+                  <div className="mb-4 overflow-x-auto">
+                    <TabsList className="w-max h-auto flex-nowrap justify-start">
+                      <TabsTrigger value="all">الكل</TabsTrigger>
+                      <TabsTrigger value="pending">قيد الانتظار</TabsTrigger>
+                      <TabsTrigger value="paid">مدفوع</TabsTrigger>
+                      <TabsTrigger value="failed">فشل</TabsTrigger>
+                    </TabsList>
+                  </div>
 
-                  <TabsContent value={activeTab}>
+                  <TabsContent value={activeTab} className="space-y-4">
+                    <Select
+                      dir="rtl"
+                      value={supplierFilter}
+                      onValueChange={setSupplierFilter}
+                    >
+                      <SelectTrigger className="w-full sm:w-[220px]">
+                        <SelectValue placeholder="تصفية حسب المورد" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">كل الموردين</SelectItem>
+                        {suppliers.map((s) => (
+                          <SelectItem key={s.id} value={String(s.id)}>
+                            {getSupplierName(s)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {filteredPayouts.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-text-muted">لا توجد دفعات متاحة</p>
                       </div>
                     ) : (
+                      <>
+                      <div className="hidden md:block">
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/50">
@@ -513,6 +549,75 @@ export default function AdminPayouts() {
                           })}
                         </TableBody>
                       </Table>
+                      </div>
+                      <DataCardList
+                        items={filteredPayouts.map((payout) => {
+                          const supplier = suppliers.find(
+                            (s) => String(s.id) === String(payout.supplier_id),
+                          )
+                          const statusKey = String(payout.status)
+                          const statusOptions = rowStatusValues(statusKey)
+                          return {
+                            id: payout.ID,
+                            title: `#${payout.ID}`,
+                            subtitle: getSupplierName(supplier),
+                            fields: [
+                              {
+                                label: "المبلغ",
+                                value: formatCurrency(
+                                  payout.amount,
+                                  payout.currency,
+                                ),
+                              },
+                              {
+                                label: "التاريخ",
+                                value: formatDate(getPayoutDateString(payout)),
+                              },
+                            ],
+                            actions: (
+                              <div className="flex items-center gap-1">
+                                <DropdownMenu dir="rtl">
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-11!"
+                                      disabled={updatingId === payout.ID}
+                                    >
+                                      {payoutStatusLabel(statusKey)}
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    {statusOptions.map((sv) => (
+                                      <DropdownMenuItem
+                                        key={sv}
+                                        onClick={() =>
+                                          void handleStatusUpdate(
+                                            payout.ID,
+                                            sv as PayoutStatus,
+                                          )
+                                        }
+                                      >
+                                        {payoutStatusLabel(sv)}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-11! text-red-600 hover:text-red-700"
+                                  onClick={() => setDeleteId(payout.ID)}
+                                  disabled={updatingId === payout.ID}
+                                >
+                                  حذف
+                                </Button>
+                              </div>
+                            ),
+                          }
+                        })}
+                      />
+                      </>
                     )}
                   </TabsContent>
                 </Tabs>
@@ -521,6 +626,19 @@ export default function AdminPayouts() {
           </>
         )}
       </div>
+      <MobileActionBar>
+        <Button
+          type="button"
+          className="h-11! w-full"
+          onClick={() => {
+            setFormError(null)
+            setCreateOpen(true)
+          }}
+          disabled={isLoading}
+        >
+          + اضافة دفعة
+        </Button>
+      </MobileActionBar>
       <AlertDialog
         open={deleteId != null}
         onOpenChange={(open) => {

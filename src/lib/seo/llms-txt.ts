@@ -21,8 +21,8 @@ export async function buildLlmsTxt(): Promise<string> {
   lines.push(`# ${SITE_NAME}`)
   lines.push("")
   lines.push(
-    "> Kayaking, stand-up paddleboarding and water-bike trips on the Nile around " +
-      "Elephantine Island in Aswan, Egypt. One location, booked online or by WhatsApp.",
+    "> Kayaking and water sports on the Nile in Aswan, Egypt. " +
+      "Booked online or by WhatsApp.",
   )
   lines.push("")
 

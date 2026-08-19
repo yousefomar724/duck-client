@@ -19,6 +19,7 @@ export interface BookingFormSchemaMessages {
   numberInvalid: string;
   minOneGuest: string;
   minOne: string;
+  kidsMinOne: string;
   maxGuestsError: (max: number) => string;
   guestMixSumError: (total: number) => string;
 }
@@ -50,6 +51,16 @@ export function createBookingFormSchema(messages: BookingFormSchemaMessages, max
       .number({ invalid_type_error: messages.numberInvalid })
       .int()
       .min(1, messages.minOneGuest),
+    has_kids_1_6: z.boolean(),
+    kids_1_6: z.coerce
+      .number({ invalid_type_error: messages.numberInvalid })
+      .int()
+      .min(0),
+    has_kids_7_12: z.boolean(),
+    kids_7_12: z.coerce
+      .number({ invalid_type_error: messages.numberInvalid })
+      .int()
+      .min(0),
     guest_mix: z.enum(['local', 'foreigner', 'mixed']),
     local_guests: z.coerce
       .number({ invalid_type_error: messages.numberInvalid })
@@ -78,7 +89,26 @@ export function createBookingFormSchema(messages: BookingFormSchemaMessages, max
   });
 
   return contactSchema.superRefine((data, ctx) => {
-    if (maxGuests != null && data.guests > maxGuests) {
+    const kids =
+      (data.has_kids_1_6 ? data.kids_1_6 : 0) +
+      (data.has_kids_7_12 ? data.kids_7_12 : 0);
+    const total = data.guests + kids;
+
+    if (data.has_kids_1_6 && data.kids_1_6 < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: messages.kidsMinOne,
+        path: ['kids_1_6'],
+      });
+    }
+    if (data.has_kids_7_12 && data.kids_7_12 < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: messages.kidsMinOne,
+        path: ['kids_7_12'],
+      });
+    }
+    if (maxGuests != null && total > maxGuests) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: messages.maxGuestsError(maxGuests),
@@ -87,10 +117,10 @@ export function createBookingFormSchema(messages: BookingFormSchemaMessages, max
     }
     if (data.guest_mix === 'mixed') {
       const sum = data.local_guests + data.foreigner_guests;
-      if (sum !== data.guests) {
+      if (sum !== total) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: messages.guestMixSumError(data.guests),
+          message: messages.guestMixSumError(total),
           path: ['local_guests'],
         });
       }

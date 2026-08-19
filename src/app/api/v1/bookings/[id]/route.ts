@@ -7,7 +7,7 @@ import { Booking } from '@/server/models/booking';
 import {
   applyBookingEdit,
   BookingEditError,
-  softDeleteBooking,
+  deleteBookingByAdmin,
 } from '@/server/services/booking-edit';
 import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
@@ -16,6 +16,9 @@ const editSchema = z.object({
   quantity: z.number().int().positive().optional(),
   local_guests: z.number().int().min(0).optional(),
   foreigner_guests: z.number().int().min(0).optional(),
+  adults: z.number().int().min(0).optional(),
+  kids_1_6: z.number().int().min(0).optional(),
+  kids_7_12: z.number().int().min(0).optional(),
   duration: z.number().int().min(1).optional(),
   wants_guide: z.boolean().optional(),
   resource_type: z.enum(['kayak', 'water_cycle', 'sup']).optional(),
@@ -91,9 +94,24 @@ export async function DELETE(
   const booking = await Booking.findById(id);
   if (!booking) return errorResponse(404, 'booking not found');
 
+  let reason: string | undefined;
   try {
-    await softDeleteBooking(booking);
-    return NextResponse.json({ message: 'Booking deleted successfully.' });
+    const body = (await request.json()) as { reason?: unknown };
+    if (typeof body?.reason === 'string') reason = body.reason;
+  } catch {
+    // empty body is fine
+  }
+
+  try {
+    const { wallet_adjustment } = await deleteBookingByAdmin(
+      booking,
+      { user_id: session.user_id, role: session.role },
+      { reason },
+    );
+    return NextResponse.json({
+      message: 'Booking deleted successfully.',
+      wallet_adjustment,
+    });
   } catch (err) {
     if (err instanceof BookingEditError) {
       return errorResponse(err.statusCode, err.message);

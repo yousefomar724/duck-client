@@ -13,14 +13,15 @@ import type { Booking, BookingStatus } from "@/lib/types"
 
 export type BookingStatusGroup =
   | "needsAction"
-  | "active"
-  | "done"
-  | "dead"
+  | "upcoming"
+  | "completed"
+  | "cancelled"
 
 export interface BookingStatusMeta {
   bg: string
   text: string
   label: string
+  shortLabel: string
   group: BookingStatusGroup
   icon: LucideIcon
 }
@@ -30,41 +31,47 @@ export const bookingStatusMeta: Record<BookingStatus, BookingStatusMeta> = {
     bg: "bg-yellow-100",
     text: "text-yellow-800",
     label: "قيد الانتظار",
+    shortLabel: "انتظار",
     group: "needsAction",
     icon: Clock,
   },
   CONFIRMED: {
     bg: "bg-duck-cyan/10",
-    text: "text-duck-cyan",
-    label: "مؤكد",
-    group: "active",
+    text: "text-cyan-900",
+    label: "مؤكد – قادم",
+    shortLabel: "قادم",
+    group: "upcoming",
     icon: CheckCircle,
   },
   CANCELLED: {
     bg: "bg-red-100",
     text: "text-red-800",
     label: "ملغي",
-    group: "dead",
+    shortLabel: "ملغي",
+    group: "cancelled",
     icon: Ban,
   },
   FAILED: {
     bg: "bg-red-100",
     text: "text-red-800",
     label: "فشل",
-    group: "dead",
+    shortLabel: "فشل",
+    group: "cancelled",
     icon: XCircle,
   },
   SUCCESS: {
     bg: "bg-green-100",
     text: "text-green-800",
     label: "نجح",
-    group: "active",
+    shortLabel: "نجح",
+    group: "upcoming",
     icon: CheckCircle,
   },
   REFUND_PENDING: {
     bg: "bg-amber-100",
     text: "text-amber-900",
     label: "في انتظار الاسترداد",
+    shortLabel: "استرداد",
     group: "needsAction",
     icon: RefreshCw,
   },
@@ -72,28 +79,32 @@ export const bookingStatusMeta: Record<BookingStatus, BookingStatusMeta> = {
     bg: "bg-slate-100",
     text: "text-slate-800",
     label: "تم الاسترداد",
-    group: "done",
+    shortLabel: "مسترد",
+    group: "cancelled",
     icon: RotateCcw,
   },
   REFUND_FAILED: {
     bg: "bg-red-100",
     text: "text-red-900",
     label: "فشل الاسترداد",
+    shortLabel: "فشل الاسترداد",
     group: "needsAction",
     icon: AlertCircle,
   },
   COMPLETED: {
-    bg: "bg-emerald-100",
-    text: "text-emerald-800",
-    label: "مكتمل",
-    group: "done",
+    bg: "bg-slate-100",
+    text: "text-slate-700",
+    label: "منتهية",
+    shortLabel: "منتهية",
+    group: "completed",
     icon: CheckCircle,
   },
   PAID: {
     bg: "bg-teal-100",
     text: "text-teal-800",
     label: "مدفوع",
-    group: "active",
+    shortLabel: "مدفوع",
+    group: "upcoming",
     icon: CircleDollarSign,
   },
 }
@@ -105,19 +116,26 @@ export const ALL_BOOKING_STATUSES = Object.keys(
 export const statusGroupLabels: Record<BookingStatusGroup | "all", string> = {
   all: "الكل",
   needsAction: "تحتاج إجراء",
-  active: "نشط",
-  done: "منتهي",
-  dead: "ملغي / فشل",
+  upcoming: "قادمة",
+  completed: "منتهية",
+  cancelled: "ملغاة",
 }
+
+export const STATUS_GROUP_KEYS: BookingStatusGroup[] = [
+  "needsAction",
+  "upcoming",
+  "completed",
+  "cancelled",
+]
 
 export const statusGroupStatuses: Record<
   BookingStatusGroup,
   BookingStatus[]
 > = {
   needsAction: ["PENDING", "REFUND_PENDING", "REFUND_FAILED"],
-  active: ["CONFIRMED", "PAID", "SUCCESS"],
-  done: ["COMPLETED", "REFUNDED"],
-  dead: ["CANCELLED", "FAILED"],
+  upcoming: ["CONFIRMED", "PAID", "SUCCESS"],
+  completed: ["COMPLETED"],
+  cancelled: ["CANCELLED", "FAILED", "REFUNDED"],
 }
 
 export function needsAction(booking: Pick<Booking, "status">): boolean {
@@ -130,6 +148,16 @@ export function matchesStatusGroup(
 ): boolean {
   if (group === "all") return true
   return statusGroupStatuses[group].includes(status)
+}
+
+/** Upcoming group and the trip has not started yet. Cron lag can leave CONFIRMED in the past. */
+export function isUpcoming(
+  booking: Pick<Booking, "status" | "booking_date">,
+  now = new Date(),
+): boolean {
+  if (bookingStatusMeta[booking.status]?.group !== "upcoming") return false
+  if (!booking.booking_date) return false
+  return new Date(booking.booking_date).getTime() >= now.getTime()
 }
 
 export function canAdminCancelBooking(status: string): boolean {
@@ -149,8 +177,12 @@ export function canEditBooking(status: string): boolean {
   return status === "PENDING" || status === "CONFIRMED"
 }
 
-export function canDeleteBooking(status: string): boolean {
-  return status === "CANCELLED" || status === "REFUNDED" || status === "FAILED"
+export function canAdminDeleteBooking(role: "admin" | "supplier" | number): boolean {
+  return role === "admin" || role === 2
+}
+
+export function deleteNeedsStrongConfirm(status: string): boolean {
+  return status !== "CANCELLED" && status !== "REFUNDED" && status !== "FAILED"
 }
 
 export const resourceLabels: Record<string, string> = {

@@ -38,6 +38,7 @@ import {
   supplierDisplayName,
 } from "@/lib/bookings/status"
 import { amountPaid, refundOwed, remainingAmount } from "@/lib/bookings/payment"
+import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
 import type { Booking, Supplier, TourGuide, Trip } from "@/lib/types"
 import { ChevronDown } from "lucide-react"
@@ -175,6 +176,22 @@ export function BookingDetailSheet({
                   label={bookingStrings.quantity}
                   value={String(booking.quantity ?? "—")}
                 />
+                <DetailField
+                  label={bookingStrings.adults}
+                  value={String(guestAgeBreakdown(booking).adults)}
+                />
+                {guestAgeBreakdown(booking).kids_1_6 > 0 ? (
+                  <DetailField
+                    label={bookingStrings.kids1to6}
+                    value={String(guestAgeBreakdown(booking).kids_1_6)}
+                  />
+                ) : null}
+                {guestAgeBreakdown(booking).kids_7_12 > 0 ? (
+                  <DetailField
+                    label={bookingStrings.kids7to12}
+                    value={String(guestAgeBreakdown(booking).kids_7_12)}
+                  />
+                ) : null}
                 <DetailField
                   label={bookingStrings.guests}
                   value={

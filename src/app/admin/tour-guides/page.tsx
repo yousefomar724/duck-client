@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { MoreVertical, Pencil, Trash2, User } from "lucide-react"
 import PageHeader from "@/components/shared/page-header"
 import { EmptyState } from "@/components/dashboard/empty-state"
+import { DataCardList } from "@/components/dashboard/data-card-list"
+import { MobileActionBar } from "@/components/dashboard/mobile-action-bar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -209,14 +211,14 @@ export default function AdminTourGuides() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24 md:pb-0">
       <PageHeader
         title="المرشدين"
         description="إدارة المرشدين السياحيين المتاحين للجولات"
       >
         <Button
           onClick={openCreateDialog}
-          className="bg-duck-yellow hover:bg-duck-yellow-hover text-duck-navy"
+          className="hidden! bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover md:inline-flex!"
         >
           + اضافة مرشد
         </Button>
@@ -249,6 +251,8 @@ export default function AdminTourGuides() {
               }
             />
           ) : (
+          <>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
@@ -272,7 +276,7 @@ export default function AdminTourGuides() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="rounded-full!"
+                            className="size-11! rounded-full!"
                             disabled={isDeleting}
                           >
                             <MoreVertical className="h-4 w-4" />
@@ -299,13 +303,61 @@ export default function AdminTourGuides() {
               ))}
             </TableBody>
           </Table>
+          </div>
+          <DataCardList
+            items={filteredGuides.map((guide) => ({
+              id: guide.ID,
+              title: guide.name,
+              fields: [
+                { label: "السعر", value: formatCurrency(guide.price) },
+                { label: "الهاتف", value: guide.phone_number },
+              ],
+              actions: (
+                <DropdownMenu dir="rtl">
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11! rounded-full!"
+                      disabled={isDeleting}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => openEditDialog(guide)}>
+                      <Pencil className="me-2 h-4 w-4" />
+                      تعديل
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={() => setDeleteId(guide.ID)}
+                    >
+                      <Trash2 className="me-2 h-4 w-4" />
+                      حذف
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ),
+            }))}
+          />
+          </>
           )}
         </CardContent>
       </Card>
 
+      <MobileActionBar>
+        <Button
+          onClick={openCreateDialog}
+          className="h-11! w-full bg-duck-yellow text-duck-navy hover:bg-duck-yellow-hover"
+        >
+          + اضافة مرشد
+        </Button>
+      </MobileActionBar>
+
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editingGuide ? "تعديل المرشد" : "اضافة مرشد جديد"}

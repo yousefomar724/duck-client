@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeBookingAmount } from '@/server/services/booking';
+import { resolveGuestBreakdown } from '@/lib/bookings/guests';
 
 const baseTrip = {
   is_tour: false,
@@ -47,5 +48,19 @@ describe('computeBookingAmount', () => {
         { quantity: 1 },
       ).amount,
     ).toBe(230);
+  });
+});
+
+describe('resolveGuestBreakdown', () => {
+  it('treats omitted adults as quantity minus kids (legacy payload)', () => {
+    expect(
+      resolveGuestBreakdown({ guests: 3, kids_1_6: 1, kids_7_12: 0 }),
+    ).toEqual({ adults: 2, kids_1_6: 1, kids_7_12: 0 });
+  });
+
+  it('rejects a mismatch between adults plus kids and guests', () => {
+    expect(() =>
+      resolveGuestBreakdown({ guests: 4, adults: 2, kids_1_6: 1, kids_7_12: 0 }),
+    ).toThrow(/guest breakdown mismatch/);
   });
 });

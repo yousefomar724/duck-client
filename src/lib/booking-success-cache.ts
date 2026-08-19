@@ -30,6 +30,9 @@ export type SuccessCache = {
     quantity: number
     local_guests: number
     foreigner_guests: number
+    adults?: number
+    kids_1_6?: number
+    kids_7_12?: number
     amount: number
   }
 }

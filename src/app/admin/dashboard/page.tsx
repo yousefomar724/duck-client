@@ -1,11 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { CalendarCheck, DollarSign, Ship, Users } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { CalendarCheck, DollarSign, Ship, Users, Wallet } from "lucide-react"
 import PageHeader from "@/components/shared/page-header"
 import StatCard from "@/components/shared/stat-card"
 import StatusBadge from "@/components/shared/status-badge"
 import { EmptyState } from "@/components/dashboard/empty-state"
+import { DataCardList } from "@/components/dashboard/data-card-list"
 import {
   Table,
   TableBody,
@@ -18,6 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency, formatDateTime } from "@/lib/constants"
 import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
 import { resolveLocalizedField } from "@/lib/dashboard/localize"
+import { computeBookingStats } from "@/lib/bookings/stats"
+import { bookingStrings } from "@/components/dashboard/bookings/booking-strings"
 import * as bookingsApi from "@/lib/api/bookings"
 import * as tripsApi from "@/lib/api/trips"
 import * as suppliersApi from "@/lib/api/suppliers"
@@ -26,6 +30,7 @@ import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Booking, Trip, Supplier } from "@/lib/types"
 
 export default function AdminDashboard() {
+  const router = useRouter()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [trips, setTrips] = useState<Trip[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -63,6 +68,8 @@ export default function AdminDashboard() {
     }
   }
 
+  const stats = useMemo(() => computeBookingStats(bookings), [bookings])
+
   if (isLoading) {
     return <DashboardSkeleton />
   }
@@ -71,14 +78,8 @@ export default function AdminDashboard() {
     return <ErrorDisplay error={error} onRetry={fetchData} />
   }
 
-  // Calculate stats
-  const totalBookings = bookings.length
-  const totalRevenue = bookings.reduce(
-    (sum, booking) => sum + booking.amount,
-    0,
-  )
-  const activeSuppliers = suppliers.length
-  const activeTrips = trips.length
+  const activeSuppliers = suppliers.filter((s) => s.active !== false)
+  const totalBookings = stats.total
 
   const recentBookings = [...bookings]
     .sort((a, b) => {
@@ -95,7 +96,7 @@ export default function AdminDashboard() {
         description="نظرة عامة على الحجوزات والإيرادات والنشاط"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           title="إجمالي الحجوزات"
           value={totalBookings}
@@ -103,17 +104,27 @@ export default function AdminDashboard() {
           tone="neutral"
         />
         <StatCard
-          title="إجمالي الإيرادات"
-          value={formatCurrency(totalRevenue)}
+          title="الإيرادات المحصلة"
+          value={formatCurrency(stats.netCollected)}
           icon={DollarSign}
           tone="success"
+          hint={bookingStrings.bookedRevenueHint(
+            formatCurrency(stats.bookedRevenue),
+          )}
         />
         <StatCard
           title="الموردين النشطين"
-          value={activeSuppliers}
+          value={activeSuppliers.length}
           icon={Users}
+          hint={`من إجمالي ${suppliers.length}`}
         />
-        <StatCard title="الرحلات النشطة" value={activeTrips} icon={Ship} />
+        <StatCard title="إجمالي الرحلات" value={trips.length} icon={Ship} />
+        <StatCard
+          title={bookingStrings.totalRemaining}
+          value={formatCurrency(stats.outstanding)}
+          icon={Wallet}
+          tone="warning"
+        />
       </div>
 
       <Card>
@@ -128,6 +139,8 @@ export default function AdminDashboard() {
               description="ستظهر أحدث الحجوزات هنا."
             />
           ) : (
+          <>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
@@ -144,7 +157,9 @@ export default function AdminDashboard() {
                       key={booking.ID}
                       className="hover:bg-duck-cyan/5 transition-colors cursor-pointer"
                       onClick={() => {
-                        window.location.href = `/admin/bookings?q=${encodeURIComponent(booking.ID)}`
+                        router.push(
+                          `/admin/bookings?q=${encodeURIComponent(booking.ID)}`,
+                        )
                       }}
                     >
                       <TableCell>{booking.full_name}</TableCell>
@@ -164,6 +179,30 @@ export default function AdminDashboard() {
               ))}
             </TableBody>
           </Table>
+          </div>
+          <DataCardList
+            items={recentBookings.map((booking) => ({
+              id: booking.ID,
+              title: booking.full_name,
+              subtitle: resolveLocalizedField(booking.trip?.name, "-"),
+              badge: <StatusBadge status={booking.status} type="booking" short />,
+              fields: [
+                {
+                  label: "المبلغ",
+                  value: formatCurrency(booking.amount, booking.currency),
+                },
+                {
+                  label: "موعد الحجز",
+                  value: formatDateTime(booking.booking_date ?? ""),
+                },
+              ],
+              onClick: () =>
+                router.push(
+                  `/admin/bookings?q=${encodeURIComponent(booking.ID)}`,
+                ),
+            }))}
+          />
+          </>
           )}
         </CardContent>
       </Card>
