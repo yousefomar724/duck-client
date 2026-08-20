@@ -14,8 +14,8 @@ export default function RedSeaSection() {
     >
       {/* Background Video */}
       <BackgroundVideo
-        src="/videos/hero2.mp4"
-        poster="/videos/hero2-poster.jpg"
+        src="/videos/redsea-v1.mp4"
+        poster="/videos/redsea-v1-poster.jpg"
         className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
       />
 

@@ -18,6 +18,7 @@
     "postinstall": "node scripts/copy-maplibre-worker.mjs",
     "seed": "node --env-file=.env.local scripts/seed.mjs",
     "icons": "node scripts/generate-icons.mjs",
+    "encode:videos": "node scripts/encode-videos.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run --project unit",

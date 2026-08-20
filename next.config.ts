@@ -5,8 +5,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Re-encoded hero videos and the local font are content-addressed by name
-        // and never change in place.
+        // Hero videos and the local font are versioned by filename (-vN) and are
+        // never replaced in place -- a content change ships under a new filename.
+        // See scripts/encode-videos.mjs.
         source: '/:path(videos|fonts)/:file*',
         headers: [
           {

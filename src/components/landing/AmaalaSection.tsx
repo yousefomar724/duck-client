@@ -13,10 +13,13 @@ export default function AmaalaSection() {
       id="amaala-section"
       className="relative flex items-center w-full h-full"
     >
-      {/* Background Video */}
+      {/* Background Video.
+          Legacy filename: this is the original hero clip, kept at its old
+          immutable URL so returning visitors do not re-download 6.7 MB
+          for a slide they may never reach. */}
       <BackgroundVideo
-        src="/videos/hero3.mp4"
-        poster="/videos/hero3-poster.jpg"
+        src="/videos/hero.mp4"
+        poster="/videos/hero-poster.jpg"
         className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
       />
 
