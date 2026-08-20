@@ -57,14 +57,19 @@ export function UserMenu({
     logout: variant === "dashboard" ? "تسجيل الخروج" : t("logout"),
   }
 
+  const handleLogout = () => {
+    onNavigate?.()
+    logout({ redirectTo: variant === "landing" ? "/" : "/login" })
+  }
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild className="px-0!">
         <Button
           type="button"
           variant="ghost"
           className={cn(
-            "h-11! min-w-11 gap-2 px-2",
+            "h-10! min-w-10 gap-2 px-1.5 md:h-11! md:min-w-11 md:px-2",
             variant === "landing" &&
               !isNavbarSolid &&
               "text-white hover:bg-white/10 hover:text-white",
@@ -79,12 +84,21 @@ export function UserMenu({
               {initial}
             </AvatarFallback>
           </Avatar>
-          <span className="hidden max-w-[8rem] truncate text-sm font-medium sm:inline">
+          <span
+            className={cn(
+              "max-w-[8rem] truncate text-sm font-medium",
+              variant === "landing" ? "hidden md:inline" : "hidden sm:inline",
+            )}
+          >
             {displayName}
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-56">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={15}
+        className={cn("min-w-56", variant === "landing" && "z-[1000]")}
+      >
         <DropdownMenuLabel className="font-normal">
           <p className="truncate font-medium">{displayName || "—"}</p>
           <p className="truncate text-xs text-muted-foreground">
@@ -109,12 +123,7 @@ export function UserMenu({
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onClick={() =>
-            logout({ redirectTo: variant === "landing" ? "/" : "/login" })
-          }
-        >
+        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
           <LogOut />
           {labels.logout}
         </DropdownMenuItem>

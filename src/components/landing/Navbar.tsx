@@ -222,13 +222,7 @@ export default function Navbar() {
                       {t("map")}
                     </Link>
                   </Button>
-                  {isAuthenticated ? (
-                    <UserMenu
-                      variant="landing"
-                      isNavbarSolid
-                      onNavigate={() => setSheetOpen(false)}
-                    />
-                  ) : (
+                  {!isAuthenticated ? (
                     <>
                       <Button
                         variant="outline"
@@ -256,7 +250,7 @@ export default function Navbar() {
                         </Link>
                       </Button>
                     </>
-                  )}
+                  ) : null}
                 </div>
               </SheetContent>
             </Sheet>
@@ -326,8 +320,8 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* End: tablet/desktop = map, account, book; mobile = spacer to keep logo centered */}
-          <div className="flex items-center gap-2 md:gap-3 min-w-0 justify-end w-10 md:w-auto">
+          {/* End: tablet/desktop = map, account, book; mobile = avatar + language */}
+          <div className="flex items-center gap-1 md:gap-3 min-w-10 justify-end w-auto">
             <Link
               href="/map"
               className={cn("hidden! md:flex!", actionButtonClass)}
@@ -336,9 +330,7 @@ export default function Navbar() {
               <span>{t("map")}</span>
             </Link>
             {isAuthenticated ? (
-              <div className="hidden md:block">
-                <UserMenu variant="landing" isNavbarSolid={isNavbarSolid} />
-              </div>
+              <UserMenu variant="landing" isNavbarSolid={isNavbarSolid} />
             ) : (
               <>
                 <Link
