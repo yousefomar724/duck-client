@@ -18,9 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import { RichText } from "@/components/shared/rich-text"
 import Footer from "@/components/landing/Footer"
+import { TripImageGallery } from "@/components/landing/trip-image-gallery"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildBreadcrumbJsonLd, buildTripJsonLd } from "@/lib/seo/json-ld"
 import { canonicalTripPath, extractObjectId, tripSlug } from "@/lib/seo/slug"
@@ -238,32 +238,7 @@ export default async function TripDetailPage({ params }: PageProps) {
 
       <section className="bg-white pt-10 pb-4 px-4 md:px-10">
         <div className="max-w-4xl mx-auto">
-          <div className="relative aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100">
-            <ImageWithLogoFallback
-              src={trip.images[0] ?? null}
-              alt={trip.name}
-              fill
-              priority
-              className="object-cover"
-            />
-          </div>
-          {trip.images.length > 1 && (
-            <div className="grid grid-cols-3 gap-3 mt-3">
-              {trip.images.slice(1, 4).map((img, i) => (
-                <div
-                  key={img}
-                  className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100"
-                >
-                  <ImageWithLogoFallback
-                    src={img}
-                    alt={`${trip.name} ${i + 2}`}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          <TripImageGallery images={trip.images} alt={trip.name} />
         </div>
       </section>
 
