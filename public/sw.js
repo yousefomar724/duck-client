@@ -2,7 +2,7 @@
 // its locale comes from a cookie (see src/i18n/request.ts), so HTML/API
 // responses are never written to the cache — only navigations get an
 // offline fallback, and static build assets get cache-first.
-const CACHE_VERSION = "duck-cache-v2"
+const CACHE_VERSION = "duck-cache-v3"
 const PRECACHE_URLS = ["/offline.html", "/logo-transparent.png", "/icon-192.png"]
 
 self.addEventListener("install", (event) => {
