@@ -291,7 +291,7 @@ export default function Navbar() {
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none md:pointer-events-auto">
             <Link
               href="/"
-              className="md:mb-2 md:-translate-y-2 group pointer-events-auto"
+              className="mb-2 -translate-y-2 group pointer-events-auto"
             >
               <Image
                 src="/logo-transparent.png"
@@ -300,7 +300,7 @@ export default function Navbar() {
                 height={80}
                 sizes="(max-width: 768px) 80px, (max-width: 1024px) 56px, 96px"
                 className={cn(
-                  "h-auto transition-all duration-500 w-20 md:w-14 lg:w-24 md:bg-white md:rounded-b-xl md:object-contain md:px-4 md:py-2",
+                  "h-auto transition-all duration-500 md:w-14 w-24 bg-white rounded-b-xl object-contain px-4 py-2",
                   // isSolid ? "" : "brightness-0 invert",
                 )}
               />
