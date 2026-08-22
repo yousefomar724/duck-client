@@ -96,7 +96,6 @@ export function UserMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        sideOffset={15}
         className="min-w-56"
       >
         <DropdownMenuLabel className="font-normal">
