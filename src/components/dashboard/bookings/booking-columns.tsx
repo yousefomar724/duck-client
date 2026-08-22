@@ -13,7 +13,7 @@ import {
   needsAction,
   supplierDisplayName,
 } from "@/lib/bookings/status"
-import { amountPaid, paymentState, remainingAmount } from "@/lib/bookings/payment"
+import { amountPaid, outstandingBalance, paymentState } from "@/lib/bookings/payment"
 import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import {
   formatCurrency,
@@ -132,7 +132,7 @@ export function getBookingColumns({
       cell: ({ row }) => {
         const booking = row.original
         const paid = amountPaid(booking)
-        const remaining = remainingAmount(booking)
+        const remaining = outstandingBalance(booking)
         return (
           <div>
             <span className="font-semibold text-duck-navy whitespace-nowrap">
@@ -157,12 +157,12 @@ export function getBookingColumns({
     },
     {
       id: "remaining",
-      accessorFn: (row) => remainingAmount(row),
+      accessorFn: (row) => outstandingBalance(row),
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={bookingStrings.remaining} />
       ),
       cell: ({ row }) => {
-        const remaining = remainingAmount(row.original)
+        const remaining = outstandingBalance(row.original)
         if (remaining <= 0) return <span className="text-text-muted">—</span>
         return (
           <span className="font-medium text-amber-700 whitespace-nowrap">

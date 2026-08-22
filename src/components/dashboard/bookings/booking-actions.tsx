@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { canAdminCancelBooking, canAdminDeleteBooking, canEditBooking, canSupplierCancelBooking, bookingStatusMeta, deleteNeedsStrongConfirm } from "@/lib/bookings/status"
+import { canAdminCancelBooking, canAdminDeleteBooking, canCollectBalance, canEditBooking, canSupplierCancelBooking, bookingStatusMeta, deleteNeedsStrongConfirm } from "@/lib/bookings/status"
 import { amountPaid, expectedAmount, refundOwed, remainingAmount } from "@/lib/bookings/payment"
 import type { Booking } from "@/lib/types"
 import { bookingStrings } from "./booking-strings"
@@ -78,7 +78,7 @@ export function hasBookingActions(
   const collectBalanceEnabled =
     role === "supplier" &&
     booking.payment_method === "MANUAL" &&
-    booking.status === "CONFIRMED" &&
+    canCollectBalance(booking.status) &&
     remainingAmount(booking) > 0
   const editEnabled = canEditBooking(booking.status)
   const supplierCancelEnabled =
@@ -128,7 +128,7 @@ export function BookingActions({
   const collectBalanceEnabled =
     role === "supplier" &&
     booking.payment_method === "MANUAL" &&
-    booking.status === "CONFIRMED" &&
+    canCollectBalance(booking.status) &&
     remaining > 0
   const editEnabled = canEditBooking(booking.status)
   const supplierCancelEnabled =

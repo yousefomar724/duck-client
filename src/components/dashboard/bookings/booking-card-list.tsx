@@ -12,7 +12,7 @@ import {
   needsAction,
   supplierDisplayName,
 } from "@/lib/bookings/status"
-import { remainingAmount } from "@/lib/bookings/payment"
+import { outstandingBalance } from "@/lib/bookings/payment"
 import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import {
   formatCurrency,
@@ -33,7 +33,12 @@ interface BookingCardListProps {
   trips: Trip[]
   suppliers: Supplier[]
   loadingAction?: string | null
-  onAction: (type: BookingActionType, booking: Booking, note?: string) => void
+  onAction: (
+    type: BookingActionType,
+    booking: Booking,
+    note?: string,
+    amount?: number,
+  ) => void
   onEdit?: (booking: Booking) => void
   onViewDetails: (booking: Booking) => void
 }
@@ -129,9 +134,9 @@ export function BookingCardList({
                   <span className="font-bold text-duck-navy">
                     {formatCurrency(booking.amount, booking.currency)}
                   </span>
-                  {remainingAmount(booking) > 0 && (
+                  {outstandingBalance(booking) > 0 && (
                     <span className="text-xs font-semibold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">
-                      متبقي {formatCurrency(remainingAmount(booking), booking.currency)}
+                      متبقي {formatCurrency(outstandingBalance(booking), booking.currency)}
                     </span>
                   )}
                 </div>

@@ -42,6 +42,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return errorResponse(400, `invalid amount_paid: must be between 0 and ${booking.amount}`);
   }
 
+  try {
+    await creditWalletBySupplierId(booking.supplier_id.toString(), amountPaid);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'failed to update wallet';
+    return errorResponse(500, message);
+  }
+
   booking.status = 'CONFIRMED';
   booking.amount_paid = amountPaid;
   booking.payment_entries.push({
@@ -49,12 +56,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     recorded_at: new Date(),
     note: body.note ?? '',
   });
-  await booking.save();
 
   try {
-    await creditWalletBySupplierId(booking.supplier_id.toString(), amountPaid);
+    await booking.save();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'failed to update wallet';
+    await creditWalletBySupplierId(booking.supplier_id.toString(), -amountPaid, {
+      allowNegative: true,
+    }).catch(() => {});
+    const message = err instanceof Error ? err.message : 'failed to confirm payment';
     return errorResponse(500, message);
   }
 

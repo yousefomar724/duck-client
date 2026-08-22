@@ -37,7 +37,7 @@ import {
   resourceLabels,
   supplierDisplayName,
 } from "@/lib/bookings/status"
-import { amountPaid, refundOwed, remainingAmount } from "@/lib/bookings/payment"
+import { amountPaid, outstandingBalance, refundOwed } from "@/lib/bookings/payment"
 import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import { formatCurrency, formatDateTime, formatTripDuration } from "@/lib/constants"
 import type { Booking, Supplier, TourGuide, Trip } from "@/lib/types"
@@ -54,7 +54,12 @@ interface BookingDetailSheetProps {
   guideUpdating?: string | null
   loadingAction?: string | null
   onGuideChange?: (tripId: string, guideId: string) => void
-  onAction: (type: BookingActionType, booking: Booking, note?: string) => void
+  onAction: (
+    type: BookingActionType,
+    booking: Booking,
+    note?: string,
+    amount?: number,
+  ) => void
   onEdit?: (booking: Booking) => void
 }
 
@@ -100,9 +105,9 @@ export function BookingDetailSheet({
             <p className="text-xl font-bold text-duck-navy">
               {formatCurrency(booking.amount, booking.currency)}
             </p>
-            {remainingAmount(booking) > 0 && (
+            {outstandingBalance(booking) > 0 && (
               <span className="text-sm font-medium text-amber-700">
-                متبقي {formatCurrency(remainingAmount(booking), booking.currency)}
+                متبقي {formatCurrency(outstandingBalance(booking), booking.currency)}
               </span>
             )}
             {refundOwed(booking) > 0 && (
@@ -272,12 +277,12 @@ export function BookingDetailSheet({
                   value={
                     <span
                       className={
-                        remainingAmount(booking) > 0
+                        outstandingBalance(booking) > 0
                           ? "text-amber-700 font-semibold"
                           : undefined
                       }
                     >
-                      {formatCurrency(remainingAmount(booking), booking.currency)}
+                      {formatCurrency(outstandingBalance(booking), booking.currency)}
                     </span>
                   }
                 />

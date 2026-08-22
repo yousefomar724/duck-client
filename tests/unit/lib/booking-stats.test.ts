@@ -46,6 +46,7 @@ describe('computeBookingStats', () => {
     expect(stats.pipeline).toBe(100);
     expect(stats.grossCollected).toBe(50 + 300 + 400 + 500 + 90 + 40);
     expect(stats.outstanding).toBe(150);
+    expect(stats.totalValue).toBe(100 + 200 + 300 + 400 + 500 + 90 + 40);
   });
 
   it('counts remaining on a partially-paid CONFIRMED booking', () => {
@@ -83,5 +84,18 @@ describe('computeBookingStats', () => {
     const stats = computeBookingStats([booking('REFUNDED', 200, 200, 0)]);
     expect(stats.grossCollected).toBe(0);
     expect(stats.netCollected).toBe(0);
+  });
+
+  it('totalValue excludes cancelled/failed/refunded but includes pending and refund-in-progress', () => {
+    const stats = computeBookingStats([
+      booking('PENDING', 100),
+      booking('CONFIRMED', 200),
+      booking('CANCELLED', 60),
+      booking('FAILED', 70),
+      booking('REFUNDED', 80, 80),
+      booking('REFUND_PENDING', 90, 90),
+      booking('REFUND_FAILED', 40, 40),
+    ]);
+    expect(stats.totalValue).toBe(100 + 200 + 90 + 40);
   });
 });

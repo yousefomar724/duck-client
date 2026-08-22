@@ -177,6 +177,18 @@ export function canEditBooking(status: string): boolean {
   return status === "PENDING" || status === "CONFIRMED"
 }
 
+/** Statuses where the supplier can still record money against the booking. */
+export const SETTLEABLE_STATUSES: BookingStatus[] = [
+  "CONFIRMED",
+  "COMPLETED",
+  "SUCCESS",
+  "PAID",
+]
+
+export function canCollectBalance(status: string): boolean {
+  return SETTLEABLE_STATUSES.includes(status as BookingStatus)
+}
+
 export function canAdminDeleteBooking(role: "admin" | "supplier" | number): boolean {
   return role === "admin" || role === 2
 }

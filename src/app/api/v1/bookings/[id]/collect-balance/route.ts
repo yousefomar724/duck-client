@@ -6,6 +6,8 @@ import { Booking } from '@/server/models/booking';
 import { creditWalletBySupplierId } from '@/server/services/wallet';
 import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
+import { canCollectBalance } from '@/lib/bookings/status';
+import { remainingAmount } from '@/lib/bookings/payment';
 
 /**
  * Settles some or all of the outstanding balance on a booking that was
@@ -27,14 +29,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const booking = await Booking.findById(id);
   if (!booking) return errorResponse(400, 'booking not found');
 
-  if (booking.status !== 'CONFIRMED') {
+  if (!canCollectBalance(booking.status)) {
     return errorResponse(400, `cannot collect balance on booking with status: ${booking.status}`);
   }
   if (booking.supplier_id.toString() !== user.supplier_id.toString()) {
     return errorResponse(403, 'unauthorized: booking does not belong to your supplier account');
   }
 
-  const remaining = booking.amount - booking.amount_paid;
+  const remaining = remainingAmount(booking);
   if (remaining <= 0) {
     return errorResponse(400, 'booking is already fully paid');
   }
@@ -51,18 +53,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return errorResponse(400, `invalid amount: must be between 0 and ${remaining}`);
   }
 
+  try {
+    await creditWalletBySupplierId(booking.supplier_id.toString(), collected);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'failed to update wallet';
+    return errorResponse(500, message);
+  }
+
   booking.amount_paid += collected;
   booking.payment_entries.push({
     amount: collected,
     recorded_at: new Date(),
     note: body.note ?? '',
   });
-  await booking.save();
 
   try {
-    await creditWalletBySupplierId(booking.supplier_id.toString(), collected);
+    await booking.save();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'failed to update wallet';
+    await creditWalletBySupplierId(booking.supplier_id.toString(), -collected, {
+      allowNegative: true,
+    }).catch(() => {});
+    const message = err instanceof Error ? err.message : 'failed to collect balance';
     return errorResponse(500, message);
   }
 

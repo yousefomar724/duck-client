@@ -15,6 +15,7 @@ import {
   CalendarCheck,
   CalendarIcon,
   CheckCircle,
+  CircleDollarSign,
   Clock,
   Download,
   RefreshCw,
@@ -69,6 +70,7 @@ import {
 import type { BookingActionType } from "./booking-actions"
 import {
   ALL_BOOKING_STATUSES,
+  bookingRowId,
   bookingStatusMeta,
   statusGroupLabels,
   STATUS_GROUP_KEYS,
@@ -120,7 +122,7 @@ export function BookingsView({ role }: BookingsViewProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [editBooking, setEditBooking] = useState<Booking | null>(null)
@@ -238,7 +240,7 @@ export function BookingsView({ role }: BookingsViewProps) {
       : undefined
 
   const handleViewDetails = useCallback((booking: Booking) => {
-    setSelectedBooking(booking)
+    setSelectedBookingId(bookingRowId(booking))
     setSheetOpen(true)
   }, [])
 
@@ -257,7 +259,7 @@ export function BookingsView({ role }: BookingsViewProps) {
             const { error: err } = await bookingsApi.adminCancelBooking(id, note)
             if (err) {
               addToast(err, "error")
-              return
+              break
             }
             addToast(bookingStrings.adminCancelSuccess, "success")
             break
@@ -266,7 +268,7 @@ export function BookingsView({ role }: BookingsViewProps) {
             const { data, error: err } = await bookingsApi.processRefund(id, note)
             if (err) {
               addToast(err, "error")
-              return
+              break
             }
             if (data?.booking_status === "REFUNDED") {
               addToast(bookingStrings.refundProcessed, "success")
@@ -285,7 +287,7 @@ export function BookingsView({ role }: BookingsViewProps) {
             )
             if (err) {
               addToast(err, "error")
-              return
+              break
             }
             addToast(bookingStrings.paymentConfirmed, "success")
             break
@@ -294,7 +296,7 @@ export function BookingsView({ role }: BookingsViewProps) {
             const { error: err } = await bookingsApi.refundManualPayment(id)
             if (err) {
               addToast(err, "error")
-              return
+              break
             }
             addToast(bookingStrings.paymentRefunded, "success")
             break
@@ -307,7 +309,7 @@ export function BookingsView({ role }: BookingsViewProps) {
             )
             if (err) {
               addToast(err, "error")
-              return
+              break
             }
             addToast(bookingStrings.balanceCollected, "success")
             break
@@ -316,7 +318,7 @@ export function BookingsView({ role }: BookingsViewProps) {
             const { error: err } = await bookingsApi.supplierCancelBooking(id, note)
             if (err) {
               addToast(err, "error")
-              return
+              break
             }
             addToast(bookingStrings.supplierCancelSuccess, "success")
             break
@@ -325,7 +327,7 @@ export function BookingsView({ role }: BookingsViewProps) {
             const { error: err } = await bookingsApi.markRefundSent(id, note)
             if (err) {
               addToast(err, "error")
-              return
+              break
             }
             addToast(bookingStrings.refundSentSuccess, "success")
             break
@@ -334,15 +336,15 @@ export function BookingsView({ role }: BookingsViewProps) {
             const { error: err } = await bookingsApi.deleteBooking(id, note)
             if (err) {
               addToast(err, "error")
-              return
+              break
             }
             addToast(bookingStrings.adminDeleteSuccess, "success")
             setSheetOpen(false)
             break
           }
         }
-        await fetchData()
       } finally {
+        await fetchData()
         setLoadingAction(null)
       }
     },
@@ -421,6 +423,20 @@ export function BookingsView({ role }: BookingsViewProps) {
     initialState: { pagination: { pageSize: 25 } },
   })
 
+  const selectedBooking = useMemo(
+    () =>
+      selectedBookingId
+        ? (bookings.find((b) => bookingRowId(b) === selectedBookingId) ?? null)
+        : null,
+    [bookings, selectedBookingId],
+  )
+
+  useEffect(() => {
+    if (sheetOpen && selectedBookingId && !selectedBooking && !isLoading) {
+      setSheetOpen(false)
+    }
+  }, [sheetOpen, selectedBookingId, selectedBooking, isLoading])
+
   const selectedTrip = selectedBooking
     ? trips.find((t) => t.id === selectedBooking.trip_id) ??
       selectedBooking.trip
@@ -437,7 +453,7 @@ export function BookingsView({ role }: BookingsViewProps) {
           title={bookingStrings.pageTitle}
           description={bookingStrings.pageDescription}
         />
-        <DataTablePageSkeleton statCount={role === "admin" ? 4 : 3} />
+        <DataTablePageSkeleton statCount={6} />
       </div>
     )
   }
@@ -499,6 +515,12 @@ export function BookingsView({ role }: BookingsViewProps) {
             filters.status === "all" &&
             filters.paymentState === "all"
           }
+        />
+        <StatCard
+          title={bookingStrings.totalValue}
+          value={formatCurrency(stats.totalValue)}
+          icon={CircleDollarSign}
+          hint={bookingStrings.totalValueHint}
         />
         <StatCard
           title={bookingStrings.confirmedBookings}

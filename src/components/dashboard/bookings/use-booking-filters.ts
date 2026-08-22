@@ -23,8 +23,8 @@ import {
 import { localizedTripName, supplierDisplayName } from "@/lib/bookings/status"
 import {
   amountPaid,
+  outstandingBalance,
   paymentState,
-  remainingAmount,
   type PaymentState,
 } from "@/lib/bookings/payment"
 import { endOfSiteDay, isValidYmd, startOfSiteDay } from "@/lib/time"
@@ -249,7 +249,7 @@ export function bookingsToCsv(bookings: Booking[]): string {
     b.booking_date ?? "",
     String(b.amount),
     String(amountPaid(b)),
-    String(remainingAmount(b)),
+    String(outstandingBalance(b)),
     b.currency,
     bookingStatusMeta[b.status]?.label ?? b.status,
     b.payment_method ?? "",

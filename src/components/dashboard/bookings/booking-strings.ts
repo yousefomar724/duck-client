@@ -13,6 +13,8 @@ export const bookingStrings = {
   refresh: "تحديث",
   lastUpdated: (time: string) => `آخر تحديث: ${time}`,
   totalBookings: "إجمالي الحجوزات",
+  totalValue: "إجمالي قيمة الحجوزات",
+  totalValueHint: "لا تشمل الملغاة والمستردة",
   confirmedBookings: "قادمة",
   pendingBookings: "حجوزات قيد الانتظار",
   refundPendingBookings: "في انتظار الاسترداد",

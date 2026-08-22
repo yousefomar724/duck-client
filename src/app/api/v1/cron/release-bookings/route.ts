@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   try {
     const now = new Date();
-    const candidates = await Booking.find({ status: { $in: ['CONFIRMED', 'SUCCESS'] } }).populate(
+    const candidates = await Booking.find({ status: { $in: ['CONFIRMED', 'SUCCESS', 'PAID'] } }).populate(
       'trip_id',
     );
 

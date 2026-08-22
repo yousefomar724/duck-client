@@ -30,8 +30,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const refundedAmount = booking.amount_paid;
 
+  try {
+    if (refundedAmount > 0) {
+      await creditWalletBySupplierId(booking.supplier_id.toString(), -refundedAmount, {
+        allowNegative: true,
+      });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'failed to update wallet';
+    return errorResponse(500, message);
+  }
+
   booking.status = 'REFUNDED';
   booking.amount_paid = 0;
+  booking.refund_owed = 0;
   if (refundedAmount > 0) {
     booking.payment_entries.push({
       amount: -refundedAmount,
@@ -39,14 +51,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       note: 'refund',
     });
   }
-  await booking.save();
 
   try {
-    if (refundedAmount > 0) {
-      await creditWalletBySupplierId(booking.supplier_id.toString(), -refundedAmount);
-    }
+    await booking.save();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'failed to update wallet';
+    if (refundedAmount > 0) {
+      await creditWalletBySupplierId(booking.supplier_id.toString(), refundedAmount, {
+        allowNegative: true,
+      }).catch(() => {});
+    }
+    const message = err instanceof Error ? err.message : 'failed to refund payment';
     return errorResponse(500, message);
   }
 

@@ -16,6 +16,23 @@ export function remainingAmount(
   return Math.max(0, booking.amount - amountPaid(booking))
 }
 
+/** Statuses where an unpaid balance is meaningless — the booking is dead or being refunded. */
+const NO_BALANCE_STATUSES = new Set<string>([
+  "CANCELLED",
+  "FAILED",
+  "REFUNDED",
+  "REFUND_PENDING",
+  "REFUND_FAILED",
+])
+
+/** What the customer still owes, as it should be *displayed*. 0 for refunded/cancelled. */
+export function outstandingBalance(
+  booking: Pick<Booking, "status" | "amount" | "amount_paid">,
+): number {
+  if (NO_BALANCE_STATUSES.has(booking.status)) return 0
+  return remainingAmount(booking)
+}
+
 export function paymentState(
   booking: Pick<Booking, "amount" | "amount_paid" | "refund_owed">,
 ): PaymentState {

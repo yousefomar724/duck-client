@@ -5,6 +5,7 @@ import { POST as adminCancelBooking } from '@/app/api/v1/bookings/[id]/admin-can
 import { POST as refundBooking } from '@/app/api/v1/bookings/[id]/refund/route';
 import { POST as manualConfirm } from '@/app/api/v1/bookings/[id]/manual-confirm/route';
 import { POST as manualRefund } from '@/app/api/v1/bookings/[id]/manual-refund/route';
+import { POST as collectBalance } from '@/app/api/v1/bookings/[id]/collect-balance/route';
 import { GET as getWallet } from '@/app/api/v1/wallet/[user_id]/route';
 import { GET as listPayouts, POST as createPayout } from '@/app/api/v1/payouts/route';
 import { GET as releaseBookings } from '@/app/api/v1/cron/release-bookings/route';
@@ -270,6 +271,122 @@ describe('booking lifecycle routes', () => {
       }),
     );
     expect(createRes.status).toBe(201);
+  });
+
+  it('collect-balance settles a balance on CONFIRMED, COMPLETED, SUCCESS and PAID, but not CANCELLED/REFUNDED', async () => {
+    const { supplier, user: supplierUser } = await createSupplierUser();
+
+    for (const status of ['CONFIRMED', 'COMPLETED', 'SUCCESS', 'PAID'] as const) {
+      const booking = await createBooking({
+        supplier_id: supplier._id,
+        status,
+        amount: 200,
+        amount_paid: 120,
+      });
+
+      const res = await collectBalance(
+        jsonRequest(`http://localhost/api/v1/bookings/${booking.id}/collect-balance`, {
+          method: 'POST',
+          headers: authHeader(supplierUser.id, supplierUser.role),
+        }),
+        { params: Promise.resolve({ id: booking.id }) },
+      );
+      expect(res.status).toBe(200);
+
+      const updated = await Booking.findById(booking.id);
+      expect(updated?.amount_paid).toBe(200);
+      // status is left as-is — settling a balance never re-mutates status
+      expect(updated?.status).toBe(status);
+    }
+
+    for (const status of ['CANCELLED', 'REFUNDED'] as const) {
+      const booking = await createBooking({
+        supplier_id: supplier._id,
+        status,
+        amount: 200,
+        amount_paid: 0,
+      });
+
+      const res = await collectBalance(
+        jsonRequest(`http://localhost/api/v1/bookings/${booking.id}/collect-balance`, {
+          method: 'POST',
+          headers: authHeader(supplierUser.id, supplierUser.role),
+        }),
+        { params: Promise.resolve({ id: booking.id }) },
+      );
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it('manual-refund and admin refund clear refund_owed alongside amount_paid', async () => {
+    const { supplier, user: supplierUser } = await createSupplierUser();
+    const { user: admin } = await createAdminUser();
+
+    const supplierRefundBooking = await createBooking({
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      amount: 200,
+      amount_paid: 100,
+      refund_owed: 50,
+    });
+
+    const supplierRefundRes = await manualRefund(
+      jsonRequest(`http://localhost/api/v1/bookings/${supplierRefundBooking.id}/manual-refund`, {
+        method: 'POST',
+        headers: authHeader(supplierUser.id, supplierUser.role),
+      }),
+      { params: Promise.resolve({ id: supplierRefundBooking.id }) },
+    );
+    expect(supplierRefundRes.status).toBe(200);
+
+    const updatedSupplierRefund = await Booking.findById(supplierRefundBooking.id);
+    expect(updatedSupplierRefund?.amount_paid).toBe(0);
+    expect(updatedSupplierRefund?.refund_owed).toBe(0);
+
+    const adminRefundBooking = await createBooking({
+      supplier_id: supplier._id,
+      status: 'REFUND_PENDING',
+      amount: 200,
+      amount_paid: 100,
+      refund_owed: 50,
+    });
+
+    const adminRefundRes = await refundBooking(
+      jsonRequest(`http://localhost/api/v1/bookings/${adminRefundBooking.id}/refund`, {
+        method: 'POST',
+        headers: authHeader(admin.id, admin.role),
+      }),
+      { params: Promise.resolve({ id: adminRefundBooking.id }) },
+    );
+    expect(adminRefundRes.status).toBe(200);
+
+    const updatedAdminRefund = await Booking.findById(adminRefundBooking.id);
+    expect(updatedAdminRefund?.amount_paid).toBe(0);
+    expect(updatedAdminRefund?.refund_owed).toBe(0);
+  });
+
+  it('a wallet failure leaves the booking untouched (wallet is credited before save)', async () => {
+    const { supplier, user: supplierUser, wallet } = await createSupplierUser();
+    await Wallet.deleteOne({ _id: wallet._id });
+
+    const booking = await createBooking({
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      amount: 200,
+      amount_paid: 100,
+    });
+
+    const res = await collectBalance(
+      jsonRequest(`http://localhost/api/v1/bookings/${booking.id}/collect-balance`, {
+        method: 'POST',
+        headers: authHeader(supplierUser.id, supplierUser.role),
+      }),
+      { params: Promise.resolve({ id: booking.id }) },
+    );
+    expect(res.status).toBe(500);
+
+    const untouched = await Booking.findById(booking.id);
+    expect(untouched?.amount_paid).toBe(100);
   });
 
   it('cron release-bookings checks CRON_SECRET', async () => {

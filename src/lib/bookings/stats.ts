@@ -1,6 +1,6 @@
 import type { Booking, BookingStatus } from "@/lib/types"
 import { amountPaid, remainingAmount, refundOwed } from "@/lib/bookings/payment"
-import { bookingStatusMeta } from "@/lib/bookings/status"
+import { bookingStatusMeta, statusGroupStatuses } from "@/lib/bookings/status"
 
 export const REVENUE_STATUSES: readonly BookingStatus[] = [
   "CONFIRMED",
@@ -10,6 +10,9 @@ export const REVENUE_STATUSES: readonly BookingStatus[] = [
 ]
 
 const REVENUE_SET = new Set<string>(REVENUE_STATUSES)
+
+/** Cancelled/failed/refunded bookings carry no real value — excluded from the total. */
+const VALUE_EXCLUDED = new Set<string>(statusGroupStatuses.cancelled)
 
 export function refundDue(
   booking: Pick<Booking, "status" | "amount_paid" | "refund_owed">,
@@ -34,6 +37,7 @@ export interface BookingStats {
   netCollected: number
   outstanding: number
   pipeline: number
+  totalValue: number
 }
 
 type StatsBooking = Pick<
@@ -51,6 +55,7 @@ export function computeBookingStats(bookings: StatsBooking[]): BookingStats {
   let upcoming = 0
   let completed = 0
   let cancelled = 0
+  let totalValue = 0
 
   for (const booking of bookings) {
     const group = bookingStatusMeta[booking.status]?.group
@@ -70,6 +75,9 @@ export function computeBookingStats(bookings: StatsBooking[]): BookingStats {
       grossCollected += amountPaid(booking)
     }
     refundDueTotal += refundDue(booking)
+    if (!VALUE_EXCLUDED.has(booking.status)) {
+      totalValue += booking.amount
+    }
   }
 
   return {
@@ -84,5 +92,6 @@ export function computeBookingStats(bookings: StatsBooking[]): BookingStats {
     netCollected: grossCollected - refundDueTotal,
     outstanding,
     pipeline,
+    totalValue,
   }
 }
