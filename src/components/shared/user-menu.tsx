@@ -64,7 +64,7 @@ export function UserMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild className="px-0!">
+      <DropdownMenuTrigger asChild className="px-0! md:px-2!">
         <Button
           type="button"
           variant="ghost"
