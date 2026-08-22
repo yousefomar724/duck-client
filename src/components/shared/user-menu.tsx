@@ -97,7 +97,7 @@ export function UserMenu({
       <DropdownMenuContent
         align="end"
         sideOffset={15}
-        className={cn("min-w-56", variant === "landing" && "z-[1000]")}
+        className="min-w-56"
       >
         <DropdownMenuLabel className="font-normal">
           <p className="truncate font-medium">{displayName || "—"}</p>

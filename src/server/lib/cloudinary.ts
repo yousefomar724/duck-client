@@ -36,7 +36,17 @@ export async function uploadImageBuffer(file: File): Promise<UploadedImage> {
 
   return new Promise<UploadedImage>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: 'duckegy', resource_type: 'image' },
+      {
+        folder: 'duckegy',
+        resource_type: 'image',
+        // Incoming transformation: the asset is re-encoded before it is
+        // stored, so an original that skipped the browser-side compression
+        // (older browser, direct API call) still lands at web weight.
+        // `limit` only ever shrinks, so smaller uploads pass through as-is.
+        transformation: [
+          { width: 2560, height: 2560, crop: 'limit', quality: 'auto:good' },
+        ],
+      },
       (error, result) => {
         if (error || !result) return reject(error ?? new Error('upload failed'));
         resolve({ url: result.secure_url, publicId: result.public_id });

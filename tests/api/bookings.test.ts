@@ -15,6 +15,7 @@ import {
   createTrip,
   createSupplierStorage,
   createBooking,
+  futureBookingDate,
   authHeader,
 } from '../utils/factories';
 import { jsonRequest } from '../utils/http';
@@ -34,7 +35,7 @@ describe('booking lifecycle routes', () => {
           trip_id: trip.id,
           full_name: 'Guest User',
           phone_number: '+201012345678',
-          booking_date: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+          booking_date: futureBookingDate().toISOString(),
           resource_type: 'kayak',
           quantity: 1,
           local_guests: 1,
@@ -58,7 +59,7 @@ describe('booking lifecycle routes', () => {
           trip_id: trip.id,
           full_name: 'Guest User',
           phone_number: '+201012345678',
-          booking_date: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+          booking_date: futureBookingDate().toISOString(),
           resource_type: 'kayak',
           quantity: 1,
         },

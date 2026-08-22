@@ -9,8 +9,6 @@ export interface BookingTotalInput {
   localGuests: number;
   foreignerGuests: number;
   duration: number;
-  kids1to6?: number;
-  kids7to12?: number;
 }
 
 export interface BookingBreakdown {
@@ -29,8 +27,6 @@ export function calculateBookingBreakdown({
   localGuests,
   foreignerGuests,
   duration,
-  kids1to6 = 0,
-  kids7to12 = 0,
 }: BookingTotalInput): BookingBreakdown {
   if (!trip) {
     return {
@@ -43,8 +39,7 @@ export function calculateBookingBreakdown({
     };
   }
 
-  const kids = (Number(kids1to6) || 0) + (Number(kids7to12) || 0);
-  const effectiveGuests = (Number(guests) || 0) + kids;
+  const effectiveGuests = Number(guests) || 0;
   const localCount =
     guestMix === 'local'
       ? effectiveGuests

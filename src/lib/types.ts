@@ -38,6 +38,7 @@ export interface Trip {
   from: string // ISO date
   to?: string // ISO date
   duration: number
+  duration_text?: { ar: string; en: string }
   itinerary?: { ar: string; en: string }[] | { ar: string; en: string }
   name: { ar: string; en: string }
   description: { ar: string; en: string }
@@ -287,6 +288,7 @@ export interface CreateTripRequest {
   from: string
   to?: string
   duration?: number
+  duration_text?: { ar: string; en: string }
   itinerary?: { ar: string; en: string }
   availability?: { ar: string; en: string }
   max_guests: number

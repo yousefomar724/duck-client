@@ -41,6 +41,7 @@ export const createTripBodySchema = z.object({
   from: isoDate,
   to: isoDate.nullable().optional(),
   duration: z.number().int().min(0).optional(),
+  duration_text: looseLocalizedText.optional(),
   itinerary: looseLocalizedText.optional(),
   availability: looseLocalizedText.optional(),
   max_guests: z.number().int().min(1, 'يجب أن يكون شخصًا واحدًا على الأقل'),

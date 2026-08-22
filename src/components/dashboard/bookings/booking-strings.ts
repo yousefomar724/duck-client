@@ -132,6 +132,7 @@ export const bookingStrings = {
   editBookingDescription: "سيتم إعادة حساب السعر تلقائياً. إذا كان المبلغ المدفوع أكبر من الإجمالي الجديد، سيُخصم الفرق من المحفظة ويُعلَّم الحجز كمسترد مستحق.",
   editBookingLocked: "تسعير هذا الحجز مقفول — يمكن للإدارة فقط تعديل المبلغ يدوياً.",
   saveChanges: "حفظ التعديلات",
+  bookingTimeRange: "وقت الحجز يجب أن يكون بين 06:00 و 18:30 بتوقيت القاهرة",
   editSuccess: "تم تحديث الحجز بنجاح",
   supplierCancel: "إلغاء الحجز",
   supplierCancelTitle: "إلغاء الحجز؟",

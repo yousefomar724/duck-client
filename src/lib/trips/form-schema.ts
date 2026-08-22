@@ -61,6 +61,8 @@ export function createTripFormSchema({ mode, requireSupplier }: TripFormSchemaOp
       .int("يجب أن تكون المدة رقمًا صحيحًا")
       .min(0, "لا يمكن أن تكون سالبة")
       .default(0),
+    duration_text_ar: z.string().default(""),
+    duration_text_en: z.string().default(""),
     max_guests: z.coerce
       .number({ invalid_type_error: "أدخل عددًا صحيحًا" })
       .int("يجب أن يكون رقمًا صحيحًا")
@@ -90,11 +92,11 @@ export function createTripFormSchema({ mode, requireSupplier }: TripFormSchemaOp
       })
     }
 
-    if (!data.is_tour && data.duration < 1) {
+    if (!data.is_tour && !data.duration_text_ar.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "المدة يجب أن تكون ساعة واحدة على الأقل للرحلات",
-        path: ["duration"],
+        message: "أدخل مدة الرحلة بالعربي",
+        path: ["duration_text_ar"],
       })
     }
 
@@ -148,6 +150,8 @@ export interface TripFormInput {
   hide_default_faqs: boolean
   faqs: { q_ar: string; q_en: string; a_ar: string; a_en: string }[]
   duration: string
+  duration_text_ar: string
+  duration_text_en: string
   max_guests: string
   supplier_id: string
   is_tour: boolean

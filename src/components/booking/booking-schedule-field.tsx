@@ -22,7 +22,9 @@ import {
   buildTimeSlots,
   mergeCalendarDay,
   mergeTimeFromHHMM,
+  siteHHMM,
 } from "@/lib/booking/schedule"
+import { siteWallClock } from "@/lib/time"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -74,17 +76,28 @@ export function BookingScheduleField({
     dayAfterTomorrow: t("relativeDayAfterTomorrow"),
   }
 
-  const dayPhrase = formatBookingDayPhrase(value, locale, relativeLabels)
+  // The bookable window is Cairo opening hours, so the picker renders Cairo
+  // wall-clock rather than the visitor's device time — otherwise a tourist
+  // abroad is shown slots the server rejects.
+  const wallClock = siteWallClock(value)
+  const nowWallClock = siteWallClock(new Date())
+
+  const dayPhrase = formatBookingDayPhrase(
+    wallClock,
+    locale,
+    relativeLabels,
+    nowWallClock,
+  )
 
   const dateTriggerId = `booking-date-${name ?? "booking"}`
   const timeInputId = `booking-time-${name ?? "booking"}`
 
   const timeSlots = useMemo(
-    () => buildTimeSlots(value, locale),
-    [value, locale],
+    () => buildTimeSlots(wallClock, locale),
+    [wallClock, locale],
   )
 
-  const selectedTime = format(value, "HH:mm")
+  const selectedTime = siteHHMM(value)
 
   return (
     <div className="space-y-2" dir={dir}>
@@ -114,11 +127,11 @@ export function BookingScheduleField({
               <Calendar
                 mode="single"
                 captionLayout="dropdown"
-                selected={value}
-                defaultMonth={value}
+                selected={wallClock}
+                defaultMonth={wallClock}
                 locale={locale === "ar" ? arSADayPicker : enUSDayPicker}
                 dir={dir}
-                disabled={(date) => startOfDay(date) < startOfDay(new Date())}
+                disabled={(date) => startOfDay(date) < startOfDay(nowWallClock)}
                 onSelect={(d) => {
                   if (!d) return
                   onChange(mergeCalendarDay(d, value))
@@ -140,7 +153,7 @@ export function BookingScheduleField({
           >
             <SelectTrigger
               id={timeInputId}
-              aria-label={`${t("bookingTime")}: ${formatBookingTime(value, locale)}`}
+              aria-label={`${t("bookingTime")}: ${formatBookingTime(wallClock, locale)}`}
               className="w-44 max-w-full rounded-lg border-black/20 focus-visible:border-duck-cyan focus-visible:ring-duck-cyan"
             >
               <SelectValue placeholder={t("bookingTime")} />
@@ -159,7 +172,7 @@ export function BookingScheduleField({
       <p className="text-muted-foreground px-1 text-sm">
         {t("bookingScheduleSummaryNatural", {
           day: dayPhrase,
-          time: format(value, "p", { locale: dateFnsLocale }),
+          time: format(wallClock, "p", { locale: dateFnsLocale }),
         })}
       </p>
       <p className="text-muted-foreground px-1 text-xs">

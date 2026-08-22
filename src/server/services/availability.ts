@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { startOfSiteDay, toSiteYmd, zonedEndOfDayExclusive } from '@/lib/time';
 import { Booking } from '../models/booking';
 import { SupplierStorage } from '../models/supplier-storage';
 
@@ -18,9 +19,9 @@ export async function countActiveByResourceAndDate(
   bookingDate: Date,
   excludeBookingId?: string,
 ): Promise<number> {
-  const startOfDay = new Date(bookingDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  const ymd = toSiteYmd(bookingDate);
+  const startOfDay = startOfSiteDay(ymd);
+  const endOfDay = zonedEndOfDayExclusive(ymd);
 
   const match: Record<string, unknown> = {
     supplier_id: new Types.ObjectId(supplierId),

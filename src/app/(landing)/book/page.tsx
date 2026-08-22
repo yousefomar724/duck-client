@@ -15,10 +15,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Check, ChevronLeft, Clock, Copy, User } from "lucide-react"
 import {
   buildWhatsAppHref,
+  INSTAPAY_LINK,
   SUPPORT_WHATSAPP_NUMBER,
 } from "@/lib/support-contact"
 import { FeedbackPromptCard } from "@/components/feedback/feedback-prompt-card"
-import { formatISO, set, startOfDay } from "date-fns"
+import { formatISO } from "date-fns"
+import { localYmd, siteWallClock, siteWallTimeToUtc } from "@/lib/time"
 import {
   Select,
   SelectContent,
@@ -57,10 +59,14 @@ import * as bookingsApi from "@/lib/api/bookings"
 import {
   type SuccessCache,
   SUCCESS_CACHE_KEY,
+  readPendingInstapay,
+  writePendingInstapay,
+  clearPendingInstapay,
 } from "@/lib/booking-success-cache"
 import type { Booking, ResourceType, Trip } from "@/lib/types"
 import { getTripImage, resolveImageUrl } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
+import { tripDurationText } from "@/lib/trips/duration"
 import { useAuth } from "@/lib/stores/auth-store"
 import { useToast } from "@/lib/stores/toast-store"
 import Footer from "@/components/landing/Footer"
@@ -69,7 +75,6 @@ import { TripListingPrices } from "@/components/shared/trip-listing-prices"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 
 const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
-const INSTAPAY_LINK = "https://ipn.eg/S/karim.m.cib/instapay/5bCbda"
 
 const RESOURCE_TYPES = [
   "kayak",
@@ -99,6 +104,18 @@ function getLocalizedText(value: any, locale: string, fallback = ""): string {
   return typeof value === "string"
     ? value
     : value?.[locale] || value?.ar || value?.en || fallback
+}
+
+function tripDurationLabel(
+  trip: Trip,
+  locale: string,
+  hour: string,
+  hours: string,
+): string {
+  const text = tripDurationText(trip, locale)
+  if (text) return text
+  const d = trip.duration ?? 1
+  return `${d} ${d === 1 ? hour : hours}`
 }
 
 function BookPageContent() {
@@ -131,6 +148,24 @@ function BookPageContent() {
     chosenAmount: number
   } | null>(null)
   const [copiedNumber, setCopiedNumber] = useState(false)
+  const restoredPendingRef = useRef(false)
+
+  useEffect(() => {
+    if (restoredPendingRef.current) return
+    restoredPendingRef.current = true
+    const pending = readPendingInstapay()
+    if (!pending) return
+    const urlTrip = searchParams.get("trip")
+    const pendingTripId =
+      typeof pending.booking.trip_id === "string"
+        ? pending.booking.trip_id
+        : undefined
+    if (urlTrip && pendingTripId && urlTrip !== pendingTripId) {
+      clearPendingInstapay()
+      return
+    }
+    setManualBookingResult(pending)
+  }, [searchParams])
 
   const handleCopyWhatsApp = useCallback(async () => {
     try {
@@ -158,6 +193,12 @@ function BookPageContent() {
     },
     [pathname, router, searchParams, selectedTrip?.id, tripParam],
   )
+
+  const startNewBooking = useCallback(() => {
+    clearPendingInstapay()
+    setManualBookingResult(null)
+    navigateToStep(1, "push")
+  }, [navigateToStep])
 
   // --- NEW: useRef to store previous trip id ---
   const prevTripIdRef = useRef<string | null>(null)
@@ -193,6 +234,7 @@ function BookPageContent() {
           minOneGuest: tv("minOneGuest"),
           minOne: tv("minOne"),
           kidsMinOne: t("kidsMinOne"),
+          adultsMinOne: tv("adultsMinOne"),
           maxGuestsError: (max) => t("maxGuestsError", { max }),
           guestMixSumError: (total) => t("guestMixSumError", { total }),
         },
@@ -220,7 +262,7 @@ function BookPageContent() {
             typeof window !== "undefined"
               ? new URLSearchParams(window.location.search).get("step")
               : null
-          if (!stepInUrl && !didAutoAdvanceRef.current) {
+          if (!stepInUrl && !didAutoAdvanceRef.current && !readPendingInstapay()) {
             didAutoAdvanceRef.current = true
             const p = new URLSearchParams(
               typeof window !== "undefined" ? window.location.search : "",
@@ -239,15 +281,12 @@ function BookPageContent() {
     }
   }, [tripParam, locale, pathname, router])
 
+  // 10:00 Cairo tomorrow — the bookable window is Cairo opening hours, so
+  // seeding from the device clock would start a visitor abroad outside it.
   const defaultTomorrow = useMemo(() => {
-    const t = new Date()
-    t.setDate(t.getDate() + 1)
-    return set(startOfDay(t), {
-      hours: 10,
-      minutes: 0,
-      seconds: 0,
-      milliseconds: 0,
-    })
+    const cairoNow = siteWallClock(new Date())
+    cairoNow.setDate(cairoNow.getDate() + 1)
+    return siteWallTimeToUtc(localYmd(cairoNow), 10, 0)
   }, [])
 
   const form = useForm<BookingFormValues>({
@@ -340,18 +379,15 @@ function BookPageContent() {
 
   const kids1to6 = watchedHasKids16 ? Number(watchedKids16) || 0 : 0
   const kids7to12 = watchedHasKids712 ? Number(watchedKids712) || 0 : 0
-  const totalGuests = (Number(watchedGuests) || 0) + kids1to6 + kids7to12
+  const totalGuests = Number(watchedGuests) || 0
+  const adultsCount = totalGuests - kids1to6 - kids7to12
 
   useEffect(() => {
     if (!selectedTrip) return
     const maxG = selectedTrip.max_guests
-    const adults = Number(form.getValues("guests")) || 0
-    const kids =
-      (form.getValues("has_kids_1_6") ? Number(form.getValues("kids_1_6")) || 0 : 0) +
-      (form.getValues("has_kids_7_12") ? Number(form.getValues("kids_7_12")) || 0 : 0)
-    if (adults + kids <= maxG) return
-    const nextAdults = Math.max(1, maxG - kids)
-    if (nextAdults !== adults) form.setValue("guests", nextAdults)
+    const guests = Number(form.getValues("guests")) || 0
+    if (guests <= maxG) return
+    form.setValue("guests", maxG)
   }, [selectedTrip, totalGuests, form])
 
   // When guest_mix changes, keep local/foreigner in sync with total.
@@ -384,8 +420,6 @@ function BookPageContent() {
         localGuests: Number(watchedLocalGuests) || 0,
         foreignerGuests: Number(watchedForeignerGuests) || 0,
         duration: Number(watchedDuration) || 1,
-        kids1to6,
-        kids7to12,
       }),
     [
       selectedTrip,
@@ -394,8 +428,6 @@ function BookPageContent() {
       watchedLocalGuests,
       watchedForeignerGuests,
       watchedDuration,
-      kids1to6,
-      kids7to12,
     ],
   )
 
@@ -407,9 +439,6 @@ function BookPageContent() {
 
     let localGuests = 0
     let foreignerGuests = 0
-    const kids_1_6 = values.has_kids_1_6 ? values.kids_1_6 : 0
-    const kids_7_12 = values.has_kids_7_12 ? values.kids_7_12 : 0
-    const totalGuests = values.guests + kids_1_6 + kids_7_12
     if (values.guest_mix === "local") {
       localGuests = totalGuests
     } else if (values.guest_mix === "foreigner") {
@@ -432,12 +461,12 @@ function BookPageContent() {
       phone_number: phoneNumber,
       booking_date,
       resource_type: values.resource_type,
-      quantity: totalGuests,
+      quantity: values.guests,
       local_guests: localGuests,
       foreigner_guests: foreignerGuests,
-      adults: values.guests,
-      kids_1_6,
-      kids_7_12,
+      adults: values.guests - kids1to6 - kids7to12,
+      kids_1_6: kids1to6,
+      kids_7_12: kids7to12,
       duration: values.duration,
       wants_guide: false,
       played_before: values.played_before,
@@ -461,7 +490,10 @@ function BookPageContent() {
         return
       }
       if (data?.booking) {
-        setManualBookingResult({ booking: data.booking, chosenAmount })
+        const result = { booking: data.booking, chosenAmount }
+        setManualBookingResult(result)
+        writePendingInstapay(result)
+        window.scrollTo({ top: 0, behavior: "smooth" })
       }
       return
     }
@@ -507,9 +539,9 @@ function BookPageContent() {
             quantity: b.quantity ?? totalGuests,
             local_guests: localGuests,
             foreigner_guests: foreignerGuests,
-            adults: values.guests,
-            kids_1_6,
-            kids_7_12,
+            adults: adultsCount,
+            kids_1_6: kids1to6,
+            kids_7_12: kids7to12,
             amount: b.amount ?? 0,
           },
         }
@@ -535,12 +567,17 @@ function BookPageContent() {
           >
             {/* Step indicator */}
             <div
-              className="flex justify-center gap-2 sm:gap-3 mb-8 pb-8 border-b border-border/60"
+              className="flex justify-center gap-1 sm:gap-2 mb-8 pb-8 border-b border-border/60"
               dir="ltr"
             >
-              {[1, 2, 3].map((s) => {
-                const isDone = manualBookingResult ? true : step > s
-                const isActive = !manualBookingResult && step === s
+              {([
+                [1, t("stepLabelTrip")],
+                [2, t("stepLabelDetails")],
+                [3, t("stepLabelConfirm")],
+                [4, t("stepLabelPay")],
+              ] as const).map(([s, label], index, steps) => {
+                const isDone = manualBookingResult ? s < 4 : step > s
+                const isActive = manualBookingResult ? s === 4 : step === s
                 return (
                   <div
                     key={s}
@@ -552,19 +589,24 @@ function BookPageContent() {
                           : "text-text-muted"
                     }`}
                   >
-                    <span
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                        isActive
-                          ? "bg-duck-cyan text-duck-navy"
-                          : isDone
-                            ? "bg-duck-cyan/15 text-duck-cyan"
-                            : "bg-muted text-text-muted"
-                      }`}
-                    >
-                      {isDone ? <Check className="w-4 h-4" /> : s}
+                    <span className="flex flex-col items-center gap-1">
+                      <span
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                          isActive
+                            ? "bg-duck-cyan text-duck-navy"
+                            : isDone
+                              ? "bg-duck-cyan/15 text-duck-cyan"
+                              : "bg-muted text-text-muted"
+                        }`}
+                      >
+                        {isDone ? <Check className="w-4 h-4" /> : s}
+                      </span>
+                      <span className="text-[10px] sm:text-xs font-medium leading-none">
+                        {label}
+                      </span>
                     </span>
-                    {s < 3 && (
-                      <span className="w-4 sm:w-6 h-0.5 bg-duck-cyan/20" />
+                    {index < steps.length - 1 && (
+                      <span className="w-3 sm:w-5 h-0.5 bg-duck-cyan/20 mb-4" />
                     )}
                   </div>
                 )
@@ -572,7 +614,7 @@ function BookPageContent() {
             </div>
 
             {/* Step 1: Trip selection */}
-            {step === 1 && (
+            {!manualBookingResult && step === 1 && (
               <div className="space-y-8">
                 <h2 className="text-text-dark text-2xl font-bold">
                   {t("step1Title")}
@@ -673,10 +715,12 @@ function BookPageContent() {
                               />
                             </div>
                             <p className="text-text-muted text-sm mt-1">
-                              {trip.duration ?? 1}{" "}
-                              {(trip.duration ?? 1) === 1
-                                ? t("hour")
-                                : t("hours")}
+                              {tripDurationLabel(
+                                trip,
+                                locale,
+                                t("hour"),
+                                t("hours"),
+                              )}
                             </p>
                           </div>
                         </button>
@@ -698,7 +742,7 @@ function BookPageContent() {
             )}
 
             {/* Step 2: Contact info */}
-            {step === 2 && (
+            {!manualBookingResult && step === 2 && (
               <Form {...form}>
                 <form className="space-y-8">
                   <h2 className="text-text-dark text-2xl font-bold">
@@ -836,7 +880,7 @@ function BookPageContent() {
                       return (
                         <FormItem>
                           <FormLabel className="text-text-dark font-medium">
-                            {t("adults")}{" "}
+                            {t("totalGuests")}{" "}
                             <span className="text-red-500">*</span>
                           </FormLabel>
                           {guestsMode === "preset" ? (
@@ -911,7 +955,7 @@ function BookPageContent() {
                           <FormMessage />
                           {selectedTrip ? (
                             <p className="text-xs text-text-muted">
-                              {t("adultsHint")}{" "}
+                              {t("totalGuestsHint")}{" "}
                               {t("maxGuests", { max: selectedTrip.max_guests })}
                             </p>
                           ) : null}
@@ -922,8 +966,16 @@ function BookPageContent() {
 
                   <div className="space-y-3 rounded-xl border border-black/10 p-4">
                     <p className="text-text-dark font-medium">
-                      {t("kidsSectionTitle")}
+                      {t("guestsBreakdownTitle")}
                     </p>
+                    <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+                      <span className="text-sm text-text-dark">
+                        {t("adultsAutoLabel")}
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums text-text-dark">
+                        {Math.max(0, adultsCount)}
+                      </span>
+                    </div>
                     <FormField
                       control={form.control}
                       name="has_kids_1_6"
@@ -1035,7 +1087,15 @@ function BookPageContent() {
                       )}
                     />
                     <p className="text-xs text-text-muted">{t("kidsPriceHint")}</p>
-                    <p className="text-sm font-medium text-text-dark">
+                    <div className="flex items-center justify-between rounded-lg border-2 border-duck-cyan/40 bg-duck-cyan/10 px-3 py-2.5">
+                      <span className="text-sm font-bold tracking-wide text-duck-navy">
+                        {t("totalGuests")}
+                      </span>
+                      <span className="text-lg font-bold tabular-nums text-duck-navy">
+                        {totalGuests}
+                      </span>
+                    </div>
+                    <p className="sr-only">
                       {t("totalGuestsLabel", { count: totalGuests })}
                     </p>
                   </div>
@@ -1328,7 +1388,7 @@ function BookPageContent() {
             )}
 
             {/* Step 3: Review & pay */}
-            {step === 3 && selectedTrip && (
+            {!manualBookingResult && step === 3 && selectedTrip && (
               <div className="space-y-8">
                 <h2 className="text-text-dark text-2xl font-bold">
                   {t("step3Title")}
@@ -1351,7 +1411,12 @@ function BookPageContent() {
                     <span>
                       {selectedTrip.is_tour
                         ? `${Number(watchedDuration) || 1} ${(Number(watchedDuration) || 1) === 1 ? t("hour") : t("hours")}`
-                        : `${selectedTrip.duration ?? 1} ${(selectedTrip.duration ?? 1) === 1 ? t("hour") : t("hours")}`}
+                        : tripDurationLabel(
+                            selectedTrip,
+                            locale,
+                            t("hour"),
+                            t("hours"),
+                          )}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1394,12 +1459,10 @@ function BookPageContent() {
                     const breakdown = calculateBookingBreakdown({
                       trip: selectedTrip,
                       guestMix: watchedGuestMix,
-                      guests: Number(watchedGuests) || 0,
+                      guests: totalGuests,
                       localGuests: Number(watchedLocalGuests) || 0,
                       foreignerGuests: Number(watchedForeignerGuests) || 0,
                       duration: Number(watchedDuration) || 1,
-                      kids1to6,
-                      kids7to12,
                     })
                     return (
                       <>
@@ -1407,7 +1470,7 @@ function BookPageContent() {
                           <span className="text-text-muted">
                             {t("reviewAdults")}
                           </span>
-                          <span>{Number(watchedGuests) || 0}</span>
+                          <span>{Math.max(0, adultsCount)}</span>
                         </div>
                         {kids1to6 > 0 ? (
                           <div className="flex justify-between">
@@ -1608,6 +1671,16 @@ function BookPageContent() {
                 )}
                 <Form {...form}>
                   <form onSubmit={handleSubmit} className="space-y-6">
+                    {PAYMENT_METHOD === "instapay" ? (
+                      <div className="rounded-xl border border-duck-cyan/30 bg-duck-cyan/5 p-4 space-y-1">
+                        <p className="font-semibold text-duck-navy">
+                          {t("nextStepHeading")}
+                        </p>
+                        <p className="text-sm text-text-dark">
+                          {t("nextStepInstapayNote")}
+                        </p>
+                      </div>
+                    ) : null}
                     {/* Stacks on mobile: the submit label ("Confirm booking &
                         pay via InstaPay") is long, and Button's base styles are
                         whitespace-nowrap + shrink-0, so side-by-side it
@@ -1641,7 +1714,7 @@ function BookPageContent() {
             )}
             {/* Step 4: InstaPay confirmation */}
             {manualBookingResult && (
-              <div className="space-y-6 mt-6">
+              <div className="space-y-6">
                 {/* Deliberately NOT a green success state: at this point the
                     booking is only reserved. A checkmark here read as "done"
                     and users skipped paying. */}
@@ -1691,70 +1764,93 @@ function BookPageContent() {
                   )}
                 </div>
 
-                <div className="rounded-2xl border-2 border-duck-cyan/30 p-5 space-y-4">
-                  <p className="font-semibold text-text-dark">
-                    {t("instapayStep1", {
-                      amount: formatCurrency(
-                        manualBookingResult.chosenAmount,
-                        manualBookingResult.booking.currency || "EGP",
-                        locale,
-                      ),
-                    })}
-                  </p>
-                  <a
-                    href={INSTAPAY_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full bg-duck-cyan text-duck-navy rounded-full py-3 px-6 font-semibold hover:bg-duck-cyan/90 transition-colors text-white"
-                  >
-                    {t("payViaInstapay")}
-                  </a>
-
-                  <div className="border-t border-border/60 pt-4 mt-2 space-y-3">
-                    <p className="font-semibold text-text-dark">
-                      {t("instapayStep2")}
-                    </p>
-                    <p className="text-text-muted text-sm">
-                      {t("instapaySendReceipt")}
-                    </p>
-                    {/* Copyable so people paying from another device (or in
-                        the WhatsApp desktop app) can reach the number without
-                        retyping it. */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-off-white px-3 py-2">
-                      <span
-                        className="font-mono font-semibold text-duck-navy"
-                        dir="ltr"
-                      >
-                        +{SUPPORT_WHATSAPP_NUMBER}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleCopyWhatsApp}
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-duck-cyan hover:underline"
-                      >
-                        {copiedNumber ? (
-                          <>
-                            <Check className="w-4 h-4" aria-hidden="true" />
-                            {t("instapayCopied")}
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4" aria-hidden="true" />
-                            {t("instapayCopyNumber")}
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <a
-                      href={buildWhatsAppHref(
-                        `Hello, I have paid for my booking (Ref: #${manualBookingResult.booking.ID}). Here is my receipt.`,
-                      )}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white rounded-full p-3 font-semibold hover:bg-[#20bd5a] transition-colors"
+                <div className="rounded-2xl border-2 border-duck-cyan/30 p-5 space-y-5">
+                  <div className="flex gap-3">
+                    <span
+                      className="w-8 h-8 rounded-full bg-duck-cyan text-duck-navy flex items-center justify-center text-sm font-bold shrink-0"
+                      aria-hidden="true"
                     >
-                      {t("instapaySendReceiptBtn")}
-                    </a>
+                      1
+                    </span>
+                    <div className="flex-1 space-y-3 min-w-0">
+                      <p className="font-semibold text-text-dark">
+                        {t("instapayStep1", {
+                          amount: formatCurrency(
+                            manualBookingResult.chosenAmount,
+                            manualBookingResult.booking.currency || "EGP",
+                            locale,
+                          ),
+                        })}
+                      </p>
+                      <a
+                        href={INSTAPAY_LINK}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full bg-duck-cyan text-white rounded-full py-3 px-6 font-semibold hover:bg-duck-cyan/90 transition-colors"
+                      >
+                        {t("payViaInstapayAmount", {
+                          amount: formatCurrency(
+                            manualBookingResult.chosenAmount,
+                            manualBookingResult.booking.currency || "EGP",
+                            locale,
+                          ),
+                        })}
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <span
+                      className="w-8 h-8 rounded-full bg-duck-cyan text-duck-navy flex items-center justify-center text-sm font-bold shrink-0"
+                      aria-hidden="true"
+                    >
+                      2
+                    </span>
+                    <div className="flex-1 space-y-3 min-w-0">
+                      <p className="font-semibold text-text-dark">
+                        {t("instapayStep2")}
+                      </p>
+                      <p className="text-text-muted text-sm">
+                        {t("instapaySendReceipt")}
+                      </p>
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-off-white px-3 py-2">
+                        <span
+                          className="font-mono font-semibold text-duck-navy"
+                          dir="ltr"
+                        >
+                          +{SUPPORT_WHATSAPP_NUMBER}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleCopyWhatsApp}
+                          className="inline-flex items-center gap-1.5 text-sm font-medium text-duck-cyan hover:underline"
+                        >
+                          {copiedNumber ? (
+                            <>
+                              <Check className="w-4 h-4" aria-hidden="true" />
+                              {t("instapayCopied")}
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4" aria-hidden="true" />
+                              {t("instapayCopyNumber")}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <a
+                        href={buildWhatsAppHref(
+                          t("instapayWhatsappPrefill", {
+                            ref: manualBookingResult.booking.ID,
+                          }),
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white rounded-full p-3 font-semibold hover:bg-[#20bd5a] transition-colors"
+                      >
+                        {t("instapaySendReceiptBtn")}
+                      </a>
+                    </div>
                   </div>
                 </div>
 
@@ -1762,13 +1858,20 @@ function BookPageContent() {
                   {t("bookingPendingNote")}
                 </p>
 
-                <div className="text-center">
+                <div className="text-center flex flex-col sm:flex-row items-center justify-center gap-3">
                   <a
                     href="/my-bookings"
                     className="text-duck-cyan underline underline-offset-2 text-sm font-medium"
                   >
                     {t("viewMyBookings")}
                   </a>
+                  <button
+                    type="button"
+                    onClick={startNewBooking}
+                    className="text-sm font-medium text-text-muted hover:text-duck-cyan hover:underline"
+                  >
+                    {t("bookAnotherTrip")}
+                  </button>
                 </div>
 
                 <FeedbackPromptCard

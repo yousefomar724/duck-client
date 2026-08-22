@@ -3,6 +3,8 @@
  * snapshot in sessionStorage so the success page can show trip/destination
  * details after Kashier redirects back to `/booking/success?order_ref=...`.
  */
+import type { Booking } from "@/lib/types"
+
 export const SUCCESS_CACHE_KEY = "duck.lastBookingContext"
 
 export type SuccessCacheDestination = {
@@ -52,6 +54,44 @@ export function clearLastBookingContext(): void {
   if (typeof window === "undefined") return
   try {
     sessionStorage.removeItem(SUCCESS_CACHE_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+export const PENDING_INSTAPAY_KEY = "duck.pendingInstapay"
+
+export type PendingInstapay = {
+  booking: Booking
+  chosenAmount: number
+}
+
+export function readPendingInstapay(): PendingInstapay | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = sessionStorage.getItem(PENDING_INSTAPAY_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as PendingInstapay
+    if (!parsed?.booking || typeof parsed.chosenAmount !== "number") return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+export function writePendingInstapay(payload: PendingInstapay): void {
+  if (typeof window === "undefined") return
+  try {
+    sessionStorage.setItem(PENDING_INSTAPAY_KEY, JSON.stringify(payload))
+  } catch {
+    /* storage full or disabled */
+  }
+}
+
+export function clearPendingInstapay(): void {
+  if (typeof window === "undefined") return
+  try {
+    sessionStorage.removeItem(PENDING_INSTAPAY_KEY)
   } catch {
     /* ignore */
   }

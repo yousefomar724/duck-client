@@ -1,6 +1,7 @@
 import { resolveLocalized } from '../lib/localize';
 import { Trip, type TripDoc, type TripFaq } from '../models/trip';
 import type { LocalizedText } from '../models/supplier';
+import { parseDurationHoursFromLocalized } from '@/lib/trips/duration';
 
 export interface CreateTripBody {
   supplier_id?: string;
@@ -16,6 +17,7 @@ export interface CreateTripBody {
   from: string;
   to?: string | null;
   duration?: number;
+  duration_text?: LocalizedText;
   itinerary?: LocalizedText;
   name: LocalizedText;
   description: LocalizedText;
@@ -35,7 +37,11 @@ export interface CreateTripBody {
 /** Mirrors Go's `TripService.CreateTrip` field defaults. */
 export async function createTripFromRequest(supplierId: string, body: CreateTripBody): Promise<TripDoc> {
   let duration = body.duration ?? 0;
-  if (duration === 0 && !body.is_tour) duration = 1;
+  if (!body.is_tour && body.duration_text) {
+    duration = parseDurationHoursFromLocalized(body.duration_text) ?? 1;
+  } else if (duration === 0 && !body.is_tour) {
+    duration = 1;
+  }
 
   const from = new Date(body.from);
   if (isNaN(from.getTime())) {
@@ -64,6 +70,7 @@ export async function createTripFromRequest(supplierId: string, body: CreateTrip
     from,
     to,
     duration,
+    duration_text: body.is_tour ? { en: '', ar: '' } : (body.duration_text ?? { en: '', ar: '' }),
     max_guests: body.max_guests,
     refundable: body.refundable ?? false,
     tour_guide_id: body.tour_guide_id || null,
@@ -85,7 +92,11 @@ export async function createTripFromRequest(supplierId: string, body: CreateTrip
 
 /** Mirrors Go's `TripService.UpdateTrip`: only overwrite fields present/truthy in the request. */
 export function applyTripUpdate(trip: TripDoc, body: Partial<CreateTripBody>): void {
-  const duration = body.duration ?? 0;
+  const isTour = body.is_tour ?? trip.is_tour;
+  let duration = body.duration ?? 0;
+  if (!isTour && body.duration_text) {
+    duration = parseDurationHoursFromLocalized(body.duration_text) ?? 1;
+  }
 
   trip.is_tour = body.is_tour ?? false;
 
@@ -107,6 +118,14 @@ export function applyTripUpdate(trip: TripDoc, body: Partial<CreateTripBody>): v
     trip.to = to;
   }
   if (duration) trip.duration = duration;
+  // Assigned whenever present so an empty pair can clear stale free text —
+  // `if (body.duration_text)` would keep a trip's old duration after it is
+  // switched to a tour, and the display sites prefer the text over the number.
+  if (isTour) {
+    trip.duration_text = { en: '', ar: '' };
+  } else if (body.duration_text !== undefined) {
+    trip.duration_text = body.duration_text;
+  }
   if (body.max_guests) trip.max_guests = body.max_guests;
   if (body.refundable) trip.refundable = body.refundable;
   if (body.tour_guide_id) trip.tour_guide_id = body.tour_guide_id as unknown as TripDoc['tour_guide_id'];

@@ -22,6 +22,7 @@ export interface TripDoc extends mongoose.Document {
   from: Date;
   to?: Date | null;
   duration: number;
+  duration_text: LocalizedText;
   itinerary: LocalizedText;
   name: LocalizedText;
   description: LocalizedText;
@@ -71,6 +72,7 @@ const TripSchema = new Schema<TripDoc>(
     from: { type: Date, required: true },
     to: { type: Date, default: null },
     duration: { type: Number, default: 1 },
+    duration_text: { type: LocalizedSchema, default: () => ({ en: '', ar: '' }) },
     itinerary: { type: LocalizedSchema, default: () => ({ en: '', ar: '' }) },
     name: { type: LocalizedSchema, required: true },
     description: { type: LocalizedSchema, required: true },

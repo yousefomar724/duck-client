@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { formatCurrency } from "@/lib/constants"
+import { formatCurrency, formatTripDuration } from "@/lib/constants"
 import { getTripImage, resolveImageUrl } from "@/lib/image-utils"
 import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import * as tripsApi from "@/lib/api/trips"
@@ -211,8 +211,10 @@ export default function MyTripsPage() {
                   </p>
                   <p>
                     <span className="font-medium">المدة:</span>{" "}
-                    {trip.duration ?? 1}{" "}
-                    {(trip.duration ?? 1) === 1 ? "ساعة" : "ساعات"}
+                    {formatTripDuration(trip) ??
+                      `${trip.duration ?? 1} ${
+                        (trip.duration ?? 1) === 1 ? "ساعة" : "ساعات"
+                      }`}
                   </p>
                   {trip.tour_guide && (
                     <p>

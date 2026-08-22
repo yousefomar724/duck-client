@@ -7,10 +7,8 @@ import { isValidResourceType } from './resource-type';
 import { DeletedBooking } from '../models/deleted-booking';
 import { creditWalletBySupplierId } from './wallet';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
-import {
-  BOOKING_MAX_MINUTES,
-  BOOKING_MIN_MINUTES,
-} from '@/lib/booking/schedule';
+import { isBookingTimeValid } from '@/lib/booking/schedule';
+import { toSiteYmd } from '@/lib/time';
 
 export interface BookingEditPatch {
   quantity?: number;
@@ -46,11 +44,6 @@ export class BookingEditError extends Error {
 }
 
 const EDITABLE_STATUSES = ['PENDING', 'CONFIRMED'] as const;
-
-function isBookingTimeValid(date: Date): boolean {
-  const minutes = date.getHours() * 60 + date.getMinutes();
-  return minutes >= BOOKING_MIN_MINUTES && minutes <= BOOKING_MAX_MINUTES;
-}
 
 function snapshotFromBooking(booking: BookingDoc) {
   const snap = booking.pricing_snapshot;
@@ -167,13 +160,13 @@ export async function applyBookingEdit(
   }
 
   if (!isBookingTimeValid(nextBookingDate)) {
-    throw new BookingEditError('booking time must be between 06:00 and 18:30');
+    throw new BookingEditError('booking time must be between 06:00 and 18:30 Cairo');
   }
 
   const capacityChanged =
     nextQuantity !== booking.quantity ||
     nextResourceType !== (booking.resource_type ?? '') ||
-    nextBookingDate.toDateString() !== booking.booking_date.toDateString();
+    toSiteYmd(nextBookingDate) !== toSiteYmd(booking.booking_date);
 
   if (nextResourceType && capacityChanged) {
     try {

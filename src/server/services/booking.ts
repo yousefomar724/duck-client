@@ -4,6 +4,7 @@ import type { BookingDoc } from '../models/booking';
 import { isValidResourceType } from './resource-type';
 import { checkAvailability } from './availability';
 import { minimumDeposit } from '@/lib/booking/pricing';
+import { isBookingTimeValid } from '@/lib/booking/schedule';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
 
 export interface CreateBookingInput {
@@ -175,6 +176,11 @@ export async function buildBooking(
 
   const duration = trip.is_tour ? (req.duration ?? 1) : 0;
 
+  const bookingDate = new Date(req.booking_date);
+  if (Number.isNaN(bookingDate.getTime()) || !isBookingTimeValid(bookingDate)) {
+    throw new Error('booking time must be between 06:00 and 18:30 Cairo');
+  }
+
   // The client-side `min` attribute on the deposit input is not a security
   // boundary — clamp here to [minimumDeposit(amount), amount]. Anything
   // outside that range (including omitted/zero) is treated as full payment.
@@ -195,7 +201,7 @@ export async function buildBooking(
     phone_number: req.phone_number,
     status: 'PENDING',
     payment_method: 'MANUAL',
-    booking_date: new Date(req.booking_date),
+    booking_date: bookingDate,
     quantity,
     local_guests: computedLocal,
     foreigner_guests: computedForeigner,

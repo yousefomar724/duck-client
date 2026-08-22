@@ -24,28 +24,53 @@ import {
 } from "@/components/ui/select"
 import { bookingStrings } from "./booking-strings"
 import { calculateBookingTotal } from "@/lib/booking/pricing"
+import { isBookingTimeValid } from "@/lib/booking/schedule"
 import { amountPaid } from "@/lib/bookings/payment"
 import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import { formatCurrency } from "@/lib/constants"
+import { siteMinutesOfDay, siteWallTimeToUtc, toSiteYmd } from "@/lib/time"
 import type { Booking, Trip } from "@/lib/types"
 import type { UpdateBookingRequest } from "@/lib/api/bookings"
 import { Loader2 } from "lucide-react"
 
-const editSchema = z.object({
-  full_name: z.string().min(2),
-  phone_number: z.string().min(1),
-  booking_date: z.string().min(1),
-  resource_type: z.enum(["kayak", "water_cycle", "sup"]),
-  local_guests: z.coerce.number().int().min(0),
-  foreigner_guests: z.coerce.number().int().min(0),
-  adults: z.coerce.number().int().min(1),
-  kids_1_6: z.coerce.number().int().min(0),
-  kids_7_12: z.coerce.number().int().min(0),
-  duration: z.coerce.number().int().min(1).optional(),
-  wants_guide: z.boolean(),
-  amount_override: z.coerce.number().positive().optional().or(z.literal("")),
-  note: z.string().optional(),
-})
+const DATETIME_LOCAL_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/
+
+const editSchema = z
+  .object({
+    full_name: z.string().min(2),
+    phone_number: z.string().min(1),
+    booking_date: z.string().min(1),
+    resource_type: z.enum(["kayak", "water_cycle", "sup"]),
+    local_guests: z.coerce.number().int().min(0),
+    foreigner_guests: z.coerce.number().int().min(0),
+    adults: z.coerce.number().int().min(1),
+    kids_1_6: z.coerce.number().int().min(0),
+    kids_7_12: z.coerce.number().int().min(0),
+    duration: z.coerce.number().int().min(1).optional(),
+    wants_guide: z.boolean(),
+    amount_override: z.coerce.number().positive().optional().or(z.literal("")),
+    note: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const match = DATETIME_LOCAL_RE.exec(data.booking_date)
+    if (!match) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: bookingStrings.bookingTimeRange,
+        path: ["booking_date"],
+      })
+      return
+    }
+    const [, ymd, hour, minute] = match
+    const instant = siteWallTimeToUtc(ymd, Number(hour), Number(minute))
+    if (!isBookingTimeValid(instant)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: bookingStrings.bookingTimeRange,
+        path: ["booking_date"],
+      })
+    }
+  })
 
 type EditFormValues = z.infer<typeof editSchema>
 
@@ -62,8 +87,20 @@ interface BookingEditDialogProps {
 function toLocalDatetimeValue(iso?: string): string {
   if (!iso) return ""
   const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ""
   const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const ymd = toSiteYmd(d)
+  const minutes = siteMinutesOfDay(d)
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${ymd}T${pad(hours)}:${pad(mins)}`
+}
+
+function cairoIsoFromDatetimeLocal(value: string): string {
+  const match = DATETIME_LOCAL_RE.exec(value)
+  if (!match) return new Date(value).toISOString()
+  const [, ymd, hour, minute] = match
+  return siteWallTimeToUtc(ymd, Number(hour), Number(minute)).toISOString()
 }
 
 function previewAmount(
@@ -181,7 +218,7 @@ export function BookingEditDialog({
     const payload: UpdateBookingRequest = {
       full_name: data.full_name.trim(),
       phone_number: data.phone_number.trim(),
-      booking_date: new Date(data.booking_date).toISOString(),
+      booking_date: cairoIsoFromDatetimeLocal(data.booking_date),
       resource_type: data.resource_type,
       local_guests: data.local_guests,
       foreigner_guests: data.foreigner_guests,
@@ -205,7 +242,7 @@ export function BookingEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
+      <DialogContent dir="rtl" className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{bookingStrings.editBookingTitle}</DialogTitle>
           <DialogDescription>
@@ -232,6 +269,11 @@ export function BookingEditDialog({
                 type="datetime-local"
                 {...form.register("booking_date")}
               />
+              {form.formState.errors.booking_date?.message ? (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.booking_date.message}
+                </p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label>{bookingStrings.equipment}</Label>

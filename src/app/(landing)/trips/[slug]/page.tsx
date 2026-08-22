@@ -11,6 +11,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import {
   Table,
   TableBody,
   TableCell,
@@ -26,6 +32,7 @@ import { buildBreadcrumbJsonLd, buildTripJsonLd } from "@/lib/seo/json-ld"
 import { canonicalTripPath, extractObjectId, tripSlug } from "@/lib/seo/slug"
 import { getTripBySlug, type PublicTrip } from "@/server/services/public-content"
 import { formatCurrency } from "@/lib/constants"
+import { parseDurationHours, tripDurationText } from "@/lib/trips/duration"
 import { SITE_CONTACT, SITE_NAME, SITE_URL } from "@/lib/site"
 import { buildWhatsAppHref } from "@/lib/support-contact"
 import { Phone } from "lucide-react"
@@ -58,18 +65,32 @@ export async function generateMetadata({
   const t = await getTranslations("tripPage")
   const path = canonicalTripPath(trip)
   const hasForeignerPrice = trip.foreigner_price > 0
-  const description = hasForeignerPrice
-    ? t("metaDescriptionDual", {
-        name: trip.name,
-        duration: trip.duration || 1,
-        priceLocal: trip.price,
-        priceForeign: trip.foreigner_price,
-      })
-    : t("metaDescriptionSingle", {
-        name: trip.name,
-        duration: trip.duration || 1,
-        priceLocal: trip.price,
-      })
+  const durationText = tripDurationText(trip, locale)
+  const description = durationText
+    ? hasForeignerPrice
+      ? t("metaDescriptionDualText", {
+          name: trip.name,
+          duration: durationText,
+          priceLocal: trip.price,
+          priceForeign: trip.foreigner_price,
+        })
+      : t("metaDescriptionSingleText", {
+          name: trip.name,
+          duration: durationText,
+          priceLocal: trip.price,
+        })
+    : hasForeignerPrice
+      ? t("metaDescriptionDual", {
+          name: trip.name,
+          duration: trip.duration || 1,
+          priceLocal: trip.price,
+          priceForeign: trip.foreigner_price,
+        })
+      : t("metaDescriptionSingle", {
+          name: trip.name,
+          duration: trip.duration || 1,
+          priceLocal: trip.price,
+        })
 
   return {
     title: t("metaTitle", { name: trip.name }),
@@ -98,25 +119,45 @@ export default async function TripDetailPage({ params }: PageProps) {
   const hasForeignerPrice = trip.foreigner_price > 0
   const destination = trip.destinations[0]?.name
   const duration = trip.duration || 1
+  const durationText = tripDurationText(trip, locale)
 
-  const summary = hasForeignerPrice
-    ? t("summaryDual", {
-        name: trip.name,
-        duration,
-        destination: destination ?? SITE_CONTACT.city,
-        priceLocal: formatCurrency(trip.price, trip.currency, locale),
-        priceForeign: formatCurrency(trip.foreigner_price, trip.currency, locale),
-        maxGuests: trip.max_guests,
-        siteName: SITE_NAME,
-      })
-    : t("summarySingle", {
-        name: trip.name,
-        duration,
-        destination: destination ?? SITE_CONTACT.city,
-        priceLocal: formatCurrency(trip.price, trip.currency, locale),
-        maxGuests: trip.max_guests,
-        siteName: SITE_NAME,
-      })
+  const summary = durationText
+    ? hasForeignerPrice
+      ? t("summaryDualText", {
+          name: trip.name,
+          duration: durationText,
+          destination: destination ?? SITE_CONTACT.city,
+          priceLocal: formatCurrency(trip.price, trip.currency, locale),
+          priceForeign: formatCurrency(trip.foreigner_price, trip.currency, locale),
+          maxGuests: trip.max_guests,
+          siteName: SITE_NAME,
+        })
+      : t("summarySingleText", {
+          name: trip.name,
+          duration: durationText,
+          destination: destination ?? SITE_CONTACT.city,
+          priceLocal: formatCurrency(trip.price, trip.currency, locale),
+          maxGuests: trip.max_guests,
+          siteName: SITE_NAME,
+        })
+    : hasForeignerPrice
+      ? t("summaryDual", {
+          name: trip.name,
+          duration,
+          destination: destination ?? SITE_CONTACT.city,
+          priceLocal: formatCurrency(trip.price, trip.currency, locale),
+          priceForeign: formatCurrency(trip.foreigner_price, trip.currency, locale),
+          maxGuests: trip.max_guests,
+          siteName: SITE_NAME,
+        })
+      : t("summarySingle", {
+          name: trip.name,
+          duration,
+          destination: destination ?? SITE_CONTACT.city,
+          priceLocal: formatCurrency(trip.price, trip.currency, locale),
+          maxGuests: trip.max_guests,
+          siteName: SITE_NAME,
+        })
 
   const guideLabel = trip.guide_mandatory
     ? t("factGuideMandatory")
@@ -154,7 +195,9 @@ export default async function TripDetailPage({ params }: PageProps) {
         },
         {
           q: t("faqDurationQ", { name: trip.name }),
-          a: t("faqDurationA", { name: trip.name, duration }),
+          a: durationText
+            ? t("faqDurationAText", { name: trip.name, duration: durationText })
+            : t("faqDurationA", { name: trip.name, duration }),
         },
         {
           q: t("faqGroupQ", { name: trip.name }),
@@ -354,19 +397,32 @@ export default async function TripDetailPage({ params }: PageProps) {
               <h2 className="text-text-dark text-xl font-bold mb-4">
                 {t("faqTitle")}
               </h2>
-              <div className="space-y-4">
-                {faqEntries.map(({ q, a }) => (
-                  <div
+              {/* Answers of collapsed items leave the DOM, but every Q&A is
+                  still published in the FAQPage JSON-LD above. */}
+              <Accordion
+                type="single"
+                collapsible
+                defaultValue={faqEntries.length ? "faq-0" : undefined}
+                className="rounded-xl bg-off-white border border-black/5 px-5"
+              >
+                {faqEntries.map(({ q, a }, index) => (
+                  <AccordionItem
                     key={q}
-                    className="rounded-xl bg-off-white border border-black/5 p-5"
+                    value={`faq-${index}`}
+                    className="border-black/5"
                   >
-                    <h3 className="text-text-dark font-semibold mb-1.5">
+                    <AccordionTrigger className="text-text-dark font-semibold text-base hover:no-underline">
                       {q}
-                    </h3>
-                    <RichText text={a} className="text-text-body text-sm leading-relaxed" />
-                  </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <RichText
+                        text={a}
+                        className="text-text-body text-sm leading-relaxed"
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
                 ))}
-              </div>
+              </Accordion>
             </div>
           </div>
 
@@ -377,9 +433,19 @@ export default async function TripDetailPage({ params }: PageProps) {
                 <div className="flex items-center justify-between">
                   <dt className="text-text-muted">{t("factDuration")}</dt>
                   <dd className="font-medium text-text-dark">
-                    <time dateTime={`PT${duration}H`}>
-                      {t("factDurationValue", { duration })}
-                    </time>
+                    {(() => {
+                      const parsedHours = durationText
+                        ? parseDurationHours(durationText)
+                        : duration
+                      const label = durationText
+                        ? t("factDurationValueText", { duration: durationText })
+                        : t("factDurationValue", { duration })
+                      return parsedHours ? (
+                        <time dateTime={`PT${parsedHours}H`}>{label}</time>
+                      ) : (
+                        label
+                      )
+                    })()}
                   </dd>
                 </div>
                 <div className="flex items-center justify-between">

@@ -56,17 +56,15 @@ describe('pricing', () => {
     expect(minimumDeposit(100)).toBe(50);
   });
 
-  it('adds kids to local guest count', () => {
+  it('prices from the total guest count without adding kids on top', () => {
     expect(
       calculateBookingTotal({
         trip,
         guestMix: 'local',
-        guests: 2,
+        guests: 4,
         localGuests: 0,
         foreignerGuests: 0,
         duration: 1,
-        kids1to6: 1,
-        kids7to12: 1,
       }),
     ).toBe(720);
   });

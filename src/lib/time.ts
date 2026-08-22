@@ -86,3 +86,32 @@ export function toSiteYmd(date: Date): string {
   const parts = siteParts(date)
   return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`
 }
+
+/** Minutes since midnight in SITE_TIME_ZONE (Cairo), independent of process TZ. */
+export function siteMinutesOfDay(date: Date): number {
+  const parts = siteParts(date)
+  return parts.hour * 60 + parts.minute
+}
+
+/**
+ * A Date whose *local* wall-clock fields mirror the Cairo wall clock of
+ * `date`. Not a real instant — use it only to hand Cairo-local Y/M/D/h/m to
+ * libraries that read `getFullYear()`/`getHours()` (date-fns formatting,
+ * react-day-picker), so the UI shows Cairo time on a device in any timezone.
+ */
+export function siteWallClock(date: Date): Date {
+  const parts = siteParts(date)
+  return new Date(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  )
+}
+
+/** Calendar day (`YYYY-MM-DD`) of a Date read in local time, not Cairo. */
+export function localYmd(date: Date): string {
+  return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+}

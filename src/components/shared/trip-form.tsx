@@ -50,6 +50,7 @@ import {
   type TripFormInput,
   type TripFormValues,
 } from "@/lib/trips/form-schema"
+import { parseDurationHoursFromLocalized } from "@/lib/trips/duration"
 import type {
   Trip,
   Destination,
@@ -90,6 +91,8 @@ const FIELD_LABELS: Record<string, string> = {
   cancelation_policy_en: "سياسة الإلغاء (English)",
   map_url: "رابط الموقع على الخريطة",
   duration: "المدة",
+  duration_text_ar: "المدة (عربي)",
+  duration_text_en: "Duration (English)",
   max_guests: "عدد الاشخاص الأقصى",
   supplier_id: "المورد",
   tour_guide_id: "المرشد",
@@ -123,6 +126,8 @@ const EMPTY_FORM_VALUES: TripFormInput = {
   hide_default_faqs: false,
   faqs: [],
   duration: "1",
+  duration_text_ar: "",
+  duration_text_en: "",
   max_guests: "",
   supplier_id: "",
   is_tour: true,
@@ -191,6 +196,8 @@ function mapTripToFormValues(tripData: Trip): TripFormInput {
     hide_default_faqs: tripData.hide_default_faqs ?? false,
     faqs: tripFaqs,
     duration: (tripData.duration ?? 1).toString(),
+    duration_text_ar: asLocalizedPair(tripData.duration_text).ar,
+    duration_text_en: asLocalizedPair(tripData.duration_text).en,
     max_guests: tripData.max_guests.toString(),
     supplier_id: tripData.supplier_id?.toString() || "",
     is_tour: tripData.is_tour ?? false,
@@ -383,7 +390,17 @@ export default function TripForm({
         })),
         from: from.toISOString(),
         to: values.to ? values.to.toISOString() : undefined,
-        duration: values.duration,
+        duration: values.is_tour
+          ? values.duration
+          : (parseDurationHoursFromLocalized({
+              ar: values.duration_text_ar,
+              en: values.duration_text_en,
+            }) ?? 1),
+        // Cleared (not omitted) for tours, so flipping a trip to a tour drops
+        // any free text left over from when it was a trip.
+        duration_text: values.is_tour
+          ? { ar: "", en: "" }
+          : { ar: values.duration_text_ar, en: values.duration_text_en },
         max_guests: values.max_guests,
         images: allImageUrls,
         destination_ids: values.destination_ids,
@@ -1227,33 +1244,66 @@ export default function TripForm({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="duration"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {form.watch("is_tour")
-                            ? "المدة الافتراضية (ساعات)"
-                            : "المدة (ساعات)"}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={form.watch("is_tour") ? 0 : 1}
-                            placeholder={form.watch("is_tour") ? "0" : "1"}
-                            {...field}
-                          />
-                        </FormControl>
-                        {form.watch("is_tour") && (
+                  {form.watch("is_tour") ? (
+                    <FormField
+                      control={form.control}
+                      name="duration"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>المدة الافتراضية (ساعات)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              placeholder="0"
+                              {...field}
+                            />
+                          </FormControl>
                           <p className="text-xs text-text-muted">
                             العميل يحدد عدد الساعات عند الحجز
                           </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <div className="space-y-3 sm:col-span-2">
+                      <FormField
+                        control={form.control}
+                        name="duration_text_ar"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>المدة (عربي)</FormLabel>
+                            <FormControl>
+                              <Input
+                                dir="rtl"
+                                placeholder="من ساعتين إلى ٣ ساعات"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
                         )}
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      />
+                      <FormField
+                        control={form.control}
+                        name="duration_text_en"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Duration (English)</FormLabel>
+                            <FormControl>
+                              <Input
+                                dir="ltr"
+                                placeholder="2 to 3 hours"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
                   <FormField
                     control={form.control}
                     name="max_guests"

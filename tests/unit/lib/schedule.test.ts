@@ -4,9 +4,12 @@ import {
   mergeCalendarDay,
   mergeTimeFromHHMM,
   buildTimeSlots,
+  isBookingTimeValid,
+  siteHHMM,
   BOOKING_MIN_MINUTES,
   BOOKING_MAX_MINUTES,
 } from '@/lib/booking/schedule';
+import { siteWallTimeToUtc, toSiteYmd } from '@/lib/time';
 
 describe('schedule', () => {
   it('clamps minutes to bookable window', () => {
@@ -15,19 +18,28 @@ describe('schedule', () => {
     expect(clampMinutesToWindow(720)).toBe(720);
   });
 
-  it('merges calendar day preserving time', () => {
-    const previous = new Date('2026-08-03T10:30:00');
-    const picked = new Date('2026-08-10T00:00:00');
+  // Asserted in Cairo terms, not via getHours(): the process TZ is UTC on CI
+  // and Africa/Cairo on the dev machines, and the window is Cairo-based.
+  it('merges calendar day preserving the Cairo time of day', () => {
+    const previous = siteWallTimeToUtc('2026-08-03', 10, 30);
+    const picked = new Date(2026, 7, 10);
     const merged = mergeCalendarDay(picked, previous);
-    expect(merged.getDate()).toBe(10);
-    expect(merged.getHours()).toBe(10);
+    expect(toSiteYmd(merged)).toBe('2026-08-10');
+    expect(siteHHMM(merged)).toBe('10:30');
   });
 
-  it('merges time from hh:mm', () => {
-    const base = new Date('2026-08-03T10:00:00');
+  it('merges time from hh:mm in Cairo wall clock', () => {
+    const base = siteWallTimeToUtc('2026-08-03', 10, 0);
     const merged = mergeTimeFromHHMM(base, '14:30');
-    expect(merged.getHours()).toBe(14);
-    expect(merged.getMinutes()).toBe(30);
+    expect(siteHHMM(merged)).toBe('14:30');
+    expect(toSiteYmd(merged)).toBe('2026-08-03');
+  });
+
+  it('keeps every offered slot inside the server-side window', () => {
+    const base = siteWallTimeToUtc('2026-08-03', 10, 0);
+    for (const slot of buildTimeSlots(base, 'en')) {
+      expect(isBookingTimeValid(mergeTimeFromHHMM(base, slot.value))).toBe(true);
+    }
   });
 
   it('builds time slots within window', () => {

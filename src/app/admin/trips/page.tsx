@@ -38,7 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { formatCurrency, formatDate } from "@/lib/constants"
+import { formatCurrency, formatDate, formatTripDuration } from "@/lib/constants"
 import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
 import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import { TripTypeBadge } from "@/components/shared/trip-type-badge"
@@ -239,7 +239,9 @@ export default function AdminTripsPage() {
                   const supplier = suppliers.find(
                     (s) => s.id === trip.supplier_id,
                   )
-                  const duration = trip.duration ?? 1
+                  const durationLabel =
+                    formatTripDuration(trip) ??
+                    `${trip.duration ?? 1} ${(trip.duration ?? 1) === 1 ? "ساعة" : "ساعات"}`
                   return (
                     <TableRow
                       key={trip.id}
@@ -286,7 +288,7 @@ export default function AdminTripsPage() {
                       </TableCell>
                       <TableCell>{trip.max_guests}</TableCell>
                       <TableCell>
-                        {duration} {duration === 1 ? "ساعة" : "ساعات"}
+                        {durationLabel}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu dir="rtl">
@@ -321,7 +323,9 @@ export default function AdminTripsPage() {
             <DataCardList
               items={filteredTrips.map((trip) => {
                 const supplier = suppliers.find((s) => s.id === trip.supplier_id)
-                const duration = trip.duration ?? 1
+                const durationLabel =
+                  formatTripDuration(trip) ??
+                  `${trip.duration ?? 1} ${(trip.duration ?? 1) === 1 ? "ساعة" : "ساعات"}`
                 return {
                   id: trip.id,
                   title: resolveLocalizedField(trip.name, "-"),
@@ -338,7 +342,7 @@ export default function AdminTripsPage() {
                     },
                     {
                       label: "المدة",
-                      value: `${duration} ${duration === 1 ? "ساعة" : "ساعات"}`,
+                      value: durationLabel,
                     },
                   ],
                   actions: (

@@ -16,6 +16,7 @@ import {
   resolveImageUrl,
 } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
+import { tripDurationText } from "@/lib/trips/duration"
 import { tripSlug } from "@/lib/seo/slug"
 import {
   Carousel,
@@ -221,6 +222,23 @@ export default function OffersSection() {
   const renderDurationUnit = (duration: number) =>
     duration === 1 ? t("hour") : t("hours")
 
+  const renderTripDuration = (trip: Trip) => {
+    if (trip.is_tour) {
+      const duration = trip.duration ?? 1
+      return t("minDuration", {
+        count: duration,
+        unit: renderDurationUnit(duration),
+      })
+    }
+    const text = tripDurationText(trip, locale)
+    if (text) return t("fixedDurationText", { text })
+    const duration = trip.duration ?? 1
+    return t("fixedDuration", {
+      count: duration,
+      unit: renderDurationUnit(duration),
+    })
+  }
+
   return (
     <section id="experiences" className="bg-off-white py-20 overflow-hidden">
       {/* Header */}
@@ -280,8 +298,6 @@ export default function OffersSection() {
                     : trip.supplier?.name?.ar ||
                       trip.supplier?.name?.en ||
                       "Unknown Supplier"
-                const duration = trip.duration ?? 1
-
                 const resolvedSupplierIcon = trip.supplier?.icon
                   ? resolveImageUrl(trip.supplier.icon)
                   : null
@@ -421,15 +437,7 @@ export default function OffersSection() {
                           />
                         </p>
                         <p className="text-text-muted text-sm mt-1">
-                          {trip.is_tour
-                            ? t("minDuration", {
-                                count: duration,
-                                unit: renderDurationUnit(duration),
-                              })
-                            : t("fixedDuration", {
-                                count: duration,
-                                unit: renderDurationUnit(duration),
-                              })}
+                          {renderTripDuration(trip)}
                         </p>
                       </div>
                       <div className="flex items-center gap-3 flex-wrap">
@@ -684,19 +692,7 @@ export default function OffersSection() {
                     ) : null}
                     <span className="text-text-muted flex items-center gap-1">
                       <Clock className="size-3.5" />
-                      {selectedTrip?.is_tour
-                        ? t("minDuration", {
-                            count: selectedTrip.duration ?? 1,
-                            unit: renderDurationUnit(
-                              selectedTrip.duration ?? 1,
-                            ),
-                          })
-                        : t("fixedDuration", {
-                            count: selectedTrip?.duration ?? 1,
-                            unit: renderDurationUnit(
-                              selectedTrip?.duration ?? 1,
-                            ),
-                          })}
+                      {selectedTrip ? renderTripDuration(selectedTrip) : null}
                     </span>
                   </div>
 
@@ -951,15 +947,7 @@ export default function OffersSection() {
                   ) : null}
                   <span className="text-text-muted flex items-center gap-1">
                     <Clock className="size-3.5" />
-                    {selectedTrip?.is_tour
-                      ? t("minDuration", {
-                          count: selectedTrip.duration ?? 1,
-                          unit: renderDurationUnit(selectedTrip.duration ?? 1),
-                        })
-                      : t("fixedDuration", {
-                          count: selectedTrip?.duration ?? 1,
-                          unit: renderDurationUnit(selectedTrip?.duration ?? 1),
-                        })}
+                    {selectedTrip ? renderTripDuration(selectedTrip) : null}
                   </span>
                 </div>
 

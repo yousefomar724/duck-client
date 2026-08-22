@@ -1,10 +1,17 @@
 import { SITE_CONTACT, SITE_NAME, SITE_URL } from "@/lib/site"
 import { canonicalDestinationPath, canonicalTripPath } from "@/lib/seo/slug"
 import type { PublicDestination, PublicTrip } from "@/server/services/public-content"
+import { parseDurationHours, tripDurationText } from "@/lib/trips/duration"
 
 export const ORGANIZATION_ID = `${SITE_URL}/#organization`
 export const WEBSITE_ID = `${SITE_URL}/#website`
 export const BUSINESS_ID = `${SITE_URL}/#business`
+
+function machineReadableTripDuration(trip: PublicTrip): string | undefined {
+  const text = tripDurationText(trip, "en")
+  const hours = text ? parseDurationHours(text) : trip.duration
+  return hours ? `PT${hours}H` : undefined
+}
 
 export function buildOrganizationJsonLd() {
   return {
@@ -175,7 +182,7 @@ export function buildTripJsonLd(trip: PublicTrip) {
     description: trip.description,
     url: pageUrl,
     image: trip.images.map((img) => (img.startsWith("http") ? img : `${SITE_URL}${img}`)),
-    duration: trip.duration ? `PT${trip.duration}H` : undefined,
+    duration: machineReadableTripDuration(trip),
     maximumAttendeeCapacity: trip.max_guests,
     inLanguage: "en",
     provider: { "@id": ORGANIZATION_ID },

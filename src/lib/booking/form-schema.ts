@@ -1,9 +1,6 @@
 import { z } from 'zod/v3';
 import type { ResourceType } from '@/lib/types';
-import {
-  BOOKING_MAX_MINUTES,
-  BOOKING_MIN_MINUTES,
-} from '@/lib/booking/schedule';
+import { isBookingTimeValid } from '@/lib/booking/schedule';
 import { EGYPT_MOBILE_LOCAL_REGEX } from '@/lib/booking/phone';
 
 const RESOURCE_TYPES = ['kayak', 'water_cycle', 'sup'] as const satisfies readonly ResourceType[];
@@ -20,6 +17,7 @@ export interface BookingFormSchemaMessages {
   minOneGuest: string;
   minOne: string;
   kidsMinOne: string;
+  adultsMinOne: string;
   maxGuestsError: (max: number) => string;
   guestMixSumError: (total: number) => string;
 }
@@ -39,13 +37,9 @@ export function createBookingFormSchema(messages: BookingFormSchemaMessages, max
       .refine((d) => d.getTime() >= Date.now() - 60_000, {
         message: messages.dateTimePast,
       })
-      .refine(
-        (d) => {
-          const minutes = d.getHours() * 60 + d.getMinutes();
-          return minutes >= BOOKING_MIN_MINUTES && minutes <= BOOKING_MAX_MINUTES;
-        },
-        { message: messages.bookingTimeRange },
-      ),
+      .refine((d) => isBookingTimeValid(d), {
+        message: messages.bookingTimeRange,
+      }),
     resource_type: z.enum(RESOURCE_TYPES),
     guests: z.coerce
       .number({ invalid_type_error: messages.numberInvalid })
@@ -92,7 +86,7 @@ export function createBookingFormSchema(messages: BookingFormSchemaMessages, max
     const kids =
       (data.has_kids_1_6 ? data.kids_1_6 : 0) +
       (data.has_kids_7_12 ? data.kids_7_12 : 0);
-    const total = data.guests + kids;
+    const total = data.guests;
 
     if (data.has_kids_1_6 && data.kids_1_6 < 1) {
       ctx.addIssue({
@@ -106,6 +100,13 @@ export function createBookingFormSchema(messages: BookingFormSchemaMessages, max
         code: z.ZodIssueCode.custom,
         message: messages.kidsMinOne,
         path: ['kids_7_12'],
+      });
+    }
+    if (kids >= total) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: messages.adultsMinOne,
+        path: ['guests'],
       });
     }
     if (maxGuests != null && total > maxGuests) {

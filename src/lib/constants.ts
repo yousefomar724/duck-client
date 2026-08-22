@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { SITE_TIME_ZONE } from "./time"
+import { tripDurationText } from "./trips/duration"
 import type { BookingStatus, Payout, PayoutStatus } from "./types"
 
 export interface NavItem {
@@ -289,6 +290,22 @@ export function formatDurationHours(hours: number | undefined): string | null {
     6: "٦ ساعات",
   }
   return arabicHourLabels[hours] ?? `${hours} ساعة`
+}
+
+/**
+ * Prefers localized free-text duration so admin lists don't render
+ * `"2 to 3 hours ساعة"`. Falls back to the numeric hour label.
+ */
+export function formatTripDuration(
+  trip?: {
+    duration?: number
+    duration_text?: { ar?: string; en?: string } | string | null
+  } | null,
+): string | null {
+  if (!trip) return null
+  const text = tripDurationText(trip, "ar")
+  if (text) return text
+  return formatDurationHours(trip.duration)
 }
 
 /** "ضيف واحد" / "ضيفان" / "٣ ضيوف" for a booking's guest count. */

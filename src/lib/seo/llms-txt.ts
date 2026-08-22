@@ -5,6 +5,7 @@ import {
   listPublicTrips,
 } from "@/server/services/public-content"
 import { formatCurrency } from "@/lib/constants"
+import { tripDurationText } from "@/lib/trips/duration"
 
 /**
  * Community convention, not a standard — no major crawler is documented to
@@ -42,9 +43,11 @@ export async function buildLlmsTxt(): Promise<string> {
     const priceLine = trip.foreigner_price
       ? `${formatCurrency(trip.price, trip.currency, "en")} (Egyptian residents) / ${formatCurrency(trip.foreigner_price, trip.currency, "en")} (foreign visitors)`
       : formatCurrency(trip.price, trip.currency, "en")
+    const durationLabel =
+      tripDurationText(trip, "en") ?? `${trip.duration || 1} hour(s)`
     lines.push(
       `- [${trip.name}](${SITE_URL}${canonicalTripPath(trip)}): ` +
-        `${trip.duration || 1} hour(s), up to ${trip.max_guests} guests. ${priceLine}. ` +
+        `${durationLabel}, up to ${trip.max_guests} guests. ${priceLine}. ` +
         `Book: ${SITE_URL}/book?trip=${trip.id}`,
     )
   }
@@ -107,7 +110,9 @@ export async function buildLlmsFullTxt(): Promise<string> {
           ? ` / ${formatCurrency(trip.foreigner_price, trip.currency, "en")} (foreign visitors)`
           : ""),
     )
-    lines.push(`Duration: ${trip.duration || 1} hour(s)`)
+    lines.push(
+      `Duration: ${tripDurationText(trip, "en") ?? `${trip.duration || 1} hour(s)`}`,
+    )
     lines.push(`Max guests: ${trip.max_guests}`)
     if (trip.description) lines.push(`\n${trip.description}`)
     if (trip.itinerary) lines.push(`\nItinerary:\n${trip.itinerary}`)

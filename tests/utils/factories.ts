@@ -9,6 +9,7 @@ import { Booking } from '@/server/models/booking';
 import { SupplierStorage } from '@/server/models/supplier-storage';
 import { TourGuide } from '@/server/models/tourguide';
 import { signAuthToken } from '@/server/auth/jwt';
+import { siteWallTimeToUtc, toSiteYmd } from '@/lib/time';
 
 export async function createUser(overrides: Record<string, unknown> = {}) {
   const password = (overrides.password as string) ?? 'TestPassword123!';
@@ -93,6 +94,7 @@ export async function createTrip(supplierId: mongoose.Types.ObjectId, overrides:
     from: new Date('2024-01-01'),
     to: new Date('2027-12-31'),
     duration: 1,
+    duration_text: { en: '', ar: '' },
     itinerary: { en: 'Itinerary', ar: 'مسار' },
     name: { en: 'Test Trip', ar: 'رحلة تجريبية' },
     description: { en: 'Desc', ar: 'وصف' },
@@ -121,11 +123,12 @@ export async function createTourGuide(overrides: Record<string, unknown> = {}) {
 
 export function futureBookingDate(hoursAhead = 72): Date {
   const d = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
-  d.setHours(12, 0, 0, 0);
-  if (d.getTime() <= Date.now()) {
-    d.setDate(d.getDate() + 1);
+  let candidate = siteWallTimeToUtc(toSiteYmd(d), 12, 0);
+  if (candidate.getTime() <= Date.now()) {
+    const next = new Date(candidate.getTime() + 24 * 60 * 60 * 1000);
+    candidate = siteWallTimeToUtc(toSiteYmd(next), 12, 0);
   }
-  return d;
+  return candidate;
 }
 
 export async function createBooking(overrides: Record<string, unknown> = {}) {

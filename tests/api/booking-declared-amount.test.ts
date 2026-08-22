@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildBooking } from '@/server/services/booking';
-import { createSupplierUser, createTrip } from '../utils/factories';
+import { createSupplierUser, createTrip, futureBookingDate } from '../utils/factories';
 
 describe('buildBooking declared_amount clamp', () => {
   it('accepts a declared_amount at or above the 50% minimum deposit', async () => {
@@ -11,7 +11,7 @@ describe('buildBooking declared_amount clamp', () => {
       trip_id: trip._id.toString(),
       full_name: 'Guest',
       phone_number: '+201000000001',
-      booking_date: new Date(Date.now() + 86_400_000).toISOString(),
+      booking_date: futureBookingDate().toISOString(),
       local_guests: 1,
       foreigner_guests: 0,
       declared_amount: 100, // exactly 50% of 200
@@ -30,7 +30,7 @@ describe('buildBooking declared_amount clamp', () => {
       trip_id: trip._id.toString(),
       full_name: 'Guest',
       phone_number: '+201000000002',
-      booking_date: new Date(Date.now() + 86_400_000).toISOString(),
+      booking_date: futureBookingDate().toISOString(),
       local_guests: 1,
       foreigner_guests: 0,
       declared_amount: 10, // well under 50%
@@ -47,7 +47,7 @@ describe('buildBooking declared_amount clamp', () => {
       trip_id: trip._id.toString(),
       full_name: 'Guest',
       phone_number: '+201000000003',
-      booking_date: new Date(Date.now() + 86_400_000).toISOString(),
+      booking_date: futureBookingDate().toISOString(),
       local_guests: 1,
       foreigner_guests: 0,
       declared_amount: 999,
@@ -64,7 +64,7 @@ describe('buildBooking declared_amount clamp', () => {
       trip_id: trip._id.toString(),
       full_name: 'Guest',
       phone_number: '+201000000004',
-      booking_date: new Date(Date.now() + 86_400_000).toISOString(),
+      booking_date: futureBookingDate().toISOString(),
       local_guests: 1,
       foreigner_guests: 0,
     });

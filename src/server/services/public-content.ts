@@ -54,6 +54,7 @@ export interface PublicTrip {
   guide_price: number;
   guide_mandatory: boolean;
   duration: number;
+  duration_text?: { ar: string; en: string };
   max_guests: number;
   refundable: boolean;
   is_tour: boolean;
@@ -79,6 +80,16 @@ function toPublicDestination(json: Record<string, unknown>): PublicDestination {
     operating_hours: json.operating_hours as string | undefined,
     updated_at: json.updated_at as string | undefined,
   };
+}
+
+function isLocalizedDuration(
+  value: unknown,
+): value is { ar: string; en: string } {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) {
+    return false
+  }
+  const record = value as Record<string, unknown>
+  return typeof record.ar === "string" || typeof record.en === "string"
 }
 
 /**
@@ -119,6 +130,9 @@ function toPublicTrip(json: Record<string, unknown>, locale: string): PublicTrip
     guide_price: (json.guide_price as number) ?? 0,
     guide_mandatory: Boolean(json.guide_mandatory),
     duration: (json.duration as number) ?? 0,
+    duration_text: isLocalizedDuration(json.duration_text)
+      ? json.duration_text
+      : undefined,
     max_guests: json.max_guests as number,
     refundable: Boolean(json.refundable),
     is_tour: Boolean(json.is_tour),
