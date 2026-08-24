@@ -190,7 +190,12 @@ export function getBookingColumns({
       accessorKey: "status",
       header: bookingStrings.status,
       cell: ({ row }) => (
-        <StatusBadge status={row.original.status} type="booking" short />
+        <StatusBadge
+          status={row.original.status}
+          type="booking"
+          short
+          bookingDate={row.original.booking_date}
+        />
       ),
     },
   ]

@@ -15,7 +15,7 @@ import {
 import type { Booking, BookingStatus, Supplier, Trip } from "@/lib/types"
 import {
   bookingStatusMeta,
-  matchesStatusGroup,
+  effectiveBookingGroup,
   STATUS_GROUP_KEYS,
   statusGroupLabels,
   type BookingStatusGroup,
@@ -174,7 +174,7 @@ export function filterBookingsList(
     }
     if (
       filters.statusGroup !== "all" &&
-      !matchesStatusGroup(booking.status, filters.statusGroup)
+      effectiveBookingGroup(booking) !== filters.statusGroup
     ) {
       return false
     }

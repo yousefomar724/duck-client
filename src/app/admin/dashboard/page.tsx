@@ -170,7 +170,11 @@ export default function AdminDashboard() {
                         {formatCurrency(booking.amount, booking.currency)}
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={booking.status} type="booking" />
+                        <StatusBadge
+                          status={booking.status}
+                          type="booking"
+                          bookingDate={booking.booking_date}
+                        />
                       </TableCell>
                       <TableCell className="text-text-muted">
                         {formatDateTime(booking.booking_date ?? "")}
@@ -185,7 +189,14 @@ export default function AdminDashboard() {
               id: booking.ID,
               title: booking.full_name,
               subtitle: resolveLocalizedField(booking.trip?.name, "-"),
-              badge: <StatusBadge status={booking.status} type="booking" short />,
+              badge: (
+                <StatusBadge
+                  status={booking.status}
+                  type="booking"
+                  short
+                  bookingDate={booking.booking_date}
+                />
+              ),
               fields: [
                 {
                   label: "المبلغ",

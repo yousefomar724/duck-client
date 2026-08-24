@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge"
-import { bookingStatusMeta } from "@/lib/bookings/status"
+import { bookingBadgeMeta } from "@/lib/bookings/status"
 import { payoutStatusColors } from "@/lib/constants"
 import type { BookingStatus, PayoutStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -8,11 +8,16 @@ interface StatusBadgeProps {
   status: BookingStatus | PayoutStatus
   type: "booking" | "payout"
   short?: boolean
+  /** ISO booking date — lets the badge correct for cron lag (see `bookingBadgeMeta`). */
+  bookingDate?: string
 }
 
-export default function StatusBadge({ status, type, short = false }: StatusBadgeProps) {
+export default function StatusBadge({ status, type, short = false, bookingDate }: StatusBadgeProps) {
   if (type === "booking") {
-    const meta = bookingStatusMeta[status as BookingStatus]
+    const meta = bookingBadgeMeta({
+      status: status as BookingStatus,
+      booking_date: bookingDate,
+    })
     const Icon = meta?.icon
     const label =
       (short ? meta?.shortLabel : meta?.label) ??

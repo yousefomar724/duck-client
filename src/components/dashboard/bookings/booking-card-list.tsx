@@ -78,7 +78,12 @@ export function BookingCardList({
                   <User className="size-3.5 text-text-muted" />
                   {booking.full_name}
                 </p>
-                <StatusBadge status={booking.status} type="booking" short />
+                <StatusBadge
+                  status={booking.status}
+                  type="booking"
+                  short
+                  bookingDate={booking.booking_date}
+                />
               </div>
 
               <div className="flex items-center gap-2 text-sm">

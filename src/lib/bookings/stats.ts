@@ -1,6 +1,6 @@
 import type { Booking, BookingStatus } from "@/lib/types"
 import { amountPaid, remainingAmount, refundOwed } from "@/lib/bookings/payment"
-import { bookingStatusMeta, statusGroupStatuses } from "@/lib/bookings/status"
+import { effectiveBookingGroup, statusGroupStatuses } from "@/lib/bookings/status"
 
 export const REVENUE_STATUSES: readonly BookingStatus[] = [
   "CONFIRMED",
@@ -42,7 +42,7 @@ export interface BookingStats {
 
 type StatsBooking = Pick<
   Booking,
-  "status" | "amount" | "amount_paid" | "refund_owed"
+  "status" | "amount" | "amount_paid" | "refund_owed" | "booking_date"
 >
 
 export function computeBookingStats(bookings: StatsBooking[]): BookingStats {
@@ -58,7 +58,7 @@ export function computeBookingStats(bookings: StatsBooking[]): BookingStats {
   let totalValue = 0
 
   for (const booking of bookings) {
-    const group = bookingStatusMeta[booking.status]?.group
+    const group = effectiveBookingGroup(booking)
     if (group === "needsAction") needsActionCount += 1
     else if (group === "upcoming") upcoming += 1
     else if (group === "completed") completed += 1

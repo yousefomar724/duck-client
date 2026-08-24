@@ -160,6 +160,42 @@ export function isUpcoming(
   return new Date(booking.booking_date).getTime() >= now.getTime()
 }
 
+/**
+ * The daily release-bookings cron can lag up to ~24h behind a trip's actual
+ * end time (it only runs once, at 03:00 UTC). Rather than show a booking as
+ * "upcoming" for a day after it's already over, treat it as effectively
+ * completed on the client the moment its date passes — the DB status still
+ * flips to COMPLETED on the next cron run, this only affects display.
+ */
+export function isOverdueForCompletion(
+  booking: Pick<Booking, "status" | "booking_date">,
+  now = new Date(),
+): boolean {
+  return (
+    bookingStatusMeta[booking.status]?.group === "upcoming" &&
+    booking.booking_date != null &&
+    !isUpcoming(booking, now)
+  )
+}
+
+/** Group a booking actually belongs in for display, correcting for cron lag. */
+export function effectiveBookingGroup(
+  booking: Pick<Booking, "status" | "booking_date">,
+  now = new Date(),
+): BookingStatusGroup | undefined {
+  if (isOverdueForCompletion(booking, now)) return "completed"
+  return bookingStatusMeta[booking.status]?.group
+}
+
+/** Badge appearance for a booking, correcting for cron lag (see `isOverdueForCompletion`). */
+export function bookingBadgeMeta(
+  booking: Pick<Booking, "status" | "booking_date">,
+  now = new Date(),
+): BookingStatusMeta | undefined {
+  if (isOverdueForCompletion(booking, now)) return bookingStatusMeta.COMPLETED
+  return bookingStatusMeta[booking.status]
+}
+
 export function canAdminCancelBooking(status: string): boolean {
   return (
     status === "PENDING" ||

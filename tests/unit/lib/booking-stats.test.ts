@@ -86,6 +86,15 @@ describe('computeBookingStats', () => {
     expect(stats.netCollected).toBe(0);
   });
 
+  it('reclassifies a CONFIRMED booking whose date has passed as completed, not upcoming', () => {
+    const stats = computeBookingStats([
+      { status: 'CONFIRMED', amount: 200, amount_paid: 200, refund_owed: 0, booking_date: '2020-01-01T00:00:00.000Z' },
+      { status: 'CONFIRMED', amount: 200, amount_paid: 200, refund_owed: 0, booking_date: '2999-01-01T00:00:00.000Z' },
+    ]);
+    expect(stats.completed).toBe(1);
+    expect(stats.upcoming).toBe(1);
+  });
+
   it('totalValue excludes cancelled/failed/refunded but includes pending and refund-in-progress', () => {
     const stats = computeBookingStats([
       booking('PENDING', 100),
