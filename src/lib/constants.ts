@@ -3,16 +3,20 @@ import {
   MapPin,
   Wallet,
   CalendarCheck,
+  CalendarDays,
   Ship,
   Users,
   Package,
   User,
   MessageSquare,
+  Bell,
+  MoreHorizontal,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react"
 import { SITE_TIME_ZONE } from "./time"
 import { tripDurationText } from "./trips/duration"
-import type { BookingStatus, Payout, PayoutStatus } from "./types"
+import type { Payout, PayoutStatus } from "./types"
 
 export interface NavItem {
   title: string
@@ -25,9 +29,14 @@ export const CLIENTS_COUNT = 1200
 
 export const adminNavItems: NavItem[] = [
   {
-    title: "لوحة التحكم",
-    href: "/admin/dashboard",
+    title: "الرئيسية",
+    href: "/admin",
     icon: LayoutDashboard,
+  },
+  {
+    title: "التقويم",
+    href: "/admin/calendar",
+    icon: CalendarDays,
   },
   {
     title: "الوجهات",
@@ -64,9 +73,29 @@ export const adminNavItems: NavItem[] = [
     href: "/admin/feedback",
     icon: MessageSquare,
   },
+  {
+    title: "التنبيهات",
+    href: "/admin/notifications",
+    icon: Bell,
+  },
+  {
+    title: "التقارير",
+    href: "/admin/reports",
+    icon: BarChart3,
+  },
 ]
 
 export const supplierNavItems: NavItem[] = [
+  {
+    title: "الرئيسية",
+    href: "/supplier",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "التقويم",
+    href: "/supplier/calendar",
+    icon: CalendarDays,
+  },
   {
     title: "رحلاتي",
     href: "/supplier/my-trips",
@@ -87,62 +116,45 @@ export const supplierNavItems: NavItem[] = [
     href: "/supplier/storage",
     icon: Package,
   },
+  {
+    title: "التنبيهات",
+    href: "/supplier/notifications",
+    icon: Bell,
+  },
+  {
+    title: "التقارير",
+    href: "/supplier/reports",
+    icon: BarChart3,
+  },
+  {
+    title: "العملاء",
+    href: "/supplier/customers",
+    icon: Users,
+  },
 ]
 
-export const bookingStatusColors: Record<
-  BookingStatus,
-  { bg: string; text: string; label: string }
-> = {
-  PENDING: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-800",
-    label: "قيد الانتظار",
-  },
-  CONFIRMED: {
-    bg: "bg-duck-cyan/10",
-    text: "text-duck-cyan",
-    label: "مؤكد",
-  },
-  CANCELLED: {
-    bg: "bg-red-100",
-    text: "text-red-800",
-    label: "ملغي",
-  },
-  FAILED: {
-    bg: "bg-red-100",
-    text: "text-red-800",
-    label: "فشل",
-  },
-  SUCCESS: {
-    bg: "bg-green-100",
-    text: "text-green-800",
-    label: "نجح",
-  },
-  REFUND_PENDING: {
-    bg: "bg-amber-100",
-    text: "text-amber-900",
-    label: "في انتظار الاسترداد",
-  },
-  REFUNDED: {
-    bg: "bg-slate-100",
-    text: "text-slate-800",
-    label: "تم الاسترداد",
-  },
-  REFUND_FAILED: {
-    bg: "bg-red-100",
-    text: "text-red-900",
-    label: "فشل الاسترداد",
-  },
-  COMPLETED: {
-    bg: "bg-emerald-100",
-    text: "text-emerald-800",
-    label: "مكتمل",
-  },
-  PAID: {
-    bg: "bg-teal-100",
-    text: "text-teal-800",
-    label: "مدفوع",
-  },
+export const adminBottomNavItems: NavItem[] = [
+  { title: "الرئيسية", href: "/admin", icon: LayoutDashboard },
+  { title: "التقويم", href: "/admin/calendar", icon: CalendarDays },
+  { title: "الحجوزات", href: "/admin/bookings", icon: CalendarCheck },
+  { title: "التنبيهات", href: "/admin/notifications", icon: Bell },
+  { title: "المزيد", href: "/admin/more", icon: MoreHorizontal },
+]
+
+export const supplierBottomNavItems: NavItem[] = [
+  { title: "الرئيسية", href: "/supplier", icon: LayoutDashboard },
+  { title: "التقويم", href: "/supplier/calendar", icon: CalendarDays },
+  { title: "الحجوزات", href: "/supplier/bookings", icon: CalendarCheck },
+  { title: "التنبيهات", href: "/supplier/notifications", icon: Bell },
+  { title: "المزيد", href: "/supplier/more", icon: MoreHorizontal },
+]
+
+const NAV_EXACT_HREFS = new Set(["/admin", "/supplier", "/admin/more", "/supplier/more"])
+
+/** Prefix match, with an exact-match special case for dashboard home paths. */
+export function isNavItemActive(pathname: string, href: string): boolean {
+  if (NAV_EXACT_HREFS.has(href)) return pathname === href
+  return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 export const payoutStatusColors: Record<

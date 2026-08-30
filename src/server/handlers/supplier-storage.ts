@@ -25,7 +25,7 @@ export async function setStorage(request: Request) {
   const supplier = await Supplier.findOne({ user_id: session.user_id });
   if (!supplier) return errorResponse(400, 'User is not a supplier');
 
-  let body: { resources?: Record<string, number> };
+  let body: { resources?: Record<string, number>; maintenance?: Record<string, number>; turnaround_minutes?: number };
   try {
     body = await request.json();
   } catch {
@@ -44,12 +44,30 @@ export async function setStorage(request: Request) {
         `invalid resource type: ${key}. Allowed types: kayak, water_cycle, sup`,
       );
     }
+    resources[key] = Math.max(0, Math.floor(Number(resources[key]) || 0));
+  }
+
+  const maintenance: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(body.maintenance ?? {})) {
+    if (!isValidResourceType(key)) {
+      return errorResponse(
+        500,
+        `invalid resource type: ${key}. Allowed types: kayak, water_cycle, sup`,
+      );
+    }
+    const cap = resources[key] ?? 0;
+    maintenance[key] = Math.max(0, Math.min(cap, Math.floor(Number(raw) || 0)));
   }
 
   try {
+    const update: Record<string, unknown> = { supplier_id: supplier._id, resources, maintenance };
+    if (body.turnaround_minutes != null) {
+      update.turnaround_minutes = Math.max(0, Math.floor(Number(body.turnaround_minutes) || 0));
+    }
+
     const storage = await SupplierStorage.findOneAndUpdate(
       { supplier_id: supplier._id },
-      { supplier_id: supplier._id, resources },
+      update,
       { upsert: true, new: true },
     );
     return NextResponse.json(storage);

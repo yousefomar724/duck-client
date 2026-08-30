@@ -4,8 +4,11 @@ import {
   CheckCircle,
   CircleDollarSign,
   Clock,
+  Play,
   RefreshCw,
   RotateCcw,
+  UserCheck,
+  UserX,
   XCircle,
   type LucideIcon,
 } from "lucide-react"
@@ -107,6 +110,30 @@ export const bookingStatusMeta: Record<BookingStatus, BookingStatusMeta> = {
     group: "upcoming",
     icon: CircleDollarSign,
   },
+  ARRIVED: {
+    bg: "bg-sky-100",
+    text: "text-sky-800",
+    label: "وصل",
+    shortLabel: "وصل",
+    group: "upcoming",
+    icon: UserCheck,
+  },
+  IN_PROGRESS: {
+    bg: "bg-indigo-100",
+    text: "text-indigo-800",
+    label: "جارية",
+    shortLabel: "جارية",
+    group: "upcoming",
+    icon: Play,
+  },
+  NO_SHOW: {
+    bg: "bg-slate-200",
+    text: "text-slate-700",
+    label: "لم يحضر",
+    shortLabel: "لم يحضر",
+    group: "cancelled",
+    icon: UserX,
+  },
 }
 
 export const ALL_BOOKING_STATUSES = Object.keys(
@@ -133,9 +160,9 @@ export const statusGroupStatuses: Record<
   BookingStatus[]
 > = {
   needsAction: ["PENDING", "REFUND_PENDING", "REFUND_FAILED"],
-  upcoming: ["CONFIRMED", "PAID", "SUCCESS"],
+  upcoming: ["CONFIRMED", "PAID", "SUCCESS", "ARRIVED", "IN_PROGRESS"],
   completed: ["COMPLETED"],
-  cancelled: ["CANCELLED", "FAILED", "REFUNDED"],
+  cancelled: ["CANCELLED", "FAILED", "REFUNDED", "NO_SHOW"],
 }
 
 export function needsAction(booking: Pick<Booking, "status">): boolean {
@@ -150,37 +177,38 @@ export function matchesStatusGroup(
   return statusGroupStatuses[group].includes(status)
 }
 
-/** Upcoming group and the trip has not started yet. Cron lag can leave CONFIRMED in the past. */
+/** Upcoming group and the trip has not ended yet. Cron lag can leave CONFIRMED in the past. */
 export function isUpcoming(
-  booking: Pick<Booking, "status" | "booking_date">,
+  booking: Pick<Booking, "status" | "booking_date" | "ends_at">,
   now = new Date(),
 ): boolean {
   if (bookingStatusMeta[booking.status]?.group !== "upcoming") return false
-  if (!booking.booking_date) return false
-  return new Date(booking.booking_date).getTime() >= now.getTime()
+  const end = booking.ends_at ?? booking.booking_date
+  if (!end) return false
+  return new Date(end).getTime() >= now.getTime()
 }
 
 /**
  * The daily release-bookings cron can lag up to ~24h behind a trip's actual
  * end time (it only runs once, at 03:00 UTC). Rather than show a booking as
  * "upcoming" for a day after it's already over, treat it as effectively
- * completed on the client the moment its date passes — the DB status still
- * flips to COMPLETED on the next cron run, this only affects display.
+ * completed on the client the moment its occupancy window ends — the DB
+ * status still flips to COMPLETED on the next sweep, this only affects display.
  */
 export function isOverdueForCompletion(
-  booking: Pick<Booking, "status" | "booking_date">,
+  booking: Pick<Booking, "status" | "booking_date" | "ends_at">,
   now = new Date(),
 ): boolean {
   return (
     bookingStatusMeta[booking.status]?.group === "upcoming" &&
-    booking.booking_date != null &&
+    (booking.ends_at != null || booking.booking_date != null) &&
     !isUpcoming(booking, now)
   )
 }
 
 /** Group a booking actually belongs in for display, correcting for cron lag. */
 export function effectiveBookingGroup(
-  booking: Pick<Booking, "status" | "booking_date">,
+  booking: Pick<Booking, "status" | "booking_date" | "ends_at">,
   now = new Date(),
 ): BookingStatusGroup | undefined {
   if (isOverdueForCompletion(booking, now)) return "completed"
@@ -189,7 +217,7 @@ export function effectiveBookingGroup(
 
 /** Badge appearance for a booking, correcting for cron lag (see `isOverdueForCompletion`). */
 export function bookingBadgeMeta(
-  booking: Pick<Booking, "status" | "booking_date">,
+  booking: Pick<Booking, "status" | "booking_date" | "ends_at">,
   now = new Date(),
 ): BookingStatusMeta | undefined {
   if (isOverdueForCompletion(booking, now)) return bookingStatusMeta.COMPLETED
@@ -213,12 +241,26 @@ export function canEditBooking(status: string): boolean {
   return status === "PENDING" || status === "CONFIRMED"
 }
 
+/** Dock-side status changes. Anything else is a 409. */
+export const BOOKING_STATUS_TRANSITIONS: Partial<
+  Record<BookingStatus, BookingStatus[]>
+> = {
+  CONFIRMED: ["ARRIVED", "NO_SHOW"],
+  PAID: ["ARRIVED", "NO_SHOW"],
+  SUCCESS: ["ARRIVED", "NO_SHOW"],
+  ARRIVED: ["IN_PROGRESS", "NO_SHOW"],
+  IN_PROGRESS: ["COMPLETED"],
+}
+
 /** Statuses where the supplier can still record money against the booking. */
 export const SETTLEABLE_STATUSES: BookingStatus[] = [
   "CONFIRMED",
   "COMPLETED",
   "SUCCESS",
   "PAID",
+  "ARRIVED",
+  "IN_PROGRESS",
+  "NO_SHOW",
 ]
 
 export function canCollectBalance(status: string): boolean {

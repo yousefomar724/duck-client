@@ -7,6 +7,8 @@ export const REVENUE_STATUSES: readonly BookingStatus[] = [
   "PAID",
   "SUCCESS",
   "COMPLETED",
+  "ARRIVED",
+  "IN_PROGRESS",
 ]
 
 const REVENUE_SET = new Set<string>(REVENUE_STATUSES)
@@ -42,7 +44,7 @@ export interface BookingStats {
 
 type StatsBooking = Pick<
   Booking,
-  "status" | "amount" | "amount_paid" | "refund_owed" | "booking_date"
+  "status" | "amount" | "amount_paid" | "refund_owed" | "booking_date" | "ends_at"
 >
 
 export function computeBookingStats(bookings: StatsBooking[]): BookingStats {

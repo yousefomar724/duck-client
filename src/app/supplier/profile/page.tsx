@@ -66,6 +66,10 @@ export default function SupplierProfilePage() {
   const [kayak, setKayak] = useState("0")
   const [waterCycle, setWaterCycle] = useState("0")
   const [sup, setSup] = useState("0")
+  const [kayakMaint, setKayakMaint] = useState("0")
+  const [waterCycleMaint, setWaterCycleMaint] = useState("0")
+  const [supMaint, setSupMaint] = useState("0")
+  const [turnaround, setTurnaround] = useState("15")
 
   const load = useCallback(async () => {
     if (!supplierId) return
@@ -90,9 +94,14 @@ export default function SupplierProfilePage() {
       await supplierStorageApi.getStorage(supplierId)
     if (storageData?.resources) {
       const r = parseResources(storageData.resources)
+      const m = parseResources(storageData.maintenance)
       setKayak(String(r.kayak ?? 0))
       setWaterCycle(String(r.water_cycle ?? 0))
       setSup(String(r.sup ?? 0))
+      setKayakMaint(String(m.kayak ?? 0))
+      setWaterCycleMaint(String(m.water_cycle ?? 0))
+      setSupMaint(String(m.sup ?? 0))
+      setTurnaround(String(storageData.turnaround_minutes ?? 15))
     }
 
     setLoading(false)
@@ -155,7 +164,18 @@ export default function SupplierProfilePage() {
     }
 
     setSavingStorage(true)
-    const { error } = await supplierStorageApi.setStorage({ resources })
+    const { error } = await supplierStorageApi.setStorage({
+      resources,
+      maintenance: {
+        kayak: Math.min(resources.kayak, Math.max(0, parseInt(kayakMaint, 10) || 0)),
+        water_cycle: Math.min(
+          resources.water_cycle,
+          Math.max(0, parseInt(waterCycleMaint, 10) || 0),
+        ),
+        sup: Math.min(resources.sup, Math.max(0, parseInt(supMaint, 10) || 0)),
+      },
+      turnaround_minutes: Math.max(0, parseInt(turnaround, 10) || 0),
+    })
     setSavingStorage(false)
     if (error) {
       addToast(error, "error")
@@ -315,6 +335,46 @@ export default function SupplierProfilePage() {
               <div className="space-y-2">
                 <Label htmlFor="sup">{labels.sup}</Label>
                 <QuantityStepper id="sup" value={sup} onChange={setSup} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="kayak-maint">{labels.kayak} — صيانة</Label>
+                <QuantityStepper
+                  id="kayak-maint"
+                  value={kayakMaint}
+                  onChange={setKayakMaint}
+                  max={Math.max(0, parseInt(kayak, 10) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="water_cycle-maint">{labels.water_cycle} — صيانة</Label>
+                <QuantityStepper
+                  id="water_cycle-maint"
+                  value={waterCycleMaint}
+                  onChange={setWaterCycleMaint}
+                  max={Math.max(0, parseInt(waterCycle, 10) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sup-maint">{labels.sup} — صيانة</Label>
+                <QuantityStepper
+                  id="sup-maint"
+                  value={supMaint}
+                  onChange={setSupMaint}
+                  max={Math.max(0, parseInt(sup, 10) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="turnaround">وقت التجهيز (دقائق)</Label>
+                <Input
+                  id="turnaround"
+                  type="number"
+                  min={0}
+                  step={5}
+                  dir="ltr"
+                  className="h-11!"
+                  value={turnaround}
+                  onChange={(e) => setTurnaround(e.target.value)}
+                />
               </div>
             </div>
 

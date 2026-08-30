@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import PageHeader from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import * as supplierStorageApi from "@/lib/api/supplier-storage"
 import { useAuth } from "@/lib/stores/auth-store"
@@ -11,6 +12,8 @@ import { QuantityStepper } from "@/components/dashboard/quantity-stepper"
 import { MobileActionBar } from "@/components/dashboard/mobile-action-bar"
 import { DetailPageSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
+import { EquipmentView } from "@/components/dashboard/ops/equipment-view"
+import { opsStrings } from "@/components/dashboard/ops/ops-strings"
 import type { ResourceType } from "@/lib/types"
 
 const labels: Record<ResourceType, string> = {
@@ -42,9 +45,14 @@ export default function SupplierStoragePage() {
   const [kayak, setKayak] = useState("0")
   const [waterCycle, setWaterCycle] = useState("0")
   const [sup, setSup] = useState("0")
+  const [kayakMaint, setKayakMaint] = useState("0")
+  const [waterCycleMaint, setWaterCycleMaint] = useState("0")
+  const [supMaint, setSupMaint] = useState("0")
+  const [turnaround, setTurnaround] = useState("15")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [refreshToken, setRefreshToken] = useState(0)
 
   const load = useCallback(async () => {
     if (supplierId == null) {
@@ -61,15 +69,24 @@ export default function SupplierStoragePage() {
         setKayak("0")
         setWaterCycle("0")
         setSup("0")
+        setKayakMaint("0")
+        setWaterCycleMaint("0")
+        setSupMaint("0")
+        setTurnaround("15")
         return
       }
       setError(err)
       return
     }
     const r = parseResources(data?.resources)
+    const m = parseResources(data?.maintenance)
     setKayak(String(r.kayak ?? 0))
     setWaterCycle(String(r.water_cycle ?? 0))
     setSup(String(r.sup ?? 0))
+    setKayakMaint(String(m.kayak ?? 0))
+    setWaterCycleMaint(String(m.water_cycle ?? 0))
+    setSupMaint(String(m.sup ?? 0))
+    setTurnaround(String(data?.turnaround_minutes ?? 15))
   }, [supplierId])
 
   useEffect(() => {
@@ -90,8 +107,20 @@ export default function SupplierStoragePage() {
       addToast("أدخل سعة واحدة على الأقل لنوع المعدات", "error")
       return
     }
+    const maintenance = {
+      kayak: Math.min(resources.kayak, Math.max(0, parseInt(kayakMaint, 10) || 0)),
+      water_cycle: Math.min(
+        resources.water_cycle,
+        Math.max(0, parseInt(waterCycleMaint, 10) || 0),
+      ),
+      sup: Math.min(resources.sup, Math.max(0, parseInt(supMaint, 10) || 0)),
+    }
     setSaving(true)
-    const { error: err } = await supplierStorageApi.setStorage({ resources })
+    const { error: err } = await supplierStorageApi.setStorage({
+      resources,
+      maintenance,
+      turnaround_minutes: Math.max(0, parseInt(turnaround, 10) || 0),
+    })
     setSaving(false)
     if (err) {
       addToast(err, "error")
@@ -100,13 +129,14 @@ export default function SupplierStoragePage() {
     addToast("تم حفظ سعة المعدات", "success")
     await refreshOnboardingStatus()
     await load()
+    setRefreshToken((n) => n + 1)
   }
 
   if (loading) {
     return (
       <div className="space-y-6 max-w-lg">
         <PageHeader
-          title="سعة المعدات"
+          title={opsStrings.equipment}
           description="حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة."
         />
         <DetailPageSkeleton />
@@ -118,7 +148,7 @@ export default function SupplierStoragePage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="سعة المعدات"
+          title={opsStrings.equipment}
           description="حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة."
         />
         <ErrorDisplay error={error} />
@@ -130,7 +160,7 @@ export default function SupplierStoragePage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="سعة المعدات"
+          title={opsStrings.equipment}
           description="حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة."
         />
         <ErrorDisplay error={error} onRetry={load} />
@@ -138,17 +168,34 @@ export default function SupplierStoragePage() {
     )
   }
 
+  const kayakN = Math.max(0, parseInt(kayak, 10) || 0)
+  const waterN = Math.max(0, parseInt(waterCycle, 10) || 0)
+  const supN = Math.max(0, parseInt(sup, 10) || 0)
+
   return (
     <div className="max-w-lg space-y-8 pb-24 md:pb-0">
       <PageHeader
-        title="سعة المعدات"
+        title={opsStrings.equipment}
         description="حدد الحد الأقصى لكل نوع معدات متاح للحجز كل ساعة (كاياك، دراجة مائية، SUP). يُستخدم ذلك لاحتساب التوفر عند الحجز."
       />
+
+      <EquipmentView refreshToken={refreshToken} />
 
       <div className="space-y-4 rounded-xl border bg-white p-6">
         <div className="space-y-2">
           <Label htmlFor="kayak">{labels.kayak}</Label>
           <QuantityStepper id="kayak" value={kayak} onChange={setKayak} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="kayak-maint">
+            {labels.kayak} — {opsStrings.maintenance}
+          </Label>
+          <QuantityStepper
+            id="kayak-maint"
+            value={kayakMaint}
+            onChange={setKayakMaint}
+            max={kayakN}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="water_cycle">{labels.water_cycle}</Label>
@@ -159,8 +206,43 @@ export default function SupplierStoragePage() {
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="water_cycle-maint">
+            {labels.water_cycle} — {opsStrings.maintenance}
+          </Label>
+          <QuantityStepper
+            id="water_cycle-maint"
+            value={waterCycleMaint}
+            onChange={setWaterCycleMaint}
+            max={waterN}
+          />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="sup">{labels.sup}</Label>
           <QuantityStepper id="sup" value={sup} onChange={setSup} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="sup-maint">
+            {labels.sup} — {opsStrings.maintenance}
+          </Label>
+          <QuantityStepper
+            id="sup-maint"
+            value={supMaint}
+            onChange={setSupMaint}
+            max={supN}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="turnaround">{opsStrings.turnaround}</Label>
+          <Input
+            id="turnaround"
+            type="number"
+            min={0}
+            step={5}
+            dir="ltr"
+            className="h-11!"
+            value={turnaround}
+            onChange={(e) => setTurnaround(e.target.value)}
+          />
         </div>
 
         <Button

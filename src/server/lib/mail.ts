@@ -36,6 +36,11 @@ function formatBookingStatusAr(status: string): string {
     REFUNDED: 'مسترد',
     REFUND_PENDING: 'في انتظار الاسترداد',
     REFUND_FAILED: 'فشل الاسترداد',
+    ARRIVED: 'وصل',
+    IN_PROGRESS: 'جارية',
+    NO_SHOW: 'لم يحضر',
+    PAID: 'مدفوع',
+    COMPLETED: 'منتهية',
   };
   return map[status] ?? status;
 }

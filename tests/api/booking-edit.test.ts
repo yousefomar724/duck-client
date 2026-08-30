@@ -16,6 +16,8 @@ import {
 import { jsonRequest } from '../utils/http';
 import { Booking } from '@/server/models/booking';
 import { Wallet } from '@/server/models/wallet';
+import { siteWallTimeToUtc, toSiteYmd } from '@/lib/time';
+import { computeOccupancy } from '@/lib/booking/occupancy';
 
 describe('booking edit cancel delete routes', () => {
   it('reduces guests and sets refund_owed with wallet debit', async () => {
@@ -345,5 +347,61 @@ describe('booking edit cancel delete routes', () => {
     expect(body.booking.adults).toBe(2);
     expect(body.booking.kids_1_6).toBe(1);
     expect(body.booking.quantity).toBe(3);
+  });
+
+  it('lets a booking move from a full 09:00 slot to 15:00', async () => {
+    const previous = process.env.OPS_HOURLY_CAPACITY;
+    process.env.OPS_HOURLY_CAPACITY = '1';
+    try {
+      const { supplier, user: supplierUser } = await createSupplierUser();
+      const trip = await createTrip(supplier._id, { activity_minutes: 60, max_guests: 10 });
+      await createSupplierStorage(supplier._id, { kayak: 2 });
+      const ymd = toSiteYmd(futureBookingDate());
+      const nine = siteWallTimeToUtc(ymd, 9, 0);
+      const occupancy = computeOccupancy({
+        startsAt: nine,
+        isTour: false,
+        durationDays: 1,
+        activityMinutes: 60,
+        turnaroundMinutes: 0,
+      });
+
+      await createBooking({
+        trip_id: trip._id,
+        supplier_id: supplier._id,
+        status: 'CONFIRMED',
+        quantity: 1,
+        local_guests: 1,
+        resource_type: 'kayak',
+        booking_date: nine,
+        ...occupancy,
+      });
+
+      const movable = await createBooking({
+        trip_id: trip._id,
+        supplier_id: supplier._id,
+        status: 'CONFIRMED',
+        quantity: 1,
+        local_guests: 1,
+        resource_type: 'kayak',
+        booking_date: nine,
+        ...occupancy,
+      });
+
+      const res = await updateBooking(
+        jsonRequest(`http://localhost/api/v1/bookings/${movable.id}`, {
+          method: 'PATCH',
+          headers: authHeader(supplierUser.id, supplierUser.role),
+          body: { booking_date: siteWallTimeToUtc(ymd, 15, 0).toISOString() },
+        }),
+        { params: Promise.resolve({ id: movable.id }) },
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(toSiteYmd(new Date(body.booking.booking_date))).toBe(ymd);
+    } finally {
+      if (previous === undefined) delete process.env.OPS_HOURLY_CAPACITY;
+      else process.env.OPS_HOURLY_CAPACITY = previous;
+    }
   });
 });

@@ -10,8 +10,9 @@ export function MobileActionBar({ children, className }: MobileActionBarProps) {
   return (
     <div
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 pt-3 md:hidden",
-        "pb-[max(0.75rem,env(safe-area-inset-bottom))]",
+        "fixed inset-x-0 z-40 border-t bg-background/95 px-4 pt-3 md:hidden",
+        "bottom-[var(--bottom-nav-h,0px)]",
+        "pb-3",
         className,
       )}
     >

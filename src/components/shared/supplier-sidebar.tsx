@@ -25,7 +25,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import Logo from "./logo"
-import { supplierNavItems } from "@/lib/constants"
+import { isNavItemActive, supplierNavItems } from "@/lib/constants"
 import * as suppliersApi from "@/lib/api/suppliers"
 import { resolveImageUrl } from "@/lib/image-utils"
 import { cn } from "@/lib/utils"
@@ -203,7 +203,7 @@ export default function SupplierSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {supplierNavItems.map((item) => {
-                const isActive = pathname === item.href
+                const isActive = isNavItemActive(pathname ?? "", item.href)
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild isActive={isActive}>

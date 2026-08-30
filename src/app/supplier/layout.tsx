@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 import { dashboardStrings } from "@/lib/dashboard/strings"
 import { UserMenu } from "@/components/shared/user-menu"
+import { MobileBottomNav } from "@/components/dashboard/mobile-bottom-nav"
 
 export default function SupplierLayout({
   children,
@@ -59,7 +60,8 @@ export default function SupplierLayout({
             <UserMenu variant="dashboard" />
           </div>
         </header>
-        <main className="flex-1 p-4 sm:p-6">{content}</main>
+        <main className="flex-1 p-4 pb-[calc(var(--bottom-nav-h,0px)+1rem)] sm:p-6 md:pb-6">{content}</main>
+        <MobileBottomNav role="supplier" />
       </SidebarInset>
     </SidebarProvider>
     </RtlPanel>

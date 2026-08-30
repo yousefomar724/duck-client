@@ -38,9 +38,9 @@ export function UserMenu({
   const initial = (displayName.charAt(0) || "?").toUpperCase()
   const dashboardHref =
     effectiveRole === 2
-      ? "/admin/bookings"
+      ? "/admin"
       : effectiveRole === 1
-        ? "/supplier/bookings"
+        ? "/supplier"
         : null
   // `/profile` is guarded by ProtectedRoute allowedRoles={[0]}, so suppliers get
   // their own page and admins (who have none) get no profile entry at all.

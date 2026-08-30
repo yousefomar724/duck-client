@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/server/db/connect';
-import { Booking } from '@/server/models/booking';
 import { errorResponse } from '@/server/lib/json';
+import { releaseEndedBookings } from '@/server/services/availability';
 
 /**
- * Replaces the Go 24h ticker (`StartBookingCron`). Finds active bookings
- * whose trip has ended (booking_date + trip.duration days < now), marks
- * them COMPLETED, freeing the resources they held. Call on a schedule
- * (see vercel.json) with `Authorization: Bearer <CRON_SECRET>`.
+ * Backstop for same-day hourly rentals. Vercel Hobby crons run once daily,
+ * so `releaseEndedBookings` is also invoked from ops reads and
+ * `checkAvailability`. Completes bookings whose frozen `ends_at` is past.
+ * Call with `Authorization: Bearer <CRON_SECRET>`.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -19,23 +19,7 @@ export async function GET(request: Request) {
   await dbConnect();
 
   try {
-    const now = new Date();
-    const candidates = await Booking.find({ status: { $in: ['CONFIRMED', 'SUCCESS', 'PAID'] } }).populate(
-      'trip_id',
-    );
-
-    let releasedCount = 0;
-    for (const booking of candidates) {
-      const trip = booking.trip_id as unknown as { duration?: number } | null;
-      const duration = trip?.duration ?? 0;
-      const endsAt = new Date(booking.booking_date.getTime() + duration * 24 * 60 * 60 * 1000);
-      if (endsAt < now) {
-        booking.status = 'COMPLETED';
-        await booking.save();
-        releasedCount += 1;
-      }
-    }
-
+    const releasedCount = await releaseEndedBookings();
     return NextResponse.json({ released_count: releasedCount });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'failed to release bookings';

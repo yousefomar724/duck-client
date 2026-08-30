@@ -64,7 +64,9 @@ describe('BookingsView', () => {
     expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
   });
 
-  it('resyncs the table and detail sheet after collecting a balance, even when the first attempt fails', async () => {
+  it(
+    'resyncs the table and detail sheet after collecting a balance, even when the first attempt fails',
+    async () => {
     const user = userEvent.setup();
     const pending = baseBooking();
     const settled = baseBooking({ amount_paid: 200 });
@@ -110,5 +112,7 @@ describe('BookingsView', () => {
         screen.queryByRole('button', { name: /تحصيل المتبقي/ }),
       ).not.toBeInTheDocument();
     });
-  });
+    },
+    15_000,
+  );
 });

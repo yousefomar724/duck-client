@@ -4,7 +4,7 @@ import { dbConnect } from '@/server/db/connect';
 import { optionalAuth } from '@/server/auth/guard';
 import { Booking } from '@/server/models/booking';
 import { Supplier } from '@/server/models/supplier';
-import { buildBooking, toBookingEmailData, type CreateBookingInput } from '@/server/services/booking';
+import { buildBooking, persistCreatedBooking, toBookingEmailData, type CreateBookingInput } from '@/server/services/booking';
 import { NoAvailabilityError } from '@/server/services/availability';
 import { sendSupplierNewManualBookingEmail } from '@/server/lib/mail';
 import { errorResponse } from '@/server/lib/json';
@@ -27,6 +27,7 @@ const manualBookingSchema = z.object({
   adults: z.number().int().min(0).optional(),
   kids_1_6: z.number().int().min(0).optional(),
   kids_7_12: z.number().int().min(0).optional(),
+  source: z.enum(['online', 'walk_in']).optional(),
 });
 
 export async function POST(request: Request) {
@@ -51,10 +52,17 @@ export async function POST(request: Request) {
     return errorResponse(400, 'Invalid input');
   }
   const body = parsed.data as CreateBookingInput;
+  if (body.source === 'walk_in') {
+    if (!session || (session.role !== 1 && session.role !== 2)) {
+      return errorResponse(403, 'walk_in source is restricted to staff');
+    }
+  } else {
+    body.source = 'online';
+  }
 
   try {
     const built = await buildBooking(session?.user_id ?? null, body);
-    const booking = await Booking.create(built);
+    const booking = await persistCreatedBooking(built);
 
     const populated = await Booking.findById(booking._id)
       .populate({ path: 'trip_id', populate: { path: 'destination_ids' } })
@@ -80,7 +88,7 @@ export async function POST(request: Request) {
     );
   } catch (err) {
     if (err instanceof NoAvailabilityError) {
-      return errorResponse(409, err.message);
+      return errorResponse(409, err.message, { code: err.code });
     }
     const message = err instanceof Error ? err.message : 'failed to create booking';
     return errorResponse(500, message);

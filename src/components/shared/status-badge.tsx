@@ -10,13 +10,15 @@ interface StatusBadgeProps {
   short?: boolean
   /** ISO booking date — lets the badge correct for cron lag (see `bookingBadgeMeta`). */
   bookingDate?: string
+  endsAt?: string
 }
 
-export default function StatusBadge({ status, type, short = false, bookingDate }: StatusBadgeProps) {
+export default function StatusBadge({ status, type, short = false, bookingDate, endsAt }: StatusBadgeProps) {
   if (type === "booking") {
     const meta = bookingBadgeMeta({
       status: status as BookingStatus,
       booking_date: bookingDate,
+      ends_at: endsAt,
     })
     const Icon = meta?.icon
     const label =

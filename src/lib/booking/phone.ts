@@ -16,3 +16,13 @@ export function localEgyptMobileToE164(localDigits: string): string {
   const d = localDigits.replace(/\D/g, '');
   return `+20${d.slice(1)}`;
 }
+
+/** Digits for `https://wa.me/<digits>` (no plus). */
+export function phoneToWhatsAppDigits(phone: string): string | null {
+  const local = parseStoredPhoneToLocal(phone);
+  if (local) return `20${local.slice(1)}`;
+  const d = phone.replace(/\D/g, '');
+  if (d.startsWith('20') && d.length >= 11) return d;
+  if (d.length >= 10) return d;
+  return null;
+}

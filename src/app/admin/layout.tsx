@@ -19,6 +19,7 @@ import AdminSidebar from "@/components/shared/admin-sidebar"
 import { UserMenu } from "@/components/shared/user-menu"
 import { RtlPanel } from "@/components/shared/rtl-panel"
 import { ProtectedRoute } from "@/components/shared/protected-route"
+import { MobileBottomNav } from "@/components/dashboard/mobile-bottom-nav"
 
 export default function AdminLayout({
   children,
@@ -48,7 +49,8 @@ export default function AdminLayout({
               <UserMenu variant="dashboard" />
             </div>
           </header>
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <main className="flex-1 p-4 pb-[calc(var(--bottom-nav-h,0px)+1rem)] sm:p-6 md:pb-6">{children}</main>
+          <MobileBottomNav role="admin" />
         </SidebarInset>
       </SidebarProvider>
       </RtlPanel>

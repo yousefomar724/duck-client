@@ -83,6 +83,30 @@ export async function getBookings(params?: {
   return apiClient<Booking[]>(`/bookings${qs ? `?${qs}` : ''}`, { method: 'GET' })
 }
 
+export async function getBookingsPage(params: {
+  page: number
+  limit?: number
+  supplier_id?: string
+  status?: string
+  from?: string
+  to?: string
+  q?: string
+  resource_type?: string
+  sort?: string
+}): Promise<ApiResponse<{ items: Booking[]; total: number; page: number; limit: number }>> {
+  const search = new URLSearchParams()
+  search.set('page', String(params.page))
+  if (params.limit != null) search.set('limit', String(params.limit))
+  if (params.supplier_id) search.set('supplier_id', params.supplier_id)
+  if (params.status) search.set('status', params.status)
+  if (params.from) search.set('from', params.from)
+  if (params.to) search.set('to', params.to)
+  if (params.q) search.set('q', params.q)
+  if (params.resource_type) search.set('resource_type', params.resource_type)
+  if (params.sort) search.set('sort', params.sort)
+  return apiClient(`/bookings?${search.toString()}`, { method: 'GET' })
+}
+
 export async function getMyBookings(): Promise<ApiResponse<Booking[]>> {
   return apiClient<Booking[]>('/bookings/my-bookings', { method: 'GET' });
 }
@@ -185,6 +209,16 @@ export async function markRefundSent(
       body: JSON.stringify({ note: note?.trim() ?? '' }),
     },
   );
+}
+
+export async function updateBookingStatus(
+  id: string,
+  status: 'ARRIVED' | 'IN_PROGRESS' | 'COMPLETED' | 'NO_SHOW',
+): Promise<ApiResponse<{ message: string; booking: Booking }>> {
+  return apiClient<{ message: string; booking: Booking }>(`/bookings/${id}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  });
 }
 
 export async function deleteBooking(

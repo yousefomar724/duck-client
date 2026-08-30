@@ -478,38 +478,39 @@ function BookPageContent() {
     }
 
     if (PAYMENT_METHOD === "instapay") {
-      const { data, error } =
-        await bookingsApi.createManualBooking(bookingPayload)
+      const result = await bookingsApi.createManualBooking(bookingPayload)
       setSubmitLoading(false)
-      if (error) {
+      if (result.error) {
         const isConflict =
-          error.toLowerCase().includes("availability") ||
-          error.toLowerCase().includes("no availability") ||
-          error.includes("409")
-        addToast(isConflict ? t("noAvailability") : error, "error")
+          result.code === "NO_AVAILABILITY" ||
+          result.error.toLowerCase().includes("availability") ||
+          result.error.toLowerCase().includes("no availability") ||
+          result.error.includes("409")
+        addToast(isConflict ? t("noAvailability") : result.error, "error")
         return
       }
-      if (data?.booking) {
-        const result = { booking: data.booking, chosenAmount }
-        setManualBookingResult(result)
-        writePendingInstapay(result)
+      if (result.data?.booking) {
+        const bookingResult = { booking: result.data.booking, chosenAmount }
+        setManualBookingResult(bookingResult)
+        writePendingInstapay(bookingResult)
         window.scrollTo({ top: 0, behavior: "smooth" })
       }
       return
     }
 
-    const { data, error } = await bookingsApi.createBooking(bookingPayload)
+    const result = await bookingsApi.createBooking(bookingPayload)
     setSubmitLoading(false)
-    if (error) {
+    if (result.error) {
       const isConflict =
-        error.toLowerCase().includes("availability") ||
-        error.toLowerCase().includes("no availability") ||
-        error.includes("409")
-      addToast(isConflict ? t("noAvailability") : error, "error")
+        result.code === "NO_AVAILABILITY" ||
+        result.error.toLowerCase().includes("availability") ||
+        result.error.toLowerCase().includes("no availability") ||
+        result.error.includes("409")
+      addToast(isConflict ? t("noAvailability") : result.error, "error")
       return
     }
-    if (data?.payment_url) {
-      const b = data.booking
+    if (result.data?.payment_url) {
+      const b = result.data.booking
       const orderRef = b?.order_ref
       if (orderRef && b) {
         const policy = selectedTrip.cancelation_policy
@@ -552,7 +553,7 @@ function BookPageContent() {
         }
       }
       // Navigate to payment gateway (full page redirect)
-      window.location.assign(data.payment_url)
+      window.location.assign(result.data.payment_url)
     }
   })
 
@@ -827,6 +828,9 @@ function BookPageContent() {
                             onChange={field.onChange}
                             onBlur={field.onBlur}
                             locale={locale}
+                            tripId={selectedTrip?.id}
+                            resourceType={watchedResourceType}
+                            quantity={watchedGuests}
                           />
                         </FormControl>
                         <FormMessage />

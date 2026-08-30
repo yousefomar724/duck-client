@@ -216,6 +216,12 @@ export default function MyTripsPage() {
                         (trip.duration ?? 1) === 1 ? "ساعة" : "ساعات"
                       }`}
                   </p>
+                  {!trip.is_tour ? (
+                    <p>
+                      <span className="font-medium">مدة الإشغال:</span>{" "}
+                      {trip.activity_minutes ?? (trip.duration ?? 1) * 60} د
+                    </p>
+                  ) : null}
                   {trip.tour_guide && (
                     <p>
                       <span className="font-medium">المرشد:</span>{" "}

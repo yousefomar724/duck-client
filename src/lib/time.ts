@@ -115,3 +115,18 @@ export function siteWallClock(date: Date): Date {
 export function localYmd(date: Date): string {
   return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
+
+/** Shift a civil `YYYY-MM-DD` by a whole number of calendar days (UTC date arithmetic). */
+export function addSiteDays(ymd: string, days: number): string {
+  const [year, month, day] = ymd.split("-").map(Number)
+  const probe = new Date(Date.UTC(year, month - 1, day + days))
+  return `${String(probe.getUTCFullYear()).padStart(4, "0")}-${String(probe.getUTCMonth() + 1).padStart(2, "0")}-${String(probe.getUTCDate()).padStart(2, "0")}`
+}
+
+export const YEAR_MONTH_PATTERN = /^\d{4}-\d{2}$/
+
+export function isValidYearMonth(value: string): boolean {
+  if (!YEAR_MONTH_PATTERN.test(value)) return false
+  const [year, month] = value.split("-").map(Number)
+  return month >= 1 && month <= 12 && year >= 1970
+}

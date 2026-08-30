@@ -10,6 +10,7 @@ import { SupplierStorage } from '@/server/models/supplier-storage';
 import { TourGuide } from '@/server/models/tourguide';
 import { signAuthToken } from '@/server/auth/jwt';
 import { siteWallTimeToUtc, toSiteYmd } from '@/lib/time';
+import { computeOccupancy, OCCUPANCY_VERSION } from '@/lib/booking/occupancy';
 
 export async function createUser(overrides: Record<string, unknown> = {}) {
   const password = (overrides.password as string) ?? 'TestPassword123!';
@@ -94,6 +95,7 @@ export async function createTrip(supplierId: mongoose.Types.ObjectId, overrides:
     from: new Date('2024-01-01'),
     to: new Date('2027-12-31'),
     duration: 1,
+    activity_minutes: 60,
     duration_text: { en: '', ar: '' },
     itinerary: { en: 'Itinerary', ar: 'مسار' },
     name: { en: 'Test Trip', ar: 'رحلة تجريبية' },
@@ -108,8 +110,17 @@ export async function createTrip(supplierId: mongoose.Types.ObjectId, overrides:
   });
 }
 
-export async function createSupplierStorage(supplierId: mongoose.Types.ObjectId, resources: Record<string, number> = { kayak: 12 }) {
-  return SupplierStorage.create({ supplier_id: supplierId, resources });
+export async function createSupplierStorage(
+  supplierId: mongoose.Types.ObjectId,
+  resources: Record<string, number> = { kayak: 12 },
+  extra: Record<string, unknown> = {},
+) {
+  return SupplierStorage.create({
+    supplier_id: supplierId,
+    resources,
+    turnaround_minutes: 0,
+    ...extra,
+  });
 }
 
 export async function createTourGuide(overrides: Record<string, unknown> = {}) {
@@ -132,6 +143,18 @@ export function futureBookingDate(hoursAhead = 72): Date {
 }
 
 export async function createBooking(overrides: Record<string, unknown> = {}) {
+  const bookingDate = (overrides.booking_date as Date) ?? futureBookingDate();
+  const occupancy =
+    overrides.occupancy_slots != null
+      ? {}
+      : computeOccupancy({
+          startsAt: bookingDate,
+          isTour: Boolean(overrides.is_tour),
+          durationDays: typeof overrides.duration === 'number' ? (overrides.duration as number) : 1,
+          activityMinutes: 60,
+          turnaroundMinutes: 0,
+        });
+
   return Booking.create({
     session_id: 'test-session',
     user_id: null,
@@ -143,7 +166,7 @@ export async function createBooking(overrides: Record<string, unknown> = {}) {
     phone_number: '+201000000000',
     status: 'PENDING',
     payment_method: 'MANUAL',
-    booking_date: futureBookingDate(),
+    booking_date: bookingDate,
     quantity: 1,
     local_guests: 1,
     foreigner_guests: 0,
@@ -158,6 +181,9 @@ export async function createBooking(overrides: Record<string, unknown> = {}) {
     refund_owed: 0,
     declared_amount: 0,
     amount_paid: 0,
+    occupancy_version: OCCUPANCY_VERSION,
+    source: 'online',
+    ...occupancy,
     ...overrides,
   });
 }

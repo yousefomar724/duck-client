@@ -2,13 +2,19 @@ import { Types } from 'mongoose';
 import type { BookingDoc } from '../models/booking';
 import { Trip } from '../models/trip';
 import { computeBookingAmount } from './booking';
-import { checkAvailability, NoAvailabilityError } from './availability';
+import { checkAvailability, occupancyChanged, NoAvailabilityError, verifyOccupancy } from './availability';
 import { isValidResourceType } from './resource-type';
 import { DeletedBooking } from '../models/deleted-booking';
 import { creditWalletBySupplierId } from './wallet';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
 import { isBookingTimeValid } from '@/lib/booking/schedule';
-import { toSiteYmd } from '@/lib/time';
+import {
+  computeOccupancy,
+  OCCUPANCY_VERSION,
+  PAST_BOOKING_GRACE_MS,
+  resolveActivityMinutes,
+} from '@/lib/booking/occupancy';
+import { SupplierStorage } from '../models/supplier-storage';
 
 export interface BookingEditPatch {
   quantity?: number;
@@ -155,7 +161,7 @@ export async function applyBookingEdit(
     );
   }
 
-  if (nextBookingDate.getTime() < Date.now() - 60_000) {
+  if (nextBookingDate.getTime() < Date.now() - PAST_BOOKING_GRACE_MS) {
     throw new BookingEditError('booking date must be in the future');
   }
 
@@ -163,17 +169,35 @@ export async function applyBookingEdit(
     throw new BookingEditError('booking time must be between 06:00 and 18:30 Cairo');
   }
 
-  const capacityChanged =
-    nextQuantity !== booking.quantity ||
-    nextResourceType !== (booking.resource_type ?? '') ||
-    toSiteYmd(nextBookingDate) !== toSiteYmd(booking.booking_date);
+  const storage = await SupplierStorage.findOne({ supplier_id: booking.supplier_id });
+  const nextOccupancy = computeOccupancy({
+    startsAt: nextBookingDate,
+    isTour: trip.is_tour,
+    durationDays: trip.is_tour ? nextDuration : 1,
+    activityMinutes: resolveActivityMinutes(trip),
+    turnaroundMinutes: storage?.turnaround_minutes ?? 0,
+  });
+
+  const nextQtyForCapacity = nextQuantity;
+  const capacityChanged = occupancyChanged(
+    {
+      quantity: booking.quantity,
+      resource_type: booking.resource_type ?? '',
+      occupancy_slots: booking.occupancy_slots,
+    },
+    {
+      quantity: nextQtyForCapacity,
+      resource_type: nextResourceType,
+      occupancy_slots: nextOccupancy.occupancy_slots,
+    },
+  );
 
   if (nextResourceType && capacityChanged) {
     try {
       await checkAvailability(
         booking.supplier_id.toString(),
         nextResourceType,
-        nextBookingDate,
+        nextOccupancy.occupancy_slots,
         nextQuantity,
         booking.id,
       );
@@ -221,6 +245,30 @@ export async function applyBookingEdit(
   const amountPaid = booking.amount_paid ?? 0;
   let walletDelta = 0;
 
+  const revertSnapshot = {
+    quantity: booking.quantity,
+    local_guests: booking.local_guests,
+    foreigner_guests: booking.foreigner_guests,
+    adults: booking.adults,
+    kids_1_6: booking.kids_1_6,
+    kids_7_12: booking.kids_7_12,
+    duration: booking.duration,
+    wants_guide: booking.wants_guide,
+    resource_type: booking.resource_type,
+    booking_date: booking.booking_date,
+    full_name: booking.full_name,
+    phone_number: booking.phone_number,
+    amount: booking.amount,
+    declared_amount: booking.declared_amount,
+    refund_owed: booking.refund_owed,
+    payment_entries: booking.payment_entries.slice(),
+    revisions: booking.revisions.slice(),
+    starts_at: booking.starts_at,
+    ends_at: booking.ends_at,
+    occupancy_slots: [...(booking.occupancy_slots ?? [])],
+    occupancy_version: booking.occupancy_version,
+  };
+
   if (newAmount < amountPaid) {
     const owed = amountPaid - newAmount;
     walletDelta = -owed;
@@ -253,6 +301,10 @@ export async function applyBookingEdit(
   booking.full_name = nextFullName;
   booking.phone_number = nextPhone;
   booking.amount = newAmount;
+  booking.starts_at = nextOccupancy.starts_at;
+  booking.ends_at = nextOccupancy.ends_at;
+  booking.occupancy_slots = nextOccupancy.occupancy_slots;
+  booking.occupancy_version = OCCUPANCY_VERSION;
 
   if (booking.declared_amount > newAmount) {
     booking.declared_amount = newAmount;
@@ -289,11 +341,37 @@ export async function applyBookingEdit(
 
   try {
     await booking.save();
+    await verifyOccupancy(booking);
   } catch (err) {
     if (walletDelta !== 0) {
       await creditWalletBySupplierId(booking.supplier_id.toString(), -walletDelta, {
         allowNegative: true,
       }).catch(() => {});
+    }
+    if (err instanceof NoAvailabilityError) {
+      booking.quantity = revertSnapshot.quantity;
+      booking.local_guests = revertSnapshot.local_guests;
+      booking.foreigner_guests = revertSnapshot.foreigner_guests;
+      booking.adults = revertSnapshot.adults;
+      booking.kids_1_6 = revertSnapshot.kids_1_6;
+      booking.kids_7_12 = revertSnapshot.kids_7_12;
+      booking.duration = revertSnapshot.duration;
+      booking.wants_guide = revertSnapshot.wants_guide;
+      booking.resource_type = revertSnapshot.resource_type;
+      booking.booking_date = revertSnapshot.booking_date;
+      booking.full_name = revertSnapshot.full_name;
+      booking.phone_number = revertSnapshot.phone_number;
+      booking.amount = revertSnapshot.amount;
+      booking.declared_amount = revertSnapshot.declared_amount;
+      booking.refund_owed = revertSnapshot.refund_owed;
+      booking.payment_entries = revertSnapshot.payment_entries;
+      booking.revisions = revertSnapshot.revisions;
+      booking.starts_at = revertSnapshot.starts_at;
+      booking.ends_at = revertSnapshot.ends_at;
+      booking.occupancy_slots = revertSnapshot.occupancy_slots;
+      booking.occupancy_version = revertSnapshot.occupancy_version;
+      await booking.save().catch(() => {});
+      throw new BookingEditError(err.message, 409);
     }
     throw err;
   }

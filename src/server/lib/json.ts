@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 
 /** Bare-error envelope matching the Go API: `{"error": "<string>"}`. */
-export function errorResponse(status: number, message: string) {
-  return NextResponse.json({ error: message }, { status });
+export function errorResponse(
+  status: number,
+  message: string,
+  extra?: Record<string, unknown>,
+) {
+  return NextResponse.json({ error: message, ...extra }, { status });
 }
 
 /** `{"message": "..."}` envelope for success-without-data responses. */

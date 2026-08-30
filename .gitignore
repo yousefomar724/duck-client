@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+.mongo-mem/
 
 # next.js
 /.next/

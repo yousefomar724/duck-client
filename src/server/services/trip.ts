@@ -17,6 +17,7 @@ export interface CreateTripBody {
   from: string;
   to?: string | null;
   duration?: number;
+  activity_minutes?: number;
   duration_text?: LocalizedText;
   itinerary?: LocalizedText;
   name: LocalizedText;
@@ -70,6 +71,7 @@ export async function createTripFromRequest(supplierId: string, body: CreateTrip
     from,
     to,
     duration,
+    activity_minutes: body.activity_minutes ?? (!body.is_tour && duration > 0 ? duration * 60 : null),
     duration_text: body.is_tour ? { en: '', ar: '' } : (body.duration_text ?? { en: '', ar: '' }),
     max_guests: body.max_guests,
     refundable: body.refundable ?? false,
@@ -118,6 +120,7 @@ export function applyTripUpdate(trip: TripDoc, body: Partial<CreateTripBody>): v
     trip.to = to;
   }
   if (duration) trip.duration = duration;
+  if (body.activity_minutes !== undefined) trip.activity_minutes = body.activity_minutes;
   // Assigned whenever present so an empty pair can clear stale free text —
   // `if (body.duration_text)` would keep a trip's old duration after it is
   // switched to a tour, and the display sites prefer the text over the number.

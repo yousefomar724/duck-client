@@ -91,6 +91,7 @@ const FIELD_LABELS: Record<string, string> = {
   cancelation_policy_en: "سياسة الإلغاء (English)",
   map_url: "رابط الموقع على الخريطة",
   duration: "المدة",
+  activity_minutes: "مدة النشاط (دقائق)",
   duration_text_ar: "المدة (عربي)",
   duration_text_en: "Duration (English)",
   max_guests: "عدد الاشخاص الأقصى",
@@ -126,6 +127,7 @@ const EMPTY_FORM_VALUES: TripFormInput = {
   hide_default_faqs: false,
   faqs: [],
   duration: "1",
+  activity_minutes: "60",
   duration_text_ar: "",
   duration_text_en: "",
   max_guests: "",
@@ -196,6 +198,7 @@ function mapTripToFormValues(tripData: Trip): TripFormInput {
     hide_default_faqs: tripData.hide_default_faqs ?? false,
     faqs: tripFaqs,
     duration: (tripData.duration ?? 1).toString(),
+    activity_minutes: (tripData.activity_minutes ?? 60).toString(),
     duration_text_ar: asLocalizedPair(tripData.duration_text).ar,
     duration_text_en: asLocalizedPair(tripData.duration_text).en,
     max_guests: tripData.max_guests.toString(),
@@ -401,6 +404,7 @@ export default function TripForm({
         duration_text: values.is_tour
           ? { ar: "", en: "" }
           : { ar: values.duration_text_ar, en: values.duration_text_en },
+        activity_minutes: values.is_tour ? 0 : values.activity_minutes,
         max_guests: values.max_guests,
         images: allImageUrls,
         destination_ids: values.destination_ids,
@@ -1298,6 +1302,28 @@ export default function TripForm({
                                 {...field}
                               />
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="activity_minutes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>مدة النشاط (دقائق)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={15}
+                                step={15}
+                                placeholder="60"
+                                {...field}
+                              />
+                            </FormControl>
+                            <p className="text-xs text-text-muted">
+                              تُستخدم لحساب إشغال المعدات بالساعة
+                            </p>
                             <FormMessage />
                           </FormItem>
                         )}

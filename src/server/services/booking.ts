@@ -1,11 +1,18 @@
 import { randomUUID } from 'crypto';
 import { Trip } from '../models/trip';
-import type { BookingDoc } from '../models/booking';
+import { Booking, type BookingDoc } from '../models/booking';
+import { SupplierStorage } from '../models/supplier-storage';
 import { isValidResourceType } from './resource-type';
-import { checkAvailability } from './availability';
+import { checkAvailability, verifyOccupancy } from './availability';
 import { minimumDeposit } from '@/lib/booking/pricing';
 import { isBookingTimeValid } from '@/lib/booking/schedule';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
+import {
+  computeOccupancy,
+  OCCUPANCY_VERSION,
+  PAST_BOOKING_GRACE_MS,
+  resolveActivityMinutes,
+} from '@/lib/booking/occupancy';
 
 export interface CreateBookingInput {
   trip_id: string;
@@ -26,6 +33,7 @@ export interface CreateBookingInput {
   adults?: number;
   kids_1_6?: number;
   kids_7_12?: number;
+  source?: 'online' | 'walk_in';
 }
 
 export interface BuiltBooking {
@@ -57,6 +65,11 @@ export interface BuiltBooking {
   pricing_snapshot: { price: number; foreigner_price: number; guide_price: number };
   pricing_locked: boolean;
   refund_owed: number;
+  starts_at: Date;
+  ends_at: Date;
+  occupancy_slots: Date[];
+  occupancy_version: number;
+  source: 'online' | 'walk_in';
 }
 
 export interface ComputeBookingAmountInput {
@@ -153,14 +166,22 @@ export async function buildBooking(
           kids_7_12: 0,
         };
 
-  if (req.resource_type) {
-    await checkAvailability(
-      trip.supplier_id.toString(),
-      req.resource_type,
-      new Date(req.booking_date),
-      quantity,
-    );
+  const bookingDate = new Date(req.booking_date);
+  if (Number.isNaN(bookingDate.getTime()) || !isBookingTimeValid(bookingDate)) {
+    throw new Error('booking time must be between 06:00 and 18:30 Cairo');
   }
+  if (bookingDate.getTime() < Date.now() - PAST_BOOKING_GRACE_MS) {
+    throw new Error('booking date must be in the future');
+  }
+
+  const storage = await SupplierStorage.findOne({ supplier_id: trip.supplier_id });
+  const occupancy = computeOccupancy({
+    startsAt: bookingDate,
+    isTour: trip.is_tour,
+    durationDays: trip.is_tour ? (req.duration ?? 1) : 1,
+    activityMinutes: resolveActivityMinutes(trip),
+    turnaroundMinutes: storage?.turnaround_minutes ?? 0,
+  });
 
   const { amount, quantity: computedQuantity, localGuests: computedLocal, foreignerGuests: computedForeigner } = computeBookingAmount(
     {
@@ -176,9 +197,13 @@ export async function buildBooking(
 
   const duration = trip.is_tour ? (req.duration ?? 1) : 0;
 
-  const bookingDate = new Date(req.booking_date);
-  if (Number.isNaN(bookingDate.getTime()) || !isBookingTimeValid(bookingDate)) {
-    throw new Error('booking time must be between 06:00 and 18:30 Cairo');
+  if (req.resource_type) {
+    await checkAvailability(
+      trip.supplier_id.toString(),
+      req.resource_type,
+      occupancy.occupancy_slots,
+      quantity,
+    );
   }
 
   // The client-side `min` attribute on the deposit input is not a security
@@ -223,7 +248,23 @@ export async function buildBooking(
     },
     pricing_locked: false,
     refund_owed: 0,
+    starts_at: occupancy.starts_at,
+    ends_at: occupancy.ends_at,
+    occupancy_slots: occupancy.occupancy_slots,
+    occupancy_version: OCCUPANCY_VERSION,
+    source: req.source === 'walk_in' ? 'walk_in' : 'online',
   };
+}
+
+export async function persistCreatedBooking(built: BuiltBooking): Promise<BookingDoc> {
+  const booking = await Booking.create(built);
+  try {
+    await verifyOccupancy(booking);
+    return booking;
+  } catch (err) {
+    await Booking.deleteOne({ _id: booking._id }).catch(() => {});
+    throw err;
+  }
 }
 
 function extractTripDestinations(

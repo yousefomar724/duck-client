@@ -99,7 +99,7 @@ export function BookingDetailSheet({
                 {booking.full_name}
               </SheetDescription>
             </div>
-            <StatusBadge status={booking.status} type="booking" bookingDate={booking.booking_date} />
+            <StatusBadge status={booking.status} type="booking" bookingDate={booking.booking_date} endsAt={booking.ends_at} />
           </div>
           <div className="flex items-baseline gap-2 flex-wrap mt-2">
             <p className="text-xl font-bold text-duck-navy">

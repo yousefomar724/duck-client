@@ -10,6 +10,7 @@ interface QuantityStepperProps {
   value: string
   onChange: (value: string) => void
   min?: number
+  max?: number
   className?: string
 }
 
@@ -18,10 +19,16 @@ export function QuantityStepper({
   value,
   onChange,
   min = 0,
+  max,
   className,
 }: QuantityStepperProps) {
   const numeric = Number.parseInt(value, 10)
   const current = Number.isFinite(numeric) ? numeric : min
+  const clamp = (n: number) => {
+    let next = Math.max(min, n)
+    if (max != null) next = Math.min(max, next)
+    return next
+  }
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -30,7 +37,7 @@ export function QuantityStepper({
         variant="outline"
         className="size-11! shrink-0"
         aria-label="إنقاص"
-        onClick={() => onChange(String(Math.max(min, current - 1)))}
+        onClick={() => onChange(String(clamp(current - 1)))}
       >
         <Minus className="size-4" />
       </Button>
@@ -39,6 +46,7 @@ export function QuantityStepper({
         type="number"
         inputMode="numeric"
         min={min}
+        max={max}
         dir="ltr"
         className="h-11! flex-1 text-center"
         value={value}
@@ -49,7 +57,7 @@ export function QuantityStepper({
         variant="outline"
         className="size-11! shrink-0"
         aria-label="زيادة"
-        onClick={() => onChange(String(current + 1))}
+        onClick={() => onChange(String(clamp(current + 1)))}
       >
         <Plus className="size-4" />
       </Button>

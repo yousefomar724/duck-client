@@ -22,6 +22,8 @@ export interface TripDoc extends mongoose.Document {
   from: Date;
   to?: Date | null;
   duration: number;
+  /** Occupancy length in minutes. Authoritative for hourly capacity. */
+  activity_minutes?: number | null;
   duration_text: LocalizedText;
   itinerary: LocalizedText;
   name: LocalizedText;
@@ -72,6 +74,7 @@ const TripSchema = new Schema<TripDoc>(
     from: { type: Date, required: true },
     to: { type: Date, default: null },
     duration: { type: Number, default: 1 },
+    activity_minutes: { type: Number, default: null },
     duration_text: { type: LocalizedSchema, default: () => ({ en: '', ar: '' }) },
     itinerary: { type: LocalizedSchema, default: () => ({ en: '', ar: '' }) },
     name: { type: LocalizedSchema, required: true },

@@ -11,7 +11,12 @@ export type BookingStatus =
   | 'REFUNDED'
   | 'REFUND_FAILED'
   | 'COMPLETED'
-  | 'PAID';
+  | 'PAID'
+  | 'ARRIVED'
+  | 'IN_PROGRESS'
+  | 'NO_SHOW';
+
+export type BookingSource = 'online' | 'walk_in';
 
 export interface PaymentEntry {
   amount: number;
@@ -82,6 +87,12 @@ export interface BookingDoc extends mongoose.Document {
   cancelled_by?: Types.ObjectId | null;
   cancel_reason?: string;
   revisions: BookingRevision[];
+  /** Occupancy window frozen at write time (mirrors pricing_snapshot). */
+  starts_at?: Date | null;
+  ends_at?: Date | null;
+  occupancy_slots: Date[];
+  occupancy_version: number;
+  source: BookingSource;
   deletedAt: Date | null;
 }
 
@@ -141,6 +152,11 @@ const BookingSchema = new Schema<BookingDoc>(
     },
     pricing_locked: { type: Boolean, default: false },
     refund_owed: { type: Number, default: 0 },
+    starts_at: { type: Date, default: null },
+    ends_at: { type: Date, default: null },
+    occupancy_slots: { type: [Date], default: [] },
+    occupancy_version: { type: Number, default: 0 },
+    source: { type: String, enum: ['online', 'walk_in'], default: 'online' },
     cancelled_at: { type: Date, default: null },
     cancelled_by: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     cancel_reason: { type: String, default: '' },
@@ -176,6 +192,13 @@ const BookingSchema = new Schema<BookingDoc>(
 );
 
 BookingSchema.plugin(softDeletePlugin);
+
+BookingSchema.index({ supplier_id: 1, resource_type: 1, status: 1, occupancy_slots: 1 });
+BookingSchema.index({ supplier_id: 1, booking_date: 1 });
+BookingSchema.index({ status: 1, ends_at: 1 });
+BookingSchema.index({ supplier_id: 1, created_at: -1 });
+BookingSchema.index({ phone_number: 1, created_at: -1 });
+BookingSchema.index({ trip_id: 1, booking_date: 1 });
 
 BookingSchema.set('toJSON', {
   ...schemaOptions.toJSON,

@@ -38,6 +38,7 @@ export interface Trip {
   from: string // ISO date
   to?: string // ISO date
   duration: number
+  activity_minutes?: number | null
   duration_text?: { ar: string; en: string }
   itinerary?: { ar: string; en: string }[] | { ar: string; en: string }
   name: { ar: string; en: string }
@@ -127,6 +128,11 @@ export interface Booking {
   cancelled_by?: string
   cancel_reason?: string
   revisions?: BookingRevision[]
+  starts_at?: string
+  ends_at?: string
+  occupancy_slots?: string[]
+  occupancy_version?: number
+  source?: BookingSource
 }
 
 export interface Wallet {
@@ -180,6 +186,10 @@ export type BookingStatus =
   | "REFUND_FAILED"
   | "COMPLETED"
   | "PAID"
+  | "ARRIVED"
+  | "IN_PROGRESS"
+  | "NO_SHOW"
+export type BookingSource = "online" | "walk_in"
 export type PayoutStatus =
   | "pending"
   | "paid"
@@ -230,10 +240,14 @@ export interface SupplierStorage {
   supplier?: Supplier
   /** Parsed JSON map of resource type -> max count */
   resources: Record<string, number>
+  maintenance?: Record<string, number>
+  turnaround_minutes?: number
 }
 
 export interface SetStorageRequest {
   resources: Record<string, number>
+  maintenance?: Record<string, number>
+  turnaround_minutes?: number
 }
 
 export interface RegisterInput {
@@ -258,6 +272,7 @@ export interface CreateBookingRequest {
   local_guests: number
   foreigner_guests: number
   duration?: number
+  activity_minutes?: number
   /** User preference for a tour guide (ignored when guide_mandatory). */
   wants_guide?: boolean
   played_before?: boolean
@@ -270,6 +285,7 @@ export interface CreateBookingRequest {
   adults?: number
   kids_1_6?: number
   kids_7_12?: number
+  source?: BookingSource
 }
 
 export interface CreateTripRequest {
@@ -289,6 +305,7 @@ export interface CreateTripRequest {
   to?: string
   duration?: number
   duration_text?: { ar: string; en: string }
+  activity_minutes?: number
   itinerary?: { ar: string; en: string }
   availability?: { ar: string; en: string }
   max_guests: number

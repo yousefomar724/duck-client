@@ -28,13 +28,16 @@ import { formatCurrency } from "@/lib/constants"
 import {
   CheckCircle,
   Loader2,
+  MessageCircle,
   MoreHorizontal,
   Pencil,
+  Phone,
   RefreshCw,
   Trash2,
   Wallet,
   XCircle,
 } from "lucide-react"
+import { phoneToWhatsAppDigits } from "@/lib/booking/phone"
 
 export type BookingActionType =
   | "adminCancel"
@@ -138,7 +141,8 @@ export function BookingActions({
 
   const hasAnyAction = hasBookingActions(booking, role)
 
-  if (!hasAnyAction) return null
+  const hasPhone = Boolean(booking.phone_number)
+  if (!hasAnyAction && !hasPhone) return null
 
   const amountDialogs: BookingActionType[] = ["confirmPayment", "collectBalance"]
 
@@ -224,6 +228,26 @@ export function BookingActions({
 
   const actionButtons = (
     <>
+      {booking.phone_number ? (
+        <Button asChild size="sm" variant="outline">
+          <a href={`tel:${booking.phone_number}`}>
+            <Phone className="size-4" />
+            اتصال
+          </a>
+        </Button>
+      ) : null}
+      {phoneToWhatsAppDigits(booking.phone_number ?? "") ? (
+        <Button asChild size="sm" variant="outline">
+          <a
+            href={`https://wa.me/${phoneToWhatsAppDigits(booking.phone_number)!}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle className="size-4" />
+            واتساب
+          </a>
+        </Button>
+      ) : null}
       {editEnabled && onEdit && (
         <Button
           type="button"
@@ -352,6 +376,26 @@ export function BookingActions({
 
   const dropdownItems = (
     <>
+      {booking.phone_number ? (
+        <DropdownMenuItem asChild>
+          <a href={`tel:${booking.phone_number}`}>
+            <Phone className="size-4" />
+            اتصال
+          </a>
+        </DropdownMenuItem>
+      ) : null}
+      {phoneToWhatsAppDigits(booking.phone_number ?? "") ? (
+        <DropdownMenuItem asChild>
+          <a
+            href={`https://wa.me/${phoneToWhatsAppDigits(booking.phone_number)!}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle className="size-4" />
+            واتساب
+          </a>
+        </DropdownMenuItem>
+      ) : null}
       {editEnabled && onEdit && (
         <DropdownMenuItem onClick={() => onEdit(booking)}>
           {bookingStrings.editBooking}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { format } from "date-fns"
 import { arSA, enUS } from "date-fns/locale"
 import {
@@ -16,15 +16,14 @@ import {
   formatBookingTime,
 } from "@/lib/booking/relative-booking-day"
 import {
-  BOOKING_MIN_MINUTES,
-  BOOKING_MAX_MINUTES,
-  BOOKING_SLOT_MINUTES,
   buildTimeSlots,
   mergeCalendarDay,
   mergeTimeFromHHMM,
   siteHHMM,
 } from "@/lib/booking/schedule"
 import { siteWallClock } from "@/lib/time"
+import { toSiteYmd } from "@/lib/time"
+import { getOpsAvailability } from "@/lib/api/ops"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -55,6 +54,9 @@ export type BookingScheduleFieldProps = {
   onBlur?: () => void
   name?: string
   locale: string
+  tripId?: string
+  resourceType?: string
+  quantity?: number
 }
 
 export function BookingScheduleField({
@@ -63,9 +65,13 @@ export function BookingScheduleField({
   onBlur,
   name,
   locale,
+  tripId,
+  resourceType,
+  quantity = 1,
 }: BookingScheduleFieldProps) {
   const t = useTranslations("book")
   const [open, setOpen] = useState(false)
+  const [remainingByTime, setRemainingByTime] = useState<Record<string, number>>({})
 
   const dir = locale === "ar" ? "rtl" : "ltr"
   const dateFnsLocale = locale === "ar" ? arSA : enUS
@@ -98,6 +104,25 @@ export function BookingScheduleField({
   )
 
   const selectedTime = siteHHMM(value)
+  const ymd = toSiteYmd(value)
+
+  useEffect(() => {
+    if (!tripId) return
+    let cancelled = false
+    void getOpsAvailability(tripId, ymd, resourceType).then(({ data }) => {
+      if (cancelled || !data) return
+      const map: Record<string, number> = {}
+      for (const slot of data.slots) {
+        map[slot.time] = resourceType
+          ? (slot.remaining[resourceType] ?? slot.remaining_total)
+          : slot.remaining_total
+      }
+      setRemainingByTime(map)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tripId, ymd, resourceType])
 
   return (
     <div className="space-y-2" dir={dir}>
@@ -159,11 +184,16 @@ export function BookingScheduleField({
               <SelectValue placeholder={t("bookingTime")} />
             </SelectTrigger>
             <SelectContent className="max-h-72">
-              {timeSlots.map((slot) => (
-                <SelectItem key={slot.value} value={slot.value}>
-                  {slot.label}
-                </SelectItem>
-              ))}
+              {timeSlots.map((slot) => {
+                const remaining = remainingByTime[slot.value]
+                const full = remaining != null && remaining < quantity
+                return (
+                  <SelectItem key={slot.value} value={slot.value} disabled={full}>
+                    {slot.label}
+                    {full ? " — مكتمل" : ""}
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         </div>

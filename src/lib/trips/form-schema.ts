@@ -61,6 +61,11 @@ export function createTripFormSchema({ mode, requireSupplier }: TripFormSchemaOp
       .int("يجب أن تكون المدة رقمًا صحيحًا")
       .min(0, "لا يمكن أن تكون سالبة")
       .default(0),
+    activity_minutes: z.coerce
+      .number({ invalid_type_error: "أدخل مدة صحيحة" })
+      .int("يجب أن تكون المدة رقمًا صحيحًا")
+      .min(0, "لا يمكن أن تكون سالبة")
+      .default(60),
     duration_text_ar: z.string().default(""),
     duration_text_en: z.string().default(""),
     max_guests: z.coerce
@@ -150,6 +155,7 @@ export interface TripFormInput {
   hide_default_faqs: boolean
   faqs: { q_ar: string; q_en: string; a_ar: string; a_en: string }[]
   duration: string
+  activity_minutes: string
   duration_text_ar: string
   duration_text_en: string
   max_guests: string

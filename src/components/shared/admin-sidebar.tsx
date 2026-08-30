@@ -24,7 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import Logo from "./logo"
-import { adminNavItems } from "@/lib/constants"
+import { adminNavItems, isNavItemActive } from "@/lib/constants"
 import { dashboardStrings } from "@/lib/dashboard/strings"
 import { cn } from "@/lib/utils"
 
@@ -144,7 +144,7 @@ export default function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {adminNavItems.map((item) => {
-                const isActive = pathname === item.href
+                const isActive = isNavItemActive(pathname ?? "", item.href)
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild isActive={isActive}>

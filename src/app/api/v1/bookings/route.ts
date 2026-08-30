@@ -24,6 +24,10 @@ export async function GET(request: Request) {
   const status = searchParams.get('status');
   const from = searchParams.get('from');
   const to = searchParams.get('to');
+  const pageRaw = searchParams.get('page');
+  const q = searchParams.get('q');
+  const resourceType = searchParams.get('resource_type');
+  const sort = searchParams.get('sort') === 'created_at' ? 'created_at' : 'booking_date';
 
   if (supplierId && !isValidObjectId(supplierId)) {
     return errorResponse(400, 'Invalid supplier ID');
@@ -37,19 +41,40 @@ export async function GET(request: Request) {
   const filter: Record<string, unknown> = {};
   if (supplierId) filter.supplier_id = supplierId;
   if (status) filter.status = status;
+  if (resourceType) filter.resource_type = resourceType;
   if (from || to) {
     const range: Record<string, Date> = {};
     if (from) range.$gte = zonedStartOfDay(from);
     if (to) range.$lt = zonedEndOfDayExclusive(to);
     filter.booking_date = range;
   }
+  if (q?.trim()) {
+    const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [
+      { full_name: { $regex: escaped, $options: 'i' } },
+      { phone_number: { $regex: escaped, $options: 'i' } },
+    ];
+  }
 
   try {
-    const bookings = await Booking.find(filter)
+    const query = Booking.find(filter)
       .populate('user_id')
       .populate('trip_id')
-      .populate('supplier_id');
-    return NextResponse.json(bookings);
+      .populate('supplier_id')
+      .sort({ [sort]: -1 });
+
+    if (!pageRaw) {
+      const bookings = await query;
+      return NextResponse.json(bookings);
+    }
+
+    const page = Math.max(1, Number.parseInt(pageRaw, 10) || 1);
+    const limit = Math.min(200, Math.max(1, Number.parseInt(searchParams.get('limit') ?? '50', 10) || 50));
+    const [items, total] = await Promise.all([
+      query.skip((page - 1) * limit).limit(limit),
+      Booking.countDocuments(filter),
+    ]);
+    return NextResponse.json({ items, total, page, limit });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'failed to list bookings';
     return errorResponse(500, message);

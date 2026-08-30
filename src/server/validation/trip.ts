@@ -41,6 +41,7 @@ export const createTripBodySchema = z.object({
   from: isoDate,
   to: isoDate.nullable().optional(),
   duration: z.number().int().min(0).optional(),
+  activity_minutes: z.number().int().min(0).optional(),
   duration_text: looseLocalizedText.optional(),
   itinerary: looseLocalizedText.optional(),
   availability: looseLocalizedText.optional(),

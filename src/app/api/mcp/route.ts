@@ -19,7 +19,8 @@ import {
   listPublicTrips,
   type PublicTrip,
 } from "@/server/services/public-content"
-import { isValidYmd, startOfSiteDay } from "@/lib/time"
+import { operatingSlotsForDay } from "@/lib/booking/occupancy"
+import { isValidYmd } from "@/lib/time"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -233,7 +234,7 @@ const handler = createMcpHandler(
           await checkAvailability(
             trip.supplier.id,
             resource_type,
-            startOfSiteDay(date),
+            operatingSlotsForDay(date),
             quantity,
           )
           return toolResult({

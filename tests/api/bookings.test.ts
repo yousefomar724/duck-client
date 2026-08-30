@@ -9,6 +9,7 @@ import { POST as collectBalance } from '@/app/api/v1/bookings/[id]/collect-balan
 import { GET as getWallet } from '@/app/api/v1/wallet/[user_id]/route';
 import { GET as listPayouts, POST as createPayout } from '@/app/api/v1/payouts/route';
 import { GET as releaseBookings } from '@/app/api/v1/cron/release-bookings/route';
+import { GET as listBookings } from '@/app/api/v1/bookings/route';
 import {
   createSupplierUser,
   createAdminUser,
@@ -46,6 +47,10 @@ describe('booking lifecycle routes', () => {
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.booking).toBeTruthy();
+    expect(body.booking.occupancy_version).toBe(1);
+    expect(body.booking.occupancy_slots.length).toBeGreaterThan(0);
+    expect(body.booking.starts_at).toBeTruthy();
+    expect(body.booking.ends_at).toBeTruthy();
   });
 
   it('returns 409 when no availability', async () => {
@@ -401,5 +406,61 @@ describe('booking lifecycle routes', () => {
       }),
     );
     expect(goodRes.status).toBe(200);
+  });
+
+  it('completes a 2-hour rental the same day via ends_at', async () => {
+    const { supplier } = await createSupplierUser();
+    const trip = await createTrip(supplier._id, { activity_minutes: 120 });
+    const booking = await createBooking({
+      trip_id: trip._id,
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      resource_type: 'kayak',
+      ends_at: new Date(Date.now() - 60_000),
+    });
+
+    const res = await releaseBookings(
+      jsonRequest('http://localhost/api/v1/cron/release-bookings', {
+        headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.released_count).toBeGreaterThanOrEqual(1);
+
+    const updated = await Booking.findById(booking.id);
+    expect(updated?.status).toBe('COMPLETED');
+  });
+
+  it('returns a bare array without page and an envelope with page', async () => {
+    const { supplier } = await createSupplierUser();
+    const { user: admin } = await createAdminUser();
+    const trip = await createTrip(supplier._id);
+    await createBooking({
+      trip_id: trip._id,
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+    });
+
+    const all = await listBookings(
+      jsonRequest('http://localhost/api/v1/bookings', {
+        headers: authHeader(admin.id, admin.role),
+      }),
+    );
+    expect(all.status).toBe(200);
+    const allBody = await all.json();
+    expect(Array.isArray(allBody)).toBe(true);
+
+    const paged = await listBookings(
+      jsonRequest('http://localhost/api/v1/bookings?page=1&limit=50', {
+        headers: authHeader(admin.id, admin.role),
+      }),
+    );
+    expect(paged.status).toBe(200);
+    const pagedBody = await paged.json();
+    expect(Array.isArray(pagedBody.items)).toBe(true);
+    expect(pagedBody.page).toBe(1);
+    expect(pagedBody.limit).toBe(50);
+    expect(typeof pagedBody.total).toBe('number');
   });
 });

@@ -231,6 +231,7 @@ export default function AdminTripsPage() {
                   <TableHead className="text-start">التاريخ</TableHead>
                   <TableHead className="text-start">الأشخاص</TableHead>
                   <TableHead className="text-start">المدة</TableHead>
+                  <TableHead className="text-start">الإشغال</TableHead>
                   <TableHead className="text-start">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
@@ -291,6 +292,11 @@ export default function AdminTripsPage() {
                         {durationLabel}
                       </TableCell>
                       <TableCell>
+                        {trip.is_tour
+                          ? "—"
+                          : `${trip.activity_minutes ?? (trip.duration ?? 1) * 60} د`}
+                      </TableCell>
+                      <TableCell>
                         <DropdownMenu dir="rtl">
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="size-11!">
@@ -343,6 +349,12 @@ export default function AdminTripsPage() {
                     {
                       label: "المدة",
                       value: durationLabel,
+                    },
+                    {
+                      label: "الإشغال",
+                      value: trip.is_tour
+                        ? "—"
+                        : `${trip.activity_minutes ?? (trip.duration ?? 1) * 60} د`,
                     },
                   ],
                   actions: (

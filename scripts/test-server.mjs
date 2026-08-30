@@ -1,10 +1,22 @@
 import { spawn } from 'node:child_process';
+import { mkdirSync, mkdtempSync } from 'node:fs';
+import { join } from 'node:path';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 const PORT = 3000;
 
 async function main() {
-  const mongo = await MongoMemoryServer.create();
+  const root = join(process.cwd(), '.mongo-mem');
+  mkdirSync(root, { recursive: true });
+  process.env.TMPDIR = root;
+  process.env.TEMP = root;
+  process.env.TMP = root;
+  const mongo = await MongoMemoryServer.create({
+    instance: {
+      dbPath: mkdtempSync(join(root, 'instance-')),
+      args: ['--wiredTigerCacheSizeGB', '0.25'],
+    },
+  });
   const uri = mongo.getUri();
   process.env.MONGODB_URI = uri;
   process.env.JWT_SECRET ??= 'test-jwt-secret-for-e2e-only-32chars';
