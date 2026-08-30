@@ -21,6 +21,9 @@ test('robots.txt welcomes AI crawlers without exposing private paths', async ({ 
   expect(body).toContain('User-Agent: GPTBot');
   expect(body).toContain('User-Agent: OAI-SearchBot');
   expect(body).toContain('User-Agent: PerplexityBot');
+  expect(body).toContain('Content-Signal: search=yes, ai-input=yes, ai-train=yes');
+  expect(body).toContain('Allow: /api/health');
+  expect(body).toContain('Allow: /api/mcp');
 
   // robots.txt has no inheritance — every named-agent block must repeat the
   // disallow list, or that agent falls through to an unfiltered default.
@@ -100,4 +103,68 @@ test('trip page book CTA deep-links into the booking form', async ({ page, reque
   const bookLink = page.locator('a[href^="/book?trip="]').first();
   const href = await bookLink.getAttribute('href');
   expect(href).toMatch(/^\/book\?trip=[0-9a-f]{24}$/);
+});
+
+test('agent discovery documents exist and agree with each other', async ({
+  request,
+}) => {
+  const home = await request.get('/');
+  const link = home.headers()['link'] ?? '';
+  expect(link).toContain('rel="api-catalog"');
+  expect(link).toContain('/openapi.json');
+  expect(link).toContain('rel="service-doc"');
+  const catalog = await request.get('/.well-known/api-catalog');
+  expect(catalog.ok()).toBeTruthy();
+  expect(catalog.headers()['content-type']).toContain('application/linkset+json');
+  const catalogBody = await catalog.json();
+  expect(catalogBody.linkset.length).toBeGreaterThan(0);
+
+  const card = await request.get('/.well-known/mcp/server-card.json');
+  expect(card.ok()).toBeTruthy();
+  const cardBody = await card.json();
+  expect(cardBody.transport.endpoint).toContain('/api/mcp');
+
+  const skills = await request.get('/.well-known/agent-skills/index.json');
+  expect(skills.ok()).toBeTruthy();
+  const skillsBody = await skills.json();
+  for (const skill of skillsBody.skills) {
+    const artifact = await request.get(skill.url);
+    expect(artifact.ok()).toBeTruthy();
+    const bytes = await artifact.text();
+    expect(bytes.startsWith('---\nname: ')).toBeTruthy();
+  }
+
+  const ard = await request.get('/.well-known/ai-catalog.json');
+  expect(ard.ok()).toBeTruthy();
+  const ardBody = await ard.json();
+  expect(ardBody.entries.length).toBeGreaterThan(0);
+
+  const auth = await request.get('/auth.md');
+  expect(auth.ok()).toBeTruthy();
+  expect(await auth.text()).toContain('Automated agent registration is not supported');
+
+  const openapi = await request.get('/openapi.json');
+  expect(openapi.ok()).toBeTruthy();
+  expect((await openapi.json()).openapi).toBe('3.1.0');
+
+  const docs = await request.get('/docs/api');
+  expect(docs.ok()).toBeTruthy();
+});
+
+test('markdown negotiation on /trips does not break HTML', async ({
+  request,
+}) => {
+  const html = await request.get('/trips');
+  expect(html.ok()).toBeTruthy();
+  expect(html.headers()['content-type']).toContain('text/html');
+
+  const md = await request.get('/trips', {
+    headers: { Accept: 'text/markdown' },
+  });
+  expect(md.ok()).toBeTruthy();
+  expect(md.headers()['content-type']).toContain('text/markdown');
+  expect(md.headers()['x-markdown-tokens']).toBeTruthy();
+  expect(md.headers()['vary']?.toLowerCase()).toContain('accept');
+  const body = await md.text();
+  expect(body).toContain('# Trips');
 });

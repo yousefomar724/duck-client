@@ -1,11 +1,14 @@
-import { SITE_CONTACT, SITE_NAME, SITE_URL } from "@/lib/site"
-import { canonicalDestinationPath, canonicalTripPath } from "@/lib/seo/slug"
+import { SITE_CONTACT, SITE_FACTS, SITE_NAME, SITE_URL } from "@/lib/site"
+import {
+  formatDestinationDetail,
+  formatDestinationListItem,
+  formatTripDetail,
+  formatTripListItem,
+} from "@/lib/seo/markdown"
 import {
   listPublicDestinations,
   listPublicTrips,
 } from "@/server/services/public-content"
-import { formatCurrency } from "@/lib/constants"
-import { tripDurationText } from "@/lib/trips/duration"
 
 /**
  * Community convention, not a standard — no major crawler is documented to
@@ -31,33 +34,22 @@ export async function buildLlmsTxt(): Promise<string> {
   lines.push(
     `- Location: ${SITE_CONTACT.street}, ${SITE_CONTACT.city}, ${SITE_CONTACT.country}`,
   )
-  lines.push("- Hours: daily, sunrise to sunset, by advance booking")
-  lines.push("- Prices in EGP, two tiers: Egyptian residents and foreign visitors")
-  lines.push("- Payment: InstaPay or cash. No card gateway.")
+  lines.push(`- Hours: ${SITE_FACTS.hours}`)
+  lines.push(`- ${SITE_FACTS.pricing}`)
+  lines.push(`- Payment: ${SITE_FACTS.payment}`)
   lines.push(`- Contact: ${SITE_CONTACT.phone} · ${SITE_CONTACT.email}`)
-  lines.push("- Languages: Arabic, English")
+  lines.push(`- Languages: ${SITE_FACTS.languages.join(", ")}`)
   lines.push("")
 
   lines.push("## Trips")
   for (const trip of trips) {
-    const priceLine = trip.foreigner_price
-      ? `${formatCurrency(trip.price, trip.currency, "en")} (Egyptian residents) / ${formatCurrency(trip.foreigner_price, trip.currency, "en")} (foreign visitors)`
-      : formatCurrency(trip.price, trip.currency, "en")
-    const durationLabel =
-      tripDurationText(trip, "en") ?? `${trip.duration || 1} hour(s)`
-    lines.push(
-      `- [${trip.name}](${SITE_URL}${canonicalTripPath(trip)}): ` +
-        `${durationLabel}, up to ${trip.max_guests} guests. ${priceLine}. ` +
-        `Book: ${SITE_URL}/book?trip=${trip.id}`,
-    )
+    lines.push(formatTripListItem(trip, "en"))
   }
   lines.push("")
 
   lines.push("## Where you meet us")
   for (const destination of destinations) {
-    lines.push(
-      `- [${destination.name}](${SITE_URL}${canonicalDestinationPath(destination)})`,
-    )
+    lines.push(formatDestinationListItem(destination))
   }
   lines.push("")
 
@@ -100,39 +92,14 @@ export async function buildLlmsFullTxt(): Promise<string> {
   lines.push("## Trips")
   lines.push("")
   for (const trip of trips) {
-    lines.push(`### ${trip.name}`)
-    lines.push("")
-    lines.push(`URL: ${SITE_URL}${canonicalTripPath(trip)}`)
-    lines.push(`Book: ${SITE_URL}/book?trip=${trip.id}`)
-    lines.push(
-      `Price: ${formatCurrency(trip.price, trip.currency, "en")} (Egyptian residents)` +
-        (trip.foreigner_price
-          ? ` / ${formatCurrency(trip.foreigner_price, trip.currency, "en")} (foreign visitors)`
-          : ""),
-    )
-    lines.push(
-      `Duration: ${tripDurationText(trip, "en") ?? `${trip.duration || 1} hour(s)`}`,
-    )
-    lines.push(`Max guests: ${trip.max_guests}`)
-    if (trip.description) lines.push(`\n${trip.description}`)
-    if (trip.itinerary) lines.push(`\nItinerary:\n${trip.itinerary}`)
-    if (trip.availability) lines.push(`\nAvailability:\n${trip.availability}`)
-    if (trip.cancelation_policy) {
-      lines.push(`\nCancellation policy:\n${trip.cancelation_policy}`)
-    }
+    lines.push(formatTripDetail(trip, "en"))
     lines.push("")
   }
 
   lines.push("## Destinations")
   lines.push("")
   for (const destination of destinations) {
-    lines.push(`### ${destination.name}`)
-    lines.push("")
-    lines.push(`URL: ${SITE_URL}${canonicalDestinationPath(destination)}`)
-    if (destination.description) lines.push(`\n${destination.description}`)
-    if (destination.operating_hours) {
-      lines.push(`\nOperating hours: ${destination.operating_hours}`)
-    }
+    lines.push(formatDestinationDetail(destination))
     lines.push("")
   }
 

@@ -1,6 +1,12 @@
 import { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
+const AGENT_LINK =
+  '</.well-known/api-catalog>; rel="api-catalog", ' +
+  '</openapi.json>; rel="service-desc"; type="application/json", ' +
+  '</docs/api>; rel="service-doc"; type="text/html", ' +
+  '</llms-full.txt>; rel="describedby"; type="text/markdown"';
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
@@ -27,7 +33,66 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: '/',
+        headers: [{ key: 'Link', value: AGENT_LINK }],
+      },
+      {
+        // The param form does not match the bare root. Skip _next/ and api/
+        // so static assets do not carry the discovery Link on every response.
+        source: '/:path((?!_next/|api/).*)',
+        headers: [{ key: 'Link', value: AGENT_LINK }],
+      },
+      {
+        source: '/api/mcp',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value:
+              'Content-Type, Accept, Authorization, mcp-session-id, last-event-id, mcp-protocol-version',
+          },
+        ],
+      },
     ];
+  },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/.well-known/api-catalog',
+          destination: '/api/well-known/api-catalog',
+        },
+        {
+          source: '/.well-known/mcp/server-card.json',
+          destination: '/api/well-known/mcp-server-card',
+        },
+        {
+          source: '/.well-known/oauth-protected-resource',
+          destination: '/api/well-known/oauth-protected-resource',
+        },
+        {
+          source: '/.well-known/ai-catalog.json',
+          destination: '/api/well-known/ai-catalog',
+        },
+        {
+          source: '/.well-known/ard.json',
+          destination: '/api/well-known/ard',
+        },
+        {
+          source: '/.well-known/agent-skills/index.json',
+          destination: '/api/well-known/agent-skills/index.json',
+        },
+        {
+          source: '/.well-known/agent-skills/:name/SKILL.md',
+          destination: '/api/well-known/agent-skills/:name/skill',
+        },
+      ],
+    };
   },
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -48,6 +113,7 @@ const nextConfig: NextConfig = {
     ],
   },
   poweredByHeader: false,
+  serverExternalPackages: ['mcp-handler', '@modelcontextprotocol/server'],
   experimental: {
     optimizePackageImports: [
       'lucide-react',

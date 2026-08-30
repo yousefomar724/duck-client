@@ -20,7 +20,7 @@ import SettingsDialog from "@/components/landing/SettingsDialog"
 import { UserMenu } from "@/components/shared/user-menu"
 import { useAuth } from "@/lib/stores/auth-store"
 
-const SOLID_NAVBAR_PATHS = ["/profile", "/my-bookings", "/map"]
+const SOLID_NAVBAR_PATHS = ["/profile", "/my-bookings", "/map", "/docs/api"]
 
 export default function Navbar() {
   const pathname = usePathname()

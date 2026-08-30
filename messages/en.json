@@ -929,5 +929,26 @@
     "description": "Faster access from your home screen",
     "install": "Install",
     "dismiss": "Close"
+  },
+  "apiDocs": {
+    "metadata": {
+      "title": "API for agents",
+      "description": "Public read-only API, MCP server, and authentication notes for Duck Entertainment's Nile water-sports trips in Aswan."
+    },
+    "breadcrumb": "API",
+    "title": "API for agents",
+    "lede": "Read-only access to trips, destinations, availability, and business details. Booking is a handoff to the website — this API does not collect payment or run automated checkout.",
+    "restTitle": "Public REST API",
+    "restBody": "No token is required for these routes. Pass lang=en or lang=ar so localized fields resolve to strings. Errors use an error field.",
+    "colMethod": "Method",
+    "colPath": "Path",
+    "colNotes": "Notes",
+    "specLead": "Machine-readable description:",
+    "mcpTitle": "MCP (read-only)",
+    "mcpBody": "Streamable HTTP. Five tools, no writes. Search and get_trip return a /book?trip=id URL so the agent can hand the user to the form.",
+    "mcpHandoff": "There are no booking or payment tools. PII and InstaPay or cash stay on the website form.",
+    "authTitle": "Authentication",
+    "authBody": "Catalogue reads need no auth. Supplier and admin routes use a 72-hour JWT in Authorization: Bearer. There is no OAuth authorization server and no automated agent registration. Details:",
+    "discoverTitle": "Discovery documents"
   }
 }

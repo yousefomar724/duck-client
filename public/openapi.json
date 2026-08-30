@@ -1,0 +1,505 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Duck Entertainment Public API",
+    "version": "1.0.0",
+    "description": "Unauthenticated catalogue, health, guest booking, and feedback for Nile water-sports trips in Aswan. Supplier and admin routes exist but are not part of this public surface. Pass lang=en or lang=ar so localized fields resolve to strings."
+  },
+  "servers": [
+    { "url": "/", "description": "Same origin" }
+  ],
+  "security": [],
+  "tags": [
+    { "name": "Health" },
+    { "name": "Trips" },
+    { "name": "Destinations" },
+    { "name": "Suppliers" },
+    { "name": "Tour guides" },
+    { "name": "Bookings" },
+    { "name": "Feedback" }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Liveness",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": { "status": { "type": "string", "const": "ok" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trips": {
+      "get": {
+        "tags": ["Trips"],
+        "summary": "List trips",
+        "security": [],
+        "parameters": [
+          {
+            "name": "supplier_id",
+            "in": "query",
+            "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" }
+          },
+          {
+            "name": "destination_id",
+            "in": "query",
+            "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "When set, localized fields resolve to a single string.",
+            "schema": { "type": "string", "enum": ["en", "ar"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trip list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PublicTrip" }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/trips/{id}": {
+      "get": {
+        "tags": ["Trips"],
+        "summary": "Get a trip",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["en", "ar"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trip",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PublicTrip" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/destinations": {
+      "get": {
+        "tags": ["Destinations"],
+        "summary": "List destinations",
+        "security": [],
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["en", "ar"] }
+          },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "public_status",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Destination list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PublicDestination" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/destinations/{id}": {
+      "get": {
+        "tags": ["Destinations"],
+        "summary": "Get a destination",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["en", "ar"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Destination",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PublicDestination" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/suppliers": {
+      "get": {
+        "tags": ["Suppliers"],
+        "summary": "List suppliers",
+        "security": [],
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["en", "ar"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Supplier list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PublicSupplier" }
+                }
+              }
+            }
+          },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/suppliers/{id}": {
+      "get": {
+        "tags": ["Suppliers"],
+        "summary": "Get a supplier",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["en", "ar"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Supplier",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PublicSupplier" }
+              }
+            }
+          },
+          "403": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/tour-guides": {
+      "get": {
+        "tags": ["Tour guides"],
+        "summary": "List tour guides",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Tour guide list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TourGuide" }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/tour-guides/{id}": {
+      "get": {
+        "tags": ["Tour guides"],
+        "summary": "Get a tour guide",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tour guide",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TourGuide" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/bookings/manual": {
+      "post": {
+        "tags": ["Bookings"],
+        "summary": "Create a guest (manual) booking",
+        "description": "Works without a token (optionalAuth). Attach Authorization: Bearer when the caller is logged in so the booking is linked to their account. 409 when the supplier has no remaining kit for that date.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ManualBooking" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Booking created, waiting for supplier confirmation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "booking": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/feedback": {
+      "post": {
+        "tags": ["Feedback"],
+        "summary": "Submit feedback",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Feedback" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Saved",
+            "content": {
+              "application/json": { "schema": { "type": "object" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "72-hour session JWT from POST /api/v1/auth/login. Not required for any operation in this document. See /auth.md."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": { "error": { "type": "string" } }
+      },
+      "Faq": {
+        "type": "object",
+        "properties": {
+          "q": { "type": "string" },
+          "a": { "type": "string" }
+        }
+      },
+      "PublicDestination": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "image": { "type": "string" },
+          "images": { "type": "array", "items": { "type": "string" } },
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "activities": { "type": "array", "items": { "type": "string" } },
+          "operating_hours": { "type": "string" },
+          "updated_at": { "type": "string" }
+        }
+      },
+      "PublicTrip": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "itinerary": { "type": "string" },
+          "availability": { "type": "string" },
+          "cancelation_policy": { "type": "string" },
+          "meeting_point": { "type": "string" },
+          "map_url": { "type": "string" },
+          "faqs": { "type": "array", "items": { "$ref": "#/components/schemas/Faq" } },
+          "hide_default_faqs": { "type": "boolean" },
+          "price": { "type": "number" },
+          "foreigner_price": { "type": "number" },
+          "currency": { "type": "string" },
+          "guide_price": { "type": "number" },
+          "guide_mandatory": { "type": "boolean" },
+          "duration": { "type": "number" },
+          "duration_text": {
+            "type": "object",
+            "properties": {
+              "ar": { "type": "string" },
+              "en": { "type": "string" }
+            }
+          },
+          "max_guests": { "type": "number" },
+          "refundable": { "type": "boolean" },
+          "is_tour": { "type": "boolean" },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "images": { "type": "array", "items": { "type": "string" } },
+          "destinations": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PublicDestination" }
+          },
+          "supplier": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          },
+          "updated_at": { "type": "string" }
+        }
+      },
+      "PublicSupplier": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "user_id": { "type": "string" },
+          "name": { "type": "string" },
+          "about": { "type": "string" },
+          "icon": { "type": "string" },
+          "rate": { "type": "number" }
+        }
+      },
+      "TourGuide": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "price": { "type": "number" },
+          "phone_number": { "type": "string" }
+        }
+      },
+      "ManualBooking": {
+        "type": "object",
+        "required": ["trip_id", "full_name", "phone_number", "booking_date"],
+        "properties": {
+          "trip_id": { "type": "string", "minLength": 1 },
+          "full_name": { "type": "string", "minLength": 2 },
+          "phone_number": { "type": "string", "minLength": 1 },
+          "booking_date": { "type": "string" },
+          "resource_type": {
+            "type": "string",
+            "enum": ["kayak", "water_cycle", "sup"]
+          },
+          "quantity": { "type": "integer", "minimum": 1 },
+          "local_guests": { "type": "integer", "minimum": 0 },
+          "foreigner_guests": { "type": "integer", "minimum": 0 },
+          "duration": { "type": "integer", "minimum": 1 },
+          "wants_guide": { "type": "boolean" },
+          "played_before": { "type": ["boolean", "null"] },
+          "hear_about_us": { "type": "string" },
+          "referral_text": { "type": "string" },
+          "declared_amount": { "type": "number", "minimum": 0 },
+          "adults": { "type": "integer", "minimum": 0 },
+          "kids_1_6": { "type": "integer", "minimum": 0 },
+          "kids_7_12": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "Feedback": {
+        "type": "object",
+        "required": ["rating"],
+        "properties": {
+          "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "comment": { "type": "string", "maxLength": 1000 },
+          "name": { "type": "string", "maxLength": 120 },
+          "contact": { "type": "string", "maxLength": 200 },
+          "context": { "type": "string", "enum": ["general", "booking"] },
+          "booking_ref": { "type": "string", "maxLength": 64 },
+          "page": { "type": "string", "maxLength": 500 },
+          "locale": { "type": "string", "maxLength": 8 }
+        }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Error envelope",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  }
+}

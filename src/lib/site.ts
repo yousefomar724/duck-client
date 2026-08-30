@@ -43,3 +43,17 @@ export const SITE_CONTACT = {
     "https://www.facebook.com/duck.asw/",
   ],
 } as const
+
+/** Operational facts shared by llms.txt, agent markdown, and MCP. */
+export const SITE_FACTS = {
+  hours: "daily, sunrise to sunset, by advance booking",
+  pricing:
+    "Prices in EGP, two tiers: Egyptian residents and foreign visitors",
+  payment: "InstaPay or cash. No card gateway.",
+  languages: ["Arabic", "English"] as const,
+} as const
+
+export function absoluteUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path
+  return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`
+}

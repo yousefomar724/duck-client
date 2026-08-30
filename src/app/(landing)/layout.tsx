@@ -4,6 +4,7 @@ import { FeedbackFab } from "@/components/feedback/feedback-fab"
 import { SkipToContent } from "@/components/shared/skip-to-content"
 import { InstallPrompt } from "@/components/shared/install-prompt"
 import { JsonLd } from "@/components/seo/json-ld"
+import { WebMcp } from "@/components/agent/webmcp"
 import { buildSiteGraph } from "@/lib/seo/json-ld"
 import { getCatalogueSummary } from "@/server/services/public-content"
 
@@ -37,6 +38,7 @@ export default async function LandingLayout({
       <WhatsAppSupportFab />
       <FeedbackFab />
       <InstallPrompt />
+      <WebMcp />
     </>
   )
 }
