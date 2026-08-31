@@ -25,6 +25,8 @@ import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import { opsStrings } from "./ops-strings"
 import { useToast } from "@/lib/stores/toast-store"
 import { resourceLabels } from "@/lib/bookings/status"
+import { calculateBookingTotal } from "@/lib/booking/pricing"
+import { formatCurrency } from "@/lib/constants"
 
 export function WalkInSheet({
   open,
@@ -48,7 +50,27 @@ export function WalkInSheet({
   const [phone, setPhone] = useState("")
   const [resource, setResource] = useState("kayak")
   const [quantity, setQuantity] = useState("1")
+  const [foreigners, setForeigners] = useState("0")
+  const [collected, setCollected] = useState("")
   const [saving, setSaving] = useState(false)
+
+  const qty = Math.max(1, Number.parseInt(quantity, 10) || 1)
+  const foreignerGuests = Math.min(qty, Math.max(0, Number.parseInt(foreigners, 10) || 0))
+  const localGuests = qty - foreignerGuests
+  const selectedTrip = trips.find((t) => t.id === tripId)
+
+  // Priced client-side purely to prefill the collected amount and show staff a
+  // total before saving. The server reprices authoritatively in buildBooking.
+  const estimatedTotal = selectedTrip
+    ? calculateBookingTotal({
+        trip: selectedTrip,
+        guestMix: "mixed",
+        guests: qty,
+        localGuests,
+        foreignerGuests,
+        duration: 1,
+      })
+    : 0
 
   useEffect(() => {
     if (!open) return
@@ -61,7 +83,7 @@ export function WalkInSheet({
   const submit = async () => {
     const [h, m] = time.split(":").map(Number)
     const bookingDate = siteWallTimeToUtc(date, h, m).toISOString()
-    const qty = Math.max(1, Number.parseInt(quantity, 10) || 1)
+    const typed = collected.trim()
     setSaving(true)
     const { error } = await createManualBooking({
       trip_id: tripId,
@@ -70,9 +92,12 @@ export function WalkInSheet({
       booking_date: bookingDate,
       resource_type: resource as "kayak" | "water_cycle" | "sup",
       quantity: qty,
-      local_guests: qty,
-      foreigner_guests: 0,
+      local_guests: localGuests,
+      foreigner_guests: foreignerGuests,
       source: "walk_in",
+      // Omitted means "paid in full" server-side; an explicit 0 records an
+      // unpaid walk-in with a balance still to collect.
+      amount_paid: typed === "" ? undefined : Math.max(0, Number(typed) || 0),
     })
     setSaving(false)
     if (error) {
@@ -84,6 +109,8 @@ export function WalkInSheet({
     onOpenChange(false)
     setName("")
     setPhone("")
+    setForeigners("0")
+    setCollected("")
   }
 
   return (
@@ -143,6 +170,43 @@ export function WalkInSheet({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="walk-in-foreigners">منهم أجانب</Label>
+            <Input
+              id="walk-in-foreigners"
+              type="number"
+              min={0}
+              max={qty}
+              className="min-h-11"
+              value={foreigners}
+              onChange={(e) => setForeigners(e.target.value)}
+            />
+            <p className="text-xs text-text-muted">
+              {localGuests} محلي · {foreignerGuests} أجنبي
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="walk-in-collected">المبلغ المحصل</Label>
+            <Input
+              id="walk-in-collected"
+              type="number"
+              min={0}
+              inputMode="decimal"
+              className="min-h-11"
+              placeholder={
+                selectedTrip
+                  ? formatCurrency(estimatedTotal, selectedTrip.currency)
+                  : "المبلغ كاملاً"
+              }
+              value={collected}
+              onChange={(e) => setCollected(e.target.value)}
+            />
+            <p className="text-xs text-text-muted">
+              {selectedTrip
+                ? `الإجمالي المتوقع ${formatCurrency(estimatedTotal, selectedTrip.currency)} — اتركه فارغاً للدفع الكامل`
+                : "اتركه فارغاً للدفع الكامل"}
+            </p>
           </div>
           <Button
             type="button"

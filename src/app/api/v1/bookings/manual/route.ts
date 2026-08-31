@@ -6,6 +6,7 @@ import { Booking } from '@/server/models/booking';
 import { Supplier } from '@/server/models/supplier';
 import { buildBooking, persistCreatedBooking, toBookingEmailData, type CreateBookingInput } from '@/server/services/booking';
 import { NoAvailabilityError } from '@/server/services/availability';
+import { confirmBookingPayment } from '@/server/services/booking-payment';
 import { sendSupplierNewManualBookingEmail } from '@/server/lib/mail';
 import { errorResponse } from '@/server/lib/json';
 
@@ -28,6 +29,8 @@ const manualBookingSchema = z.object({
   kids_1_6: z.number().int().min(0).optional(),
   kids_7_12: z.number().int().min(0).optional(),
   source: z.enum(['online', 'walk_in']).optional(),
+  /** Cash taken at the dock. Walk-ins only; omitted means the full amount. */
+  amount_paid: z.number().min(0).optional(),
 });
 
 export async function POST(request: Request) {
@@ -64,6 +67,20 @@ export async function POST(request: Request) {
     const built = await buildBooking(session?.user_id ?? null, body);
     const booking = await persistCreatedBooking(built);
 
+    // A walk-in is staff admitting someone already standing at the dock, so it
+    // is confirmed and settled on the spot. Left as PENDING with amount_paid 0
+    // it counted toward no revenue status and no payment total, which is why
+    // walk-ins were missing from the dashboard stats.
+    const isWalkIn = built.source === 'walk_in';
+    if (isWalkIn) {
+      const requested = parsed.data.amount_paid;
+      const collected = Math.min(
+        booking.amount,
+        Math.max(0, requested ?? booking.amount),
+      );
+      await confirmBookingPayment(booking, collected, 'حجز حضوري');
+    }
+
     const populated = await Booking.findById(booking._id)
       .populate({ path: 'trip_id', populate: { path: 'destination_ids' } })
       .populate('user_id')
@@ -74,7 +91,9 @@ export async function POST(request: Request) {
     // creds, a malformed field, transient network error) must never turn a
     // successful booking into a 500 for the caller.
     try {
-      const supplier = await Supplier.findById(built.supplier_id);
+      // Walk-ins are created and confirmed by staff, so the
+      // "awaiting confirmation" notice would be both wrong and noisy.
+      const supplier = isWalkIn ? null : await Supplier.findById(built.supplier_id);
       if (supplier?.email) {
         await sendSupplierNewManualBookingEmail(supplier.email, toBookingEmailData(populated!));
       }

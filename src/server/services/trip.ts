@@ -131,7 +131,11 @@ export function applyTripUpdate(trip: TripDoc, body: Partial<CreateTripBody>): v
   }
   if (body.max_guests) trip.max_guests = body.max_guests;
   if (body.refundable) trip.refundable = body.refundable;
-  if (body.tour_guide_id) trip.tour_guide_id = body.tour_guide_id as unknown as TripDoc['tour_guide_id'];
+  // `if (body.tour_guide_id)` treated an explicit null as "no change", making
+  // it impossible to remove a guide once one had been assigned.
+  if (body.tour_guide_id !== undefined) {
+    trip.tour_guide_id = (body.tour_guide_id || null) as unknown as TripDoc['tour_guide_id'];
+  }
 
   if (body.name) trip.name = body.name;
   if (body.description) trip.description = body.description;

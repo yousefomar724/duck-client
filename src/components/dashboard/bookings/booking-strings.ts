@@ -85,6 +85,9 @@ export const bookingStrings = {
   wantsGuide: "طلب مرشد",
   yes: "نعم",
   no: "لا",
+  hearAboutUs: "كيف عرف عننا",
+  playedBefore: "سبق له التجربة",
+  notSpecified: "غير محدد",
   customerAccount: "حساب العميل",
   technicalDetails: "بيانات تقنية",
   sessionId: "معرف الجلسة",
@@ -178,4 +181,26 @@ export const bookingColumnLabels: Record<string, string> = {
   payment_state: bookingStrings.paymentState,
   status: bookingStrings.status,
   actions: bookingStrings.actions,
+}
+
+/** Arabic labels for the `hear_about_us` values collected by the public form. */
+export const hearAboutUsLabels: Record<string, string> = {
+  instagram: "إنستغرام",
+  facebook: "فيسبوك",
+  tiktok: "تيك توك",
+  google: "جوجل",
+  friend: "صديق",
+  other: "أخرى",
+}
+
+/** `hear_about_us` for display, with the free-text detail appended when present. */
+export function hearAboutUsText(
+  value: string | undefined,
+  referralText: string | undefined,
+): string {
+  const key = value?.trim()
+  if (!key) return bookingStrings.notSpecified
+  const label = hearAboutUsLabels[key] ?? key
+  const detail = referralText?.trim()
+  return detail ? `${label} — ${detail}` : label
 }

@@ -29,7 +29,7 @@ import { PaymentMethodBadge } from "@/components/shared/payment-method-badge"
 import { PaymentStateBadge } from "@/components/shared/payment-state-badge"
 import { DetailField } from "@/components/dashboard/detail-field"
 import { BookingActions, hasBookingActions, type BookingActionType } from "./booking-actions"
-import { bookingStrings } from "./booking-strings"
+import { bookingStrings, hearAboutUsText } from "./booking-strings"
 import {
   canAdminCancelBooking,
   localizedText,
@@ -211,6 +211,25 @@ export function BookingDetailSheet({
                     booking.wants_guide === undefined
                       ? "—"
                       : booking.wants_guide
+                        ? bookingStrings.yes
+                        : bookingStrings.no
+                  }
+                />
+                {/* Both answers are collected by the public booking form and
+                    already reach the supplier email; surface them here too. */}
+                <DetailField
+                  label={bookingStrings.hearAboutUs}
+                  value={hearAboutUsText(
+                    booking.hear_about_us,
+                    booking.referral_text,
+                  )}
+                />
+                <DetailField
+                  label={bookingStrings.playedBefore}
+                  value={
+                    booking.played_before == null
+                      ? bookingStrings.notSpecified
+                      : booking.played_before
                         ? bookingStrings.yes
                         : bookingStrings.no
                   }

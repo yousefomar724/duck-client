@@ -286,6 +286,8 @@ export interface CreateBookingRequest {
   kids_1_6?: number
   kids_7_12?: number
   source?: BookingSource
+  /** Cash collected at the dock. Walk-ins only; omitted means paid in full. */
+  amount_paid?: number
 }
 
 export interface CreateTripRequest {
@@ -317,5 +319,5 @@ export interface CreateTripRequest {
   faqs?: { q: { ar: string; en: string }; a: { ar: string; en: string } }[]
   hide_default_faqs?: boolean
   refundable: boolean
-  tour_guide_id?: string
+  tour_guide_id?: string | null
 }

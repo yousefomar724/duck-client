@@ -3,7 +3,7 @@ import { dbConnect } from '@/server/db/connect';
 import { requireAuth } from '@/server/auth/guard';
 import { findActiveUserById } from '@/server/services/user';
 import { Booking } from '@/server/models/booking';
-import { creditWalletBySupplierId } from '@/server/services/wallet';
+import { confirmBookingPayment } from '@/server/services/booking-payment';
 import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
 
@@ -43,26 +43,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    await creditWalletBySupplierId(booking.supplier_id.toString(), amountPaid);
+    await confirmBookingPayment(booking, amountPaid, body.note ?? '');
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'failed to update wallet';
-    return errorResponse(500, message);
-  }
-
-  booking.status = 'CONFIRMED';
-  booking.amount_paid = amountPaid;
-  booking.payment_entries.push({
-    amount: amountPaid,
-    recorded_at: new Date(),
-    note: body.note ?? '',
-  });
-
-  try {
-    await booking.save();
-  } catch (err) {
-    await creditWalletBySupplierId(booking.supplier_id.toString(), -amountPaid, {
-      allowNegative: true,
-    }).catch(() => {});
     const message = err instanceof Error ? err.message : 'failed to confirm payment';
     return errorResponse(500, message);
   }

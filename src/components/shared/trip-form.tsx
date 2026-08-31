@@ -410,9 +410,9 @@ export default function TripForm({
         destination_ids: values.destination_ids,
       }
 
-      if (values.tour_guide_id) {
-        payload.tour_guide_id = values.tour_guide_id
-      }
+      // Sent even when empty (as null) — omitting it left the previously
+      // selected guide on the trip, so "بدون مرشد" could never be saved.
+      payload.tour_guide_id = values.tour_guide_id || null
 
       if (showSupplierField && values.supplier_id) {
         payload.supplier_id = values.supplier_id
