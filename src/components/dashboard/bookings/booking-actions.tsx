@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { canAdminCancelBooking, canAdminDeleteBooking, canCollectBalance, canEditBooking, canSupplierCancelBooking, bookingStatusMeta, deleteNeedsStrongConfirm } from "@/lib/bookings/status"
+import { canAdminCancelBooking, canAdminDeleteBooking, canDeleteBookingStatus, canCollectBalance, canEditBooking, canSupplierCancelBooking, bookingStatusMeta, deleteNeedsStrongConfirm } from "@/lib/bookings/status"
 import { amountPaid, expectedAmount, refundOwed, remainingAmount } from "@/lib/bookings/payment"
 import type { Booking } from "@/lib/types"
 import { bookingStrings } from "./booking-strings"
@@ -87,7 +87,8 @@ export function hasBookingActions(
   const supplierCancelEnabled =
     role === "supplier" && canSupplierCancelBooking(booking.status)
   const refundSentEnabled = refundOwed(booking) > 0
-  const deleteEnabled = canAdminDeleteBooking(role)
+  const deleteEnabled =
+    canAdminDeleteBooking(role) && canDeleteBookingStatus(booking.status)
 
   return (
     adminCancelEnabled ||
@@ -137,7 +138,8 @@ export function BookingActions({
   const supplierCancelEnabled =
     role === "supplier" && canSupplierCancelBooking(booking.status)
   const refundSentEnabled = refundOwed(booking) > 0
-  const deleteEnabled = canAdminDeleteBooking(role)
+  const deleteEnabled =
+    canAdminDeleteBooking(role) && canDeleteBookingStatus(booking.status)
 
   const hasAnyAction = hasBookingActions(booking, role)
 

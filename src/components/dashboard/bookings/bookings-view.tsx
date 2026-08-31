@@ -61,6 +61,7 @@ import {
   getBookingRowClassName,
 } from "./booking-columns"
 import { bookingStrings, bookingColumnLabels } from "./booking-strings"
+import { useBookingActions } from "./use-booking-actions"
 import {
   exportBookingsCsv,
   matchesDateFilter,
@@ -124,7 +125,6 @@ export function BookingsView({ role }: BookingsViewProps) {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [editBooking, setEditBooking] = useState<Booking | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [editLoading, setEditLoading] = useState(false)
@@ -244,112 +244,11 @@ export function BookingsView({ role }: BookingsViewProps) {
     setSheetOpen(true)
   }, [])
 
-  const handleAction = useCallback(
-    async (
-      type: BookingActionType,
-      booking: Booking,
-      note?: string,
-      amount?: number,
-    ) => {
-      const id = booking.ID
-      setLoadingAction(id)
-      try {
-        switch (type) {
-          case "adminCancel": {
-            const { error: err } = await bookingsApi.adminCancelBooking(id, note)
-            if (err) {
-              addToast(err, "error")
-              break
-            }
-            addToast(bookingStrings.adminCancelSuccess, "success")
-            break
-          }
-          case "processRefund": {
-            const { data, error: err } = await bookingsApi.processRefund(id, note)
-            if (err) {
-              addToast(err, "error")
-              break
-            }
-            if (data?.booking_status === "REFUNDED") {
-              addToast(bookingStrings.refundProcessed, "success")
-            } else if (data?.booking_status === "REFUND_FAILED") {
-              addToast(bookingStrings.refundFailed, "error")
-            } else {
-              addToast(bookingStrings.refundProcessed, "success")
-            }
-            break
-          }
-          case "confirmPayment": {
-            const { error: err } = await bookingsApi.confirmManualPayment(
-              id,
-              amount,
-              note,
-            )
-            if (err) {
-              addToast(err, "error")
-              break
-            }
-            addToast(bookingStrings.paymentConfirmed, "success")
-            break
-          }
-          case "refundPayment": {
-            const { error: err } = await bookingsApi.refundManualPayment(id)
-            if (err) {
-              addToast(err, "error")
-              break
-            }
-            addToast(bookingStrings.paymentRefunded, "success")
-            break
-          }
-          case "collectBalance": {
-            const { error: err } = await bookingsApi.collectBalance(
-              id,
-              amount,
-              note,
-            )
-            if (err) {
-              addToast(err, "error")
-              break
-            }
-            addToast(bookingStrings.balanceCollected, "success")
-            break
-          }
-          case "supplierCancel": {
-            const { error: err } = await bookingsApi.supplierCancelBooking(id, note)
-            if (err) {
-              addToast(err, "error")
-              break
-            }
-            addToast(bookingStrings.supplierCancelSuccess, "success")
-            break
-          }
-          case "refundSent": {
-            const { error: err } = await bookingsApi.markRefundSent(id, note)
-            if (err) {
-              addToast(err, "error")
-              break
-            }
-            addToast(bookingStrings.refundSentSuccess, "success")
-            break
-          }
-          case "adminDelete": {
-            const { error: err } = await bookingsApi.deleteBooking(id, note)
-            if (err) {
-              addToast(err, "error")
-              break
-            }
-            addToast(bookingStrings.adminDeleteSuccess, "success")
-            setSheetOpen(false)
-            break
-          }
-        }
-      } finally {
-        await fetchData()
-        setLoadingAction(null)
-      }
-    },
-    [addToast, fetchData],
-  )
+  const { handleAction, loadingAction } = useBookingActions({
+    onRefresh: fetchData,
+    onDeleted: () => setSheetOpen(false),
+  })
+
 
   const handleGuideChange = useCallback(
     async (tripId: string, guideId: string) => {

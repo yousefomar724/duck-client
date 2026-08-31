@@ -4,6 +4,7 @@ import { Trip } from '../models/trip';
 import { computeBookingAmount } from './booking';
 import { checkAvailability, occupancyChanged, NoAvailabilityError, verifyOccupancy } from './availability';
 import { isValidResourceType } from './resource-type';
+import { canDeleteBookingStatus } from '@/lib/bookings/status';
 import { DeletedBooking } from '../models/deleted-booking';
 import { creditWalletBySupplierId } from './wallet';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
@@ -446,6 +447,13 @@ export async function deleteBookingByAdmin(
 ): Promise<{ wallet_adjustment: number }> {
   if (actor.role !== 2) {
     throw new BookingEditError('unauthorized', 403);
+  }
+
+  if (!canDeleteBookingStatus(booking.status)) {
+    throw new BookingEditError(
+      'لا يمكن حذف حجز جارٍ حالياً — أنهِ الرحلة أو سجّلها كعدم حضور أولاً',
+      409,
+    );
   }
 
   if (options?.mode === 'soft') {

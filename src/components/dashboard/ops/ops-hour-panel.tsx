@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { OpsBookingCard } from "./ops-booking-card"
 import { WalkInSheet } from "./walk-in-sheet"
 import { BookingDetailSheet } from "@/components/dashboard/bookings/booking-detail-sheet"
+import { useBookingActions } from "@/components/dashboard/bookings/use-booking-actions"
 import { bandLabels, opsStrings } from "./ops-strings"
 import { BAND_CLASS } from "./heat"
 import type { DemandBand } from "./heat"
@@ -38,6 +39,10 @@ export function OpsHourPanel({
   onUpdated: (booking: OpsHourBooking) => void
 }) {
   const [walkIn, setWalkIn] = useState(false)
+  const { handleAction, loadingAction } = useBookingActions({
+    onRefresh: onReload,
+    onDeleted: () => setDetail(null),
+  })
   const [detail, setDetail] = useState<Booking | null>(null)
 
   return (
@@ -91,7 +96,8 @@ export function OpsHourPanel({
           if (!open) setDetail(null)
         }}
         role={role}
-        onAction={() => onReload()}
+        loadingAction={loadingAction}
+        onAction={handleAction}
       />
     </section>
   )

@@ -275,6 +275,24 @@ export function deleteNeedsStrongConfirm(status: string): boolean {
   return status !== "CANCELLED" && status !== "REFUNDED" && status !== "FAILED"
 }
 
+/**
+ * Statuses where the customer is physically out on the water. Deleting one
+ * removes an active party from the system while the trip is running, and no
+ * audit snapshot brings them back onto the schedule — so these must be closed
+ * out (منتهية or لم يحضر) before the record can be removed.
+ *
+ * Everything else is deletable by an admin: deletion snapshots the booking to
+ * `DeletedBooking`, reverses any wallet exposure, and frees the equipment slot,
+ * so the only lasting effect is that a record which should not have existed
+ * stops counting toward reports. `deleteNeedsStrongConfirm` still forces a
+ * typed confirmation for anything that is not already void.
+ */
+export const UNDELETABLE_STATUSES: BookingStatus[] = ["ARRIVED", "IN_PROGRESS"]
+
+export function canDeleteBookingStatus(status: string): boolean {
+  return !UNDELETABLE_STATUSES.includes(status as BookingStatus)
+}
+
 export const resourceLabels: Record<string, string> = {
   kayak: "كاياك",
   water_cycle: "دراجة مائية",
