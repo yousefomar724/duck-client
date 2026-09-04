@@ -137,4 +137,10 @@ describe('form-schema', () => {
     );
     expect(result.success).toBe(true);
   });
+
+  it('accepts international E.164 phone', () => {
+    const schema = createBookingFormSchema(messages, 10);
+    const result = schema.safeParse(validPayload({ phone: '+447911123456' }));
+    expect(result.success).toBe(true);
+  });
 });
