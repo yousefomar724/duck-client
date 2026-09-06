@@ -300,8 +300,7 @@ export default function Navbar() {
                 height={80}
                 sizes="(max-width: 768px) 80px, (max-width: 1024px) 56px, 96px"
                 className={cn(
-                  "h-auto transition-all duration-500 md:w-14 w-24 bg-white rounded-b-xl object-contain px-4 py-2",
-                  // isSolid ? "" : "brightness-0 invert",
+                  "h-auto transition-all duration-500 w-24 bg-white rounded-b-xl object-contain px-4 py-2",
                 )}
               />
             </Link>
