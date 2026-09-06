@@ -51,8 +51,11 @@ export function phoneToE164(phone: string): string | null {
   // Already includes country code (e.g. 2010...)
   if (digits.startsWith('20') && digits.length === 12) return `+${digits}`;
 
-  // Fallback: if digits length looks like a phone with country, accept it
-  if (digits.length >= 7 && digits.length <= 15) return `+${digits}`;
+  // Fallback: digits that already look like a country code + subscriber number.
+  // A leading 0 is a national trunk prefix, never valid after `+` in E.164.
+  if (digits.length >= 7 && digits.length <= 15 && !digits.startsWith('0')) {
+    return `+${digits}`;
+  }
 
   return null;
 }

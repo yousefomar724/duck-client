@@ -1,7 +1,7 @@
 import { z } from 'zod/v3';
 import type { ResourceType } from '@/lib/types';
 import { isBookingTimeValid } from '@/lib/booking/schedule';
-import { EGYPT_MOBILE_LOCAL_REGEX, phoneToE164 } from '@/lib/booking/phone';
+import { phoneToE164 } from '@/lib/booking/phone';
 
 const RESOURCE_TYPES = ['kayak', 'water_cycle', 'sup'] as const satisfies readonly ResourceType[];
 
