@@ -224,7 +224,7 @@ export default function SupplierOnboardingPage() {
         sup: Number(parsed.data.sup),
       },
       maintenance: { kayak: 0, water_cycle: 0, sup: 0 },
-      turnaround_minutes: 15,
+      turnaround_minutes: 0,
     })
     setSavingStorage(false)
 

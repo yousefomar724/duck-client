@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { POST as createManualBooking } from '@/app/api/v1/bookings/manual/route';
 import { POST as changeStatus } from '@/app/api/v1/bookings/[id]/status/route';
 import {
@@ -14,8 +14,6 @@ import { Booking } from '@/server/models/booking';
 import { siteWallTimeToUtc, toSiteYmd } from '@/lib/time';
 import { computeOccupancy } from '@/lib/booking/occupancy';
 
-const previousFlag = process.env.OPS_HOURLY_CAPACITY;
-
 function futureYmd(): string {
   const d = new Date(Date.now() + 72 * 60 * 60 * 1000);
   return toSiteYmd(d);
@@ -26,15 +24,6 @@ function at(ymd: string, hour: number, minute = 0) {
 }
 
 describe('hourly availability', () => {
-  beforeAll(() => {
-    process.env.OPS_HOURLY_CAPACITY = '1';
-  });
-
-  afterAll(() => {
-    if (previousFlag === undefined) delete process.env.OPS_HOURLY_CAPACITY;
-    else process.env.OPS_HOURLY_CAPACITY = previousFlag;
-  });
-
   it('rejects a third 2-unit booking at 09:00 but accepts it at 12:00', async () => {
     const { supplier } = await createSupplierUser();
     const trip = await createTrip(supplier._id, { activity_minutes: 60 });
@@ -159,7 +148,7 @@ describe('hourly availability', () => {
     const start = at(ymd, 9);
     const occupancy = computeOccupancy({
       startsAt: start,
-      isTour: false,
+      blocksWholeDays: false,
       durationDays: 1,
       activityMinutes: 60,
       turnaroundMinutes: 0,

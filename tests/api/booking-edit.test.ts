@@ -350,9 +350,6 @@ describe('booking edit cancel delete routes', () => {
   });
 
   it('lets a booking move from a full 09:00 slot to 15:00', async () => {
-    const previous = process.env.OPS_HOURLY_CAPACITY;
-    process.env.OPS_HOURLY_CAPACITY = '1';
-    try {
       const { supplier, user: supplierUser } = await createSupplierUser();
       const trip = await createTrip(supplier._id, { activity_minutes: 60, max_guests: 10 });
       await createSupplierStorage(supplier._id, { kayak: 2 });
@@ -360,7 +357,7 @@ describe('booking edit cancel delete routes', () => {
       const nine = siteWallTimeToUtc(ymd, 9, 0);
       const occupancy = computeOccupancy({
         startsAt: nine,
-        isTour: false,
+        blocksWholeDays: false,
         durationDays: 1,
         activityMinutes: 60,
         turnaroundMinutes: 0,
@@ -399,9 +396,5 @@ describe('booking edit cancel delete routes', () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(toSiteYmd(new Date(body.booking.booking_date))).toBe(ymd);
-    } finally {
-      if (previous === undefined) delete process.env.OPS_HOURLY_CAPACITY;
-      else process.env.OPS_HOURLY_CAPACITY = previous;
-    }
   });
 });

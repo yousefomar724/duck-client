@@ -54,10 +54,11 @@ export const heatLabels: Record<HeatLevel, string> = {
 }
 
 export const bandLabels: Record<DemandBand, string> = {
+  unavailable: 'غير متوفر',
   available: 'متاح',
   moderate: 'متوسط',
   high: 'ضغط عالي',
-  full: 'مكتمل — لا مزيد من الحجوزات',
+  full: 'لا توجد أماكن متاحة',
 }
 
 export type NationalityKind = 'local' | 'foreign' | 'mixed' | 'unknown'

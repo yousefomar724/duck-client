@@ -1,10 +1,14 @@
 import { Types } from 'mongoose';
-import { startOfSiteDay, toSiteYmd, zonedEndOfDayExclusive } from '@/lib/time';
 import {
-  isHourlyCapacityEnabled,
-  occupancySlotsEqual,
-  slotHHMM,
-} from '@/lib/booking/occupancy';
+  siteMinutesOfDay,
+  siteWallTimeToUtc,
+  startOfSiteDay,
+  toSiteYmd,
+  zonedEndOfDayExclusive,
+} from '@/lib/time';
+import { occupancySlotsEqual, slotHHMM } from '@/lib/booking/occupancy';
+import { BOOKING_SLOT_MINUTES } from '@/lib/booking/schedule';
+import { ALLOWED_RESOURCE_TYPES } from '../models/supplier-storage';
 import { Booking, type BookingDoc } from '../models/booking';
 import { SupplierStorage, type SupplierStorageDoc } from '../models/supplier-storage';
 
@@ -62,6 +66,21 @@ function resourceLimitOrThrow(storage: SupplierStorageDoc, resourceType: string)
   return limit;
 }
 
+/** Effective per-type limits for one supplier. `undefined` = type not configured. */
+export async function resourceLimitsForSupplier(
+  supplierId: string,
+): Promise<Map<string, number | undefined>> {
+  const storage = await SupplierStorage.findOne({ supplier_id: supplierId });
+  const limits = new Map<string, number | undefined>();
+  for (const resourceType of ALLOWED_RESOURCE_TYPES) {
+    limits.set(
+      resourceType,
+      storage ? effectiveResourceLimit(storage, resourceType) : undefined,
+    );
+  }
+  return limits;
+}
+
 export async function releaseEndedBookings(now = new Date()): Promise<number> {
   const result = await Booking.updateMany(
     {
@@ -73,39 +92,136 @@ export async function releaseEndedBookings(now = new Date()): Promise<number> {
   return result.modifiedCount;
 }
 
-/**
- * Sums booked quantity for a supplier/resource/day.
- *
- * @deprecated Prefer `countActiveBySlots`. Kept as a day-granular wrapper for
- * one release while `OPS_HOURLY_CAPACITY` is rolled out.
- */
-export async function countActiveByResourceAndDate(
-  supplierId: string,
-  resourceType: string,
-  bookingDate: Date,
-  excludeBookingId?: string,
-): Promise<number> {
-  const ymd = toSiteYmd(bookingDate);
-  const startOfDay = startOfSiteDay(ymd);
-  const endOfDay = zonedEndOfDayExclusive(ymd);
+export const LEGACY_FALLBACK_SPAN_MINUTES = 60;
 
-  const match: Record<string, unknown> = {
-    supplier_id: new Types.ObjectId(supplierId),
-    resource_type: resourceType,
-    booking_date: { $gte: startOfDay, $lt: endOfDay },
-    status: { $in: [...OCCUPYING_STATUSES] },
-  };
+type LegacyOccupancyRow = {
+  resource_type?: string;
+  quantity: number;
+  booking_date: Date;
+  starts_at?: Date | null;
+  ends_at?: Date | null;
+};
 
-  if (excludeBookingId) {
-    match._id = { $ne: new Types.ObjectId(excludeBookingId) };
+function legacyWindow(row: LegacyOccupancyRow): { start: number; end: number } {
+  const startsAt = row.starts_at ? new Date(row.starts_at) : null;
+  const endsAt = row.ends_at ? new Date(row.ends_at) : null;
+  if (
+    startsAt &&
+    endsAt &&
+    Number.isFinite(startsAt.getTime()) &&
+    Number.isFinite(endsAt.getTime()) &&
+    endsAt > startsAt
+  ) {
+    return { start: startsAt.getTime(), end: endsAt.getTime() };
   }
 
-  const result = await Booking.aggregate([
-    { $match: match },
-    { $group: { _id: null, total: { $sum: '$quantity' } } },
-  ]);
+  const bookingDate = new Date(row.booking_date);
+  const alignedMinutes =
+    Math.floor(siteMinutesOfDay(bookingDate) / BOOKING_SLOT_MINUTES) *
+    BOOKING_SLOT_MINUTES;
+  const start = siteWallTimeToUtc(
+    toSiteYmd(bookingDate),
+    Math.floor(alignedMinutes / 60),
+    alignedMinutes % 60,
+  ).getTime();
+  return { start, end: start + LEGACY_FALLBACK_SPAN_MINUTES * 60_000 };
+}
 
-  return result[0]?.total ?? 0;
+/** True when a slot-less legacy row occupies at least one requested slot. */
+export function legacyBookingTouchesSlots(
+  row: LegacyOccupancyRow,
+  slots: Date[],
+): boolean {
+  const window = legacyWindow(row);
+  return slots.some((slot) => {
+    const time = slot.getTime();
+    return window.start <= time && time < window.end;
+  });
+}
+
+export async function countActiveBySlotsMulti(
+  supplierId: string,
+  resourceTypes: string[],
+  slots: Date[],
+  excludeBookingId?: string,
+): Promise<Map<string, Map<number, number>>> {
+  const uniqueTypes = [...new Set(resourceTypes)];
+  const uniqueSlots = [...new Map(slots.map((slot) => [slot.getTime(), slot])).values()];
+  const result = new Map<string, Map<number, number>>();
+  for (const resourceType of uniqueTypes) {
+    result.set(
+      resourceType,
+      new Map(uniqueSlots.map((slot) => [slot.getTime(), 0])),
+    );
+  }
+  if (uniqueTypes.length === 0 || uniqueSlots.length === 0) return result;
+
+  const baseMatch: Record<string, unknown> = {
+    supplier_id: new Types.ObjectId(supplierId),
+    resource_type: { $in: uniqueTypes },
+    status: { $in: [...OCCUPYING_STATUSES] },
+  };
+  if (excludeBookingId) {
+    baseMatch._id = { $ne: new Types.ObjectId(excludeBookingId) };
+  }
+
+  const rowsWithSlots: { _id: { rt: string; slot: Date }; total: number }[] =
+    await Booking.aggregate([
+      { $match: { ...baseMatch, occupancy_slots: { $in: uniqueSlots } } },
+      { $unwind: '$occupancy_slots' },
+      { $match: { occupancy_slots: { $in: uniqueSlots } } },
+      {
+        $group: {
+          _id: { rt: '$resource_type', slot: '$occupancy_slots' },
+          total: { $sum: '$quantity' },
+        },
+      },
+    ]);
+
+  for (const row of rowsWithSlots) {
+    const perSlot = result.get(row._id.rt);
+    const key = new Date(row._id.slot).getTime();
+    if (perSlot?.has(key)) perSlot.set(key, row.total);
+  }
+
+  const ymds = uniqueSlots.map(toSiteYmd).sort();
+  const dayStart = startOfSiteDay(ymds[0]);
+  const dayEnd = zonedEndOfDayExclusive(ymds[ymds.length - 1]);
+  const legacyRows = await Booking.find({
+    ...baseMatch,
+    $and: [
+      {
+        $or: [
+          { occupancy_slots: { $exists: false } },
+          { occupancy_slots: { $size: 0 } },
+          { occupancy_slots: null },
+        ],
+      },
+      {
+        $or: [
+          { starts_at: { $lt: dayEnd }, ends_at: { $gt: dayStart } },
+          { booking_date: { $gte: dayStart, $lt: dayEnd } },
+        ],
+      },
+    ],
+  })
+    .select('resource_type quantity booking_date starts_at ends_at')
+    .lean<LegacyOccupancyRow[]>();
+
+  for (const row of legacyRows) {
+    if (!row.resource_type) continue;
+    const perSlot = result.get(row.resource_type);
+    if (!perSlot) continue;
+    const window = legacyWindow(row);
+    for (const slot of uniqueSlots) {
+      const key = slot.getTime();
+      if (window.start <= key && key < window.end) {
+        perSlot.set(key, (perSlot.get(key) ?? 0) + row.quantity);
+      }
+    }
+  }
+
+  return result;
 }
 
 export async function countActiveBySlots(
@@ -114,58 +230,13 @@ export async function countActiveBySlots(
   slots: Date[],
   excludeBookingId?: string,
 ): Promise<{ perSlot: Map<number, number>; peak: number }> {
-  const perSlot = new Map<number, number>();
-  for (const slot of slots) perSlot.set(slot.getTime(), 0);
-  if (slots.length === 0) return { perSlot, peak: 0 };
-
-  const match: Record<string, unknown> = {
-    supplier_id: new Types.ObjectId(supplierId),
-    resource_type: resourceType,
-    status: { $in: [...OCCUPYING_STATUSES] },
-    occupancy_version: 1,
-    occupancy_slots: { $in: slots },
-  };
-  if (excludeBookingId) {
-    match._id = { $ne: new Types.ObjectId(excludeBookingId) };
-  }
-
-  const aggregated: { _id: Date; total: number }[] = await Booking.aggregate([
-    { $match: match },
-    { $unwind: '$occupancy_slots' },
-    { $match: { occupancy_slots: { $in: slots } } },
-    { $group: { _id: '$occupancy_slots', total: { $sum: '$quantity' } } },
-  ]);
-
-  for (const row of aggregated) {
-    const key = new Date(row._id).getTime();
-    if (perSlot.has(key)) perSlot.set(key, row.total);
-  }
-
-  const dayBlockMatch: Record<string, unknown> = {
-    supplier_id: new Types.ObjectId(supplierId),
-    resource_type: resourceType,
-    status: { $in: [...OCCUPYING_STATUSES] },
-    occupancy_version: { $ne: 1 },
-  };
-  if (excludeBookingId) {
-    dayBlockMatch._id = { $ne: new Types.ObjectId(excludeBookingId) };
-  }
-  const ymds = [...new Set(slots.map((s) => toSiteYmd(s)))];
-  const dayOr = ymds.map((ymd) => ({
-    booking_date: { $gte: startOfSiteDay(ymd), $lt: zonedEndOfDayExclusive(ymd) },
-  }));
-  if (dayOr.length > 0) {
-    dayBlockMatch.$or = dayOr;
-    const blockers = await Booking.find(dayBlockMatch).select('quantity booking_date');
-    for (const blocker of blockers) {
-      const ymd = toSiteYmd(blocker.booking_date);
-      for (const slot of slots) {
-        if (toSiteYmd(slot) === ymd) {
-          perSlot.set(slot.getTime(), (perSlot.get(slot.getTime()) ?? 0) + blocker.quantity);
-        }
-      }
-    }
-  }
+  const multi = await countActiveBySlotsMulti(
+    supplierId,
+    [resourceType],
+    slots,
+    excludeBookingId,
+  );
+  const perSlot = multi.get(resourceType) ?? new Map<number, number>();
 
   let peak = 0;
   for (const count of perSlot.values()) {
@@ -179,8 +250,6 @@ function arabicSlotConflict(slot: Date, requestedQty: number, available: number)
 }
 
 /**
- * Hourly occupancy check when `OPS_HOURLY_CAPACITY=1`; otherwise day-granular.
- *
  * Race-guard escalation (not built): a `resource_slot_usage` collection with
  * conditional `$inc` would make concurrent creates atomic without the
  * insert-then-verify / ordered-loser-rollback used here. MongoMemoryServer
@@ -197,29 +266,6 @@ export async function checkAvailability(
 
   const storage = await SupplierStorage.findOne({ supplier_id: supplierId });
   if (!storage) throw new Error('supplier storage not configured');
-
-  if (!isHourlyCapacityEnabled()) {
-    const limit = storage.resources.get(resourceType);
-    if (limit === undefined) {
-      throw new NoAvailabilityError('resource type not found in supplier storage');
-    }
-    const bookingDate = occupancySlots[0];
-    if (!bookingDate) return;
-    const currentBooked = await countActiveByResourceAndDate(
-      supplierId,
-      resourceType,
-      bookingDate,
-      excludeBookingId,
-    );
-    if (currentBooked + requestedQty > limit) {
-      throw new NoAvailabilityError(
-        `no availability for the requested resource: requested ${requestedQty} but only ${
-          limit - currentBooked
-        } available (limit: ${limit}, booked: ${currentBooked})`,
-      );
-    }
-    return;
-  }
 
   const limit = resourceLimitOrThrow(storage, resourceType);
   if (occupancySlots.length === 0) return;
@@ -262,7 +308,7 @@ async function orderedLoserCheck(booking: BookingDoc, limit: number): Promise<vo
       .select('quantity created_at')
       .sort({ created_at: 1, _id: 1 });
 
-    // Legacy day-blocked bookings (occupancy_version !== 1) are counted by
+    // Legacy window-blocked bookings without occupancy_slots are counted by
     // countActiveBySlots but carry no occupancy_slots to order by. They predate
     // every writer here, so they consume the limit first.
     const occupantTotal = occupants.reduce((sum, o) => sum + o.quantity, 0);
@@ -298,7 +344,6 @@ async function orderedLoserCheck(booking: BookingDoc, limit: number): Promise<vo
  * is standalone in CI, so `session.withTransaction` is unavailable here.
  */
 export async function verifyOccupancy(booking: BookingDoc): Promise<void> {
-  if (!isHourlyCapacityEnabled()) return;
   if (!booking.resource_type || !booking.occupancy_slots?.length) return;
 
   const storage = await SupplierStorage.findOne({ supplier_id: booking.supplier_id });

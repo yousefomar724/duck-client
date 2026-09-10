@@ -48,7 +48,7 @@ export default function SupplierStoragePage() {
   const [kayakMaint, setKayakMaint] = useState("0")
   const [waterCycleMaint, setWaterCycleMaint] = useState("0")
   const [supMaint, setSupMaint] = useState("0")
-  const [turnaround, setTurnaround] = useState("15")
+  const [turnaround, setTurnaround] = useState("0")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -86,7 +86,7 @@ export default function SupplierStoragePage() {
     setKayakMaint(String(m.kayak ?? 0))
     setWaterCycleMaint(String(m.water_cycle ?? 0))
     setSupMaint(String(m.sup ?? 0))
-    setTurnaround(String(data?.turnaround_minutes ?? 15))
+    setTurnaround(String(data?.turnaround_minutes ?? 0))
   }, [supplierId])
 
   useEffect(() => {

@@ -45,6 +45,27 @@ Object.defineProperty(window, 'ResizeObserver', {
   value: MockResizeObserver,
 });
 
+Object.defineProperties(HTMLElement.prototype, {
+  // Radix Select calls scrollIntoView on the highlighted option when its
+  // content mounts; jsdom implements neither this nor the Pointer Capture API.
+  scrollIntoView: {
+    configurable: true,
+    value: vi.fn(),
+  },
+  hasPointerCapture: {
+    configurable: true,
+    value: vi.fn(() => false),
+  },
+  setPointerCapture: {
+    configurable: true,
+    value: vi.fn(),
+  },
+  releasePointerCapture: {
+    configurable: true,
+    value: vi.fn(),
+  },
+});
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn(),

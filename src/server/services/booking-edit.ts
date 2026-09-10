@@ -13,7 +13,7 @@ import {
   computeOccupancy,
   OCCUPANCY_VERSION,
   PAST_BOOKING_GRACE_MS,
-  resolveActivityMinutes,
+  resolveBookingOccupancyMinutes,
 } from '@/lib/booking/occupancy';
 import { SupplierStorage } from '../models/supplier-storage';
 
@@ -171,11 +171,13 @@ export async function applyBookingEdit(
   }
 
   const storage = await SupplierStorage.findOne({ supplier_id: booking.supplier_id });
+  // `nextDuration` is hours for a tour, so it sizes the window rather than
+  // fanning the booking across that many whole days. See buildBooking.
   const nextOccupancy = computeOccupancy({
     startsAt: nextBookingDate,
-    isTour: trip.is_tour,
-    durationDays: trip.is_tour ? nextDuration : 1,
-    activityMinutes: resolveActivityMinutes(trip),
+    blocksWholeDays: false,
+    durationDays: 1,
+    activityMinutes: resolveBookingOccupancyMinutes(trip, nextDuration),
     turnaroundMinutes: storage?.turnaround_minutes ?? 0,
   });
 

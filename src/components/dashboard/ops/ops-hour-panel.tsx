@@ -10,8 +10,9 @@ import { bandLabels, opsStrings } from "./ops-strings"
 import { BAND_CLASS } from "./heat"
 import type { DemandBand } from "./heat"
 import { cn } from "@/lib/utils"
-import type { OpsHourBooking } from "@/lib/api/ops"
+import type { OpsHourBooking, OpsResourceUtilisation } from "@/lib/api/ops"
 import type { Booking } from "@/lib/types"
+import { resourceLabels } from "@/lib/bookings/status"
 import { EmptyState } from "@/components/dashboard/empty-state"
 import { CalendarCheck } from "lucide-react"
 
@@ -21,6 +22,7 @@ export function OpsHourPanel({
   bookings,
   units,
   capacity,
+  perResource = [],
   pct,
   band,
   role,
@@ -32,6 +34,7 @@ export function OpsHourPanel({
   bookings: OpsHourBooking[]
   units: number
   capacity: number
+  perResource?: OpsResourceUtilisation[]
   pct: number
   band: DemandBand
   role: "admin" | "supplier"
@@ -55,6 +58,22 @@ export function OpsHourPanel({
           <p className="text-sm text-text-muted">
             {units} / {capacity} · {pct}%
           </p>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {perResource
+              .filter((resource) => resource.capacity > 0)
+              .map((resource) => (
+                <span
+                  key={resource.type}
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                    BAND_CLASS[resource.band],
+                  )}
+                >
+                  {resourceLabels[resource.type] ?? resource.type}: {resource.units} /{" "}
+                  {resource.capacity}
+                </span>
+              ))}
+          </div>
         </div>
         <span className={cn("rounded-full px-2 py-1 text-xs font-medium", BAND_CLASS[band])}>
           {bandLabels[band]}

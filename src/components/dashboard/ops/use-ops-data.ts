@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import * as opsApi from "@/lib/api/ops"
-import type { OpsCalendarDay, OpsHourBooking, OpsHourRow } from "@/lib/api/ops"
+import type { OpsCalendarDay, OpsCapacity, OpsHourBooking, OpsHourRow } from "@/lib/api/ops"
 
 export function useOpsCalendar(month: string, supplierId?: string | null) {
   const [days, setDays] = useState<OpsCalendarDay[]>([])
@@ -39,7 +39,7 @@ export function useOpsDay(date: string | undefined, supplierId?: string | null) 
     units: number
     revenue: number
   } | null>(null)
-  const [capacity, setCapacity] = useState(0)
+  const [capacity, setCapacity] = useState<OpsCapacity | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -55,7 +55,7 @@ export function useOpsDay(date: string | undefined, supplierId?: string | null) 
     }
     setHours(data.hours)
     setSummary(data.summary)
-    setCapacity(data.capacity.total)
+    setCapacity(data.capacity)
   }, [date, supplierId])
 
   useEffect(() => {
@@ -75,7 +75,8 @@ export function useOpsHour(
 ) {
   const [bookings, setBookings] = useState<OpsHourBooking[]>([])
   const [units, setUnits] = useState(0)
-  const [capacity, setCapacity] = useState(0)
+  const [capacity, setCapacity] = useState<OpsCapacity | null>(null)
+  const [perResource, setPerResource] = useState<OpsHourRow["per_resource"]>([])
   const [pct, setPct] = useState(0)
   const [band, setBand] = useState<OpsHourRow["band"]>("available")
   const [loading, setLoading] = useState(false)
@@ -93,7 +94,8 @@ export function useOpsHour(
     }
     setBookings(data.bookings)
     setUnits(data.units)
-    setCapacity(data.capacity.total)
+    setCapacity(data.capacity)
+    setPerResource(data.per_resource)
     setPct(data.pct)
     setBand(data.band)
   }, [date, time, supplierId])
@@ -105,5 +107,5 @@ export function useOpsHour(
     return () => window.clearTimeout(id)
   }, [reload])
 
-  return { bookings, units, capacity, pct, band, loading, error, reload }
+  return { bookings, units, capacity, perResource, pct, band, loading, error, reload }
 }

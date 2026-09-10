@@ -436,6 +436,8 @@
     "bookingPickDate": "التاريخ",
     "bookingTime": "الوقت",
     "bookingTimeWindowHint": "الحجز متاح من 6:00 صباحاً حتى 6:30 مساءً",
+    "slotSoldOut": "لا توجد أماكن متاحة",
+    "resourceTypeUnavailable": "هذا النوع من المعدات غير متوفر حالياً",
     "bookingCalendarAria": "فتح التقويم",
     "relativeDayToday": "اليوم",
     "relativeDayTomorrow": "غداً",

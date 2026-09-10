@@ -17,10 +17,6 @@ export const OCCUPANCY_VERSION = 1;
 /** Walk-in / dock grace: a slot that started up to this long ago is still bookable. */
 export const PAST_BOOKING_GRACE_MS = 2 * 60 * 60 * 1000;
 
-export function isHourlyCapacityEnabled(): boolean {
-  return process.env.OPS_HOURLY_CAPACITY === '1';
-}
-
 export function operatingSlotsForDay(ymd: string): Date[] {
   const slots: Date[] = [];
   for (let m = BOOKING_MIN_MINUTES; m <= BOOKING_MAX_MINUTES; m += BOOKING_SLOT_MINUTES) {
@@ -47,6 +43,26 @@ export function resolveActivityMinutes(trip: {
   return 60;
 }
 
+/**
+ * Occupancy length in minutes for one booking.
+ *
+ * `is_tour` trips do NOT declare an activity length — the trip form forces
+ * `activity_minutes` to 0 for them and the customer instead picks a number of
+ * HOURS at booking time (the 1-6 hour picker on /book, `duration1h`..
+ * `duration6h`). So a tour's length comes from the request, and a non-tour's
+ * from the trip. Nothing here is ever measured in days.
+ */
+export function resolveBookingOccupancyMinutes(
+  trip: { activity_minutes?: number | null; duration?: number | null; is_tour?: boolean },
+  requestedDurationHours?: number | null,
+): number {
+  if (!trip.is_tour) return resolveActivityMinutes(trip);
+  const requested = Math.floor(Number(requestedDurationHours) || 0);
+  const declared = Math.floor(Number(trip.duration) || 0);
+  const hours = Math.max(1, requested || declared || 1);
+  return hours * 60;
+}
+
 function wallMinutesToUtc(ymd: string, totalMinutes: number): Date {
   const dayLength = 24 * 60;
   const dayOffset = Math.floor(totalMinutes / dayLength);
@@ -63,12 +79,19 @@ function wallMinutesToUtc(ymd: string, totalMinutes: number): Date {
 
 export function computeOccupancy(opts: {
   startsAt: Date;
-  isTour: boolean;
+  /**
+   * Reserve every operating slot of every day the booking spans, ignoring the
+   * clock. Only true for a booking genuinely sold by the day — never for an
+   * `is_tour` trip, whose `duration` is a number of hours, not days. Mapping
+   * those hours onto days is what made one 3-hour kayak booking reserve the
+   * whole fleet for three days.
+   */
+  blocksWholeDays: boolean;
   durationDays: number;
   activityMinutes: number;
   turnaroundMinutes: number;
 }): { starts_at: Date; ends_at: Date; occupancy_slots: Date[] } {
-  if (opts.isTour) {
+  if (opts.blocksWholeDays) {
     const startYmd = toSiteYmd(opts.startsAt);
     const days = Math.max(1, Math.floor(opts.durationDays) || 1);
     const occupancy_slots: Date[] = [];

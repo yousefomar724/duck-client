@@ -436,6 +436,8 @@
     "bookingPickDate": "Date",
     "bookingTime": "Time",
     "bookingTimeWindowHint": "Bookings are available from 6:00 AM to 6:30 PM",
+    "slotSoldOut": "No spaces left",
+    "resourceTypeUnavailable": "This equipment type is not currently offered",
     "bookingCalendarAria": "Open calendar",
     "relativeDayToday": "today",
     "relativeDayTomorrow": "tomorrow",

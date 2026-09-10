@@ -86,7 +86,6 @@ export function OpsWorkspace({
             date={validDate}
             hours={day.hours}
             summary={day.summary}
-            capacity={day.capacity}
             selectedHour={hourTime}
             basePath={basePath}
           />
@@ -97,7 +96,8 @@ export function OpsWorkspace({
             time={hourTime}
             bookings={hour.bookings}
             units={hour.units}
-            capacity={hour.capacity}
+            capacity={hour.capacity?.total ?? 0}
+            perResource={hour.perResource}
             pct={hour.pct}
             band={hour.band}
             role={role}

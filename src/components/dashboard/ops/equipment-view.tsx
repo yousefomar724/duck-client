@@ -58,7 +58,7 @@ export function EquipmentView({
       {rows.length > 0 ? (
         <ul className="divide-y rounded-xl border bg-white">
           {rows.map((row) => {
-            const fleet = row.capacity + row.maintenance
+            const fleet = row.raw
             return (
               <li key={row.type} className="flex min-h-14 items-center justify-between gap-3 px-4 text-sm">
                 <span className="font-medium">

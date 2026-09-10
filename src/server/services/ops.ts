@@ -24,8 +24,11 @@ import { bandFromPct, heatFromBookingCount, utilisationPct } from '@/components/
 import { bookingNationality } from '@/components/dashboard/ops/ops-strings';
 import {
   OCCUPYING_STATUSES,
+  countActiveBySlotsMulti,
   effectiveResourceLimit,
+  legacyBookingTouchesSlots,
   releaseEndedBookings,
+  resourceLimitsForSupplier,
 } from './availability';
 
 const LOAD_EXCLUDED = [
@@ -51,17 +54,28 @@ function mapToRecord(map: Map<string, number> | Record<string, number> | undefin
   return { ...map };
 }
 
+export interface CapacityResourceRow {
+  type: string;
+  capacity: number;
+  maintenance: number;
+  raw: number;
+  offered: boolean;
+}
+
 export interface CapacityBreakdown {
   total: number;
-  per_resource: { type: string; capacity: number; maintenance: number }[];
+  per_resource: CapacityResourceRow[];
 }
 
 export async function loadCapacity(supplierId: string | null): Promise<CapacityBreakdown> {
   const filter = supplierId ? { supplier_id: oid(supplierId) } : {};
   const storages = await SupplierStorage.find(filter);
-  const byType = new Map<string, { capacity: number; maintenance: number }>();
+  const byType = new Map<
+    string,
+    { raw: number; maintenance: number; offered: boolean }
+  >();
   for (const rt of ALLOWED_RESOURCE_TYPES) {
-    byType.set(rt, { capacity: 0, maintenance: 0 });
+    byType.set(rt, { raw: 0, maintenance: 0, offered: false });
   }
   for (const storage of storages) {
     for (const rt of ALLOWED_RESOURCE_TYPES) {
@@ -72,18 +86,21 @@ export async function loadCapacity(supplierId: string | null): Promise<CapacityB
       }
       const limit = effectiveResourceLimit(storage, rt);
       if (limit === undefined) continue;
-      const current = byType.get(rt) ?? { capacity: 0, maintenance: 0 };
-      current.capacity += resources[rt] ?? 0;
+      const current = byType.get(rt) ?? { raw: 0, maintenance: 0, offered: false };
+      current.raw += resources[rt] ?? 0;
       current.maintenance += maintenance[rt] ?? 0;
+      current.offered = true;
       byType.set(rt, current);
     }
   }
   const per_resource = [...byType.entries()]
-    .filter(([, v]) => v.capacity > 0 || v.maintenance > 0)
+    .filter(([, v]) => v.offered)
     .map(([type, v]) => ({
       type,
-      capacity: Math.max(0, v.capacity - v.maintenance),
+      capacity: Math.max(0, v.raw - v.maintenance),
       maintenance: v.maintenance,
+      raw: v.raw,
+      offered: v.offered,
     }));
   const total = per_resource.reduce((sum, r) => sum + r.capacity, 0);
   return { total, per_resource };
@@ -149,7 +166,6 @@ export async function getOpsCalendar(
       {
         $match: {
           ...scopeFilter(supplierId),
-          occupancy_version: 1,
           occupancy_slots: { $gte: start, $lt: end },
           status: { $in: [...OCCUPYING_STATUSES] },
         },
@@ -229,12 +245,16 @@ export async function getOpsDay(supplierId: string | null, ymd: string) {
     },
   ]);
 
-  const slotRows: { _id: Date; bookings: number; guests: number; units: number }[] =
+  const slotRows: {
+    _id: { slot: Date; rt: string };
+    bookings: number;
+    guests: number;
+    units: number;
+  }[] =
     await Booking.aggregate([
       {
         $match: {
           ...scopeFilter(supplierId),
-          occupancy_version: 1,
           occupancy_slots: { $gte: start, $lt: end },
           status: { $nin: [...LOAD_EXCLUDED] },
         },
@@ -243,9 +263,25 @@ export async function getOpsDay(supplierId: string | null, ymd: string) {
       { $match: { occupancy_slots: { $gte: start, $lt: end } } },
       {
         $group: {
-          _id: '$occupancy_slots',
-          bookings: { $sum: 1 },
-          guests: { $sum: { $add: ['$local_guests', '$foreigner_guests'] } },
+          _id: { slot: '$occupancy_slots', rt: '$resource_type' },
+          bookings: {
+            $sum: {
+              $cond: [
+                { $in: ['$status', [...OCCUPYING_STATUSES]] },
+                1,
+                0,
+              ],
+            },
+          },
+          guests: {
+            $sum: {
+              $cond: [
+                { $in: ['$status', [...OCCUPYING_STATUSES]] },
+                { $add: ['$local_guests', '$foreigner_guests'] },
+                0,
+              ],
+            },
+          },
           units: {
             $sum: {
               $cond: [
@@ -259,9 +295,27 @@ export async function getOpsDay(supplierId: string | null, ymd: string) {
       },
     ]);
 
-  const bySlot = new Map(
-    slotRows.map((row) => [Math.floor(new Date(row._id).getTime() / 60_000), row]),
-  );
+  const resourceTypes = [...ALLOWED_RESOURCE_TYPES];
+  const daySlots = operatingSlotsForDay(ymd);
+  const activeByType = supplierId
+    ? await countActiveBySlotsMulti(supplierId, resourceTypes, daySlots)
+    : new Map<string, Map<number, number>>();
+  if (!supplierId) {
+    for (const row of slotRows) {
+      const key = new Date(row._id.slot).getTime();
+      const perSlot = activeByType.get(row._id.rt) ?? new Map<number, number>();
+      perSlot.set(key, (perSlot.get(key) ?? 0) + row.units);
+      activeByType.set(row._id.rt, perSlot);
+    }
+  }
+  const bySlot = new Map<number, { bookings: number; guests: number }>();
+  for (const row of slotRows) {
+    const key = Math.floor(new Date(row._id.slot).getTime() / 60_000);
+    const current = bySlot.get(key) ?? { bookings: 0, guests: 0 };
+    current.bookings += row.bookings;
+    current.guests += row.guests;
+    bySlot.set(key, current);
+  }
 
   const hours = hourLabels().map((hour) => {
     const h = Number(hour.slice(0, 2));
@@ -271,12 +325,39 @@ export async function getOpsDay(supplierId: string | null, ymd: string) {
     let units = 0;
     for (const slot of buckets) {
       const row = bySlot.get(Math.floor(slot.getTime() / 60_000));
-      if (!row) continue;
-      bookings = Math.max(bookings, row.bookings);
-      guests = Math.max(guests, row.guests);
-      units = Math.max(units, row.units);
+      bookings = Math.max(bookings, row?.bookings ?? 0);
+      guests = Math.max(guests, row?.guests ?? 0);
+      let slotUnits = 0;
+      for (const rt of resourceTypes) {
+        slotUnits += activeByType.get(rt)?.get(slot.getTime()) ?? 0;
+      }
+      units = Math.max(units, slotUnits);
     }
-    const pct = utilisationPct(units, capacity.total);
+    const per_resource = capacity.per_resource.map((resource) => {
+      let resourceUnits = 0;
+      for (const slot of buckets) {
+        resourceUnits = Math.max(
+          resourceUnits,
+          activeByType.get(resource.type)?.get(slot.getTime()) ?? 0,
+        );
+      }
+      const resourcePct = utilisationPct(resourceUnits, resource.capacity);
+      return {
+        type: resource.type,
+        units: resourceUnits,
+        capacity: resource.capacity,
+        pct: resourcePct,
+        band:
+          resource.capacity <= 0 ? ('unavailable' as const) : bandFromPct(resourcePct),
+      };
+    });
+    // Per-type peaks can occur in different half-hour buckets, so their sum may
+    // be greater than the peak of the combined units for the hour.
+    const pct = per_resource.reduce(
+      (max, resource) =>
+        resource.capacity > 0 ? Math.max(max, resource.pct) : max,
+      0,
+    );
     return {
       hour,
       bookings,
@@ -284,7 +365,8 @@ export async function getOpsDay(supplierId: string | null, ymd: string) {
       units,
       capacity: capacity.total,
       pct,
-      band: bandFromPct(pct),
+      band: capacity.total <= 0 ? ('unavailable' as const) : bandFromPct(pct),
+      per_resource,
     };
   });
 
@@ -309,20 +391,101 @@ export async function getOpsHour(supplierId: string | null, ymd: string, time: s
   const buckets = slotsForHour(ymd, parsed.hour);
   const capacity = await loadCapacity(supplierId);
 
-  const bookings = await Booking.find({
+  const candidates = await Booking.find({
     ...scopeFilter(supplierId),
-    occupancy_version: 1,
-    occupancy_slots: { $in: buckets },
     status: { $nin: [...LOAD_EXCLUDED] },
+    $or: [
+      { occupancy_slots: { $in: buckets } },
+      {
+        $and: [
+          {
+            $or: [
+              { occupancy_slots: { $exists: false } },
+              { occupancy_slots: { $size: 0 } },
+              { occupancy_slots: null },
+            ],
+          },
+          {
+            $or: [
+              {
+                starts_at: { $lt: zonedEndOfDayExclusive(ymd) },
+                ends_at: { $gt: startOfSiteDay(ymd) },
+              },
+              {
+                booking_date: {
+                  $gte: startOfSiteDay(ymd),
+                  $lt: zonedEndOfDayExclusive(ymd),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
   })
     .populate({ path: 'trip_id', select: 'name is_tour duration activity_minutes' })
     .sort({ booking_date: 1, created_at: 1 });
 
-  const occupying = bookings.filter((b) =>
-    (OCCUPYING_STATUSES as readonly string[]).includes(b.status),
+  const bookings = candidates.filter((booking) =>
+    booking.occupancy_slots?.length
+      ? booking.occupancy_slots.some((bookingSlot: Date) =>
+          buckets.some((bucket) => bucket.getTime() === bookingSlot.getTime()),
+        )
+      : legacyBookingTouchesSlots(booking, buckets),
   );
-  const units = occupying.reduce((sum, b) => sum + b.quantity, 0);
-  const pct = utilisationPct(units, capacity.total);
+  const resourceTypes = [...ALLOWED_RESOURCE_TYPES];
+  const activeByType = supplierId
+    ? await countActiveBySlotsMulti(supplierId, resourceTypes, buckets)
+    : new Map<string, Map<number, number>>();
+  if (!supplierId) {
+    for (const booking of bookings) {
+      if (!(OCCUPYING_STATUSES as readonly string[]).includes(booking.status)) continue;
+      if (!booking.resource_type) continue;
+      const perSlot =
+        activeByType.get(booking.resource_type) ?? new Map<number, number>();
+      for (const bucket of buckets) {
+        const occupies = booking.occupancy_slots?.length
+          ? booking.occupancy_slots.some(
+              (bookingSlot: Date) => bookingSlot.getTime() === bucket.getTime(),
+            )
+          : legacyBookingTouchesSlots(booking, [bucket]);
+        if (occupies) {
+          perSlot.set(bucket.getTime(), (perSlot.get(bucket.getTime()) ?? 0) + booking.quantity);
+        }
+      }
+      activeByType.set(booking.resource_type, perSlot);
+    }
+  }
+  let units = 0;
+  for (const bucket of buckets) {
+    let slotUnits = 0;
+    for (const rt of resourceTypes) {
+      slotUnits += activeByType.get(rt)?.get(bucket.getTime()) ?? 0;
+    }
+    units = Math.max(units, slotUnits);
+  }
+  const per_resource = capacity.per_resource.map((resource) => {
+    let resourceUnits = 0;
+    for (const bucket of buckets) {
+      resourceUnits = Math.max(
+        resourceUnits,
+        activeByType.get(resource.type)?.get(bucket.getTime()) ?? 0,
+      );
+    }
+    const resourcePct = utilisationPct(resourceUnits, resource.capacity);
+    return {
+      type: resource.type,
+      units: resourceUnits,
+      capacity: resource.capacity,
+      pct: resourcePct,
+      band: resource.capacity <= 0 ? ('unavailable' as const) : bandFromPct(resourcePct),
+    };
+  });
+  const pct = per_resource.reduce(
+    (max, resource) =>
+      resource.capacity > 0 ? Math.max(max, resource.pct) : max,
+    0,
+  );
 
   return {
     date: ymd,
@@ -330,7 +493,8 @@ export async function getOpsHour(supplierId: string | null, ymd: string, time: s
     capacity,
     units,
     pct,
-    band: bandFromPct(pct),
+    band: capacity.total <= 0 ? ('unavailable' as const) : bandFromPct(pct),
+    per_resource,
     bookings: bookings.map((doc) => {
       const json = doc.toJSON() as Record<string, unknown>;
       return {
@@ -398,48 +562,40 @@ export async function getPublicSlotAvailability(tripId: string, ymd: string, res
   const trip = await Trip.findById(tripId);
   if (!trip) return null;
   const supplierId = trip.supplier_id.toString();
-  const capacity = await loadCapacity(supplierId);
+  const limits = await resourceLimitsForSupplier(supplierId);
   const daySlots = operatingSlotsForDay(ymd);
-  const types = resourceType ? [resourceType] : capacity.per_resource.map((r) => r.type);
+  const types = resourceType ? [resourceType] : [...ALLOWED_RESOURCE_TYPES];
+  const capacity: Record<string, number> = {};
+  for (const rt of types) {
+    const limit = limits.get(rt);
+    if (limit !== undefined) capacity[rt] = limit;
+  }
+  const capacity_total = Object.values(capacity).reduce((sum, value) => sum + value, 0);
 
   const remainingByType: Record<string, Record<number, number>> = {};
   for (const rt of types) {
-    const cap = capacity.per_resource.find((r) => r.type === rt)?.capacity ?? 0;
+    const cap = limits.get(rt) ?? 0;
     remainingByType[rt] = {};
     for (const slot of daySlots) remainingByType[rt][slot.getTime()] = cap;
   }
 
   if (types.length > 0) {
-    const rows: { _id: { rt: string; slot: Date }; units: number }[] = await Booking.aggregate([
-      {
-        $match: {
-          supplier_id: oid(supplierId),
-          resource_type: { $in: types },
-          occupancy_version: 1,
-          occupancy_slots: { $in: daySlots },
-          status: { $in: [...OCCUPYING_STATUSES] },
-        },
-      },
-      { $unwind: '$occupancy_slots' },
-      { $match: { occupancy_slots: { $in: daySlots } } },
-      {
-        $group: {
-          _id: { rt: '$resource_type', slot: '$occupancy_slots' },
-          units: { $sum: '$quantity' },
-        },
-      },
-    ]);
-    for (const row of rows) {
-      const key = new Date(row._id.slot).getTime();
-      const rt = row._id.rt;
-      if (remainingByType[rt] && remainingByType[rt][key] != null) {
-        remainingByType[rt][key] = Math.max(0, remainingByType[rt][key] - row.units);
+    const activeByType = await countActiveBySlotsMulti(supplierId, types, daySlots);
+    for (const rt of types) {
+      for (const slot of daySlots) {
+        const key = slot.getTime();
+        const used = activeByType.get(rt)?.get(key) ?? 0;
+        if (remainingByType[rt]?.[key] != null) {
+          remainingByType[rt][key] = Math.max(0, remainingByType[rt][key] - used);
+        }
       }
     }
   }
 
   return {
     date: ymd,
+    capacity,
+    capacity_total,
     slots: daySlots.map((slot) => {
       const remaining: Record<string, number> = {};
       let remaining_total = 0;

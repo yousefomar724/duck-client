@@ -176,7 +176,7 @@ describe('ops endpoints', () => {
     expect(Array.isArray(custBody.items)).toBe(true);
   });
 
-  it('still lists completed bookings on the day hour histogram', async () => {
+  it('keeps completed bookings out of the active day hour histogram', async () => {
     const { supplier } = await createSupplierUser();
     const { user: admin } = await createAdminUser();
     const trip = await createTrip(supplier._id);
@@ -197,7 +197,7 @@ describe('ops endpoints', () => {
     );
     const body = await day.json();
     const hourRow = body.hours.find((h: { hour: string }) => h.hour === hourLabel);
-    expect(hourRow?.bookings).toBeGreaterThanOrEqual(1);
+    expect(hourRow?.bookings).toBe(0);
     expect(hourRow?.units).toBe(0);
   });
 });

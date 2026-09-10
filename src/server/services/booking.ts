@@ -11,7 +11,7 @@ import {
   computeOccupancy,
   OCCUPANCY_VERSION,
   PAST_BOOKING_GRACE_MS,
-  resolveActivityMinutes,
+  resolveBookingOccupancyMinutes,
 } from '@/lib/booking/occupancy';
 
 export interface CreateBookingInput {
@@ -175,11 +175,13 @@ export async function buildBooking(
   }
 
   const storage = await SupplierStorage.findOne({ supplier_id: trip.supplier_id });
+  // A tour's `duration` is the number of HOURS the customer picked, so it
+  // feeds the occupancy window's length — never a count of whole days.
   const occupancy = computeOccupancy({
     startsAt: bookingDate,
-    isTour: trip.is_tour,
-    durationDays: trip.is_tour ? (req.duration ?? 1) : 1,
-    activityMinutes: resolveActivityMinutes(trip),
+    blocksWholeDays: false,
+    durationDays: 1,
+    activityMinutes: resolveBookingOccupancyMinutes(trip, req.duration),
     turnaroundMinutes: storage?.turnaround_minutes ?? 0,
   });
 

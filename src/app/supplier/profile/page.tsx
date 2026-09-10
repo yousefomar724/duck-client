@@ -69,7 +69,7 @@ export default function SupplierProfilePage() {
   const [kayakMaint, setKayakMaint] = useState("0")
   const [waterCycleMaint, setWaterCycleMaint] = useState("0")
   const [supMaint, setSupMaint] = useState("0")
-  const [turnaround, setTurnaround] = useState("15")
+  const [turnaround, setTurnaround] = useState("0")
 
   const load = useCallback(async () => {
     if (!supplierId) return
@@ -101,7 +101,7 @@ export default function SupplierProfilePage() {
       setKayakMaint(String(m.kayak ?? 0))
       setWaterCycleMaint(String(m.water_cycle ?? 0))
       setSupMaint(String(m.sup ?? 0))
-      setTurnaround(String(storageData.turnaround_minutes ?? 15))
+      setTurnaround(String(storageData.turnaround_minutes ?? 0))
     }
 
     setLoading(false)

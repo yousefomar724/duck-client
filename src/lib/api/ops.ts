@@ -7,7 +7,21 @@ import type { NationalityKind } from '@/components/dashboard/ops/ops-strings';
 
 export interface OpsCapacity {
   total: number;
-  per_resource: { type: string; capacity: number; maintenance: number }[];
+  per_resource: {
+    type: string;
+    capacity: number;
+    maintenance: number;
+    raw: number;
+    offered: boolean;
+  }[];
+}
+
+export interface OpsResourceUtilisation {
+  type: string;
+  units: number;
+  capacity: number;
+  pct: number;
+  band: DemandBand;
 }
 
 export interface OpsCalendarDay {
@@ -28,6 +42,7 @@ export interface OpsHourRow {
   capacity: number;
   pct: number;
   band: DemandBand;
+  per_resource: OpsResourceUtilisation[];
 }
 
 export interface OpsHourBooking extends Booking {
@@ -68,6 +83,7 @@ export async function getOpsHour(date: string, time: string, supplierId?: string
     units: number;
     pct: number;
     band: DemandBand;
+    per_resource: OpsResourceUtilisation[];
     bookings: OpsHourBooking[];
   }>(`/ops/hour${qs({ date, time, supplier_id: supplierId })}`);
 }
@@ -85,11 +101,17 @@ export async function getOpsSummary(date?: string, supplierId?: string | null) {
   }>(`/ops/summary${qs({ date, supplier_id: supplierId })}`);
 }
 
+export interface OpsAvailability {
+  date: string;
+  capacity: Record<string, number>;
+  capacity_total: number;
+  slots: { time: string; remaining: Record<string, number>; remaining_total: number }[];
+}
+
 export async function getOpsAvailability(tripId: string, date: string, resourceType?: string) {
-  return apiClient<{
-    date: string;
-    slots: { time: string; remaining: Record<string, number>; remaining_total: number }[];
-  }>(`/ops/availability${qs({ trip_id: tripId, date, resource_type: resourceType })}`);
+  return apiClient<OpsAvailability>(
+    `/ops/availability${qs({ trip_id: tripId, date, resource_type: resourceType })}`,
+  );
 }
 
 export async function getOpsNotifications(supplierId?: string | null) {

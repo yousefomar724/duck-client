@@ -149,7 +149,7 @@ export async function createBooking(overrides: Record<string, unknown> = {}) {
       ? {}
       : computeOccupancy({
           startsAt: bookingDate,
-          isTour: Boolean(overrides.is_tour),
+          blocksWholeDays: Boolean(overrides.is_tour),
           durationDays: typeof overrides.duration === 'number' ? (overrides.duration as number) : 1,
           activityMinutes: 60,
           turnaroundMinutes: 0,
@@ -184,6 +184,16 @@ export async function createBooking(overrides: Record<string, unknown> = {}) {
     occupancy_version: OCCUPANCY_VERSION,
     source: 'online',
     ...occupancy,
+    ...overrides,
+  });
+}
+
+export async function createLegacyBooking(overrides: Record<string, unknown> = {}) {
+  return createBooking({
+    occupancy_version: 0,
+    occupancy_slots: [],
+    starts_at: null,
+    ends_at: null,
     ...overrides,
   });
 }

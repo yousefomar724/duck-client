@@ -20,7 +20,7 @@ import {
 } from "@/lib/support-contact"
 import { FeedbackPromptCard } from "@/components/feedback/feedback-prompt-card"
 import { formatISO } from "date-fns"
-import { localYmd, siteWallClock, siteWallTimeToUtc } from "@/lib/time"
+import { localYmd, siteWallClock, siteWallTimeToUtc, toSiteYmd } from "@/lib/time"
 import {
   Select,
   SelectContent,
@@ -55,6 +55,7 @@ import {
 } from "@/lib/booking/pricing"
 import { createBookingFormSchema, type BookingFormValues } from "@/lib/booking/form-schema"
 import { getTrips } from "@/lib/api/trips"
+import { getOpsAvailability, type OpsAvailability } from "@/lib/api/ops"
 import * as bookingsApi from "@/lib/api/bookings"
 import {
   type SuccessCache,
@@ -140,6 +141,7 @@ function BookPageContent() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [tripsLoading, setTripsLoading] = useState(true)
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
+  const [availability, setAvailability] = useState<OpsAvailability | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [guestsMode, setGuestsMode] = useState<"preset" | "custom">("preset")
   const [paymentAmount, setPaymentAmount] = useState<number>(0)
@@ -342,6 +344,37 @@ function BookPageContent() {
     control: form.control,
     name: "resource_type",
   })
+  const availabilityYmd = toSiteYmd(watchedBookingDate)
+  const availableResourceTypes = useMemo(
+    () =>
+      availability == null
+        ? [...RESOURCE_TYPES]
+        : RESOURCE_TYPES.filter((resourceType) => (availability.capacity[resourceType] ?? 0) > 0),
+    [availability],
+  )
+
+  useEffect(() => {
+    if (!selectedTrip) {
+      setAvailability(null)
+      return
+    }
+    let cancelled = false
+    setAvailability(null)
+    void getOpsAvailability(selectedTrip.id, availabilityYmd).then(({ data }) => {
+      if (cancelled || !data) return
+      setAvailability(data)
+      const offered = RESOURCE_TYPES.filter(
+        (resourceType) => (data.capacity[resourceType] ?? 0) > 0,
+      )
+      const current = form.getValues("resource_type")
+      if (offered.length > 0 && !offered.includes(current)) {
+        form.setValue("resource_type", offered[0], { shouldValidate: true })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [availabilityYmd, form, selectedTrip])
   const watchedGuests = useWatch({ control: form.control, name: "guests" })
   const watchedHasKids16 = useWatch({
     control: form.control,
@@ -833,9 +866,9 @@ function BookPageContent() {
                             onChange={field.onChange}
                             onBlur={field.onBlur}
                             locale={locale}
-                            tripId={selectedTrip?.id}
                             resourceType={watchedResourceType}
                             quantity={watchedGuests}
+                            availability={availability}
                           />
                         </FormControl>
                         <FormMessage />
@@ -863,7 +896,7 @@ function BookPageContent() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {RESOURCE_TYPES.map((rt) => (
+                            {availableResourceTypes.map((rt) => (
                               <SelectItem key={rt} value={rt}>
                                 {resourceLabels[rt]}
                               </SelectItem>

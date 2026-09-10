@@ -6,12 +6,12 @@ import { BAND_CLASS } from "./heat"
 import { bandLabels, opsStrings } from "./ops-strings"
 import type { OpsHourRow } from "@/lib/api/ops"
 import { formatCurrency } from "@/lib/constants"
+import { resourceLabels } from "@/lib/bookings/status"
 
 export function OpsDayPanel({
   date,
   hours,
   summary,
-  capacity,
   selectedHour,
   basePath,
   onSelectHour,
@@ -19,7 +19,6 @@ export function OpsDayPanel({
   date: string
   hours: OpsHourRow[]
   summary: { bookings: number; guests: number; units: number; revenue: number } | null
-  capacity: number
   selectedHour?: string
   basePath: string
   onSelectHour?: (hour: string) => void
@@ -44,11 +43,27 @@ export function OpsDayPanel({
                 selectedHour === row.hour && "ring-2 ring-duck-cyan",
               )}
             >
-              <div>
+              <div className="min-w-0">
                 <p className="font-semibold">{row.hour}</p>
                 <p className="text-xs text-text-muted">
-                  {row.units} / {capacity || row.capacity} · {row.bookings} حجوزات
+                  {row.units} / {row.capacity} · {row.bookings} حجوزات
                 </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {row.per_resource
+                    .filter((resource) => resource.capacity > 0)
+                    .map((resource) => (
+                      <span
+                        key={resource.type}
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                          BAND_CLASS[resource.band],
+                        )}
+                      >
+                        {resourceLabels[resource.type] ?? resource.type}: {resource.units} /{" "}
+                        {resource.capacity}
+                      </span>
+                    ))}
+                </div>
               </div>
               <span className={cn("rounded-full px-2 py-1 text-xs font-medium", BAND_CLASS[row.band])}>
                 {bandLabels[row.band]}

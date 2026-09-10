@@ -245,9 +245,10 @@ export interface SupplierStorage {
 }
 
 export interface SetStorageRequest {
-  resources: Record<string, number>
+  resources?: Record<string, number>
   maintenance?: Record<string, number>
   turnaround_minutes?: number
+  remove?: string[]
 }
 
 export interface RegisterInput {

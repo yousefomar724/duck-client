@@ -168,8 +168,8 @@ function wallMinutesToUtc(ymd, totalMinutes) {
   return siteWallTimeToUtc(addSiteDays(ymd, dayOffset), Math.floor(minutes / 60), minutes % 60);
 }
 
-function computeOccupancy({ startsAt, isTour, durationDays, activityMinutes, turnaroundMinutes }) {
-  if (isTour) {
+function computeOccupancy({ startsAt, blocksWholeDays, durationDays, activityMinutes, turnaroundMinutes }) {
+  if (blocksWholeDays) {
     const startYmd = toSiteYmd(startsAt);
     const days = Math.max(1, Math.floor(durationDays) || 1);
     const occupancy_slots = [];
@@ -245,9 +245,16 @@ async function backfill() {
   const tripMinutes = new Map();
 
   for (const trip of trips) {
+    // `activity_minutes` is meaningless for a tour: its length is the number of
+    // hours the customer picks per booking. Leave the field alone rather than
+    // writing a guess that would mislead anyone who later flips is_tour off.
+    if (trip.is_tour) continue;
     const minutes = heuristicActivityMinutes(trip);
     tripMinutes.set(String(trip._id), minutes);
-    if (FORCE || trip.activity_minutes == null || trip.activity_minutes <= 0) {
+    // Deliberately NOT gated on FORCE: the heuristic is a fallback for a missing
+    // value, never a reason to overwrite a length a supplier set on purpose.
+    // --force exists to recompute booking occupancy, not to re-guess trips.
+    if (trip.activity_minutes == null || trip.activity_minutes <= 0) {
       if (!DRY_RUN) {
         trip.activity_minutes = minutes;
         await trip.save();
@@ -276,12 +283,17 @@ async function backfill() {
       continue;
     }
     const tripId = String(booking.trip_id);
-    const activityMinutes = tripMinutes.get(tripId) ?? 60;
     const trip = trips.find((t) => String(t._id) === tripId);
+    // Mirror of resolveBookingOccupancyMinutes in src/lib/booking/occupancy.ts:
+    // a tour's `duration` is the number of HOURS the customer picked, so it
+    // sizes the occupancy window. It is never a count of whole days.
+    const activityMinutes = trip?.is_tour
+      ? Math.max(1, Math.floor(Number(booking.duration) || 0) || Math.floor(Number(trip.duration) || 0) || 1) * 60
+      : (tripMinutes.get(tripId) ?? 60);
     const occupancy = computeOccupancy({
       startsAt: booking.booking_date,
-      isTour: Boolean(trip?.is_tour),
-      durationDays: trip?.is_tour ? booking.duration || 1 : 1,
+      blocksWholeDays: false,
+      durationDays: 1,
       activityMinutes,
       turnaroundMinutes: turnaroundBySupplier.get(String(booking.supplier_id)) ?? 0,
     });
