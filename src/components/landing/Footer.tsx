@@ -1,7 +1,6 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import { cn } from "@/lib/utils"
 import {
   ArrowUp,
   Mail,
@@ -83,17 +82,18 @@ export default function Footer() {
           {/* Column 1: Logo & Brand */}
           <div>
             <div className="mb-8">
-              <Link href="/" className="mb-4 w-fit bg-white!">
+              <Link
+                href="/"
+                aria-label="Duck Entertainment"
+                className="mb-4 inline-flex size-24 items-center justify-center rounded-full bg-white p-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-duck-yellow focus-visible:ring-offset-2 focus-visible:ring-offset-dark-bg"
+              >
                 <Image
                   src="/logo-transparent.png"
                   alt="Duck Entertainment"
-                  width={160}
-                  height={160}
+                  width={686}
+                  height={558}
                   sizes="96px"
-                  className={cn(
-                    "transition-all duration-500 w-24 bg-white rounded-full h-24 object-contain p-4",
-                    // "brightness-0 invert",
-                  )}
+                  className="h-auto w-full object-contain transition-transform duration-300"
                 />
               </Link>
               <p className="text-white/80 text-sm mt-2">

@@ -10,14 +10,18 @@ import {
   useCallback,
 } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import Image from "next/image"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, ChevronLeft, Clock, Copy, User } from "lucide-react"
 import {
-  buildWhatsAppHref,
-  INSTAPAY_LINK,
-  SUPPORT_WHATSAPP_NUMBER,
-} from "@/lib/support-contact"
+  Check,
+  ChevronLeft,
+  Clock,
+  ExternalLink,
+  MessageCircle,
+  User,
+} from "lucide-react"
+import { buildWhatsAppHref, INSTAPAY_LINK } from "@/lib/support-contact"
 import { FeedbackPromptCard } from "@/components/feedback/feedback-prompt-card"
 import { formatISO } from "date-fns"
 import { localYmd, siteWallClock, siteWallTimeToUtc, toSiteYmd } from "@/lib/time"
@@ -149,7 +153,6 @@ function BookPageContent() {
     booking: Booking
     chosenAmount: number
   } | null>(null)
-  const [copiedNumber, setCopiedNumber] = useState(false)
   const restoredPendingRef = useRef(false)
 
   useEffect(() => {
@@ -168,19 +171,6 @@ function BookPageContent() {
     }
     setManualBookingResult(pending)
   }, [searchParams])
-
-  const handleCopyWhatsApp = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(`+${SUPPORT_WHATSAPP_NUMBER}`)
-      setCopiedNumber(true)
-      // Revert to the idle label so the button stays usable if they copy again.
-      setTimeout(() => setCopiedNumber(false), 2000)
-    } catch {
-      // Clipboard is unavailable on insecure origins and some in-app
-      // browsers; the number stays selectable as plain text either way.
-      addToast(t("instapayCopyFailed"), "error")
-    }
-  }, [addToast, t])
 
   const navigateToStep = useCallback(
     (nextStep: number, mode: "push" | "replace", tripId?: string) => {
@@ -697,8 +687,12 @@ function BookPageContent() {
                         <button
                           key={trip.id}
                           type="button"
-                          onClick={() => setSelectedTrip(trip)}
-                          className={`text-start rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] h-fit bg-white flex flex-col transition-all ${
+                          data-testid="trip-card"
+                          onClick={() => {
+                            setSelectedTrip(trip)
+                            navigateToStep(2, "push", trip.id)
+                          }}
+                          className={`cursor-pointer text-start rounded-2xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.06)] h-fit bg-white flex flex-col transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-duck-cyan focus-visible:ring-offset-2 ${
                             isSelected
                               ? "ring-2 ring-duck-cyan ring-offset-2"
                               : "hover:shadow-lg"
@@ -770,16 +764,6 @@ function BookPageContent() {
                     })}
                   </div>
                 )}
-                <Button
-                  type="button"
-                  disabled={!selectedTrip}
-                  onClick={() =>
-                    selectedTrip && navigateToStep(2, "push", selectedTrip.id)
-                  }
-                  className="bg-duck-yellow text-duck-navy rounded-full px-10 py-3 font-medium hover:bg-duck-yellow-hover w-full sm:w-auto"
-                >
-                  {t("next")}
-                </Button>
               </div>
             )}
 
@@ -1806,29 +1790,41 @@ function BookPageContent() {
                   )}
                 </div>
 
-                <div className="rounded-2xl border-2 border-duck-cyan/30 p-5 space-y-5">
+                <div className="space-y-5 rounded-2xl border-2 border-[#67358f]/25 bg-gradient-to-br from-[#67358f]/[0.06] via-white to-[#f36b21]/[0.07] p-5">
                   <div className="flex gap-3">
                     <span
-                      className="w-8 h-8 rounded-full bg-duck-cyan text-duck-navy flex items-center justify-center text-sm font-bold shrink-0"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#67358f] text-sm font-bold text-white"
                       aria-hidden="true"
                     >
                       1
                     </span>
-                    <div className="flex-1 space-y-3 min-w-0">
-                      <p className="font-semibold text-text-dark">
-                        {t("instapayStep1", {
-                          amount: formatCurrency(
-                            manualBookingResult.chosenAmount,
-                            manualBookingResult.booking.currency || "EGP",
-                            locale,
-                          ),
-                        })}
-                      </p>
+                    <div className="min-w-0 flex-1 space-y-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="font-semibold text-text-dark">
+                          {t("instapayStep1", {
+                            amount: formatCurrency(
+                              manualBookingResult.chosenAmount,
+                              manualBookingResult.booking.currency || "EGP",
+                              locale,
+                            ),
+                          })}
+                        </p>
+                        <div className="flex h-16 w-full items-center justify-center rounded-xl border border-[#67358f]/15 bg-white px-4 shadow-sm sm:w-48">
+                          <Image
+                            src="/instapay-logo.png"
+                            alt="InstaPay"
+                            width={520}
+                            height={345}
+                            sizes="192px"
+                            className="h-12 w-auto max-w-full object-contain"
+                          />
+                        </div>
+                      </div>
                       <a
                         href={INSTAPAY_LINK}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full bg-duck-cyan text-white rounded-full py-3 px-6 font-semibold hover:bg-duck-cyan/90 transition-colors"
+                        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#54227d] via-[#75459a] to-[#f36b21] px-6 py-3 font-semibold text-white shadow-sm transition-[filter,box-shadow] duration-200 hover:brightness-95 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#67358f] focus-visible:ring-offset-2"
                       >
                         {t("payViaInstapayAmount", {
                           amount: formatCurrency(
@@ -1837,49 +1833,22 @@ function BookPageContent() {
                             locale,
                           ),
                         })}
+                        <ExternalLink className="h-4 w-4" aria-hidden="true" />
                       </a>
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 border-t border-[#67358f]/15 pt-5">
                     <span
-                      className="w-8 h-8 rounded-full bg-duck-cyan text-duck-navy flex items-center justify-center text-sm font-bold shrink-0"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-sm font-bold text-white"
                       aria-hidden="true"
                     >
                       2
                     </span>
-                    <div className="flex-1 space-y-3 min-w-0">
+                    <div className="min-w-0 flex-1 space-y-3">
                       <p className="font-semibold text-text-dark">
                         {t("instapayStep2")}
                       </p>
-                      <p className="text-text-muted text-sm">
-                        {t("instapaySendReceipt")}
-                      </p>
-                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-off-white px-3 py-2">
-                        <span
-                          className="font-mono font-semibold text-duck-navy"
-                          dir="ltr"
-                        >
-                          +{SUPPORT_WHATSAPP_NUMBER}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleCopyWhatsApp}
-                          className="inline-flex items-center gap-1.5 text-sm font-medium text-duck-cyan hover:underline"
-                        >
-                          {copiedNumber ? (
-                            <>
-                              <Check className="w-4 h-4" aria-hidden="true" />
-                              {t("instapayCopied")}
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-4 h-4" aria-hidden="true" />
-                              {t("instapayCopyNumber")}
-                            </>
-                          )}
-                        </button>
-                      </div>
                       <a
                         href={buildWhatsAppHref(
                           t("instapayWhatsappPrefill", {
@@ -1888,8 +1857,9 @@ function BookPageContent() {
                         )}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white rounded-full p-3 font-semibold hover:bg-[#20bd5a] transition-colors"
+                        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] p-3 font-semibold text-white transition-colors duration-200 hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1daa50] focus-visible:ring-offset-2"
                       >
+                        <MessageCircle className="h-5 w-5" aria-hidden="true" />
                         {t("instapaySendReceiptBtn")}
                       </a>
                     </div>
