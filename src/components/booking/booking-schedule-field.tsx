@@ -7,7 +7,7 @@ import {
   arSA as arSADayPicker,
   enUS as enUSDayPicker,
 } from "react-day-picker/locale"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, TriangleAlert } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { startOfDay } from "date-fns"
 
@@ -162,7 +162,7 @@ export function BookingScheduleField({
           </Popover>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-1.5">
+        <div className="flex min-w-0 flex-1 basis-[min(100%,11rem)] flex-col gap-1.5 sm:flex-none">
           <Select
             dir={dir}
             value={selectedTime}
@@ -174,7 +174,7 @@ export function BookingScheduleField({
             <SelectTrigger
               id={timeInputId}
               aria-label={`${t("bookingTime")}: ${formatBookingTime(wallClock, locale)}`}
-              className="w-44 max-w-full rounded-lg border-black/20 focus-visible:border-duck-cyan focus-visible:ring-duck-cyan"
+              className="w-full rounded-lg sm:w-44 border-black/20 focus-visible:border-duck-cyan focus-visible:ring-duck-cyan"
             >
               <SelectValue placeholder={t("bookingTime")} />
             </SelectTrigger>
@@ -192,13 +192,18 @@ export function BookingScheduleField({
               })}
             </SelectContent>
           </Select>
-          {resourceUnavailable ? (
-            <p className="mt-1 max-w-44 text-xs text-amber-700">
-              {t("resourceTypeUnavailable")}
-            </p>
-          ) : null}
         </div>
       </div>
+
+      {resourceUnavailable ? (
+        <p
+          role="status"
+          className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>{t("resourceTypeUnavailable")}</span>
+        </p>
+      ) : null}
 
       <p className="text-muted-foreground px-1 text-sm">
         {t("bookingScheduleSummaryNatural", {
