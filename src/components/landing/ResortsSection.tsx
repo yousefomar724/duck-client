@@ -27,7 +27,10 @@ export default function ResortsSection() {
     loop: true,
     align: "center",
     direction: locale === "ar" ? "rtl" : "ltr",
-    containScroll: false,
+    // When all cards fit on desktop, keep the track at its natural centered
+    // position instead of translating the first card into the viewport center.
+    // Overflowing/mobile layouts still retain their normal carousel snaps.
+    containScroll: "trimSnaps",
   })
 
   useEffect(() => {
