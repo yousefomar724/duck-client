@@ -74,11 +74,35 @@ export function WalkInSheet({
 
   useEffect(() => {
     if (!open) return
-    const load = role === "admin" ? tripsApi.getTrips() : tripsApi.getMyTrips()
+    const load =
+      role === "admin"
+        ? tripsApi.getTrips(undefined, undefined, undefined, {
+            publicStatus: "available",
+          })
+        : tripsApi.getMyTrips()
     void load.then(({ data }) => {
-      if (data) setTrips(data)
+      if (data) {
+        setTrips(
+          data.filter(
+            (trip) =>
+              trip.status !== "inactive" &&
+              trip.public_status !== "coming-soon",
+          ),
+        )
+      }
     })
   }, [open, role])
+
+  const handleTripChange = (nextTripId: string) => {
+    setTripId(nextTripId)
+    const trip = trips.find((item) => item.id === nextTripId)
+    if (!trip) return
+    const minimum = trip.is_tour ? 1 : (trip.min_guests ?? 1)
+    const maximum = trip.max_guests
+    const nextQuantity = Math.min(maximum, Math.max(qty, minimum))
+    setQuantity(String(nextQuantity))
+    setForeigners(String(Math.min(foreignerGuests, nextQuantity)))
+  }
 
   const submit = async () => {
     const [h, m] = time.split(":").map(Number)
@@ -124,7 +148,7 @@ export function WalkInSheet({
         <div className="space-y-4 p-4">
           <div className="space-y-2">
             <Label>النشاط</Label>
-            <Select value={tripId} onValueChange={setTripId}>
+            <Select value={tripId} onValueChange={handleTripChange}>
               <SelectTrigger className="min-h-11">
                 <SelectValue placeholder="اختر النشاط" />
               </SelectTrigger>
@@ -165,11 +189,17 @@ export function WalkInSheet({
             <Input
               id="walk-in-qty"
               type="number"
-              min={1}
+              min={selectedTrip?.is_tour ? 1 : (selectedTrip?.min_guests ?? 1)}
+              max={selectedTrip?.max_guests}
               className="min-h-11"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
+            {selectedTrip && !selectedTrip.is_tour ? (
+              <p className="text-xs text-text-muted">
+                الحد الأدنى {selectedTrip.min_guests ?? 1} والحد الأقصى {selectedTrip.max_guests}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="walk-in-foreigners">منهم أجانب</Label>

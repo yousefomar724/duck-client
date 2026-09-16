@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/server/db/connect';
-import { requireAuth } from '@/server/auth/guard';
+import { optionalAuth, requireAuth } from '@/server/auth/guard';
 import { findActiveUserById } from '@/server/services/user';
 import { Trip } from '@/server/models/trip';
 import { toTripResponse, createTripFromRequest, type CreateTripBody } from '@/server/services/trip';
@@ -13,14 +13,23 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const supplierId = searchParams.get('supplier_id');
   const destinationId = searchParams.get('destination_id');
+  const publicStatus = searchParams.get('public_status');
+  const includeInactive = searchParams.get('include_inactive') === 'true';
   const lang = searchParams.get('lang');
+  const session = optionalAuth(request);
 
   if (supplierId && !isValidObjectId(supplierId)) return errorResponse(400, 'Invalid supplier ID');
   if (destinationId && !isValidObjectId(destinationId)) return errorResponse(400, 'Invalid destination ID');
+  if (publicStatus && !['available', 'coming-soon'].includes(publicStatus)) {
+    return errorResponse(400, 'Invalid public status');
+  }
+  if (includeInactive && session?.role !== 2) return errorResponse(403, 'Admin access required');
 
   const filter: Record<string, unknown> = {};
+  if (!includeInactive) filter.status = { $ne: 'inactive' };
   if (supplierId) filter.supplier_id = supplierId;
   if (destinationId) filter.destination_ids = destinationId;
+  if (publicStatus) filter.public_status = publicStatus;
 
   try {
     const trips = await Trip.find(filter)

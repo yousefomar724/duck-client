@@ -8,11 +8,14 @@ export async function getTrips(
   lang?: string,
   supplierId?: string,
   destinationId?: string,
+  options?: { publicStatus?: "available" | "coming-soon"; includeInactive?: boolean },
 ): Promise<ApiResponse<Trip[]>> {
   let endpoint = '/trips';
   const params = new URLSearchParams();
   if (supplierId) params.append('supplier_id', supplierId.toString());
   if (destinationId) params.append('destination_id', destinationId.toString());
+  if (options?.publicStatus) params.append('public_status', options.publicStatus);
+  if (options?.includeInactive) params.append('include_inactive', 'true');
   if (params.toString()) endpoint += `?${params.toString()}`;
 
   const res = await apiClient<unknown>(endpoint, {

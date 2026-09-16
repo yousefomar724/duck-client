@@ -48,6 +48,34 @@ import { TableSkeleton } from "@/components/shared/loading-skeletons"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import type { Trip, Supplier } from "@/lib/types"
 
+function TripStateBadges({ trip }: { trip: Trip }) {
+  const isInactive = trip.status === "inactive"
+  const isComingSoon = trip.public_status === "coming-soon"
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      <span
+        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+          isInactive
+            ? "bg-red-100 text-red-700"
+            : "bg-emerald-100 text-emerald-700"
+        }`}
+      >
+        {isInactive ? "غير نشط" : "نشط"}
+      </span>
+      <span
+        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+          isComingSoon
+            ? "bg-amber-100 text-amber-800"
+            : "bg-cyan-100 text-cyan-800"
+        }`}
+      >
+        {isComingSoon ? "متاح قريباً" : "متاح للحجز"}
+      </span>
+    </div>
+  )
+}
+
 export default function AdminTripsPage() {
   const getSupplierName = (supplier?: Supplier) => {
     return resolveLocalizedField(supplier?.name, "-")
@@ -72,7 +100,9 @@ export default function AdminTripsPage() {
       setError(null)
 
       const [tripsRes, suppliersRes] = await Promise.all([
-        tripsApi.getTrips(DASHBOARD_LANG),
+        tripsApi.getTrips(DASHBOARD_LANG, undefined, undefined, {
+          includeInactive: true,
+        }),
         suppliersApi.getSuppliers(DASHBOARD_LANG),
       ])
 
@@ -134,7 +164,7 @@ export default function AdminTripsPage() {
             <div key={i} className="border rounded-lg p-4 h-24" />
           ))}
         </div>
-        <TableSkeleton rows={5} columns={9} />
+        <TableSkeleton rows={5} columns={12} />
       </div>
     )
   }
@@ -224,6 +254,7 @@ export default function AdminTripsPage() {
                 <TableRow className="bg-muted/50">
                   <TableHead className="text-start">النوع</TableHead>
                   <TableHead className="text-start">الاسم</TableHead>
+                  <TableHead className="text-start">الحالة</TableHead>
                   <TableHead className="text-start">المورد</TableHead>
                   <TableHead className="text-start">المرشد</TableHead>
                   <TableHead className="text-start">سعر المصريين</TableHead>
@@ -253,6 +284,9 @@ export default function AdminTripsPage() {
                       </TableCell>
                       <TableCell>
                         {resolveLocalizedField(trip.name, "-")}
+                      </TableCell>
+                      <TableCell>
+                        <TripStateBadges trip={trip} />
                       </TableCell>
                       <TableCell>{getSupplierName(supplier)}</TableCell>
                       <TableCell className="text-text-muted">
@@ -287,7 +321,11 @@ export default function AdminTripsPage() {
                       <TableCell className="text-text-muted">
                         {formatDate(trip.from)}
                       </TableCell>
-                      <TableCell>{trip.max_guests}</TableCell>
+                      <TableCell>
+                        {trip.is_tour
+                          ? trip.max_guests
+                          : `${trip.min_guests ?? 1}–${trip.max_guests}`}
+                      </TableCell>
                       <TableCell>
                         {durationLabel}
                       </TableCell>
@@ -336,7 +374,12 @@ export default function AdminTripsPage() {
                   id: trip.id,
                   title: resolveLocalizedField(trip.name, "-"),
                   subtitle: getSupplierName(supplier),
-                  badge: <TripTypeBadge isTour={trip.is_tour} />,
+                  badge: (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <TripTypeBadge isTour={trip.is_tour} />
+                      <TripStateBadges trip={trip} />
+                    </div>
+                  ),
                   fields: [
                     {
                       label: "سعر المصريين",
@@ -344,7 +387,9 @@ export default function AdminTripsPage() {
                     },
                     {
                       label: "الأشخاص",
-                      value: String(trip.max_guests),
+                      value: trip.is_tour
+                        ? String(trip.max_guests)
+                        : `${trip.min_guests ?? 1}–${trip.max_guests}`,
                     },
                     {
                       label: "المدة",

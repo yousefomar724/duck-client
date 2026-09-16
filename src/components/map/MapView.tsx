@@ -138,7 +138,7 @@ function BrandTint({
 
 function FitBounds({ locations }: { locations: WaterActivityLocation[] }) {
   const { map, isLoaded } = useMap()
-  const prevLengthRef = useRef(locations.length)
+  const previousFitRef = useRef({ signature: "", padding: -1 })
   const [padding, setPadding] = useState(60)
 
   useEffect(() => {
@@ -155,24 +155,27 @@ function FitBounds({ locations }: { locations: WaterActivityLocation[] }) {
   useEffect(() => {
     if (!map || !isLoaded) return
 
+    const signature = locations
+      .map((location) => `${location.id}:${location.coordinates.join(",")}`)
+      .join("|")
+    const previous = previousFitRef.current
+    if (signature === previous.signature && padding === previous.padding) return
+    previousFitRef.current = { signature, padding }
+
     if (locations.length === 0) {
       map.panTo(toLngLat(ASWAN_CENTER))
       map.setZoom(DEFAULT_ZOOM)
-      prevLengthRef.current = 0
       return
     }
 
-    if (locations.length !== prevLengthRef.current) {
-      const first = toLngLat(locations[0].coordinates)
-      const bounds = locations.reduce(
-        (b, loc) => b.extend(toLngLat(loc.coordinates)),
-        new LngLatBounds(first, first),
-      )
-      // A single result yields a zero-size bounds, which would otherwise
-      // snap all the way to MAX_ZOOM.
-      map.fitBounds(bounds, { padding, maxZoom: FOCUSED_ZOOM })
-      prevLengthRef.current = locations.length
-    }
+    const first = toLngLat(locations[0].coordinates)
+    const bounds = locations.reduce(
+      (b, loc) => b.extend(toLngLat(loc.coordinates)),
+      new LngLatBounds(first, first),
+    )
+    // A single result yields a zero-size bounds, which would otherwise
+    // snap all the way to MAX_ZOOM.
+    map.fitBounds(bounds, { padding, maxZoom: FOCUSED_ZOOM })
   }, [locations, map, isLoaded, padding])
 
   return null
@@ -232,6 +235,8 @@ interface MapViewProps {
   mapStyle: MapStyle
   /** "cooperative" lets the page scroll over the map (wheel does not zoom). Default "greedy" for full-page maps. */
   gestureHandling?: GestureHandling
+  /** Fit all markers into view. The full desktop map disables this to keep a useful Aswan regional viewport. */
+  fitBounds?: boolean
 }
 
 function LocationMarker({
@@ -304,6 +309,7 @@ export default function MapView({
   onMapReady,
   mapStyle,
   gestureHandling = "greedy",
+  fitBounds = true,
 }: MapViewProps) {
   const locale = useLocale()
   const interactive = gestureHandling !== "none"
@@ -348,7 +354,7 @@ export default function MapView({
         pitchWithRotate={false}
         keyboard={interactive}
       >
-        <FitBounds locations={locations} />
+        {fitBounds ? <FitBounds locations={locations} /> : null}
         <BrandTint mapStyle={mapStyle} locale={locale} />
         <VisibilityRepaint />
         {onMapReady ? <MapReadyBridge onMapReady={onMapReady} /> : null}

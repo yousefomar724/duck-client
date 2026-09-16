@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/server/db/connect';
-import { requireAuth } from '@/server/auth/guard';
+import { optionalAuth, requireAuth } from '@/server/auth/guard';
+import { findActiveUserById } from '@/server/services/user';
 import { Trip } from '@/server/models/trip';
 import { toTripResponse, applyTripUpdate, type CreateTripBody } from '@/server/services/trip';
 import { errorResponse, messageResponse, validationErrorResponse } from '@/server/lib/json';
@@ -20,6 +21,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     .populate('tour_guide_id')
     .populate('destination_ids');
   if (!trip) return errorResponse(404, 'Trip not found');
+
+  if (trip.status === 'inactive') {
+    const session = optionalAuth(request);
+    const user = session ? await findActiveUserById(session.user_id) : null;
+    const populatedSupplier = trip.supplier_id as unknown as {
+      _id?: { toString(): string };
+      id?: string;
+    };
+    const tripSupplierId =
+      populatedSupplier?._id?.toString() ??
+      populatedSupplier?.id ??
+      String(trip.supplier_id);
+    const canManage =
+      session?.role === 2 ||
+      Boolean(user?.supplier_id && user.supplier_id.toString() === tripSupplierId);
+    if (!canManage) return errorResponse(404, 'Trip not found');
+  }
 
   const json = trip.toJSON() as Record<string, unknown>;
   if (lang) return NextResponse.json(toTripResponse(json, lang));
@@ -49,6 +67,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const trip = await Trip.findById(id);
   if (!trip) return errorResponse(404, 'trip not found');
+
+  const nextIsTour = body.is_tour ?? trip.is_tour;
+  const nextMinGuests = nextIsTour ? 1 : (body.min_guests ?? trip.min_guests ?? 1);
+  const nextMaxGuests = body.max_guests ?? trip.max_guests;
+  if (nextMinGuests > nextMaxGuests) {
+    return validationErrorResponse({
+      min_guests: 'الحد الأدنى لا يمكن أن يتجاوز الحد الأقصى',
+    });
+  }
 
   try {
     applyTripUpdate(trip, body);

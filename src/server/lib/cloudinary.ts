@@ -19,18 +19,21 @@ export interface UploadedImage {
   publicId: string;
 }
 
-const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+export const MAX_SIZE_BYTES = 20 * 1024 * 1024;
 
-/** Replaces the Go API's `saveFileToUploads` (local disk write). */
-export async function uploadImageBuffer(file: File): Promise<UploadedImage> {
-  ensureConfigured();
-
+export function validateImageFile(file: Pick<File, 'type' | 'size'>): void {
   if (!file.type.startsWith('image/')) {
     throw new Error('file must be an image');
   }
   if (file.size > MAX_SIZE_BYTES) {
-    throw new Error('image exceeds the 10MB limit');
+    throw new Error('image exceeds the 20MB limit');
   }
+}
+
+/** Replaces the Go API's `saveFileToUploads` (local disk write). */
+export async function uploadImageBuffer(file: File): Promise<UploadedImage> {
+  validateImageFile(file);
+  ensureConfigured();
 
   const buffer = Buffer.from(await file.arrayBuffer());
 

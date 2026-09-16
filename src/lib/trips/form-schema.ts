@@ -32,6 +32,8 @@ export function createTripFormSchema({ mode, requireSupplier }: TripFormSchemaOp
       .int("يجب أن يكون رقمًا صحيحًا")
       .min(0, "لا يمكن أن يكون سالبًا")
       .default(0),
+    status: z.enum(["active", "inactive"]).default("active"),
+    public_status: z.enum(["available", "coming-soon"]).default("available"),
     currency: z.enum(CURRENCY_VALUES, {
       errorMap: () => ({ message: "اختر عملة صحيحة" }),
     }),
@@ -72,6 +74,11 @@ export function createTripFormSchema({ mode, requireSupplier }: TripFormSchemaOp
       .number({ invalid_type_error: "أدخل عددًا صحيحًا" })
       .int("يجب أن يكون رقمًا صحيحًا")
       .min(1, "يجب أن يكون شخصًا واحدًا على الأقل"),
+    min_guests: z.coerce
+      .number({ invalid_type_error: "أدخل عددًا صحيحًا" })
+      .int("يجب أن يكون رقمًا صحيحًا")
+      .min(1, "يجب أن يكون شخصًا واحدًا على الأقل")
+      .default(1),
     supplier_id: z.string().default(""),
     is_tour: z.boolean().default(true),
     tour_guide_id: z.string().default(""),
@@ -102,6 +109,14 @@ export function createTripFormSchema({ mode, requireSupplier }: TripFormSchemaOp
         code: z.ZodIssueCode.custom,
         message: "أدخل مدة الرحلة بالعربي",
         path: ["duration_text_ar"],
+      })
+    }
+
+    if (!data.is_tour && data.min_guests > data.max_guests) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "الحد الأدنى لا يمكن أن يتجاوز الحد الأقصى",
+        path: ["min_guests"],
       })
     }
 
@@ -141,6 +156,8 @@ export interface TripFormInput {
   guide_mandatory: boolean
   guide_price: string
   display_order: string
+  status: "active" | "inactive"
+  public_status: "available" | "coming-soon"
   currency: string
   refundable: boolean
   cancelation_policy_ar: string
@@ -159,6 +176,7 @@ export interface TripFormInput {
   duration_text_ar: string
   duration_text_en: string
   max_guests: string
+  min_guests: string
   supplier_id: string
   is_tour: boolean
   tour_guide_id: string

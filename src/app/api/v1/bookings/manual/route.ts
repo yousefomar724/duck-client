@@ -4,7 +4,7 @@ import { dbConnect } from '@/server/db/connect';
 import { optionalAuth } from '@/server/auth/guard';
 import { Booking } from '@/server/models/booking';
 import { Supplier } from '@/server/models/supplier';
-import { buildBooking, persistCreatedBooking, toBookingEmailData, type CreateBookingInput } from '@/server/services/booking';
+import { buildBooking, MinimumGuestsError, persistCreatedBooking, toBookingEmailData, TripUnavailableError, type CreateBookingInput } from '@/server/services/booking';
 import { NoAvailabilityError } from '@/server/services/availability';
 import { confirmBookingPayment } from '@/server/services/booking-payment';
 import { sendSupplierNewManualBookingEmail } from '@/server/lib/mail';
@@ -106,6 +106,15 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (err) {
+    if (err instanceof TripUnavailableError) {
+      return errorResponse(409, err.message, { code: err.code });
+    }
+    if (err instanceof MinimumGuestsError) {
+      return errorResponse(400, err.message, {
+        code: err.code,
+        minimum: err.minimum,
+      });
+    }
     if (err instanceof NoAvailabilityError) {
       return errorResponse(409, err.message, { code: err.code });
     }

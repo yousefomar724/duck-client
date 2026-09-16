@@ -4,12 +4,12 @@ import { apiClient, uploadFile, ApiResponse } from './client';
 import { compressImageFile, MAX_UPLOAD_BYTES } from '@/lib/image-compression';
 import type { ImageStorage } from '@/lib/types';
 
-const TOO_LARGE_MESSAGE = 'الصورة أكبر من 10 ميجابايت. اختر صورة أصغر.';
+const TOO_LARGE_MESSAGE = 'الصورة أكبر من 20 ميجابايت. اختر صورة أصغر.';
 
 /**
  * Every upload goes through here so the browser-side shrink is never skipped
  * — the raw file from a phone camera is far too big for the serverless
- * request-body cap. The 10MB check is on the *original*, matching the limit
+ * request-body cap. The 20MB check is on the *original*, matching the limit
  * the server enforces.
  */
 async function uploadCompressed(

@@ -201,7 +201,11 @@ export default async function TripDetailPage({ params }: PageProps) {
         },
         {
           q: t("faqGroupQ", { name: trip.name }),
-          a: t("faqGroupA", { name: trip.name, maxGuests: trip.max_guests }),
+          a: t("faqGroupA", {
+            name: trip.name,
+            minGuests: trip.is_tour ? 1 : trip.min_guests,
+            maxGuests: trip.max_guests,
+          }),
         },
         destination
           ? {
@@ -273,6 +277,11 @@ export default async function TripDetailPage({ params }: PageProps) {
           <h1 className="text-white text-3xl md:text-5xl font-bold mb-5">
             {trip.name}
           </h1>
+          {trip.public_status === "coming-soon" ? (
+            <span className="mb-5 inline-flex rounded-full bg-duck-yellow px-4 py-1.5 text-sm font-semibold text-duck-navy">
+              {t("comingSoon")}
+            </span>
+          ) : null}
           <p className="text-white/80 text-base md:text-lg leading-relaxed max-w-3xl">
             {summary}
           </p>
@@ -454,6 +463,14 @@ export default async function TripDetailPage({ params }: PageProps) {
                     {t("factMaxGuestsValue", { count: trip.max_guests })}
                   </dd>
                 </div>
+                {!trip.is_tour && trip.min_guests > 1 ? (
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="text-text-muted">{t("factMinGuests")}</dt>
+                    <dd className="font-medium text-text-dark text-end">
+                      {t("factMinGuestsValue", { count: trip.min_guests })}
+                    </dd>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between">
                   <dt className="text-text-muted">{t("factRefundable")}</dt>
                   <dd className="font-medium text-text-dark">
@@ -475,12 +492,18 @@ export default async function TripDetailPage({ params }: PageProps) {
               </dl>
 
               <div className="space-y-2 pt-2">
-                <Link
-                  href={bookHref}
-                  className="block w-full text-center rounded-full bg-duck-yellow px-5 py-3 text-sm font-semibold text-duck-navy hover:bg-duck-yellow-hover transition-colors"
-                >
-                  {t("ctaBook")}
-                </Link>
+                {trip.public_status === "coming-soon" ? (
+                  <span className="block w-full text-center rounded-full bg-duck-yellow/25 px-5 py-3 text-sm font-semibold text-duck-navy">
+                    {t("bookingUnavailable")}
+                  </span>
+                ) : (
+                  <Link
+                    href={bookHref}
+                    className="block w-full text-center rounded-full bg-duck-yellow px-5 py-3 text-sm font-semibold text-duck-navy hover:bg-duck-yellow-hover transition-colors"
+                  >
+                    {t("ctaBook")}
+                  </Link>
+                )}
                 <a
                   href={whatsappHref}
                   target="_blank"

@@ -63,6 +63,99 @@ describe('catalog routes', () => {
     expect(deleteRes.status).toBe(200);
   });
 
+  it('filters inactive and booking-state trips for public and management queries', async () => {
+    const { supplier, user } = await createSupplierUser();
+    const { user: admin } = await createAdminUser();
+    const available = await createTrip(supplier._id, {
+      name: { en: 'Available Trip', ar: 'رحلة متاحة' },
+      public_status: 'available',
+    });
+    const comingSoon = await createTrip(supplier._id, {
+      name: { en: 'Coming Soon Trip', ar: 'رحلة قريباً' },
+      public_status: 'coming-soon',
+    });
+    const inactive = await createTrip(supplier._id, {
+      name: { en: 'Inactive Trip', ar: 'رحلة مخفية' },
+      status: 'inactive',
+    });
+
+    const publicRes = await getTrips(
+      new Request('http://localhost/api/v1/trips?lang=en'),
+    );
+    const publicIds = (await publicRes.json()).map((trip: { id: string }) => trip.id);
+    expect(publicIds).toContain(available.id);
+    expect(publicIds).toContain(comingSoon.id);
+    expect(publicIds).not.toContain(inactive.id);
+
+    const availableRes = await getTrips(
+      new Request('http://localhost/api/v1/trips?public_status=available'),
+    );
+    const availableIds = (await availableRes.json()).map(
+      (trip: { id: string }) => trip.id,
+    );
+    expect(availableIds).toContain(available.id);
+    expect(availableIds).not.toContain(comingSoon.id);
+    expect(availableIds).not.toContain(inactive.id);
+
+    const adminRes = await getTrips(
+      new Request('http://localhost/api/v1/trips?include_inactive=true', {
+        headers: authHeader(admin.id, admin.role),
+      }),
+    );
+    const adminIds = (await adminRes.json()).map((trip: { id: string }) => trip.id);
+    expect(adminIds).toContain(inactive.id);
+
+    const supplierRes = await getMyTrips(
+      new Request('http://localhost/api/v1/trips/my-trips', {
+        headers: authHeader(user.id, user.role),
+      }),
+    );
+    const supplierIds = (await supplierRes.json()).map(
+      (trip: { id: string }) => trip.id,
+    );
+    expect(supplierIds).toContain(inactive.id);
+
+    const publicDetail = await getTrip(
+      new Request(`http://localhost/api/v1/trips/${inactive.id}`),
+      { params: Promise.resolve({ id: inactive.id }) },
+    );
+    expect(publicDetail.status).toBe(404);
+
+    const ownerDetail = await getTrip(
+      new Request(`http://localhost/api/v1/trips/${inactive.id}`, {
+        headers: authHeader(user.id, user.role),
+      }),
+      { params: Promise.resolve({ id: inactive.id }) },
+    );
+    expect(ownerDetail.status).toBe(200);
+  });
+
+  it('enforces trip minimum defaults and min/max validation', async () => {
+    const { supplier, user } = await createSupplierUser();
+    const trip = await createTrip(supplier._id, {
+      status: undefined,
+      public_status: undefined,
+      min_guests: undefined,
+    });
+    expect(trip.status).toBe('active');
+    expect(trip.public_status).toBe('available');
+    expect(trip.min_guests).toBe(1);
+
+    await expect(
+      createTrip(supplier._id, { min_guests: 5, max_guests: 4 }),
+    ).rejects.toThrow('min_guests cannot exceed max_guests');
+
+    const patchRes = await updateTrip(
+      jsonRequest(`http://localhost/api/v1/trips/${trip.id}`, {
+        method: 'PATCH',
+        body: { min_guests: 11 },
+        headers: authHeader(user.id, user.role),
+      }),
+      { params: Promise.resolve({ id: trip.id }) },
+    );
+    expect(patchRes.status).toBe(400);
+  });
+
   it('admin creates destination and tour guide', async () => {
     const { user: admin } = await createAdminUser();
 

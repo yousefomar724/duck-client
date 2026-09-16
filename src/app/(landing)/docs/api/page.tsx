@@ -33,7 +33,7 @@ const REST_ENDPOINTS = [
   {
     method: "GET",
     path: "/api/v1/trips",
-    notes: "Filters: supplier_id, destination_id, lang=en|ar",
+    notes: "Filters: supplier_id, destination_id, public_status, include_inactive (admin), lang=en|ar",
   },
   { method: "GET", path: "/api/v1/trips/{id}", notes: "Query: lang=en|ar" },
   {
@@ -42,6 +42,11 @@ const REST_ENDPOINTS = [
     notes: "Query: lang, status, public_status",
   },
   { method: "GET", path: "/api/v1/destinations/{id}", notes: "Query: lang" },
+  {
+    method: "POST",
+    path: "/api/v1/images",
+    notes: "Authenticated image upload; original files up to 20 MB are accepted and compressed before delivery.",
+  },
   { method: "GET", path: "/api/v1/suppliers", notes: "Query: lang" },
   { method: "GET", path: "/api/v1/suppliers/{id}", notes: "Query: lang" },
   { method: "GET", path: "/api/v1/tour-guides", notes: "List" },

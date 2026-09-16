@@ -12,6 +12,7 @@ const messages = {
   bookingTimeRange: 'Outside window',
   numberInvalid: 'Invalid number',
   minOneGuest: 'At least one guest',
+  minGuestsError: (min: number) => `Min ${min}`,
   minOne: 'At least one',
   kidsMinOne: 'At least one child',
   adultsMinOne: 'At least one adult',
@@ -54,6 +55,22 @@ describe('form-schema', () => {
     const schema = createBookingFormSchema(messages, 2);
     const result = schema.safeParse(validPayload({ guests: 5 }));
     expect(result.success).toBe(false);
+  });
+
+  it('rejects guests below the trip minimum and accepts the minimum', () => {
+    const schema = createBookingFormSchema(messages, 10, 4);
+    const below = schema.safeParse(
+      validPayload({ guests: 3, local_guests: 3 }),
+    );
+    const equal = schema.safeParse(
+      validPayload({ guests: 4, local_guests: 4 }),
+    );
+
+    expect(below.success).toBe(false);
+    expect(below.error?.issues.map((issue) => issue.message)).toContain(
+      'Min 4',
+    );
+    expect(equal.success).toBe(true);
   });
 
   it('rejects when kids leave no adult in the total', () => {

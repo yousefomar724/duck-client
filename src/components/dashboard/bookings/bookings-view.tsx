@@ -151,7 +151,9 @@ export function BookingsView({ role }: BookingsViewProps) {
 
       if (role === "admin") {
         const [tripsRes, suppliersRes] = await Promise.all([
-          tripsApi.getTrips(DASHBOARD_LANG),
+          tripsApi.getTrips(DASHBOARD_LANG, undefined, undefined, {
+            includeInactive: true,
+          }),
           suppliersApi.getSuppliers(DASHBOARD_LANG),
         ])
         if (tripsRes.error || suppliersRes.error) {

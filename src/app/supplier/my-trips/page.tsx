@@ -165,8 +165,28 @@ export default function MyTripsPage() {
               className="overflow-hidden py-0! hover:shadow-lg transition-all duration-200 gap-0!"
             >
               <div className="relative h-48 w-full">
-                <span className="absolute top-2 start-2 z-10">
+                <span className="absolute top-2 start-2 z-10 flex flex-wrap items-center gap-1.5">
                   <TripTypeBadge isTour={trip.is_tour} />
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      trip.status === "inactive"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {trip.status === "inactive" ? "غير نشط" : "نشط"}
+                  </span>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      trip.public_status === "coming-soon"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-cyan-100 text-cyan-800"
+                    }`}
+                  >
+                    {trip.public_status === "coming-soon"
+                      ? "متاح قريباً"
+                      : "متاح للحجز"}
+                  </span>
                 </span>
                 <TripCardMedia
                   fullImageUrl={fullImageUrl}
@@ -207,7 +227,9 @@ export default function MyTripsPage() {
                   )}
                   <p>
                     <span className="font-medium">عدد الاشخاص:</span>{" "}
-                    {trip.max_guests}
+                    {trip.is_tour
+                      ? trip.max_guests
+                      : `${trip.min_guests ?? 1}–${trip.max_guests}`}
                   </p>
                   <p>
                     <span className="font-medium">المدة:</span>{" "}

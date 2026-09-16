@@ -4,13 +4,13 @@
  * Uploads go through a Next.js route handler on Vercel, whose serverless
  * request body is capped at ~4.5 MB regardless of what the app allows — that
  * cap, not `MAX_UPLOAD_BYTES`, is what a phone photo actually hits. Shrinking
- * in the browser keeps a 10 MB original well under it while leaving the image
+ * in the browser keeps a 20 MB original well under it while leaving the image
  * far larger than anything the site renders (the widest layout slot is under
  * 1600 CSS px, and Cloudinary re-encodes for delivery anyway).
  */
 
 /** Largest original we accept from the file picker. */
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
 /** Longest edge kept after downscaling. */
 const MAX_EDGE = 2560

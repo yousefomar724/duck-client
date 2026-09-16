@@ -43,12 +43,12 @@ export function TripListingPrices({
   }
 
   return (
-    <span className={cn("flex flex-col gap-1.5 items-start", className)}>
+    <span className={cn("flex min-w-0 max-w-full flex-col gap-1.5 items-start", className)}>
       <span className={cn("text-duck-cyan font-semibold", mainPriceClassName)}>
         {formatCurrency(trip.foreigner_price!, trip.currency, locale)}
         {perHourEl}
       </span>
-      <span className="inline-flex items-center gap-1.5 max-w-full rounded-full border-2 border-amber-400 bg-amber-100 px-3 py-1.5 text-start text-sm md:text-base font-bold leading-snug text-amber-900 shadow-sm">
+      <span className="inline-flex min-w-0 max-w-full flex-wrap items-center gap-1.5 rounded-2xl border-2 border-amber-400 bg-amber-100 px-3 py-1.5 text-start text-sm md:text-base font-bold leading-snug text-amber-900 shadow-sm break-words [overflow-wrap:anywhere]">
         <Tag className="size-4 shrink-0 text-amber-600" />
         {egyptiansOfferLabel}
       </span>

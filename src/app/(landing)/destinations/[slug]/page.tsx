@@ -29,6 +29,7 @@ import { formatCurrency } from "@/lib/constants"
 import { SITE_CONTACT, SITE_NAME, SITE_URL } from "@/lib/site"
 import { buildWhatsAppHref } from "@/lib/support-contact"
 import { Phone } from "lucide-react"
+import { buildGoogleMapsUrl } from "@/lib/maps"
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -122,6 +123,10 @@ export default async function DestinationDetailPage({ params }: PageProps) {
   const allImages = destination.image
     ? [destination.image, ...destination.images.filter((i) => i !== destination.image)]
     : destination.images
+  const directionsHref =
+    destination.lat != null && destination.lng != null
+      ? buildGoogleMapsUrl(destination.lat, destination.lng)
+      : SITE_CONTACT.mapUrl
 
   return (
     <>
@@ -175,6 +180,24 @@ export default async function DestinationDetailPage({ params }: PageProps) {
               className="object-cover"
             />
           </div>
+          {allImages.length > 1 ? (
+            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {allImages.slice(1).map((image, index) => (
+                <div
+                  key={`${image}-${index}`}
+                  className="relative aspect-4/3 overflow-hidden rounded-xl bg-gray-100"
+                >
+                  <ImageWithLogoFallback
+                    src={image}
+                    alt={`${destination.name} ${index + 2}`}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 280px"
+                    className="object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -214,20 +237,55 @@ export default async function DestinationDetailPage({ params }: PageProps) {
               {trips.length === 0 ? (
                 <p className="text-text-body text-sm">{t("noTrips")}</p>
               ) : (
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-5">
                   {trips.map((trip) => (
-                    <Link
+                    <article
                       key={trip.id}
-                      href={canonicalTripPath(trip)}
-                      className="rounded-xl bg-off-white border border-black/5 p-5 hover:border-duck-cyan/25 hover:shadow-sm transition-all"
+                      className="overflow-hidden rounded-2xl bg-off-white border border-black/5"
                     >
-                      <h3 className="text-text-dark font-semibold mb-1.5">
-                        {trip.name}
-                      </h3>
-                      <span className="text-duck-cyan font-semibold text-sm">
-                        {formatCurrency(trip.price, trip.currency, locale)}
-                      </span>
-                    </Link>
+                      <Link href={canonicalTripPath(trip)} className="group block">
+                        <div className="relative aspect-16/9 bg-gray-100">
+                          <ImageWithLogoFallback
+                            src={trip.images[0] ?? null}
+                            alt={trip.name}
+                            fill
+                            sizes="(max-width: 640px) 100vw, 360px"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          {trip.public_status === "coming-soon" ? (
+                            <span className="absolute top-3 end-3 rounded-full bg-duck-yellow px-3 py-1 text-xs font-semibold text-duck-navy">
+                              {t("comingSoon")}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="p-5">
+                          <h3 className="text-text-dark font-semibold mb-1.5 break-words">
+                            {trip.name}
+                          </h3>
+                          <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-text-body">
+                            {trip.description}
+                          </p>
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <span className="text-duck-cyan font-semibold text-sm">
+                              {formatCurrency(trip.price, trip.currency, locale)}
+                            </span>
+                            <span className="text-sm font-medium text-duck-navy group-hover:underline">
+                              {t("viewTrip")}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                      {trip.public_status !== "coming-soon" ? (
+                        <div className="px-5 pb-5">
+                          <Link
+                            href={`/book?trip=${trip.id}`}
+                            className="block rounded-full bg-duck-yellow px-4 py-2.5 text-center text-sm font-semibold text-duck-navy hover:bg-duck-yellow-hover"
+                          >
+                            {t("bookTrip")}
+                          </Link>
+                        </div>
+                      ) : null}
+                    </article>
                   ))}
                 </div>
               )}
@@ -244,7 +302,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
                   {SITE_CONTACT.city}, {SITE_CONTACT.country}
                 </p>
                 <a
-                  href={SITE_CONTACT.mapUrl}
+                  href={directionsHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center text-duck-cyan font-medium text-sm hover:underline"

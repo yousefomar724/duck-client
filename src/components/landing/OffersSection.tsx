@@ -2,7 +2,7 @@
 "use client"
 
 import useEmblaCarousel from "embla-carousel-react"
-import { useCallback, useState, useEffect, useRef } from "react"
+import { useCallback, useState, useEffect, useMemo, useRef } from "react"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Clock, Users } from "lucide-react"
@@ -17,7 +17,7 @@ import {
 } from "@/lib/image-utils"
 import { formatCurrency } from "@/lib/constants"
 import { tripDurationText } from "@/lib/trips/duration"
-import { tripSlug } from "@/lib/seo/slug"
+import { canonicalTripPath } from "@/lib/seo/slug"
 import {
   Carousel,
   CarouselContent,
@@ -49,6 +49,7 @@ export default function OffersSection() {
       : value?.[locale] || value?.ar || value?.en || fallback
 
   const [trips, setTrips] = useState<Trip[]>([])
+  const [activeDestinationId, setActiveDestinationId] = useState("all")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -70,6 +71,32 @@ export default function OffersSection() {
   const [prevBtnDisabled, setPrevBtnDisabled] = useState(true)
   const [nextBtnDisabled, setNextBtnDisabled] = useState(true)
   const [selectedIndex, setSelectedIndex] = useState(0)
+
+  const destinationTabs = useMemo(() => {
+    const seen = new Map<string, NonNullable<Trip["destinations"]>[number]>()
+    for (const trip of trips) {
+      for (const destination of trip.destinations ?? []) {
+        if (!seen.has(destination.id)) seen.set(destination.id, destination)
+      }
+    }
+    return [...seen.values()]
+  }, [trips])
+
+  const effectiveDestinationId =
+    activeDestinationId === "all" ||
+    destinationTabs.some((destination) => destination.id === activeDestinationId)
+      ? activeDestinationId
+      : "all"
+
+  const filteredTrips = useMemo(
+    () =>
+      effectiveDestinationId === "all"
+        ? trips
+        : trips.filter((trip) =>
+            trip.destinations?.some((destination) => destination.id === effectiveDestinationId),
+          ),
+    [effectiveDestinationId, trips],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -150,26 +177,38 @@ export default function OffersSection() {
   const placeholderImage = DUCK_LOGO_PLACEHOLDER
 
   const reinitVisibleInnerCarousel = useCallback(() => {
-    const tripId = trips[selectedIndex]?.id
+    const tripId = filteredTrips[selectedIndex]?.id
     if (tripId == null) return
     const inner = innerCarouselApisRef.current.get(tripId)
     requestAnimationFrame(() => {
       requestAnimationFrame(() => inner?.reInit())
     })
-  }, [trips, selectedIndex])
+  }, [filteredTrips, selectedIndex])
 
   useEffect(() => {
     reinitVisibleInnerCarousel()
-  }, [selectedIndex, trips, reinitVisibleInnerCarousel])
+  }, [selectedIndex, filteredTrips, reinitVisibleInnerCarousel])
+
+  const selectDestination = useCallback(
+    (destinationId: string) => {
+      setActiveDestinationId(destinationId)
+      setSelectedIndex(0)
+      requestAnimationFrame(() => {
+        emblaApi?.reInit()
+        emblaApi?.scrollTo(0, true)
+      })
+    },
+    [emblaApi],
+  )
 
   useEffect(() => {
-    if (loading || trips.length === 0 || !emblaApi) return
+    if (loading || filteredTrips.length === 0 || !emblaApi) return
     const id = window.setTimeout(() => {
       emblaApi.reInit()
       reinitVisibleInnerCarousel()
     }, 150)
     return () => clearTimeout(id)
-  }, [loading, trips.length, emblaApi, reinitVisibleInnerCarousel])
+  }, [loading, filteredTrips.length, emblaApi, reinitVisibleInnerCarousel])
 
   useEffect(() => {
     const onLayout = () => {
@@ -254,6 +293,45 @@ export default function OffersSection() {
         </p>
       </div>
 
+      {destinationTabs.length > 0 ? (
+        <div
+          className="mb-2 overflow-x-auto px-4 pb-2 scrollbar-duck md:overflow-visible md:px-10"
+          aria-label={t("filterByDestination")}
+        >
+          <div className="mx-auto flex w-max min-w-full items-center gap-2 md:w-auto md:flex-wrap md:justify-center">
+            <button
+              type="button"
+              onClick={() => selectDestination("all")}
+              aria-pressed={effectiveDestinationId === "all"}
+              className={cn(
+                "shrink-0 rounded-full border px-5 py-2 text-sm font-medium transition-colors",
+                effectiveDestinationId === "all"
+                  ? "border-duck-navy bg-duck-navy text-white"
+                  : "border-duck-navy/15 bg-white text-text-body hover:border-duck-cyan hover:text-text-dark",
+              )}
+            >
+              {t("allDestinations")}
+            </button>
+            {destinationTabs.map((destination) => (
+              <button
+                key={destination.id}
+                type="button"
+                onClick={() => selectDestination(destination.id)}
+                aria-pressed={effectiveDestinationId === destination.id}
+                className={cn(
+                  "shrink-0 rounded-full border px-5 py-2 text-sm font-medium transition-colors",
+                  effectiveDestinationId === destination.id
+                    ? "border-duck-navy bg-duck-navy text-white"
+                    : "border-duck-navy/15 bg-white text-text-body hover:border-duck-cyan hover:text-text-dark",
+                )}
+              >
+                {getLocalizedText(destination.name)}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {/* Carousel */}
       <div className="relative mb-12" dir={locale === "ar" ? "rtl" : "ltr"}>
         <div className="overflow-hidden" ref={emblaRef}>
@@ -271,12 +349,12 @@ export default function OffersSection() {
                   {t("errorLoading")}
                 </p>
               </div>
-            ) : trips.length === 0 ? (
+            ) : filteredTrips.length === 0 ? (
               <div className="flex-[0_0_100%] min-w-0 flex justify-center py-12">
                 <p className="text-text-body text-center">{t("noTrips")}</p>
               </div>
             ) : (
-              trips.map((trip) => {
+              filteredTrips.map((trip) => {
                 const tripName = getLocalizedText(trip.name, t("defaultName"))
                 const tripDescription = getLocalizedText(trip.description)
                 const rawImages = getTripImages(trip.images)
@@ -388,11 +466,16 @@ export default function OffersSection() {
                       >
                         {trip.is_tour ? t("tour") : t("trip")}
                       </span>
+                      {trip.public_status === "coming-soon" ? (
+                        <span className="absolute top-3 end-3 z-10 rounded-full bg-duck-yellow px-3 py-1 text-xs font-semibold text-duck-navy">
+                          {t("comingSoon")}
+                        </span>
+                      ) : null}
                     </div>
 
                     {/* Text Side */}
-                    <div className="w-full lg:w-1/3 p-4 lg:p-10 flex flex-col justify-between items-start text-start gap-6">
-                      <div>
+                    <div className="w-full min-w-0 overflow-hidden lg:w-1/3 p-4 lg:p-10 flex flex-col justify-between items-start text-start gap-6">
+                      <div className="min-w-0 max-w-full">
                         {supplierName && (
                           <div className="flex items-center gap-2 mb-2">
                             <ImageWithLogoFallback
@@ -408,15 +491,15 @@ export default function OffersSection() {
                               )}
                               fallbackClassName="w-6 h-6 rounded-full object-contain p-0.5 bg-muted"
                             />
-                            <span className="text-text-muted text-sm">
+                            <span className="min-w-0 break-words text-text-muted text-sm">
                               {supplierName}
                             </span>
                           </div>
                         )}
-                        <h3 className="text-2xl md:text-3xl font-bold text-text-dark mb-4">
+                        <h3 className="max-w-full break-words [overflow-wrap:anywhere] text-2xl md:text-3xl font-bold text-text-dark mb-4">
                           {tripName}
                         </h3>
-                        <p className="text-text-body leading-relaxed mb-4 line-clamp-4">
+                        <p className="max-w-full break-words [overflow-wrap:anywhere] text-text-body leading-relaxed mb-4 line-clamp-4">
                           {tripDescription}
                         </p>
                         <p className="text-duck-cyan">
@@ -440,13 +523,19 @@ export default function OffersSection() {
                           {renderTripDuration(trip)}
                         </p>
                       </div>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <Link
-                          href={`/book?trip=${trip.id}`}
-                          className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors"
-                        >
-                          {t("bookNow")}
-                        </Link>
+                      <div className="flex max-w-full items-center gap-3 flex-wrap">
+                        {trip.public_status === "coming-soon" ? (
+                          <span className="rounded-full bg-duck-yellow/25 px-5 py-3 text-sm font-semibold text-duck-navy">
+                            {t("bookingUnavailable")}
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/book?trip=${trip.id}`}
+                            className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors"
+                          >
+                            {t("bookNow")}
+                          </Link>
+                        )}
                         <button
                           type="button"
                           onClick={() => setSelectedTrip(trip)}
@@ -454,26 +543,12 @@ export default function OffersSection() {
                         >
                           {t("details")}
                         </button>
-                        {(() => {
-                          // getTrips(locale) resolves `name` server-side to a
-                          // plain string for the active locale (despite the
-                          // `{ar,en}` type) — kebab() degrades non-Latin
-                          // script to nothing, so the slug helper's ObjectId
-                          // fallback still resolves correctly either way.
-                          const rawName =
-                            typeof trip.name === "string"
-                              ? trip.name
-                              : (trip.name as { en?: string })?.en
-                          if (!rawName) return null
-                          return (
-                            <Link
-                              href={`/trips/${tripSlug({ id: trip.id, name: rawName })}`}
-                              className="text-text-muted hover:text-text-dark underline underline-offset-4 text-sm px-2"
-                            >
-                              {t("viewFullPage")}
-                            </Link>
-                          )
-                        })()}
+                        <Link
+                          href={canonicalTripPath({ id: trip.id, name: tripName, slug: trip.slug })}
+                          className="text-text-muted hover:text-text-dark underline underline-offset-4 text-sm px-2"
+                        >
+                          {t("viewFullPage")}
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -485,7 +560,7 @@ export default function OffersSection() {
       </div>
 
       {/* Controls */}
-      {!loading && !error && trips.length > 0 && (
+      {!loading && !error && filteredTrips.length > 0 && (
         <div
           className="flex items-center justify-center gap-4 max-w-[1920px] mx-auto px-4 md:px-10 text-text-dark"
           dir="ltr"
@@ -503,7 +578,7 @@ export default function OffersSection() {
           <div className="flex items-center gap-2 text-sm font-medium">
             <span>{selectedIndex + 1}</span>
             <span className="mx-3 w-10 h-0.5 bg-gray-500" />
-            <span>{trips.length}</span>
+            <span>{filteredTrips.length}</span>
           </div>
 
           <button
@@ -766,12 +841,18 @@ export default function OffersSection() {
                   )}
 
                   {/* Book Now CTA */}
-                  <Link
-                    href={`/book?trip=${selectedTrip?.id}`}
-                    className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors text-center mt-2"
-                  >
-                    {t("bookNow")}
-                  </Link>
+                  {selectedTrip?.public_status === "coming-soon" ? (
+                    <span className="rounded-full bg-duck-yellow/25 px-7 py-3 text-center font-medium text-duck-navy mt-2">
+                      {t("bookingUnavailable")}
+                    </span>
+                  ) : (
+                    <Link
+                      href={`/book?trip=${selectedTrip?.id}`}
+                      className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors text-center mt-2"
+                    >
+                      {t("bookNow")}
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -1021,12 +1102,18 @@ export default function OffersSection() {
                 )}
 
                 {/* Book Now CTA */}
-                <Link
-                  href={`/book?trip=${selectedTrip?.id}`}
-                  className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors text-center mt-2"
-                >
-                  {t("bookNow")}
-                </Link>
+                {selectedTrip?.public_status === "coming-soon" ? (
+                  <span className="rounded-full bg-duck-yellow/25 px-7 py-3 text-center font-medium text-duck-navy mt-2">
+                    {t("bookingUnavailable")}
+                  </span>
+                ) : (
+                  <Link
+                    href={`/book?trip=${selectedTrip?.id}`}
+                    className="bg-duck-yellow text-duck-navy px-7 py-3 rounded-full font-medium hover:bg-duck-yellow/80 transition-colors text-center mt-2"
+                  >
+                    {t("bookNow")}
+                  </Link>
+                )}
               </div>
             </div>
           </DialogContent>

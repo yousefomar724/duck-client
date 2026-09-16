@@ -137,7 +137,14 @@ export async function applyBookingEdit(
   }
 
   const guests = nextLocalGuests + nextForeignerGuests;
-  if (guests > trip.max_guests) {
+  const minimumGuests = trip.is_tour ? 1 : (trip.min_guests ?? 1);
+  const effectivePartySize = guests > 0 ? guests : nextQuantity;
+  if (effectivePartySize < minimumGuests) {
+    throw new BookingEditError(
+      `booking requires at least ${minimumGuests} guests`,
+    );
+  }
+  if (effectivePartySize > trip.max_guests) {
     throw new BookingEditError(`guests exceed maximum allowed: ${trip.max_guests}`);
   }
 

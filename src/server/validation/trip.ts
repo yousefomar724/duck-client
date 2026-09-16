@@ -25,7 +25,7 @@ const isoDate = z
   .refine((v) => !Number.isNaN(new Date(v).getTime()), { message: 'تاريخ غير صحيح' });
 
 /** Validates the full body of `POST /api/v1/trips`. */
-export const createTripBodySchema = z.object({
+const tripBodySchema = z.object({
   supplier_id: objectId.optional(),
   is_tour: z.boolean().optional(),
   name: requiredLocalizedText,
@@ -35,6 +35,8 @@ export const createTripBodySchema = z.object({
   guide_mandatory: z.boolean().optional(),
   guide_price: z.number().min(0).optional(),
   display_order: z.number().int().min(0).optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+  public_status: z.enum(['available', 'coming-soon']).optional(),
   currency: z.string().min(1).optional(),
   destination: z.boolean().optional(),
   location: z.boolean().optional(),
@@ -46,6 +48,7 @@ export const createTripBodySchema = z.object({
   itinerary: looseLocalizedText.optional(),
   availability: looseLocalizedText.optional(),
   max_guests: z.number().int().min(1, 'يجب أن يكون شخصًا واحدًا على الأقل'),
+  min_guests: z.number().int().min(1, 'يجب أن يكون شخصًا واحدًا على الأقل').optional(),
   images: z.unknown().optional(),
   cancelation_policy: cancelationPolicyText.optional(),
   meeting_point: looseLocalizedText.optional(),
@@ -57,8 +60,30 @@ export const createTripBodySchema = z.object({
   destination_ids: z.array(objectId).optional(),
 });
 
+export const createTripBodySchema = tripBodySchema.superRefine((body, ctx) => {
+  if ((body.min_guests ?? 1) > body.max_guests) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['min_guests'],
+      message: 'الحد الأدنى لا يمكن أن يتجاوز الحد الأقصى',
+    });
+  }
+});
+
 /** Validates the (partial) body of `PATCH /api/v1/trips/[id]`. */
-export const updateTripBodySchema = createTripBodySchema.partial();
+export const updateTripBodySchema = tripBodySchema.partial().superRefine((body, ctx) => {
+  if (
+    body.min_guests !== undefined &&
+    body.max_guests !== undefined &&
+    body.min_guests > body.max_guests
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['min_guests'],
+      message: 'الحد الأدنى لا يمكن أن يتجاوز الحد الأقصى',
+    });
+  }
+});
 
 /** Flattens a ZodError into `{ fieldPath: message }`, keyed by the top-level field name. */
 export function flattenFieldErrors(error: z.ZodError): Record<string, string> {

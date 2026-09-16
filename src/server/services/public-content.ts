@@ -4,7 +4,7 @@ import { Trip } from '../models/trip';
 import { Destination } from '../models/destination';
 import { toTripResponse, toDestinationResponse } from './trip';
 import { resolveLocalized } from '../lib/localize';
-import { extractObjectId, kebab } from '@/lib/seo/slug';
+import { extractObjectId } from '@/lib/seo/slug';
 import { cleanLegacy } from '@/lib/trips/clean-legacy';
 
 /**
@@ -26,6 +26,7 @@ function toPlain<T>(value: unknown): T {
 
 export interface PublicDestination {
   id: string;
+  slug: string;
   name: string;
   description: string;
   image: string;
@@ -39,6 +40,7 @@ export interface PublicDestination {
 
 export interface PublicTrip {
   id: string;
+  slug: string;
   name: string;
   description: string;
   itinerary: string;
@@ -56,6 +58,9 @@ export interface PublicTrip {
   duration: number;
   duration_text?: { ar: string; en: string };
   max_guests: number;
+  min_guests: number;
+  status: 'active' | 'inactive';
+  public_status: 'available' | 'coming-soon';
   refundable: boolean;
   is_tour: boolean;
   from: string;
@@ -70,6 +75,7 @@ export interface PublicTrip {
 function toPublicDestination(json: Record<string, unknown>): PublicDestination {
   return {
     id: json.id as string,
+    slug: json.slug as string,
     name: json.name as string,
     description: json.description as string,
     image: (json.image as string) ?? '',
@@ -115,6 +121,7 @@ function toPublicTrip(json: Record<string, unknown>, locale: string): PublicTrip
 
   return {
     id: json.id as string,
+    slug: json.slug as string,
     name: json.name as string,
     description: json.description as string,
     itinerary: cleanLegacy((json.itinerary as string) ?? ''),
@@ -134,6 +141,9 @@ function toPublicTrip(json: Record<string, unknown>, locale: string): PublicTrip
       ? json.duration_text
       : undefined,
     max_guests: json.max_guests as number,
+    min_guests: (json.min_guests as number) ?? 1,
+    status: (json.status as PublicTrip['status']) ?? 'active',
+    public_status: (json.public_status as PublicTrip['public_status']) ?? 'available',
     refundable: Boolean(json.refundable),
     is_tour: Boolean(json.is_tour),
     from: json.from as string,
@@ -150,7 +160,7 @@ function toPublicTrip(json: Record<string, unknown>, locale: string): PublicTrip
 
 export async function listPublicTrips(locale: string): Promise<PublicTrip[]> {
   await dbConnect();
-  const trips = await Trip.find({})
+  const trips = await Trip.find({ status: { $ne: 'inactive' } })
     .sort({ display_order: 1 })
     .populate('supplier_id')
     .populate('tour_guide_id')
@@ -187,7 +197,7 @@ export async function getTripBySlug(
   const id = extractObjectId(slug);
   if (id) {
     await dbConnect();
-    const trip = await Trip.findById(id)
+    const trip = await Trip.findOne({ _id: id, status: { $ne: 'inactive' } })
       .populate('supplier_id')
       .populate('tour_guide_id')
       .populate('destination_ids');
@@ -197,7 +207,7 @@ export async function getTripBySlug(
   }
 
   const trips = await listPublicTrips(locale);
-  return trips.find((t) => kebab(t.name) === slug) ?? null;
+  return trips.find((t) => t.slug === slug) ?? null;
 }
 
 export async function getDestinationBySlug(
@@ -214,7 +224,7 @@ export async function getDestinationBySlug(
   }
 
   const destinations = await listPublicDestinations(locale);
-  return destinations.find((d) => kebab(d.name) === slug) ?? null;
+  return destinations.find((d) => d.slug === slug) ?? null;
 }
 
 export interface CatalogueSummary {

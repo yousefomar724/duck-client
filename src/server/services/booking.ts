@@ -87,6 +87,26 @@ export interface ComputeBookingAmountResult {
   foreignerGuests: number;
 }
 
+export class TripUnavailableError extends Error {
+  readonly code = 'TRIP_UNAVAILABLE';
+
+  constructor() {
+    super('trip is not currently available for booking');
+    this.name = 'TripUnavailableError';
+  }
+}
+
+export class MinimumGuestsError extends Error {
+  readonly code = 'MINIMUM_GUESTS';
+  readonly minimum: number;
+
+  constructor(minimum: number) {
+    super(`booking requires at least ${minimum} guests`);
+    this.name = 'MinimumGuestsError';
+    this.minimum = minimum;
+  }
+}
+
 /**
  * Pure pricing arithmetic extracted from buildBooking for unit testing.
  */
@@ -136,11 +156,15 @@ export async function buildBooking(
 ): Promise<BuiltBooking> {
   const trip = await Trip.findById(req.trip_id);
   if (!trip) throw new Error('trip not found');
+  if (trip.status === 'inactive' || trip.public_status === 'coming-soon') {
+    throw new TripUnavailableError();
+  }
 
   let quantity = req.quantity && req.quantity > 0 ? req.quantity : 1;
   const localGuests = req.local_guests ?? 0;
   const foreignerGuests = req.foreigner_guests ?? 0;
   const guests = localGuests + foreignerGuests;
+  const partySize = guests > 0 ? guests : quantity;
 
   if (req.resource_type && !isValidResourceType(req.resource_type)) {
     throw new Error(
@@ -148,7 +172,12 @@ export async function buildBooking(
     );
   }
 
-  if (guests > trip.max_guests) {
+  const minGuests = trip.is_tour ? 1 : (trip.min_guests ?? 1);
+  if (partySize < minGuests) {
+    throw new MinimumGuestsError(minGuests);
+  }
+
+  if (partySize > trip.max_guests) {
     throw new Error(`guests exceed maximum allowed: ${trip.max_guests}`);
   }
 

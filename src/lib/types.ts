@@ -31,6 +31,9 @@ export interface Trip {
   guide_mandatory: boolean
   guide_price: number
   display_order: number
+  status?: "active" | "inactive"
+  public_status?: "available" | "coming-soon"
+  slug?: string
   currency: string
   rate: number
   destination: boolean
@@ -45,6 +48,7 @@ export interface Trip {
   description: { ar: string; en: string }
   availability?: { date: string; slots: number }[] | { ar: string; en: string }
   max_guests: number
+  min_guests?: number
   images?: string[] | { [key: string]: string }
   cancelation_policy: { ar: string; en: string }
   meeting_point?: { ar: string; en: string }
@@ -147,6 +151,7 @@ export type DestinationPublicStatus = "open" | "coming-soon"
 
 export interface Destination {
   id: string
+  slug?: string
   name: { ar: string; en: string }
   description: { ar: string; en: string }
   image: string
@@ -301,6 +306,8 @@ export interface CreateTripRequest {
   guide_mandatory: boolean
   guide_price?: number
   display_order?: number
+  status?: "active" | "inactive"
+  public_status?: "available" | "coming-soon"
   currency: string
   destination: boolean
   location: boolean
@@ -312,6 +319,7 @@ export interface CreateTripRequest {
   itinerary?: { ar: string; en: string }
   availability?: { ar: string; en: string }
   max_guests: number
+  min_guests?: number
   images?: string[]
   destination_ids?: string[]
   cancelation_policy?: { ar: string; en: string }

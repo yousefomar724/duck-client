@@ -15,6 +15,8 @@ export interface TripDoc extends mongoose.Document {
   guide_mandatory: boolean;
   guide_price: number;
   display_order: number;
+  status: 'active' | 'inactive';
+  public_status: 'available' | 'coming-soon';
   currency: string;
   rate: number;
   destination: boolean;
@@ -36,6 +38,7 @@ export interface TripDoc extends mongoose.Document {
   faqs: TripFaq[];
   hide_default_faqs: boolean;
   max_guests: number;
+  min_guests: number;
   refundable: boolean;
   tour_guide_id?: Types.ObjectId | null;
   destination_ids: Types.ObjectId[];
@@ -67,6 +70,12 @@ const TripSchema = new Schema<TripDoc>(
     guide_mandatory: { type: Boolean, required: true, default: false },
     guide_price: { type: Number, default: 0 },
     display_order: { type: Number, default: 0 },
+    status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    public_status: {
+      type: String,
+      enum: ['available', 'coming-soon'],
+      default: 'available',
+    },
     currency: { type: String, required: true, default: 'EGP' },
     rate: { type: Number, required: true, default: 0 },
     destination: { type: Boolean, required: true },
@@ -87,6 +96,18 @@ const TripSchema = new Schema<TripDoc>(
     faqs: { type: [TripFaqSchema], default: [] },
     hide_default_faqs: { type: Boolean, default: false },
     max_guests: { type: Number, required: true },
+    min_guests: {
+      type: Number,
+      required: true,
+      default: 1,
+      min: 1,
+      validate: {
+        validator(this: TripDoc, value: number) {
+          return value <= this.max_guests;
+        },
+        message: 'min_guests cannot exceed max_guests',
+      },
+    },
     refundable: { type: Boolean, required: true, default: true },
     tour_guide_id: { type: Schema.Types.ObjectId, ref: 'TourGuide', default: null },
     // Replaces the Go `trip_destinations` many2many join table.

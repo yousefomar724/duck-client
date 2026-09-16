@@ -2,6 +2,7 @@ import { resolveLocalized } from '../lib/localize';
 import { Trip, type TripDoc, type TripFaq } from '../models/trip';
 import type { LocalizedText } from '../models/supplier';
 import { parseDurationHoursFromLocalized } from '@/lib/trips/duration';
+import { kebab } from '@/lib/seo/slug';
 
 export interface CreateTripBody {
   supplier_id?: string;
@@ -11,6 +12,8 @@ export interface CreateTripBody {
   guide_mandatory?: boolean;
   guide_price?: number;
   display_order?: number;
+  status?: 'active' | 'inactive';
+  public_status?: 'available' | 'coming-soon';
   currency?: string;
   destination?: boolean;
   location?: boolean;
@@ -24,6 +27,7 @@ export interface CreateTripBody {
   description: LocalizedText;
   availability?: LocalizedText;
   max_guests: number;
+  min_guests?: number;
   images?: unknown;
   cancelation_policy?: LocalizedText;
   meeting_point?: LocalizedText;
@@ -65,6 +69,8 @@ export async function createTripFromRequest(supplierId: string, body: CreateTrip
     guide_mandatory: body.guide_mandatory ?? false,
     guide_price: body.guide_price ?? 0,
     display_order: body.display_order ?? 0,
+    status: body.status ?? 'active',
+    public_status: body.public_status ?? 'available',
     currency: body.currency || 'EGP',
     destination: body.destination ?? false,
     location: body.location ?? false,
@@ -74,6 +80,7 @@ export async function createTripFromRequest(supplierId: string, body: CreateTrip
     activity_minutes: body.activity_minutes ?? (!body.is_tour && duration > 0 ? duration * 60 : null),
     duration_text: body.is_tour ? { en: '', ar: '' } : (body.duration_text ?? { en: '', ar: '' }),
     max_guests: body.max_guests,
+    min_guests: body.is_tour ? 1 : (body.min_guests ?? 1),
     refundable: body.refundable ?? false,
     tour_guide_id: body.tour_guide_id || null,
     name: body.name,
@@ -107,6 +114,8 @@ export function applyTripUpdate(trip: TripDoc, body: Partial<CreateTripBody>): v
   trip.guide_mandatory = body.guide_mandatory ?? false;
   if (body.guide_price) trip.guide_price = body.guide_price;
   if (body.display_order) trip.display_order = body.display_order;
+  if (body.status !== undefined) trip.status = body.status;
+  if (body.public_status !== undefined) trip.public_status = body.public_status;
   if (body.currency) trip.currency = body.currency;
   if (body.destination !== undefined) trip.destination = body.destination;
   if (body.location !== undefined) trip.location = body.location;
@@ -130,6 +139,11 @@ export function applyTripUpdate(trip: TripDoc, body: Partial<CreateTripBody>): v
     trip.duration_text = body.duration_text;
   }
   if (body.max_guests) trip.max_guests = body.max_guests;
+  if (isTour) {
+    trip.min_guests = 1;
+  } else if (body.min_guests !== undefined) {
+    trip.min_guests = body.min_guests;
+  }
   if (body.refundable) trip.refundable = body.refundable;
   // `if (body.tour_guide_id)` treated an explicit null as "no change", making
   // it impossible to remove a guide once one had been assigned.
@@ -174,6 +188,12 @@ export function normalizeImageUrls(raw: unknown): string[] {
  * is returned unchanged.
  */
 export function toTripResponse(trip: Record<string, unknown>, lang: string): Record<string, unknown> {
+  const localizedName = trip.name as { en?: string; ar?: string } | string | undefined;
+  const englishName =
+    typeof localizedName === 'string'
+      ? localizedName
+      : localizedName?.en || localizedName?.ar || '';
+  const id = String(trip.id ?? '');
   const faqs = Array.isArray(trip.faqs)
     ? (trip.faqs as Record<string, unknown>[]).map((f) => ({
         q: resolveLocalized(f.q, lang),
@@ -183,6 +203,10 @@ export function toTripResponse(trip: Record<string, unknown>, lang: string): Rec
 
   return {
     ...trip,
+    slug: kebab(englishName) || `trip-${id}`,
+    status: trip.status ?? 'active',
+    public_status: trip.public_status ?? 'available',
+    min_guests: trip.min_guests ?? 1,
     itinerary: resolveLocalized(trip.itinerary, lang),
     name: resolveLocalized(trip.name, lang),
     description: resolveLocalized(trip.description, lang),
@@ -197,8 +221,15 @@ export function toDestinationResponse(
   destination: Record<string, unknown>,
   lang: string,
 ): Record<string, unknown> {
+  const localizedName = destination.name as { en?: string; ar?: string } | string | undefined;
+  const englishName =
+    typeof localizedName === 'string'
+      ? localizedName
+      : localizedName?.en || localizedName?.ar || '';
+  const id = String(destination.id ?? '');
   return {
     ...destination,
+    slug: kebab(englishName) || `destination-${id}`,
     name: resolveLocalized(destination.name, lang),
     description: resolveLocalized(destination.description, lang),
   };

@@ -228,9 +228,11 @@ function BookPageContent() {
           kidsMinOne: t("kidsMinOne"),
           adultsMinOne: tv("adultsMinOne"),
           maxGuestsError: (max) => t("maxGuestsError", { max }),
+          minGuestsError: (min) => t("minGuestsError", { min }),
           guestMixSumError: (total) => t("guestMixSumError", { total }),
         },
         selectedTrip?.max_guests,
+        selectedTrip?.is_tour ? 1 : (selectedTrip?.min_guests ?? 1),
       ),
     [selectedTrip, t, tv],
   )
@@ -240,7 +242,9 @@ function BookPageContent() {
     let cancelled = false
     async function fetchTrips() {
       setTripsLoading(true)
-      const { data, error } = await getTrips(locale)
+      const { data, error } = await getTrips(locale, undefined, undefined, {
+        publicStatus: "available",
+      })
       if (cancelled) return
       setTripsLoading(false)
       if (error || !data) return
@@ -311,16 +315,12 @@ function BookPageContent() {
   useEffect(() => {
     if (!selectedTrip) return
 
-    // Guests mode logic: only update if changed to avoid cascade renders
     const maxG = selectedTrip.max_guests
-    // Only update if necessary, to avoid unnecessary renders
-    setGuestsMode((prevMode) => {
-      if (maxG <= 5) {
-        return prevMode !== "preset" ? "preset" : prevMode
-      } else {
-        return prevMode
-      }
-    })
+    const minG = selectedTrip.is_tour ? 1 : (selectedTrip.min_guests ?? 1)
+    const currentGuests = Number(form.getValues("guests")) || 1
+    const nextGuests = Math.min(maxG, Math.max(minG, currentGuests))
+    form.setValue("guests", nextGuests, { shouldValidate: true })
+    setGuestsMode(minG > 5 || nextGuests > 5 ? "custom" : "preset")
 
     prevTripIdRef.current = selectedTrip.id
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -408,9 +408,11 @@ function BookPageContent() {
   useEffect(() => {
     if (!selectedTrip) return
     const maxG = selectedTrip.max_guests
+    const minG = selectedTrip.is_tour ? 1 : (selectedTrip.min_guests ?? 1)
     const guests = Number(form.getValues("guests")) || 0
-    if (guests <= maxG) return
-    form.setValue("guests", maxG)
+    const clamped = Math.min(maxG, Math.max(minG, guests))
+    if (clamped === guests) return
+    form.setValue("guests", clamped, { shouldValidate: true })
   }, [selectedTrip, totalGuests, form])
 
   // When guest_mix changes, keep local/foreigner in sync with total.
@@ -512,6 +514,17 @@ function BookPageContent() {
       const result = await bookingsApi.createManualBooking(bookingPayload)
       setSubmitLoading(false)
       if (result.error) {
+        if (result.code === "TRIP_UNAVAILABLE") {
+          addToast(t("tripUnavailable"), "error")
+          return
+        }
+        if (result.code === "MINIMUM_GUESTS") {
+          addToast(
+            t("minGuestsError", { min: selectedTrip.min_guests ?? 1 }),
+            "error",
+          )
+          return
+        }
         const isConflict =
           result.code === "NO_AVAILABILITY" ||
           result.error.toLowerCase().includes("availability") ||
@@ -532,6 +545,17 @@ function BookPageContent() {
     const result = await bookingsApi.createBooking(bookingPayload)
     setSubmitLoading(false)
     if (result.error) {
+      if (result.code === "TRIP_UNAVAILABLE") {
+        addToast(t("tripUnavailable"), "error")
+        return
+      }
+      if (result.code === "MINIMUM_GUESTS") {
+        addToast(
+          t("minGuestsError", { min: selectedTrip.min_guests ?? 1 }),
+          "error",
+        )
+        return
+      }
       const isConflict =
         result.code === "NO_AVAILABILITY" ||
         result.error.toLowerCase().includes("availability") ||
@@ -668,7 +692,7 @@ function BookPageContent() {
                     {t("noTrips")}
                   </p>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-2 max-h-[500px] overflow-y-auto scrollbar-duck">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-2">
                     {trips.map((trip) => {
                       const name = getLocalizedText(
                         trip.name,
@@ -896,10 +920,13 @@ function BookPageContent() {
                     name="guests"
                     render={({ field }) => {
                       const maxG = selectedTrip?.max_guests ?? 5
+                      const minG = selectedTrip?.is_tour
+                        ? 1
+                        : (selectedTrip?.min_guests ?? 1)
                       const presetMax = Math.min(5, maxG)
                       const guestOptions = Array.from(
-                        { length: presetMax },
-                        (_, i) => i + 1,
+                        { length: Math.max(0, presetMax - minG + 1) },
+                        (_, i) => i + minG,
                       )
                       const showMoreOption = maxG > 5
 
@@ -916,7 +943,7 @@ function BookPageContent() {
                               onValueChange={(val) => {
                                 if (val === "more") {
                                   setGuestsMode("custom")
-                                  field.onChange(6)
+                                  field.onChange(Math.max(6, minG))
                                 } else {
                                   field.onChange(Number(val))
                                 }
@@ -953,7 +980,7 @@ function BookPageContent() {
                                 <Input
                                   type="number"
                                   inputMode="numeric"
-                                  min={6}
+                                  min={Math.max(6, minG)}
                                   max={maxG}
                                   placeholder={t("guestsCustomPlaceholder")}
                                   className="rounded-lg border-black/20 flex-1"
@@ -969,7 +996,7 @@ function BookPageContent() {
                                 onClick={() => {
                                   setGuestsMode("preset")
                                   field.onChange(
-                                    Math.min(field.value, presetMax),
+                                    Math.max(minG, Math.min(field.value, presetMax)),
                                   )
                                 }}
                                 className="text-sm text-duck-cyan whitespace-nowrap hover:underline"
@@ -982,6 +1009,9 @@ function BookPageContent() {
                           {selectedTrip ? (
                             <p className="text-xs text-text-muted">
                               {t("totalGuestsHint")}{" "}
+                              {minG > 1
+                                ? `${t("minGuests", { min: minG })}. `
+                                : ""}
                               {t("maxGuests", { max: selectedTrip.max_guests })}
                             </p>
                           ) : null}

@@ -86,6 +86,8 @@ const FIELD_LABELS: Record<string, string> = {
   foreigner_price: "السعر للأجانب",
   guide_price: "سعر المرشد",
   display_order: "ترتيب العرض",
+  status: "حالة النشر",
+  public_status: "حالة الحجز",
   currency: "العملة",
   cancelation_policy_ar: "سياسة الإلغاء (عربي)",
   cancelation_policy_en: "سياسة الإلغاء (English)",
@@ -95,6 +97,7 @@ const FIELD_LABELS: Record<string, string> = {
   duration_text_ar: "المدة (عربي)",
   duration_text_en: "Duration (English)",
   max_guests: "عدد الاشخاص الأقصى",
+  min_guests: "عدد الأشخاص الأدنى",
   supplier_id: "المورد",
   tour_guide_id: "المرشد",
   from: "من تاريخ",
@@ -113,6 +116,8 @@ const EMPTY_FORM_VALUES: TripFormInput = {
   guide_mandatory: false,
   guide_price: "",
   display_order: "0",
+  status: "active",
+  public_status: "available",
   currency: "EGP",
   refundable: true,
   cancelation_policy_ar: "",
@@ -131,6 +136,7 @@ const EMPTY_FORM_VALUES: TripFormInput = {
   duration_text_ar: "",
   duration_text_en: "",
   max_guests: "",
+  min_guests: "1",
   supplier_id: "",
   is_tour: true,
   tour_guide_id: "",
@@ -184,6 +190,8 @@ function mapTripToFormValues(tripData: Trip): TripFormInput {
     guide_mandatory: tripData.guide_mandatory ?? false,
     guide_price: (tripData.guide_price ?? 0).toString(),
     display_order: (tripData.display_order ?? 0).toString(),
+    status: tripData.status ?? "active",
+    public_status: tripData.public_status ?? "available",
     currency: tripData.currency,
     refundable: tripData.refundable,
     cancelation_policy_ar: tripPolicy?.ar || "",
@@ -202,6 +210,7 @@ function mapTripToFormValues(tripData: Trip): TripFormInput {
     duration_text_ar: asLocalizedPair(tripData.duration_text).ar,
     duration_text_en: asLocalizedPair(tripData.duration_text).en,
     max_guests: tripData.max_guests.toString(),
+    min_guests: (tripData.min_guests ?? 1).toString(),
     supplier_id: tripData.supplier_id?.toString() || "",
     is_tour: tripData.is_tour ?? false,
     tour_guide_id: tripData.tour_guide_id?.toString() || "",
@@ -376,6 +385,8 @@ export default function TripForm({
         guide_mandatory: values.guide_mandatory,
         guide_price: values.guide_price,
         display_order: values.display_order,
+        status: values.status,
+        public_status: values.public_status,
         currency: values.currency,
         refundable: values.refundable,
         cancelation_policy: {
@@ -406,6 +417,7 @@ export default function TripForm({
           : { ar: values.duration_text_ar, en: values.duration_text_en },
         activity_minutes: values.is_tour ? 0 : values.activity_minutes,
         max_guests: values.max_guests,
+        min_guests: values.is_tour ? 1 : values.min_guests,
         images: allImageUrls,
         destination_ids: values.destination_ids,
       }
@@ -552,6 +564,50 @@ export default function TripForm({
                   ? "الجولة: يتم حساب السعر بناءً على عدد الأشخاص × عدد الساعات"
                   : "الرحلة: يتم حساب السعر بناءً على الكمية"}
               </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>حالة النشر</FormLabel>
+                      <Select dir="rtl" value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger name={field.name}>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">نشط — ظاهر للعملاء</SelectItem>
+                          <SelectItem value="inactive">غير نشط — مخفي تماماً</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="public_status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>حالة الحجز</FormLabel>
+                      <Select dir="rtl" value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger name={field.name}>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="available">متاح للحجز</SelectItem>
+                          <SelectItem value="coming-soon">متاح قريباً — بدون حجز</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {/* Basic Info Section */}
@@ -1343,6 +1399,24 @@ export default function TripForm({
                       </FormItem>
                     )}
                   />
+                  {!form.watch("is_tour") && (
+                    <FormField
+                      control={form.control}
+                      name="min_guests"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>عدد الأشخاص الأدنى للحجز</FormLabel>
+                          <FormControl>
+                            <Input type="number" min="1" placeholder="1" {...field} />
+                          </FormControl>
+                          <p className="text-xs text-text-muted">
+                            يجب أن يحتوي كل حجز على هذا العدد على الأقل.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   <FormField
                     control={form.control}
                     name="display_order"

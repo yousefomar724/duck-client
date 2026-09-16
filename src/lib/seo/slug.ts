@@ -20,7 +20,8 @@ export function kebab(value: string): string {
     .replace(/^-+|-+$/g, "")
 }
 
-export function tripSlug(trip: { id: string; name: string }): string {
+export function tripSlug(trip: { id: string; name: string; slug?: string }): string {
+  if (trip.slug) return trip.slug
   const base = kebab(trip.name)
   return base ? base : `trip-${trip.id}`
 }
@@ -28,7 +29,9 @@ export function tripSlug(trip: { id: string; name: string }): string {
 export function destinationSlug(destination: {
   id: string
   name: string
+  slug?: string
 }): string {
+  if (destination.slug) return destination.slug
   const base = kebab(destination.name)
   return base ? base : `destination-${destination.id}`
 }
@@ -39,13 +42,14 @@ export function extractObjectId(slug: string): string | null {
   return match ? match[0] : null
 }
 
-export function canonicalTripPath(trip: { id: string; name: string }): string {
+export function canonicalTripPath(trip: { id: string; name: string; slug?: string }): string {
   return `/trips/${tripSlug(trip)}`
 }
 
 export function canonicalDestinationPath(destination: {
   id: string
   name: string
+  slug?: string
 }): string {
   return `/destinations/${destinationSlug(destination)}`
 }

@@ -19,10 +19,15 @@ export interface BookingFormSchemaMessages {
   kidsMinOne: string;
   adultsMinOne: string;
   maxGuestsError: (max: number) => string;
+  minGuestsError: (min: number) => string;
   guestMixSumError: (total: number) => string;
 }
 
-export function createBookingFormSchema(messages: BookingFormSchemaMessages, maxGuests?: number) {
+export function createBookingFormSchema(
+  messages: BookingFormSchemaMessages,
+  maxGuests?: number,
+  minGuests = 1,
+) {
   const contactSchema = z.object({
     full_name: z.string().min(2, messages.nameMin),
     phone: z
@@ -113,6 +118,13 @@ export function createBookingFormSchema(messages: BookingFormSchemaMessages, max
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: messages.maxGuestsError(maxGuests),
+        path: ['guests'],
+      });
+    }
+    if (total < minGuests) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: messages.minGuestsError(minGuests),
         path: ['guests'],
       });
     }

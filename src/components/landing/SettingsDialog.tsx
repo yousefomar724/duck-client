@@ -73,7 +73,7 @@ export default function SettingsDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ar">عربي</SelectItem>
+                <SelectItem value="ar">العربية</SelectItem>
                 <SelectItem value="en">English</SelectItem>
               </SelectContent>
             </Select>

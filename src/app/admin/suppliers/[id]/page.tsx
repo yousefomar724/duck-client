@@ -95,7 +95,9 @@ export default function AdminSupplierDetailPage() {
         await Promise.all([
           suppliersApi.getSupplier(id, DASHBOARD_LANG),
           bookingsApi.getBookings({ supplier_id: id }),
-          tripsApi.getTrips(DASHBOARD_LANG, id),
+          tripsApi.getTrips(DASHBOARD_LANG, id, undefined, {
+            includeInactive: true,
+          }),
           payoutsApi.getPayouts(undefined, id),
           supplierStorageApi.getStorage(id),
           walletApi.getAllWallets(),
