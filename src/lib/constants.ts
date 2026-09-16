@@ -25,7 +25,7 @@ export interface NavItem {
 }
 
 /** Manually maintained marketing stat shown on the landing page location section. */
-export const CLIENTS_COUNT = 1200
+export const CLIENTS_COUNT = 3000
 
 export const adminNavItems: NavItem[] = [
   {

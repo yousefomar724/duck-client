@@ -68,7 +68,7 @@ export default function ResortsSection() {
 
       <div className="relative" dir={locale === "ar" ? "rtl" : "ltr"}>
         <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex touch-pan-y">
+          <div className="flex touch-pan-y md:justify-center">
             {loading ? (
               Array.from({ length: 4 }).map((_, index) => (
                 <div
