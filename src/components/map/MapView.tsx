@@ -235,8 +235,6 @@ interface MapViewProps {
   mapStyle: MapStyle
   /** "cooperative" lets the page scroll over the map (wheel does not zoom). Default "greedy" for full-page maps. */
   gestureHandling?: GestureHandling
-  /** Fit all markers into view. The full desktop map disables this to keep a useful Aswan regional viewport. */
-  fitBounds?: boolean
 }
 
 function LocationMarker({
@@ -309,7 +307,6 @@ export default function MapView({
   onMapReady,
   mapStyle,
   gestureHandling = "greedy",
-  fitBounds = true,
 }: MapViewProps) {
   const locale = useLocale()
   const interactive = gestureHandling !== "none"
@@ -354,7 +351,7 @@ export default function MapView({
         pitchWithRotate={false}
         keyboard={interactive}
       >
-        {fitBounds ? <FitBounds locations={locations} /> : null}
+        <FitBounds locations={locations} />
         <BrandTint mapStyle={mapStyle} locale={locale} />
         <VisibilityRepaint />
         {onMapReady ? <MapReadyBridge onMapReady={onMapReady} /> : null}

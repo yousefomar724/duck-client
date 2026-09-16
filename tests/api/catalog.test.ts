@@ -8,6 +8,7 @@ import { GET as getTourGuides, POST as postTourGuide } from '@/app/api/v1/tour-g
 import { GET as getStorageHyphen } from '@/app/api/v1/supplier-storage/[supplier_id]/route';
 import { GET as getStorageUnderscore } from '@/app/api/v1/supplier_storage/[supplier_id]/route';
 import { PUT as setStorageHyphen } from '@/app/api/v1/supplier-storage/route';
+import { Trip } from '@/server/models/trip';
 import {
   createSupplierUser,
   createAdminUser,
@@ -78,6 +79,13 @@ describe('catalog routes', () => {
       name: { en: 'Inactive Trip', ar: 'رحلة مخفية' },
       status: 'inactive',
     });
+    const legacy = await createTrip(supplier._id, {
+      name: { en: 'Legacy Available Trip', ar: 'رحلة قديمة متاحة' },
+    });
+    await Trip.collection.updateOne(
+      { _id: legacy._id },
+      { $unset: { status: '', public_status: '', min_guests: '' } },
+    );
 
     const publicRes = await getTrips(
       new Request('http://localhost/api/v1/trips?lang=en'),
@@ -94,6 +102,7 @@ describe('catalog routes', () => {
       (trip: { id: string }) => trip.id,
     );
     expect(availableIds).toContain(available.id);
+    expect(availableIds).toContain(legacy.id);
     expect(availableIds).not.toContain(comingSoon.id);
     expect(availableIds).not.toContain(inactive.id);
 

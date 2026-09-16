@@ -41,16 +41,7 @@ export default function MapPageClient() {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
   const [mapStyle, setMapStyle] = useState<MapStyle>("light")
-  const [isMobileViewport, setIsMobileViewport] = useState(false)
   const mapRef = useRef<MapInstance | null>(null)
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 767px)")
-    const update = () => setIsMobileViewport(media.matches)
-    update()
-    media.addEventListener("change", update)
-    return () => media.removeEventListener("change", update)
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -112,7 +103,6 @@ export default function MapPageClient() {
           onMarkerClick={handleMarkerClick}
           onMapReady={handleMapReady}
           mapStyle={mapStyle}
-          fitBounds={isMobileViewport}
         />
       </div>
 

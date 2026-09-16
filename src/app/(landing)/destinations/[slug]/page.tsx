@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import Footer from "@/components/landing/Footer"
+import { TripImageGallery } from "@/components/landing/trip-image-gallery"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildBreadcrumbJsonLd, buildDestinationJsonLd } from "@/lib/seo/json-ld"
 import {
@@ -33,6 +34,26 @@ import { buildGoogleMapsUrl } from "@/lib/maps"
 
 interface PageProps {
   params: Promise<{ slug: string }>
+}
+
+const URL_PATTERN = /(https?:\/\/[^\s<]+)/g
+
+function LinkifiedDescription({ text }: { text: string }) {
+  return text.split(URL_PATTERN).map((part, index) =>
+    /^https?:\/\//.test(part) ? (
+      <a
+        key={`${part}-${index}`}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-duck-cyan underline decoration-duck-cyan/40 underline-offset-2 break-all hover:decoration-duck-cyan"
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    ),
+  )
 }
 
 async function resolveDestination(
@@ -170,44 +191,18 @@ export default async function DestinationDetailPage({ params }: PageProps) {
       </section>
 
       <section className="bg-white pt-10 pb-4 px-4 md:px-10">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100">
-            <ImageWithLogoFallback
-              src={allImages[0] ?? null}
-              alt={destination.name}
-              fill
-              priority
-              className="object-cover"
-            />
-          </div>
-          {allImages.length > 1 ? (
-            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {allImages.slice(1).map((image, index) => (
-                <div
-                  key={`${image}-${index}`}
-                  className="relative aspect-4/3 overflow-hidden rounded-xl bg-gray-100"
-                >
-                  <ImageWithLogoFallback
-                    src={image}
-                    alt={`${destination.name} ${index + 2}`}
-                    fill
-                    sizes="(max-width: 640px) 50vw, 280px"
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          ) : null}
+        <div className="max-w-4xl mx-auto min-w-0">
+          <TripImageGallery images={allImages} alt={destination.name} />
         </div>
       </section>
 
       <section className="bg-white py-10 px-4 md:px-10">
-        <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-10">
-          <div className="md:col-span-2 space-y-10">
+        <div className="max-w-4xl mx-auto grid min-w-0 md:grid-cols-3 gap-10">
+          <div className="min-w-0 md:col-span-2 space-y-10">
             {destination.description && (
-              <div>
-                <p className="text-text-body leading-relaxed whitespace-pre-line">
-                  {destination.description}
+              <div className="min-w-0 overflow-hidden">
+                <p className="text-text-body leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere]">
+                  <LinkifiedDescription text={destination.description} />
                 </p>
               </div>
             )}
@@ -292,7 +287,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          <aside>
+          <aside className="min-w-0">
             <div className="sticky top-24 rounded-2xl bg-off-white border border-black/5 p-6 space-y-5">
               <div>
                 <h2 className="text-text-dark font-semibold mb-2">

@@ -29,7 +29,14 @@ export async function GET(request: Request) {
   if (!includeInactive) filter.status = { $ne: 'inactive' };
   if (supplierId) filter.supplier_id = supplierId;
   if (destinationId) filter.destination_ids = destinationId;
-  if (publicStatus) filter.public_status = publicStatus;
+  if (publicStatus === 'available') {
+    // Trips created before publication states were introduced do not have
+    // this field. They remain bookable by design, so include missing/null
+    // values in the available filter used by the booking flow.
+    filter.public_status = { $in: ['available', null] };
+  } else if (publicStatus) {
+    filter.public_status = publicStatus;
+  }
 
   try {
     const trips = await Trip.find(filter)
