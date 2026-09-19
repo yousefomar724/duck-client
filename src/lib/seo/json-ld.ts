@@ -1,5 +1,6 @@
 import { SITE_CONTACT, SITE_NAME, SITE_URL } from "@/lib/site"
 import { canonicalDestinationPath, canonicalTripPath } from "@/lib/seo/slug"
+import { buildGoogleMapsUrl } from "@/lib/maps"
 import type { PublicDestination, PublicTrip } from "@/server/services/public-content"
 import { parseDurationHours, tripDurationText } from "@/lib/trips/duration"
 
@@ -192,6 +193,7 @@ export function buildTripJsonLd(trip: PublicTrip) {
 
 export function buildDestinationJsonLd(destination: PublicDestination) {
   const pageUrl = `${SITE_URL}${canonicalDestinationPath(destination)}`
+  const hasCoordinates = destination.lat != null && destination.lng != null
 
   return {
     "@type": "TouristAttraction",
@@ -204,15 +206,63 @@ export function buildDestinationJsonLd(destination: PublicDestination) {
       : destination.image
         ? [destination.image.startsWith("http") ? destination.image : `${SITE_URL}${destination.image}`]
         : undefined,
-    geo:
-      destination.lat != null && destination.lng != null
-        ? {
-            "@type": "GeoCoordinates",
-            latitude: destination.lat,
-            longitude: destination.lng,
-          }
-        : undefined,
+    geo: hasCoordinates
+      ? {
+          "@type": "GeoCoordinates",
+          latitude: destination.lat,
+          longitude: destination.lng,
+        }
+      : undefined,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: SITE_CONTACT.city,
+      addressCountry: SITE_CONTACT.country,
+    },
+    hasMap: hasCoordinates
+      ? buildGoogleMapsUrl(destination.lat!, destination.lng!)
+      : SITE_CONTACT.mapUrl,
+    // Free text ("daily 7am–sunset", "closed Fridays"), so it cannot be
+    // mapped to OpeningHoursSpecification — published as-is for readers.
+    openingHours: destination.operating_hours || undefined,
+    // The activities a visitor can actually book here, so a crawler sees the
+    // same list the page renders as chips.
+    amenityFeature: destination.activities.length
+      ? destination.activities.map((activity) => ({
+          "@type": "LocationFeatureSpecification",
+          name: activity,
+          value: true,
+        }))
+      : undefined,
     containedInPlace: { "@type": "City", name: "Aswan" },
     isAccessibleForFree: false,
+    publicAccess: destination.public_status !== "coming-soon",
+    provider: { "@id": ORGANIZATION_ID },
+  }
+}
+
+/**
+ * Publishes the trips bookable at one destination as an ordered list, so the
+ * destination page carries the same price/duration facts the trip pages do
+ * instead of only linking to them. Each entry references the trip node that
+ * `buildTripJsonLd` emits into the same graph.
+ */
+export function buildDestinationTripsJsonLd(
+  destination: PublicDestination,
+  trips: PublicTrip[],
+  listName: string,
+) {
+  const pageUrl = `${SITE_URL}${canonicalDestinationPath(destination)}`
+
+  return {
+    "@type": "ItemList",
+    "@id": `${pageUrl}#trips`,
+    name: listName,
+    numberOfItems: trips.length,
+    itemListOrder: "https://schema.org/ItemListOrderAscending",
+    itemListElement: trips.map((trip, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item: { "@id": `${SITE_URL}${canonicalTripPath(trip)}#trip` },
+    })),
   }
 }

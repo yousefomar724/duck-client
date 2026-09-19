@@ -11,10 +11,16 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
+import { TripListingPrices } from "@/components/shared/trip-listing-prices"
 import Footer from "@/components/landing/Footer"
 import { TripImageGallery } from "@/components/landing/trip-image-gallery"
 import { JsonLd } from "@/components/seo/json-ld"
-import { buildBreadcrumbJsonLd, buildDestinationJsonLd } from "@/lib/seo/json-ld"
+import {
+  buildBreadcrumbJsonLd,
+  buildDestinationJsonLd,
+  buildDestinationTripsJsonLd,
+  buildTripJsonLd,
+} from "@/lib/seo/json-ld"
 import {
   canonicalDestinationPath,
   canonicalTripPath,
@@ -27,9 +33,11 @@ import {
   type PublicDestination,
 } from "@/server/services/public-content"
 import { formatCurrency } from "@/lib/constants"
+import { tripDurationText } from "@/lib/trips/duration"
+import { tripPriceRange } from "@/lib/trips/price-range"
 import { SITE_CONTACT, SITE_NAME, SITE_URL } from "@/lib/site"
 import { buildWhatsAppHref } from "@/lib/support-contact"
-import { Phone } from "lucide-react"
+import { Clock, Phone, Users } from "lucide-react"
 import { buildGoogleMapsUrl } from "@/lib/maps"
 
 interface PageProps {
@@ -105,6 +113,7 @@ export default async function DestinationDetailPage({ params }: PageProps) {
   const destination = await resolveDestination(slug, locale)
   const t = await getTranslations("destinationPage")
   const tMap = await getTranslations("mapPage")
+  const tOffers = await getTranslations("offers")
 
   const path = canonicalDestinationPath(destination)
   const pageUrl = `${SITE_URL}${path}`
@@ -123,6 +132,32 @@ export default async function DestinationDetailPage({ params }: PageProps) {
 
   const summary = t("summary", { name: destination.name, siteName: SITE_NAME })
 
+  // Both tiers are minimised across this destination's trips, so the page can
+  // answer "how much for a foreigner?" without opening a single trip.
+  const priceRange = tripPriceRange(trips)
+  const priceLead = priceRange
+    ? priceRange.foreignerFrom != null
+      ? t("priceLeadDual", {
+          priceLocal: formatCurrency(
+            priceRange.localFrom,
+            priceRange.currency,
+            locale,
+          ),
+          priceForeign: formatCurrency(
+            priceRange.foreignerFrom,
+            priceRange.currency,
+            locale,
+          ),
+        })
+      : t("priceLeadSingle", {
+          priceLocal: formatCurrency(
+            priceRange.localFrom,
+            priceRange.currency,
+            locale,
+          ),
+        })
+    : null
+
   const breadcrumbJsonLd = buildBreadcrumbJsonLd(
     [
       { name: t("breadcrumbHome"), url: SITE_URL },
@@ -134,7 +169,16 @@ export default async function DestinationDetailPage({ params }: PageProps) {
   const destinationJsonLd = buildDestinationJsonLd(destination)
   const pageGraph = {
     "@context": "https://schema.org",
-    "@graph": [breadcrumbJsonLd, destinationJsonLd],
+    "@graph": [
+      breadcrumbJsonLd,
+      destinationJsonLd,
+      ...(trips.length
+        ? [
+            buildDestinationTripsJsonLd(destination, trips, t("tripsTitle")),
+            ...trips.map(buildTripJsonLd),
+          ]
+        : []),
+    ],
   }
 
   const whatsappHref = buildWhatsAppHref(
@@ -184,9 +228,19 @@ export default async function DestinationDetailPage({ params }: PageProps) {
           <h1 className="text-white text-3xl md:text-5xl font-bold mb-5">
             {destination.name}
           </h1>
+          {destination.public_status === "coming-soon" ? (
+            <span className="mb-5 inline-flex rounded-full bg-duck-yellow px-4 py-1.5 text-sm font-semibold text-duck-navy">
+              {t("comingSoon")}
+            </span>
+          ) : null}
           <p className="text-white/80 text-base md:text-lg leading-relaxed max-w-3xl">
             {summary}
           </p>
+          {priceLead ? (
+            <p className="mt-3 text-white/70 text-sm md:text-base leading-relaxed max-w-3xl">
+              {priceLead}
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -233,55 +287,94 @@ export default async function DestinationDetailPage({ params }: PageProps) {
                 <p className="text-text-body text-sm">{t("noTrips")}</p>
               ) : (
                 <div className="grid sm:grid-cols-2 gap-5">
-                  {trips.map((trip) => (
-                    <article
-                      key={trip.id}
-                      className="overflow-hidden rounded-2xl bg-off-white border border-black/5"
-                    >
-                      <Link href={canonicalTripPath(trip)} className="group block">
-                        <div className="relative aspect-16/9 bg-gray-100">
-                          <ImageWithLogoFallback
-                            src={trip.images[0] ?? null}
-                            alt={trip.name}
-                            fill
-                            sizes="(max-width: 640px) 100vw, 360px"
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          {trip.public_status === "coming-soon" ? (
-                            <span className="absolute top-3 end-3 rounded-full bg-duck-yellow px-3 py-1 text-xs font-semibold text-duck-navy">
-                              {t("comingSoon")}
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="p-5">
-                          <h3 className="text-text-dark font-semibold mb-1.5 break-words">
-                            {trip.name}
-                          </h3>
-                          <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-text-body">
-                            {trip.description}
-                          </p>
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <span className="text-duck-cyan font-semibold text-sm">
-                              {formatCurrency(trip.price, trip.currency, locale)}
-                            </span>
-                            <span className="text-sm font-medium text-duck-navy group-hover:underline">
-                              {t("viewTrip")}
-                            </span>
+                  {trips.map((trip) => {
+                    const durationText = tripDurationText(trip, locale)
+                    const durationLabel = durationText
+                      ? t("tripDurationText", { duration: durationText })
+                      : trip.duration > 0
+                        ? t("tripDuration", { duration: trip.duration })
+                        : null
+                    return (
+                      <article
+                        key={trip.id}
+                        className="overflow-hidden rounded-2xl bg-off-white border border-black/5"
+                      >
+                        <Link href={canonicalTripPath(trip)} className="group block">
+                          <div className="relative aspect-16/9 bg-gray-100">
+                            <ImageWithLogoFallback
+                              src={trip.images[0] ?? null}
+                              alt={trip.name}
+                              fill
+                              sizes="(max-width: 640px) 100vw, 360px"
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            {trip.public_status === "coming-soon" ? (
+                              <span className="absolute top-3 end-3 rounded-full bg-duck-yellow px-3 py-1 text-xs font-semibold text-duck-navy">
+                                {t("comingSoon")}
+                              </span>
+                            ) : null}
                           </div>
-                        </div>
-                      </Link>
-                      {trip.public_status !== "coming-soon" ? (
-                        <div className="px-5 pb-5">
-                          <Link
-                            href={`/book?trip=${trip.id}`}
-                            className="block rounded-full bg-duck-yellow px-4 py-2.5 text-center text-sm font-semibold text-duck-navy hover:bg-duck-yellow-hover"
-                          >
-                            {t("bookTrip")}
-                          </Link>
-                        </div>
-                      ) : null}
-                    </article>
-                  ))}
+                          <div className="p-5">
+                            <h3 className="text-text-dark font-semibold mb-1.5 break-words">
+                              {trip.name}
+                            </h3>
+                            <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-text-body">
+                              {trip.description}
+                            </p>
+                            {(durationLabel || trip.max_guests > 0) && (
+                              <ul className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-text-muted">
+                                {durationLabel ? (
+                                  <li className="inline-flex items-center gap-1.5">
+                                    <Clock className="size-3.5" aria-hidden="true" />
+                                    {durationLabel}
+                                  </li>
+                                ) : null}
+                                {trip.max_guests > 0 ? (
+                                  <li className="inline-flex items-center gap-1.5">
+                                    <Users className="size-3.5" aria-hidden="true" />
+                                    {t("tripMaxGuests", { count: trip.max_guests })}
+                                  </li>
+                                ) : null}
+                              </ul>
+                            )}
+                            <div className="flex flex-wrap items-end justify-between gap-3">
+                              <TripListingPrices
+                                trip={trip}
+                                egyptiansOfferLabel={tOffers(
+                                  "egyptiansSpecialOffer",
+                                  {
+                                    price: formatCurrency(
+                                      trip.price,
+                                      trip.currency,
+                                      locale,
+                                    ),
+                                  },
+                                )}
+                                perHourSuffix={
+                                  trip.is_tour ? tOffers("perHour") : undefined
+                                }
+                                mainPriceClassName="text-sm"
+                                locale={locale}
+                              />
+                              <span className="text-sm font-medium text-duck-navy group-hover:underline">
+                                {t("viewTrip")}
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                        {trip.public_status !== "coming-soon" ? (
+                          <div className="px-5 pb-5">
+                            <Link
+                              href={`/book?trip=${trip.id}`}
+                              className="block rounded-full bg-duck-yellow px-4 py-2.5 text-center text-sm font-semibold text-duck-navy hover:bg-duck-yellow-hover"
+                            >
+                              {t("bookTrip")}
+                            </Link>
+                          </div>
+                        ) : null}
+                      </article>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -289,13 +382,62 @@ export default async function DestinationDetailPage({ params }: PageProps) {
 
           <aside className="min-w-0">
             <div className="sticky top-24 rounded-2xl bg-off-white border border-black/5 p-6 space-y-5">
+              {priceRange ? (
+                <div>
+                  <h2 className="text-text-dark font-semibold mb-2">
+                    {t("pricingTitle")}
+                  </h2>
+                  <dl className="space-y-1.5 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-text-muted">{t("priceEgyptian")}</dt>
+                      <dd className="font-semibold text-duck-cyan text-end">
+                        {t("fromPrice", {
+                          price: formatCurrency(
+                            priceRange.localFrom,
+                            priceRange.currency,
+                            locale,
+                          ),
+                        })}
+                      </dd>
+                    </div>
+                    {priceRange.foreignerFrom != null ? (
+                      <div className="flex items-center justify-between gap-3">
+                        <dt className="text-text-muted">{t("priceForeign")}</dt>
+                        <dd className="font-semibold text-duck-cyan text-end">
+                          {t("fromPrice", {
+                            price: formatCurrency(
+                              priceRange.foreignerFrom,
+                              priceRange.currency,
+                              locale,
+                            ),
+                          })}
+                        </dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                  <p className="text-text-muted text-xs mt-2 leading-relaxed">
+                    {t("pricingNote")}
+                  </p>
+                </div>
+              ) : null}
+
               <div>
                 <h2 className="text-text-dark font-semibold mb-2">
                   {t("locationTitle")}
                 </h2>
-                <p className="text-text-body text-sm mb-3">
-                  {SITE_CONTACT.city}, {SITE_CONTACT.country}
-                </p>
+                <div className="mb-3 space-y-1">
+                  <p className="text-text-body text-sm">
+                    {SITE_CONTACT.city}, {SITE_CONTACT.country}
+                  </p>
+                  {destination.lat != null && destination.lng != null ? (
+                    <p className="text-text-muted text-xs">
+                      {t("coordinatesLabel")}:{" "}
+                      <span dir="ltr" className="tabular-nums">
+                        {destination.lat.toFixed(5)}, {destination.lng.toFixed(5)}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
                 <a
                   href={directionsHref}
                   target="_blank"

@@ -99,6 +99,11 @@ export default async function DestinationsPage() {
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
+                    {destination.public_status === "coming-soon" ? (
+                      <span className="absolute top-3 end-3 rounded-full bg-duck-yellow px-3 py-1 text-xs font-semibold text-duck-navy">
+                        {t("comingSoon")}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="p-6">
                     <h2 className="text-text-dark text-xl font-bold mb-2">

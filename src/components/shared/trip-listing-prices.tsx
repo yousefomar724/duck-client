@@ -1,10 +1,19 @@
 import { Tag } from "lucide-react"
-import type { Trip } from "@/lib/types"
 import { formatCurrency } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
+/**
+ * Only the price fields are read, so both the client `Trip` shape and the
+ * server-rendered `PublicTrip` satisfy this without a cast.
+ */
+type PricedTrip = {
+  price: number
+  foreigner_price?: number | null
+  currency: string
+}
+
 type TripListingPricesProps = {
-  trip: Trip
+  trip: PricedTrip
   /** Fully translated string including the local price (e.g. special-offer sentence). */
   egyptiansOfferLabel: string
   perHourSuffix?: string

@@ -34,6 +34,7 @@ export interface PublicDestination {
   lat?: number;
   lng?: number;
   activities: string[];
+  public_status: 'open' | 'coming-soon';
   operating_hours?: string;
   updated_at?: string;
 }
@@ -83,6 +84,8 @@ function toPublicDestination(json: Record<string, unknown>): PublicDestination {
     lat: json.lat as number | undefined,
     lng: json.lng as number | undefined,
     activities: (json.activities as string[]) ?? [],
+    public_status:
+      json.public_status === 'coming-soon' ? 'coming-soon' : 'open',
     operating_hours: json.operating_hours as string | undefined,
     updated_at: json.updated_at as string | undefined,
   };

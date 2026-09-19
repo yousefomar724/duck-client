@@ -901,6 +901,7 @@
     "title": "الوجهات",
     "description": "نقاط اللقاء لرحلات الرياضات المائية على النيل حول أسوان.",
     "viewDetails": "عرض التفاصيل",
+    "comingSoon": "متاح قريباً",
     "noDestinations": "لا توجد وجهات متاحة حالياً — يرجى المحاولة لاحقاً."
   },
   "destinationPage": {
@@ -910,6 +911,11 @@
     "metaDescription": "{name} في أسوان، مصر — نقطة اللقاء لرحلات الرياضات المائية على النيل مع داك إنترتينمنت. احصل على الاتجاهات وشاهد الأنشطة المتاحة.",
     "summary": "{name} هي نقطة لقاء للرياضات المائية في أسوان، مصر، تديرها {siteName}.",
     "activitiesTitle": "الأنشطة المتاحة هنا",
+    "pricingTitle": "الأسعار",
+    "priceEgyptian": "المصريون",
+    "priceForeign": "الأجانب",
+    "fromPrice": "يبدأ من {price}",
+    "pricingNote": "السعر للفرد. الرحلات بالساعة تُحسب لكل ساعة — افتح الرحلة لمعرفة سعرها بالضبط.",
     "hoursTitle": "مواعيد العمل",
     "locationTitle": "الموقع",
     "directionsCta": "احصل على الاتجاهات",
@@ -917,12 +923,18 @@
     "noTrips": "لا توجد رحلات مدرجة حالياً من هذا الموقع.",
     "comingSoon": "متاح قريباً",
     "viewTrip": "عرض تفاصيل الرحلة",
+    "tripDuration": "{duration} ساعة",
+    "tripDurationText": "{duration}",
+    "tripMaxGuests": "حتى {count} ضيوف",
     "bookTrip": "احجز الآن",
     "ctaWhatsapp": "تواصل عبر واتساب",
     "ctaCall": "اتصل بنا",
     "notFoundTitle": "الوجهة غير موجودة",
     "notFoundDescription": "قد تكون هذه الوجهة قد أُزيلت أو تغيّر اسمها.",
-    "notFoundCta": "عرض جميع الوجهات"
+    "notFoundCta": "عرض جميع الوجهات",
+    "priceLeadDual": "تبدأ الرحلات من هنا بـ {priceLocal} للفرد للمصريين و{priceForeign} للأجانب.",
+    "priceLeadSingle": "تبدأ الرحلات من هنا بـ {priceLocal} للفرد.",
+    "coordinatesLabel": "الإحداثيات"
   },
   "feedback": {
     "titleGeneral": "شاركنا رأيك",

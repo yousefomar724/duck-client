@@ -901,6 +901,7 @@
     "title": "Destinations",
     "description": "The meeting points for our Nile water sports trips around Aswan.",
     "viewDetails": "View details",
+    "comingSoon": "Coming Soon",
     "noDestinations": "No destinations are available right now — please check back soon."
   },
   "destinationPage": {
@@ -910,6 +911,11 @@
     "metaDescription": "{name} in Aswan, Egypt — the meeting point for Duck Entertainment's Nile water sports trips. Get directions and see available activities.",
     "summary": "{name} is a water sports meeting point in Aswan, Egypt, operated by {siteName}.",
     "activitiesTitle": "Activities available here",
+    "pricingTitle": "Pricing",
+    "priceEgyptian": "Egyptian residents",
+    "priceForeign": "Foreign visitors",
+    "fromPrice": "From {price}",
+    "pricingNote": "Per person. Hourly tours are charged per hour — open a trip for its exact price.",
     "hoursTitle": "Operating hours",
     "locationTitle": "Location",
     "directionsCta": "Get directions",
@@ -917,12 +923,18 @@
     "noTrips": "No trips are currently listed from this location.",
     "comingSoon": "Coming Soon",
     "viewTrip": "View trip details",
+    "tripDuration": "{duration, plural, one {# hour} other {# hours}}",
+    "tripDurationText": "{duration}",
+    "tripMaxGuests": "Up to {count} guests",
     "bookTrip": "Book now",
     "ctaWhatsapp": "Chat on WhatsApp",
     "ctaCall": "Call us",
     "notFoundTitle": "Destination not found",
     "notFoundDescription": "This destination may have been removed or renamed.",
-    "notFoundCta": "View all destinations"
+    "notFoundCta": "View all destinations",
+    "priceLeadDual": "Trips from here start at {priceLocal} per person for Egyptian residents and {priceForeign} for foreign visitors.",
+    "priceLeadSingle": "Trips from here start at {priceLocal} per person.",
+    "coordinatesLabel": "Coordinates"
   },
   "feedback": {
     "titleGeneral": "Share your feedback",
