@@ -163,7 +163,11 @@
     },
     "imageAlt": "{name} - صورة {index}",
     "operatingHours": "ساعات العمل: {hours}",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "unavailable": {
+      "title": "تعذّر عرض الخريطة",
+      "description": "متصفحك لا يدعم الرسومات (WebGL) أو أنها معطّلة. فعّل التسريع المادي (Hardware Acceleration) من إعدادات المتصفح ثم أعد تحميل الصفحة."
+    }
   },
   "faq": {
     "subtitle": "الأسئلة الشائعة",

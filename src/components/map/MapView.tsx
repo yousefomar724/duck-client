@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import * as maplibregl from "maplibre-gl"
 import { LngLatBounds, type Map as MapLibreMap } from "maplibre-gl"
-import { useLocale } from "next-intl"
+import { MapPinOff } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import {
   Map,
@@ -220,6 +221,33 @@ function VisibilityRepaint() {
   return null
 }
 
+/** Shown when the browser can't create a WebGL2 context for the map. */
+function MapUnavailable({ mapStyle }: { mapStyle: MapStyle }) {
+  const t = useTranslations("mapPage.unavailable")
+  const isDark = mapStyle === "dark"
+
+  return (
+    <div
+      role="status"
+      className={cn(
+        "absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-6 text-center",
+        isDark ? "text-white" : "text-duck-navy",
+      )}
+    >
+      <MapPinOff className="size-8 opacity-60" aria-hidden="true" />
+      <p className="text-base font-semibold">{t("title")}</p>
+      <p
+        className={cn(
+          "max-w-sm text-sm",
+          isDark ? "text-white/70" : "text-text-body",
+        )}
+      >
+        {t("description")}
+      </p>
+    </div>
+  )
+}
+
 export interface MarkerClickEvent {
   location: WaterActivityLocation
   point: { x: number; y: number }
@@ -341,6 +369,7 @@ export default function MapView({
         minZoom={MIN_ZOOM}
         maxZoom={MAX_ZOOM}
         theme={mapStyle}
+        fallback={<MapUnavailable mapStyle={mapStyle} />}
         interactive={interactive}
         scrollZoom={interactive && !isCooperative}
         // An embedded map must not swallow one-finger page scrolling on touch.

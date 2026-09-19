@@ -205,6 +205,11 @@ type MapProps = {
   onViewportChange?: (viewport: MapViewport) => void;
   /** Show a loading indicator on the map */
   loading?: boolean;
+  /**
+   * Rendered instead of the map when it cannot be created (e.g. the browser
+   * has no WebGL2 support). Defaults to a short generic message.
+   */
+  fallback?: ReactNode;
 } & Omit<MapLibreGL.MapOptions, "container" | "style">;
 
 function DefaultLoader() {
@@ -217,6 +222,35 @@ function DefaultLoader() {
       </div>
     </div>
   );
+}
+
+function DefaultFallback() {
+  return (
+    <div className="bg-muted text-muted-foreground absolute inset-0 z-10 flex items-center justify-center p-4 text-center text-sm">
+      This map can&apos;t be displayed in your browser.
+    </div>
+  );
+}
+
+let webGL2SupportCache: boolean | null = null;
+
+// MapLibre requires WebGL2. When it is unavailable (hardware acceleration
+// disabled, blocklisted GPU driver, some privacy modes) MapLibre does not
+// throw: it fires an `error` event from inside its constructor (before any
+// listener can be attached) and leaves `map.painter` undefined, so the next
+// resize/render crashes with an uncaught TypeError. Probe up front instead.
+function isWebGL2Supported(): boolean {
+  if (webGL2SupportCache !== null) return webGL2SupportCache;
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl2");
+    webGL2SupportCache = !!gl;
+    // Free the probe context right away; browsers cap live WebGL contexts.
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+  } catch {
+    webGL2SupportCache = false;
+  }
+  return webGL2SupportCache;
 }
 
 function getViewport(map: MapLibreGL.Map): MapViewport {
@@ -240,12 +274,14 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     viewport,
     onViewportChange,
     loading = false,
+    fallback,
     ...props
   },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mapInstance, setMapInstance] = useState<MapLibreGL.Map | null>(null);
+  const [initFailed, setInitFailed] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isStyleLoaded, setIsStyleLoaded] = useState(false);
   const [pendingStyle, setPendingStyle] = useState<MapStyleOption | null>(null);
@@ -287,16 +323,40 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light;
     currentStyleRef.current = initialStyle;
 
-    const map = new MapLibreGL.Map({
-      container: containerRef.current,
-      style: initialStyle,
-      renderWorldCopies: false,
-      attributionControl: {
-        compact: true,
-      },
-      ...props,
-      ...viewport,
-    });
+    if (!isWebGL2Supported()) {
+      setInitFailed(true);
+      return;
+    }
+
+    let map: MapLibreGL.Map;
+    try {
+      map = new MapLibreGL.Map({
+        container: containerRef.current,
+        style: initialStyle,
+        renderWorldCopies: false,
+        attributionControl: {
+          compact: true,
+        },
+        ...props,
+        ...viewport,
+      });
+    } catch (error) {
+      console.error("Failed to initialize map:", error);
+      setInitFailed(true);
+      return;
+    }
+
+    // Context creation can still fail after the probe (e.g. context limit
+    // reached); MapLibre then returns a map without a painter.
+    if (!map.painter) {
+      try {
+        map.remove();
+      } catch {
+        // A painter-less map can throw while tearing down; nothing to clean.
+      }
+      setInitFailed(true);
+      return;
+    }
 
     const styleLoadHandler = () => {
       styleSwapInFlightRef.current = false;
@@ -402,7 +462,9 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
         ref={containerRef}
         className={cn("relative h-full w-full", className)}
       >
-        {(!isLoaded || loading) && <DefaultLoader />}
+        {initFailed
+          ? (fallback ?? <DefaultFallback />)
+          : (!isLoaded || loading) && <DefaultLoader />}
         {/* SSR-safe: children render only when map is loaded on client */}
         {mapInstance && children}
       </div>

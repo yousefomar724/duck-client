@@ -163,7 +163,11 @@
     },
     "imageAlt": "{name} - Image {index}",
     "operatingHours": "Operating hours: {hours}",
-    "close": "Close"
+    "close": "Close",
+    "unavailable": {
+      "title": "The map can't be displayed",
+      "description": "Your browser has graphics (WebGL) disabled or unsupported. Turn on hardware acceleration in your browser settings, then reload the page."
+    }
   },
   "faq": {
     "subtitle": "FAQ",
