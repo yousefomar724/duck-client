@@ -12,8 +12,19 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['Pixel 5'] } },
+    // Writes playwright/.auth/*.json against the freshly seeded database. The
+    // specs that load those files depend on it, so it always runs first.
+    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'mobile',
+      use: { ...devices['Pixel 5'] },
+      dependencies: ['setup'],
+    },
   ],
   webServer: {
     command: 'node scripts/test-server.mjs',

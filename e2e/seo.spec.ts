@@ -69,8 +69,10 @@ test('trip detail page has full server-rendered content and valid JSON-LD', asyn
   await page.goto(tripPath);
   await expect(page.locator('h1')).toBeVisible();
 
-  // Price table must be in the raw HTML, not client-fetched.
-  await expect(page.getByText(/EGP/).first()).toBeVisible();
+  // Price table must be in the raw HTML, not client-fetched. Scoped to <main>:
+  // unscoped, the first EGP in the DOM is the navbar's currency chip, which is
+  // hidden at mobile widths, so .first() picked an element that never shows.
+  await expect(page.getByRole('main').getByText(/EGP/).first()).toBeVisible();
 
   const jsonLdBlocks = await page.locator('script[type="application/ld+json"]').allTextContents();
   expect(jsonLdBlocks.length).toBeGreaterThan(0);

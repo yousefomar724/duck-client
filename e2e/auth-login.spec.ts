@@ -13,5 +13,9 @@ test('login page authenticates user', async ({ page }) => {
   );
   const token = await page.evaluate(() => localStorage.getItem('duck_auth_token'));
   expect(token).toBeTruthy();
-  await page.waitForURL(/\/supplier\/bookings/, { timeout: 15_000 });
+  // The seeded supplier has completed onboarding, so resolveDestination() in
+  // (auth)/login/page.tsx sends it to /supplier. Anchored on purpose: landing on
+  // /supplier/onboarding instead would mean the account's onboarding flag
+  // regressed, and that should fail rather than quietly pass.
+  await page.waitForURL(/\/supplier$/, { timeout: 15_000 });
 });
