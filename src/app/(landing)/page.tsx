@@ -39,6 +39,17 @@ export default async function Home() {
           child of its wrapper as a section, so a script node there would be
           measured as one. */}
       <JsonLd data={faqJsonLd} />
+      {/* The hero's poster frame is the LCP element. A <video poster> is fetched
+          at default priority and cannot carry fetchpriority itself, so preload it
+          here — React hoists this into <head>. Keep the href in step with
+          HeroSection's poster prop. */}
+      <link
+        rel="preload"
+        as="image"
+        href="/videos/hero-v2-poster-v1.avif"
+        type="image/avif"
+        fetchPriority="high"
+      />
       <FullpageWrapper>
         <div className="section">
           <HeroSection />

@@ -19,7 +19,7 @@ export default function AmaalaSection() {
           for a slide they may never reach. */}
       <BackgroundVideo
         src="/videos/hero.mp4"
-        poster="/videos/hero-poster.jpg"
+        poster="/videos/hero-poster-v1.avif"
         className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
       />
 

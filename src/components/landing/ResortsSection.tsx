@@ -100,6 +100,9 @@ export default function ResortsSection() {
                       alt={name}
                       fill
                       sizes="300px"
+                      // 300px-wide cards: q50 is indistinguishable from the
+                      // default 75 at this size and roughly a third smaller.
+                      quality={50}
                       className={resolved ? "object-cover transition-transform duration-500 group-hover:scale-105" : "object-contain p-10 bg-white/10"}
                       fallbackClassName="object-contain p-10 bg-white/10"
                     />

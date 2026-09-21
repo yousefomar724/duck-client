@@ -29,6 +29,7 @@ const SLIDES = [
     crf: 30,
     maxrate: "3400k",
     bufsize: "6800k",
+    poster: "hero-v2-poster-v1.avif",
   },
   {
     // Requested range was 23s-50s (27s); at matching quality that ran 9-12 MB.
@@ -43,8 +44,19 @@ const SLIDES = [
     t: 14,
     maxrate: "3000k",
     bufsize: "6000k",
+    poster: "redsea-v1-poster-v1.avif",
   },
   // { id: "amaala-v1", master: "hero-original.mp4", crf: 23, enabled: false },
+  {
+    // Slide 3 ships the untouched legacy hero.mp4, so there is no video to
+    // encode -- and its poster was never a frame grab, it came from a separate
+    // still. Re-encode that same still so the visible frame does not change.
+    id: "hero",
+    posterOnly: true,
+    posterSource: "hero-poster-original.jpg",
+    posterWidth: 1080,
+    poster: "hero-poster-v1.avif",
+  },
 ]
 
 function checkFfmpeg() {
@@ -148,38 +160,71 @@ async function encodeVideo(slide) {
   return true
 }
 
-/** @param {{ id: string }} slide */
+/**
+ * Posters ship as AVIF at the video's own resolution.
+ *
+ * The poster is what LCP measures on the landing page, and these frames are
+ * detailed enough that mozjpeg needed ~110-140 KB each. AVIF q55 lands ~40%
+ * under that at equal or better SSIM (measured, not assumed) -- WebP only
+ * managed ~25% at *worse* SSIM. The browserslist floor is safari 16.4, which
+ * decodes AVIF.
+ *
+ * Resolution stays at the video's 1080px width: one poster URL serves both the
+ * mobile and the desktop crop, and dropping to the mobile-sufficient width
+ * would leave the still visibly softer than the video that replaces it.
+ *
+ * @param {{ id: string; poster: string; posterSource?: string; posterWidth?: number }} slide
+ */
 async function extractPoster(slide) {
-  const videoPath = path.join(OUT_DIR, `${slide.id}.mp4`)
-  const posterPath = path.join(OUT_DIR, `${slide.id}-poster.jpg`)
+  const posterPath = path.join(OUT_DIR, slide.poster)
 
-  if (!(await exists(videoPath))) {
-    console.log(`skip ${slide.id}-poster.jpg: ${slide.id}.mp4 not found`)
-    return
-  }
   if (!FORCE && (await exists(posterPath))) {
-    console.log(`skip ${slide.id}-poster.jpg: already exists (use --force to regenerate)`)
+    console.log(`skip ${slide.poster}: already exists (use --force to regenerate)`)
     return
   }
 
-  const framePath = path.join(OUT_DIR, `.${slide.id}-frame.png`)
-  const result = spawnSync(
-    "ffmpeg",
-    ["-hide_banner", "-y", "-i", videoPath, "-frames:v", "1", "-update", "1", "-f", "image2", "-pix_fmt", "rgb24", framePath],
-    { stdio: "inherit" },
-  )
-  if (result.status !== 0) {
-    throw new Error(`ffmpeg failed extracting poster frame for ${slide.id} (exit ${result.status})`)
+  /** @type {Buffer} */
+  let source
+  let framePath = null
+
+  if (slide.posterSource) {
+    const sourcePath = path.join(SRC_DIR, slide.posterSource)
+    if (!(await exists(sourcePath))) {
+      console.log(`skip ${slide.poster}: ${path.relative(ROOT, sourcePath)} not found`)
+      return
+    }
+    source = await readFile(sourcePath)
+  } else {
+    const videoPath = path.join(OUT_DIR, `${slide.id}.mp4`)
+    if (!(await exists(videoPath))) {
+      console.log(`skip ${slide.poster}: ${slide.id}.mp4 not found`)
+      return
+    }
+
+    framePath = path.join(OUT_DIR, `.${slide.id}-frame.png`)
+    const result = spawnSync(
+      "ffmpeg",
+      ["-hide_banner", "-y", "-i", videoPath, "-frames:v", "1", "-update", "1", "-f", "image2", "-pix_fmt", "rgb24", framePath],
+      { stdio: "inherit" },
+    )
+    if (result.status !== 0) {
+      throw new Error(`ffmpeg failed extracting poster frame for ${slide.id} (exit ${result.status})`)
+    }
+    source = await readFile(framePath)
   }
 
-  const png = await readFile(framePath)
-  await sharp(png)
-    .jpeg({ quality: 72, mozjpeg: true, chromaSubsampling: "4:2:0", progressive: false })
+  const pipeline = sharp(source)
+  if (slide.posterWidth) {
+    pipeline.resize({ width: slide.posterWidth, fit: "inside" })
+  }
+  await pipeline
+    .avif({ quality: 55, effort: 6, chromaSubsampling: "4:2:0" })
     .toFile(posterPath)
-  await rm(framePath, { force: true })
+
+  if (framePath) await rm(framePath, { force: true })
 
   const { size } = await stat(posterPath)
-  console.log(`wrote public/videos/${slide.id}-poster.jpg (${(size / 1024).toFixed(1)} KB)`)
+  console.log(`wrote public/videos/${slide.poster} (${(size / 1024).toFixed(1)} KB)`)
 }
 
 async function main() {
@@ -189,6 +234,10 @@ async function main() {
 
   for (const slide of SLIDES) {
     if (slide.enabled === false) continue
+    if (slide.posterOnly) {
+      await extractPoster(slide)
+      continue
+    }
     const encoded = await encodeVideo(slide)
     if (encoded) await extractPoster(slide)
   }

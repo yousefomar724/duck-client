@@ -26,11 +26,13 @@ import { useTranslations, useLocale } from "next-intl"
 const resolveImageUrl = (url: string): string =>
   resolveImageUrlOrNull(url) ?? ""
 
+const MapSkeleton = () => (
+  <div className="h-full w-full bg-gray-100 rounded-3xl animate-pulse" />
+)
+
 const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
-  loading: () => (
-    <div className="h-full w-full bg-gray-100 rounded-3xl animate-pulse" />
-  ),
+  loading: MapSkeleton,
 })
 
 export default function LocationSection() {
@@ -96,6 +98,12 @@ export default function LocationSection() {
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  // MapLibre is ~480 KB of JS plus a 70 KB stylesheet, the RTL text plugin and
+  // map tiles, and it spins up a WebGL context. next/dynamic keeps it out of the
+  // initial bundle but still mounts it at load, and fullPage.js keeps every
+  // section mounted — so on the landing page that all happened during first
+  // paint, for a map four sections down. Same gate as ReviewsSection.
+  const mapInView = useInViewOnce(mapContainerRef, { rootMargin: 300 })
 
   const handleMarkerClick = (event: MarkerClickEvent) => {
     // event.point is relative to the map's own container; since the map here
@@ -187,13 +195,17 @@ export default function LocationSection() {
           {/* z-0 isolates the map's own stacking context so the overlay link
               below still paints on top of it. */}
           <div className="absolute inset-0 z-0">
-            <MapView
-              locations={filteredLocations}
-              selectedLocation={selectedLocation}
-              onMarkerClick={handleMarkerClick}
-              mapStyle="light"
-              gestureHandling="cooperative"
-            />
+            {mapInView ? (
+              <MapView
+                locations={filteredLocations}
+                selectedLocation={selectedLocation}
+                onMarkerClick={handleMarkerClick}
+                mapStyle="light"
+                gestureHandling="cooperative"
+              />
+            ) : (
+              <MapSkeleton />
+            )}
           </div>
 
           {/* Overlay link to full map page */}

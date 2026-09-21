@@ -115,6 +115,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ['mcp-handler', '@modelcontextprotocol/server'],
   experimental: {
+    // Ships the stylesheets inline in the HTML instead of as render-blocking
+    // <link>s, which is the documented sweet spot for atomic CSS: Tailwind
+    // keeps the bundle small enough that first paint wins. The trade is that
+    // returning visitors re-download it with every HTML response rather than
+    // hitting a cached file. Production builds only.
+    inlineCss: true,
     optimizePackageImports: [
       'lucide-react',
       'framer-motion',

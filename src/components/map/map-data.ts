@@ -27,8 +27,13 @@ export interface ActivityFilter {
 }
 
 export const ASWAN_CENTER: [number, number] = [24.0889, 32.8998]
-/** Custom map pin (public asset) */
-export const MAP_MARKER_URL = "/duck-marker.png"
+/**
+ * Custom map pin (public asset). Generated from the 500x500 duck-marker.png
+ * master by `pnpm marker` — the pin renders at 32-44px, so shipping the master
+ * meant 119 KB per marker. Bump the size suffix if it is ever regenerated:
+ * public/sw.js stale-while-revalidates images by URL.
+ */
+export const MAP_MARKER_URL = "/duck-marker-88.webp"
 export const DEFAULT_ZOOM = 13
 /** Zoom level when a pin is selected (zoom in to focus on the location) */
 export const FOCUSED_ZOOM = 15

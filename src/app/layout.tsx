@@ -7,7 +7,6 @@ import { GoogleAnalytics } from "@next/third-parties/google"
 import { ToastContainer } from "@/components/shared/toast-container"
 import { ServiceWorkerRegister } from "@/components/shared/service-worker-register"
 import { AuthHydrator } from "@/lib/auth/auth-hydrator"
-import { GoogleOAuthProviderWrapper } from "@/lib/auth/google-oauth-provider"
 import { GA_MEASUREMENT_ID } from "@/lib/analytics"
 import { SITE_NAME, SITE_URL } from "@/lib/site"
 
@@ -172,12 +171,13 @@ export default async function RootLayout({
         className={`${fedraSerif.variable} font-serif antialiased`}
         suppressHydrationWarning
       >
-        <GoogleOAuthProviderWrapper>
-          <AuthHydrator />
-          <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
-          <ToastContainer />
-          <ServiceWorkerRegister />
-        </GoogleOAuthProviderWrapper>
+        {/* GoogleOAuthProviderWrapper deliberately lives in (auth)/layout.tsx,
+            not here — mounting it injects accounts.google.com/gsi/client, which
+            is ~98 KB of script on every route that has no sign-in button. */}
+        <AuthHydrator />
+        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <ToastContainer />
+        <ServiceWorkerRegister />
         {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
       </body>
     </html>

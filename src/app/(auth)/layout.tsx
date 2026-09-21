@@ -1,7 +1,14 @@
 import Logo from "@/components/shared/logo"
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
+import { GoogleOAuthProviderWrapper } from "@/lib/auth/google-oauth-provider"
 
+/**
+ * The Google provider is scoped to this layout rather than the root one:
+ * mounting it injects accounts.google.com/gsi/client (~98 KB), and the only
+ * consumers are the <GoogleLogin> buttons on /login and /register. Any new
+ * route that needs one has to be wrapped too.
+ */
 export default async function AuthLayout({
   children,
 }: {
@@ -17,7 +24,9 @@ export default async function AuthLayout({
       </div>
       <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-6 md:p-10">
         <div className="flex flex-1 items-center justify-center py-2">
-          <div className="w-full max-w-md">{children}</div>
+          <div className="w-full max-w-md">
+            <GoogleOAuthProviderWrapper>{children}</GoogleOAuthProviderWrapper>
+          </div>
         </div>
 
         <div className="text-center text-sm text-text-muted md:text-start">
