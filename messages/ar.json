@@ -497,6 +497,8 @@
     "maxGuestsError": "إجمالي الضيوف (البالغون + الأطفال) لا يمكن أن يتجاوز {max}",
     "minGuestsError": "تتطلب هذه الرحلة {min} ضيوف على الأقل في كل حجز",
     "tripUnavailable": "هذه الرحلة غير متاحة للحجز حالياً.",
+    "tripsLoadError": "تعذر تحميل الرحلات. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.",
+    "retryLoading": "حاول مرة أخرى",
     "resourceKayak": "كاياك",
     "resourceWaterCycle": "دراجة مائية",
     "resourceSup": "التجديف وقوفاً",

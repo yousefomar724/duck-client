@@ -8,7 +8,7 @@ export async function getTrips(
   lang?: string,
   supplierId?: string,
   destinationId?: string,
-  options?: { publicStatus?: "available" | "coming-soon"; includeInactive?: boolean },
+  options?: { publicStatus?: "available" | "coming-soon"; includeInactive?: boolean; signal?: AbortSignal },
 ): Promise<ApiResponse<Trip[]>> {
   let endpoint = '/trips';
   const params = new URLSearchParams();
@@ -20,6 +20,7 @@ export async function getTrips(
 
   const res = await apiClient<unknown>(endpoint, {
     method: 'GET',
+    signal: options?.signal,
     ...(lang !== undefined ? { lang } : {}),
   });
   if (res.error) {

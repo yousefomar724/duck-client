@@ -18,13 +18,20 @@ export function dbConnect(): Promise<typeof mongoose> {
   }
 
   if (!global._mongooseConn) {
-    global._mongooseConn = mongoose.connect(uri, { bufferCommands: false }).then(async (conn) => {
+    global._mongooseConn = mongoose.connect(uri, {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 10_000,
+    }).then(async (conn) => {
       // Self-heals a bad index from an earlier schema version: `wallet_id`
       // defaulted to `null`, defeating its sparse unique index (sparse only
       // skips *absent* fields, not explicit nulls) and causing a duplicate-key
       // error on the second user ever created. Cheap once-per-process check.
       await User.syncIndexes();
       return conn;
+    }).catch((error) => {
+      // A transient outage must not poison every future request in this process.
+      global._mongooseConn = undefined;
+      throw error;
     });
   }
 

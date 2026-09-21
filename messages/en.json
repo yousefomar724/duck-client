@@ -497,6 +497,8 @@
     "maxGuestsError": "Total guests (adults + children) cannot exceed {max}",
     "minGuestsError": "This trip requires at least {min} guests per booking",
     "tripUnavailable": "This trip is not currently available for booking.",
+    "tripsLoadError": "We couldn’t load the trips. Check your connection and try again.",
+    "retryLoading": "Try again",
     "resourceKayak": "Kayak",
     "resourceWaterCycle": "Water Bike",
     "resourceSup": "SUP",

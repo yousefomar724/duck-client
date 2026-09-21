@@ -9,7 +9,8 @@ import {
   useRef,
   useCallback,
 } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -22,7 +23,6 @@ import {
   User,
 } from "lucide-react"
 import { buildWhatsAppHref, INSTAPAY_LINK } from "@/lib/support-contact"
-import { FeedbackPromptCard } from "@/components/feedback/feedback-prompt-card"
 import { formatISO } from "date-fns"
 import { localYmd, siteWallClock, siteWallTimeToUtc, toSiteYmd } from "@/lib/time"
 import {
@@ -43,7 +43,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { BookingScheduleField } from "@/components/booking/booking-schedule-field"
+import { RouteLoading } from "@/components/shared/route-loading"
 import {
   formatBookingDayPhrase,
   formatBookingTime,
@@ -80,6 +80,8 @@ import { TripListingPrices } from "@/components/shared/trip-listing-prices"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 
 const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
+const BookingScheduleField = dynamic(() => import("@/components/booking/booking-schedule-field").then((m) => m.BookingScheduleField))
+const FeedbackPromptCard = dynamic(() => import("@/components/feedback/feedback-prompt-card").then((m) => m.FeedbackPromptCard))
 
 const RESOURCE_TYPES = [
   "kayak",
@@ -124,7 +126,6 @@ function tripDurationLabel(
 }
 
 function BookPageContent() {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const tripParam = searchParams.get("trip")
@@ -134,17 +135,21 @@ function BookPageContent() {
   const tv = useTranslations("validation")
   const locale = useLocale()
 
-  const step = useMemo(() => {
+  const requestedStep = useMemo(() => {
     const raw = searchParams.get("step")
     if (raw) {
-      const n = parseInt(raw, 10)
-      if (n >= 1 && n <= 3) return n
+      const n = Number(raw)
+      if (Number.isInteger(n) && n >= 1 && n <= 3) return n
     }
     return 1
   }, [searchParams])
   const [trips, setTrips] = useState<Trip[]>([])
   const [tripsLoading, setTripsLoading] = useState(true)
+  const [tripsError, setTripsError] = useState(false)
+  const [tripsRetry, setTripsRetry] = useState(0)
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
+  // Shared, expired or incomplete URLs must still start with a valid trip.
+  const step = selectedTrip ? requestedStep : 1
   const [availability, setAvailability] = useState<OpsAvailability | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [guestsMode, setGuestsMode] = useState<"preset" | "custom">("preset")
@@ -180,10 +185,13 @@ function BookPageContent() {
       if (tid) p.set("trip", tid)
       const qs = p.toString()
       const url = qs ? `${pathname}?${qs}` : pathname
-      if (mode === "replace") router.replace(url)
-      else router.push(url)
+      // Next integrates the History API with useSearchParams. Changing a form
+      // step should not refetch the server layout or wait for the network.
+      if (mode === "replace") window.history.replaceState(null, "", url)
+      else window.history.pushState(null, "", url)
+      window.scrollTo({ top: 0, behavior: "smooth" })
     },
-    [pathname, router, searchParams, selectedTrip?.id, tripParam],
+    [pathname, searchParams, selectedTrip?.id, tripParam],
   )
 
   const startNewBooking = useCallback(() => {
@@ -240,42 +248,52 @@ function BookPageContent() {
   // Fetch trips
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 15_000)
     async function fetchTrips() {
       setTripsLoading(true)
-      const { data, error } = await getTrips(locale, undefined, undefined, {
-        publicStatus: "available",
-      })
-      if (cancelled) return
-      setTripsLoading(false)
-      if (error || !data) return
-      setTrips(data)
-      if (tripParam && data.length > 0) {
-        const id = tripParam
-        const trip = data.find((t) => t.id === id)
-        if (trip) {
-          setSelectedTrip(trip)
-          const stepInUrl =
-            typeof window !== "undefined"
-              ? new URLSearchParams(window.location.search).get("step")
-              : null
-          if (!stepInUrl && !didAutoAdvanceRef.current && !readPendingInstapay()) {
-            didAutoAdvanceRef.current = true
-            const p = new URLSearchParams(
-              typeof window !== "undefined" ? window.location.search : "",
-            )
-            p.set("trip", String(trip.id))
-            p.set("step", "2")
-            const qs = p.toString()
-            router.replace(qs ? `${pathname}?${qs}` : pathname)
-          }
+      setTripsError(false)
+      try {
+        const { data, error } = await getTrips(locale, undefined, undefined, {
+          publicStatus: "available",
+          signal: controller.signal,
+        })
+        if (cancelled) return
+        if (error || !data) {
+          setTripsError(true)
+          return
         }
+        setTrips(data)
+      } catch {
+        if (!cancelled) setTripsError(true)
+      } finally {
+        window.clearTimeout(timeout)
+        if (!cancelled) setTripsLoading(false)
       }
     }
-    fetchTrips()
+    void fetchTrips()
     return () => {
       cancelled = true
+      window.clearTimeout(timeout)
+      controller.abort()
     }
-  }, [tripParam, locale, pathname, router])
+  }, [locale, tripsRetry])
+
+  // Selection changes reuse the loaded list instead of downloading it again.
+  useEffect(() => {
+    if (tripsLoading || tripsError) return
+    const trip = trips.find((item) => item.id === tripParam) ?? null
+    setSelectedTrip(trip)
+    const p = new URLSearchParams(window.location.search)
+    if (trip && !p.has("step") && !didAutoAdvanceRef.current && !readPendingInstapay()) {
+      didAutoAdvanceRef.current = true
+      p.set("step", "2")
+      window.history.replaceState(null, "", `${pathname}?${p.toString()}`)
+    } else if (!trip && p.get("step") !== "1" && p.has("step")) {
+      p.set("step", "1")
+      window.history.replaceState(null, "", `${pathname}?${p.toString()}`)
+    }
+  }, [trips, tripParam, tripsLoading, tripsError, pathname])
 
   // 10:00 Cairo tomorrow — the bookable window is Cairo opening hours, so
   // seeding from the device clock would start a visitor abroad outside it.
@@ -678,7 +696,15 @@ function BookPageContent() {
                 <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950">
                   {t("priceEgyptiansOnlyNote")}
                 </p>
-                {tripsLoading ? (
+                {!tripsLoading && !tripsError && tripParam && !selectedTrip && (
+                  <p role="status" className="rounded-xl bg-amber-50 p-4 text-amber-950">{t("tripUnavailable")}</p>
+                )}
+                {tripsError ? (
+                  <div role="alert" className="space-y-3 rounded-xl bg-red-50 p-4 text-red-900">
+                    <p>{t("tripsLoadError")}</p>
+                    <Button type="button" variant="outline" onClick={() => setTripsRetry((value) => value + 1)}>{t("retryLoading")}</Button>
+                  </div>
+                ) : tripsLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {[1, 2, 3, 4].map((i) => (
                       <div
@@ -1930,19 +1956,9 @@ function BookPageContent() {
   )
 }
 
-function BookPageFallback() {
-  const t = useTranslations("book")
-
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse text-text-muted">{t("loading")}</div>
-    </div>
-  )
-}
-
 export default function BookPage() {
   return (
-    <Suspense fallback={<BookPageFallback />}>
+    <Suspense fallback={<RouteLoading />}>
       <BookPageContent />
     </Suspense>
   )

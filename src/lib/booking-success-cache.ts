@@ -72,7 +72,15 @@ export function readPendingInstapay(): PendingInstapay | null {
     const raw = sessionStorage.getItem(PENDING_INSTAPAY_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as PendingInstapay
-    if (!parsed?.booking || typeof parsed.chosenAmount !== "number") return null
+    const booking = parsed?.booking
+    if (
+      !booking || typeof booking !== "object" ||
+      typeof booking.ID !== "string" || !booking.ID ||
+      typeof booking.trip_id !== "string" || !booking.trip_id ||
+      typeof booking.amount !== "number" || !Number.isFinite(booking.amount) || booking.amount < 0 ||
+      typeof booking.currency !== "string" || !/^[A-Z]{3}$/.test(booking.currency) ||
+      typeof parsed.chosenAmount !== "number" || !Number.isFinite(parsed.chosenAmount) || parsed.chosenAmount < 0
+    ) return null
     return parsed
   } catch {
     return null

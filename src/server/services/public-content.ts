@@ -1,4 +1,6 @@
 import 'server-only';
+import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import { dbConnect } from '../db/connect';
 import { Trip } from '../models/trip';
 import { Destination } from '../models/destination';
@@ -161,7 +163,8 @@ function toPublicTrip(json: Record<string, unknown>, locale: string): PublicTrip
   };
 }
 
-export async function listPublicTrips(locale: string): Promise<PublicTrip[]> {
+// Deduplicate page/metadata reads within a request; booking data stays fresh.
+export const listPublicTrips = cache(async (locale: string): Promise<PublicTrip[]> => {
   await dbConnect();
   const trips = await Trip.find({ status: { $ne: 'inactive' } })
     .sort({ display_order: 1 })
@@ -173,11 +176,11 @@ export async function listPublicTrips(locale: string): Promise<PublicTrip[]> {
     const plain = toPlain<Record<string, unknown>>(t.toJSON());
     return toPublicTrip(toTripResponse(plain, locale), locale);
   });
-}
+});
 
-export async function listPublicDestinations(
+export const listPublicDestinations = cache(async (
   locale: string,
-): Promise<PublicDestination[]> {
+): Promise<PublicDestination[]> => {
   await dbConnect();
   const destinations = await Destination.find({});
 
@@ -185,7 +188,7 @@ export async function listPublicDestinations(
     const plain = toPlain<Record<string, unknown>>(d.toJSON());
     return toPublicDestination(toDestinationResponse(plain, locale));
   });
-}
+});
 
 /**
  * Resolves `/trips/[slug]`. Accepts either a plain name-derived slug or one
@@ -193,10 +196,10 @@ export async function listPublicDestinations(
  * to the canonical path when the resolved trip's current slug differs from
  * the one requested (a rename since the URL was last shared/cited).
  */
-export async function getTripBySlug(
+export const getTripBySlug = cache(async (
   slug: string,
   locale: string,
-): Promise<PublicTrip | null> {
+): Promise<PublicTrip | null> => {
   const id = extractObjectId(slug);
   if (id) {
     await dbConnect();
@@ -211,12 +214,12 @@ export async function getTripBySlug(
 
   const trips = await listPublicTrips(locale);
   return trips.find((t) => t.slug === slug) ?? null;
-}
+});
 
-export async function getDestinationBySlug(
+export const getDestinationBySlug = cache(async (
   slug: string,
   locale: string,
-): Promise<PublicDestination | null> {
+): Promise<PublicDestination | null> => {
   const id = extractObjectId(slug);
   if (id) {
     await dbConnect();
@@ -228,7 +231,7 @@ export async function getDestinationBySlug(
 
   const destinations = await listPublicDestinations(locale);
   return destinations.find((d) => d.slug === slug) ?? null;
-}
+});
 
 export interface CatalogueSummary {
   tripCount: number;
@@ -238,8 +241,11 @@ export interface CatalogueSummary {
 }
 
 /** English-only summary used by robots-facing surfaces (llms.txt, JSON-LD priceRange) that never see a locale cookie. */
-export async function getCatalogueSummary(): Promise<CatalogueSummary> {
-  const trips = await listPublicTrips('en');
+export const getCatalogueSummary = unstable_cache(async (): Promise<CatalogueSummary> => {
+  await dbConnect();
+  // SEO needs three fields, not every trip's text, images and populated relations.
+  const trips = await Trip.find({ status: { $ne: 'inactive' } })
+    .select('price foreigner_price currency').lean();
   const prices = trips.flatMap((t) => [t.price, t.foreigner_price || t.price]);
   return {
     tripCount: trips.length,
@@ -247,4 +253,4 @@ export async function getCatalogueSummary(): Promise<CatalogueSummary> {
     maxPrice: prices.length ? Math.max(...prices) : 0,
     currency: trips[0]?.currency ?? 'EGP',
   };
-}
+}, ['public-catalogue-summary'], { revalidate: 60 });

@@ -68,6 +68,7 @@ export default function HeroSection() {
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <Link
                 href="/book"
+                prefetch={true}
                 className="inline-flex items-center justify-center rounded-2xl bg-duck-yellow text-neutral-900 font-bold text-xl px-10 py-3 shadow-xl hover:bg-duck-yellow-hover transition-all duration-200 drop-shadow-lg"
                 passHref
               >

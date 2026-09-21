@@ -110,10 +110,13 @@ export async function generateMetadata({
 export default async function DestinationDetailPage({ params }: PageProps) {
   const { slug } = await params
   const locale = await getLocale()
-  const destination = await resolveDestination(slug, locale)
-  const t = await getTranslations("destinationPage")
-  const tMap = await getTranslations("mapPage")
-  const tOffers = await getTranslations("offers")
+  const [destination, allTrips, t, tMap, tOffers] = await Promise.all([
+    resolveDestination(slug, locale),
+    listPublicTrips(locale),
+    getTranslations("destinationPage"),
+    getTranslations("mapPage"),
+    getTranslations("offers"),
+  ])
 
   const path = canonicalDestinationPath(destination)
   const pageUrl = `${SITE_URL}${path}`
@@ -125,7 +128,6 @@ export default async function DestinationDetailPage({ params }: PageProps) {
     water_cycle: tMap("filters.waterbike"),
   }
 
-  const allTrips = await listPublicTrips(locale)
   const trips = allTrips.filter((trip) =>
     trip.destinations.some((d) => d.id === destination.id),
   )

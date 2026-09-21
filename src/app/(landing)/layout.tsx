@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import Navbar from "@/components/landing/Navbar"
 import { WhatsAppSupportFab } from "@/components/shared/whatsapp-support-fab"
 import { FeedbackFab } from "@/components/feedback/feedback-fab"
@@ -19,17 +20,21 @@ async function resolvePriceRange(): Promise<string> {
   }
 }
 
-export default async function LandingLayout({
+async function SiteStructuredData() {
+  const priceRange = await resolvePriceRange()
+  return <JsonLd data={buildSiteGraph(priceRange)} />
+}
+
+export default function LandingLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const priceRange = await resolvePriceRange()
-  const siteGraph = buildSiteGraph(priceRange)
-
   return (
     <>
-      <JsonLd data={siteGraph} />
+      <Suspense fallback={null}>
+        <SiteStructuredData />
+      </Suspense>
       <SkipToContent />
       <Navbar />
       {/* Must stay outside FullpageWrapper: fullPage.js reparents and measures

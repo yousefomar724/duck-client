@@ -10,7 +10,13 @@ export function setToken(token: string): void {
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(TOKEN_KEY);
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    // Storage can be blocked by browser privacy settings. Public browsing and
+    // guest booking must still work without an authenticated session.
+    return null;
+  }
 }
 
 export function clearToken(): void {
