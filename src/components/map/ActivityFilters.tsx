@@ -1,13 +1,13 @@
 "use client"
 
-import { Ship, Sailboat, Bike, Waves } from "lucide-react"
+import { Ship, Sailboat, Bike, Waves, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { useTranslations } from "next-intl"
 import type { ActivityFilter, ActivityType } from "./map-data"
 import type { MapStyle } from "./MapView"
 
-const FILTER_ICONS: Record<string, React.ElementType> = {
+const FILTER_ICONS: Record<string, LucideIcon> = {
   all: Waves,
   kayak: Ship,
   sup: Sailboat,

@@ -5,6 +5,14 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    // The game drives an imperative three.js scene graph: useFrame callbacks
+    // mutate memoised meshes, cameras and the sim runtime every frame, outside
+    // React state. That is the intended react-three-fiber pattern, and exactly
+    // what the React Compiler's immutability rule forbids.
+    files: ["src/game/**/*.{ts,tsx}"],
+    rules: { "react-hooks/immutability": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
