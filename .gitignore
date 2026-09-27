@@ -55,3 +55,4 @@ node_modules/
 
 # Game asset pipeline intermediates (regenerate with pnpm game:build)
 scripts/game/.build/
+__pycache__/
