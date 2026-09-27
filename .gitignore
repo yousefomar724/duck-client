@@ -52,3 +52,6 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Game asset pipeline intermediates (regenerate with pnpm game:build)
+scripts/game/.build/

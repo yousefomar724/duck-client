@@ -986,5 +986,101 @@
     "authTitle": "Authentication",
     "authBody": "Catalogue reads need no auth. Supplier and admin routes use a 72-hour JWT in Authorization: Bearer. There is no OAuth authorization server and no automated agent registration. Details:",
     "discoverTitle": "Discovery documents"
+  },
+  "game": {
+    "title": "Duckling Rescue",
+    "subtitle": "Paddle Elephantine Island, Aswan",
+    "loading": "Filling the Nile…",
+    "loadError": "The river didn't load. Check your connection and try again.",
+    "retry": "Try again",
+    "play": "Paddle out",
+    "playAgain": "Paddle again",
+    "resume": "Keep paddling",
+    "restart": "Restart",
+    "quit": "Back to shore",
+    "pause": "Pause",
+    "paused": "Paused",
+    "best": "Best {score}",
+    "howToPlay": "How to play",
+    "howSteps": {
+      "collect": "Paddle up to lost ducklings — they'll line up behind your kayak.",
+      "deliver": "Lead the line into a glowing nest to bank points. Longer lines score more.",
+      "avoid": "Bumping rocks or boats scatters the back of the line.",
+      "sunset": "You have until sunset. Pass landmarks on the way for bonus points."
+    },
+    "controls": "Controls",
+    "controlsPaddle": "Paddle",
+    "controlsPaddleHint": "Tap left or right to paddle on that side, like a real kayak.",
+    "controlsJoystick": "Joystick",
+    "controlsJoystickHint": "Drag anywhere to steer. The kayaker paddles for you.",
+    "sound": "Sound",
+    "on": "On",
+    "off": "Off",
+    "language": "العربية",
+    "hintPaddle": "Tap LEFT to paddle left (turns you right). Tap RIGHT to paddle right. Alternate — or hold both — to go straight.",
+    "hintJoystick": "Drag to steer toward the ducklings.",
+    "hintGotIt": "Got it",
+    "keyboardHint": "Keyboard: ← → to paddle, ↑ to cruise",
+    "score": "Score",
+    "line": "×{multiplier} · {points} pts",
+    "timeLeft": "Sunset in",
+    "toastLandmark": "Landmark discovered · +{points}",
+    "toastDeliver": "{count, plural, one {# duckling} other {# ducklings}} home! +{points}",
+    "toastDeliverGolden": "Golden duckling rescued!",
+    "toastScatter": "Bump! {count, plural, one {# duckling} other {# ducklings}} scattered",
+    "toastGolden": "A golden duckling appeared — follow the light!",
+    "toastGoldenGone": "The golden duckling swam away",
+    "toastEdge": "Stay inside the tour area",
+    "resultsTitle": "Sunset over Aswan",
+    "newBest": "New best!",
+    "statRescued": "Ducklings rescued",
+    "statGolden": "Golden ducklings",
+    "statLandmarks": "Landmarks",
+    "statBestLine": "Longest line",
+    "share": "Share",
+    "shareText": "I rescued {count} ducklings and scored {score} paddling around Elephantine Island in Aswan! 🦆",
+    "copied": "Copied!",
+    "bookCta": "Paddle it for real",
+    "bookCtaSub": "Kayak tours around Elephantine with Duck",
+    "backToSite": "Duck website",
+    "attribution": "Map data © OpenStreetMap contributors",
+    "landmarks": {
+      "nubianVillage": {
+        "name": "Nubian villages",
+        "fact": "Siou and Koti on Elephantine are known for their brightly painted Nubian houses."
+      },
+      "nilometer": {
+        "name": "The Nilometer",
+        "fact": "Ancient Egyptians read the Nile's flood on these steps to predict the harvest — and set taxes."
+      },
+      "khnumTemple": {
+        "name": "Temple of Khnum",
+        "fact": "Ruins of the temple of Khnum, the ram-headed god believed to guard the Nile's waters at the cataract."
+      },
+      "oldCataract": {
+        "name": "Old Cataract Hotel",
+        "fact": "Opened in 1899 on the granite bank. Agatha Christie stayed here."
+      },
+      "firstCataract": {
+        "name": "The First Cataract",
+        "fact": "Smooth black granite boulders mark the First Cataract. Aswan granite built obelisks across Egypt."
+      },
+      "agaKhan": {
+        "name": "Aga Khan Mausoleum",
+        "fact": "Resting place of Aga Khan III, set on the west-bank hill overlooking the river."
+      },
+      "botanicalGarden": {
+        "name": "Kitchener's Island",
+        "fact": "Gifted to Lord Kitchener in the 1890s, the island became a botanical garden of plants from Africa and Asia."
+      },
+      "tombsNobles": {
+        "name": "Tombs of the Nobles",
+        "fact": "Rock-cut tombs of Elephantine's ancient governors. The white dome above is Qubbet el-Hawa, the 'Dome of the Wind'."
+      },
+      "corniche": {
+        "name": "Aswan Corniche",
+        "fact": "The city's riverside promenade, lined with feluccas, water taxis and Nile cruise boats."
+      }
+    }
   }
 }
