@@ -3,6 +3,7 @@ import { Trip, type TripDoc, type TripFaq } from '../models/trip';
 import type { LocalizedText } from '../models/supplier';
 import { parseDurationHoursFromLocalized } from '@/lib/trips/duration';
 import { kebab } from '@/lib/seo/slug';
+import type { TripActivity } from '@/lib/trips/listing-filter';
 
 export interface CreateTripBody {
   supplier_id?: string;
@@ -37,6 +38,7 @@ export interface CreateTripBody {
   refundable?: boolean;
   tour_guide_id?: string | null;
   destination_ids?: string[];
+  activities?: TripActivity[];
 }
 
 /** Mirrors Go's `TripService.CreateTrip` field defaults. */
@@ -94,6 +96,7 @@ export async function createTripFromRequest(supplierId: string, body: CreateTrip
     hide_default_faqs: body.hide_default_faqs ?? false,
     images: normalizeImageUrls(body.images),
     destination_ids: body.destination_ids ?? [],
+    activities: [...new Set(body.activities ?? [])],
   });
 
   return trip;
@@ -164,6 +167,8 @@ export function applyTripUpdate(trip: TripDoc, body: Partial<CreateTripBody>): v
   if (body.destination_ids && body.destination_ids.length > 0) {
     trip.destination_ids = body.destination_ids as unknown as TripDoc['destination_ids'];
   }
+  // Assigned whenever present so unticking every activity can be saved.
+  if (body.activities !== undefined) trip.activities = [...new Set(body.activities)];
 }
 
 /** Accepts the Go `ImageURLs` shapes: a plain array, or a legacy `{img1: "...", img2: "..."}` object. */

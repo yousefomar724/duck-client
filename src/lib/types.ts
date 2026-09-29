@@ -59,6 +59,7 @@ export interface Trip {
   tour_guide_id?: string
   tour_guide?: TourGuide
   destinations?: Destination[]
+  activities?: DestinationActivity[]
   created_at?: string
 }
 
@@ -322,6 +323,7 @@ export interface CreateTripRequest {
   min_guests?: number
   images?: string[]
   destination_ids?: string[]
+  activities?: DestinationActivity[]
   cancelation_policy?: { ar: string; en: string }
   meeting_point?: { ar: string; en: string }
   map_url?: string

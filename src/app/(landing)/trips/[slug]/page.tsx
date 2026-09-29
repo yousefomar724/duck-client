@@ -35,7 +35,8 @@ import { formatCurrency } from "@/lib/constants"
 import { parseDurationHours, tripDurationText } from "@/lib/trips/duration"
 import { SITE_CONTACT, SITE_NAME, SITE_URL } from "@/lib/site"
 import { buildWhatsAppHref } from "@/lib/support-contact"
-import { Phone } from "lucide-react"
+import { MapPin, Phone } from "lucide-react"
+import { tripLocationLabel } from "@/lib/trips/location"
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -118,6 +119,11 @@ export default async function TripDetailPage({ params }: PageProps) {
   const pageUrl = `${SITE_URL}${path}`
   const hasForeignerPrice = trip.foreigner_price > 0
   const destination = trip.destinations[0]?.name
+  const location = tripLocationLabel(
+    trip.destinations.map((d) => d.name),
+    trip.meeting_point,
+    locale === "ar" ? "، " : ", ",
+  )
   const duration = trip.duration || 1
   const durationText = tripDurationText(trip, locale)
 
@@ -277,10 +283,24 @@ export default async function TripDetailPage({ params }: PageProps) {
           <h1 className="text-white text-3xl md:text-5xl font-bold mb-5">
             {trip.name}
           </h1>
-          {trip.public_status === "coming-soon" ? (
-            <span className="mb-5 inline-flex rounded-full bg-duck-yellow px-4 py-1.5 text-sm font-semibold text-duck-navy">
-              {t("comingSoon")}
-            </span>
+          {location || trip.public_status === "coming-soon" ? (
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              {location ? (
+                <span
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-white"
+                  title={location}
+                >
+                  <MapPin className="size-4 shrink-0 text-duck-cyan" aria-hidden="true" />
+                  <span className="sr-only">{t("locationLabel")}: </span>
+                  <span className="truncate">{location}</span>
+                </span>
+              ) : null}
+              {trip.public_status === "coming-soon" ? (
+                <span className="inline-flex rounded-full bg-duck-yellow px-4 py-1.5 text-sm font-semibold text-duck-navy">
+                  {t("comingSoon")}
+                </span>
+              ) : null}
+            </div>
           ) : null}
           <p className="text-white/80 text-base md:text-lg leading-relaxed max-w-3xl">
             {summary}

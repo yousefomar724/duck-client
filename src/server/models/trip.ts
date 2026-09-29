@@ -1,6 +1,7 @@
 import mongoose, { Schema, Types } from 'mongoose';
 import { softDeletePlugin, schemaOptions } from '../db/plugins';
 import type { LocalizedText } from './supplier';
+import { TRIP_ACTIVITIES, type TripActivity } from '@/lib/trips/listing-filter';
 
 export interface TripFaq {
   q: LocalizedText;
@@ -42,6 +43,8 @@ export interface TripDoc extends mongoose.Document {
   refundable: boolean;
   tour_guide_id?: Types.ObjectId | null;
   destination_ids: Types.ObjectId[];
+  /** Which water activities the trip offers; drives the /trips?activity= filter. */
+  activities: TripActivity[];
   deletedAt: Date | null;
 }
 
@@ -112,6 +115,7 @@ const TripSchema = new Schema<TripDoc>(
     tour_guide_id: { type: Schema.Types.ObjectId, ref: 'TourGuide', default: null },
     // Replaces the Go `trip_destinations` many2many join table.
     destination_ids: { type: [Schema.Types.ObjectId], ref: 'Destination', default: [] },
+    activities: { type: [{ type: String, enum: TRIP_ACTIVITIES }], default: [] },
   },
   schemaOptions,
 );

@@ -109,7 +109,8 @@
     "guideIncluded": "Guide included",
     "guideOptional": "Optional guide",
     "prevSlide": "Previous trip",
-    "nextSlide": "Next trip"
+    "nextSlide": "Next trip",
+    "locationLabel": "Location"
   },
   "location": {
     "subtitle": "Location",
@@ -234,10 +235,9 @@
     "safetyInfo": "Safety Information",
     "bookingPolicy": "Booking Policy",
     "servicesTitle": "Services",
-    "kayakTours": "Kayak Tours",
+    "kayakTours": "Kayaking",
     "sup": "Stand Up Paddle",
     "waterBike": "Water Bike",
-    "privateTours": "Private Tours",
     "destinationsLink": "Destinations",
     "support": "Support",
     "faqLink": "FAQ",
@@ -247,7 +247,9 @@
     "backToTop": "Back to top",
     "instagram": "Duck Entertainment on Instagram",
     "facebook": "Duck Entertainment on Facebook",
-    "tiktok": "Duck Entertainment on TikTok"
+    "tiktok": "Duck Entertainment on TikTok",
+    "tours": "Tours",
+    "trips": "Trips"
   },
   "auth": {
     "copyright": "© {year} Duck Entertainment. All rights reserved.",
@@ -821,7 +823,21 @@
     "viewDetails": "View details",
     "comingSoon": "Coming Soon",
     "fromPrice": "From {price}",
-    "noTrips": "No trips are available right now — please check back soon."
+    "noTrips": "No trips are available right now — please check back soon.",
+    "filtersLabel": "Filter trips",
+    "filters": {
+      "all": "All",
+      "tour": "Tours",
+      "trip": "Trips",
+      "kayak": "Kayak",
+      "sup": "Stand Up Paddle",
+      "waterbike": "Water Bike"
+    },
+    "noFilteredTrips": "Nothing matches this filter right now.",
+    "showAll": "Show all trips & tours",
+    "tour": "Tour",
+    "trip": "Trip",
+    "locationLabel": "Location"
   },
   "tripPage": {
     "breadcrumbHome": "Home",
@@ -891,7 +907,8 @@
     "photoAlt": "{name} — photo {n} of {total}",
     "notFoundTitle": "Trip not found",
     "notFoundDescription": "This trip may have been removed or renamed.",
-    "notFoundCta": "View all trips"
+    "notFoundCta": "View all trips",
+    "locationLabel": "Location"
   },
   "destinationsPage": {
     "metadata": {

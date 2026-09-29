@@ -5,7 +5,7 @@ import useEmblaCarousel from "embla-carousel-react"
 import { useCallback, useState, useEffect, useMemo, useRef } from "react"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, Clock, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, MapPin, Users } from "lucide-react"
 import { useTranslations, useLocale } from "next-intl"
 import { getTrips } from "@/lib/api/trips"
 import type { Trip } from "@/lib/types"
@@ -18,6 +18,7 @@ import {
 import { formatCurrency } from "@/lib/constants"
 import { tripDurationText } from "@/lib/trips/duration"
 import { canonicalTripPath } from "@/lib/seo/slug"
+import { tripLocationLabel } from "@/lib/trips/location"
 import {
   Carousel,
   CarouselContent,
@@ -356,6 +357,11 @@ export default function OffersSection() {
             ) : (
               filteredTrips.map((trip) => {
                 const tripName = getLocalizedText(trip.name, t("defaultName"))
+                const tripLocation = tripLocationLabel(
+                  (trip.destinations ?? []).map((d) => getLocalizedText(d.name)),
+                  getLocalizedText(trip.meeting_point),
+                  locale === "ar" ? "، " : ", ",
+                )
                 const tripDescription = getLocalizedText(trip.description)
                 const rawImages = getTripImages(trip.images)
                 const fallbackImage = getTripImage(trip.images)
@@ -469,6 +475,16 @@ export default function OffersSection() {
                       {trip.public_status === "coming-soon" ? (
                         <span className="absolute top-3 end-3 z-10 rounded-full bg-duck-yellow px-3 py-1 text-xs font-semibold text-duck-navy">
                           {t("comingSoon")}
+                        </span>
+                      ) : null}
+                      {tripLocation ? (
+                        <span
+                          className="pointer-events-none absolute bottom-3 start-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm"
+                          title={tripLocation}
+                        >
+                          <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
+                          <span className="sr-only">{t("locationLabel")}: </span>
+                          <span className="truncate">{tripLocation}</span>
                         </span>
                       ) : null}
                     </div>

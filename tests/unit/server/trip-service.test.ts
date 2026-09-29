@@ -29,6 +29,22 @@ describe('trip service', () => {
     expect(trip.images).toEqual(['/new.jpg']);
   });
 
+  it('applyTripUpdate saves activities, including clearing them', () => {
+    const trip = {
+      is_tour: false,
+      activities: ['kayak'],
+    } as unknown as Parameters<typeof applyTripUpdate>[0];
+
+    applyTripUpdate(trip, { activities: ['sup', 'sup', 'waterbike'] });
+    expect(trip.activities).toEqual(['sup', 'waterbike']);
+
+    applyTripUpdate(trip, {});
+    expect(trip.activities).toEqual(['sup', 'waterbike']);
+
+    applyTripUpdate(trip, { activities: [] });
+    expect(trip.activities).toEqual([]);
+  });
+
   it('toTripResponse resolves localized fields', () => {
     const json = {
       id: '1',

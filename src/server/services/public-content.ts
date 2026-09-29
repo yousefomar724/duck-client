@@ -8,6 +8,7 @@ import { toTripResponse, toDestinationResponse } from './trip';
 import { resolveLocalized } from '../lib/localize';
 import { extractObjectId } from '@/lib/seo/slug';
 import { cleanLegacy } from '@/lib/trips/clean-legacy';
+import { isTripActivity, type TripActivity } from '@/lib/trips/listing-filter';
 
 /**
  * Server Components must not HTTP-fetch their own /api/v1 routes — these
@@ -66,6 +67,8 @@ export interface PublicTrip {
   public_status: 'available' | 'coming-soon';
   refundable: boolean;
   is_tour: boolean;
+  /** Activities set on the trip itself; see `resolveTripActivities` for the destination fallback. */
+  activities: TripActivity[];
   from: string;
   to?: string;
   images: string[];
@@ -151,6 +154,9 @@ function toPublicTrip(json: Record<string, unknown>, locale: string): PublicTrip
     public_status: (json.public_status as PublicTrip['public_status']) ?? 'available',
     refundable: Boolean(json.refundable),
     is_tour: Boolean(json.is_tour),
+    activities: Array.isArray(json.activities)
+      ? (json.activities as unknown[]).filter(isTripActivity)
+      : [],
     from: json.from as string,
     to: json.to as string | undefined,
     images: (json.images as string[]) ?? [],

@@ -1,5 +1,6 @@
 import { z } from "zod/v3"
 import { currencies } from "@/lib/constants"
+import { TRIP_ACTIVITIES, type TripActivity } from "@/lib/trips/listing-filter"
 
 const CURRENCY_VALUES = currencies.map((c) => c.value) as [string, ...string[]]
 
@@ -15,6 +16,7 @@ export function createTripFormSchema({ mode, requireSupplier }: TripFormSchemaOp
     description_ar: z.string().trim().min(10, "وصف الرحلة بالعربي مطلوب (10 أحرف على الأقل)"),
     description_en: z.string().trim().min(10, "وصف الرحلة بالإنجليزي مطلوب (10 أحرف على الأقل)"),
     destination_ids: z.array(z.string()).default([]),
+    activities: z.array(z.enum(TRIP_ACTIVITIES)).default([]),
     price: z.coerce
       .number({ invalid_type_error: "أدخل سعرًا صحيحًا" })
       .positive("السعر يجب أن يكون أكبر من صفر"),
@@ -151,6 +153,7 @@ export interface TripFormInput {
   description_ar: string
   description_en: string
   destination_ids: string[]
+  activities: TripActivity[]
   price: string
   foreigner_price: string
   guide_mandatory: boolean

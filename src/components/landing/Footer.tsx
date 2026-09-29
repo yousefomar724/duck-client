@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { tripListingHref } from "@/lib/trips/listing-filter"
 
 type FullpageWindow = Window & {
   fullpage_api?: { moveTo: (sectionIndex: number) => void }
@@ -125,54 +126,37 @@ export default function Footer() {
             <ul className="space-y-3 text-white/70 text-sm">
               {[
                 { label: t("aboutUs"), href: "/about" },
-                { label: t("ourTeam"), href: "#" },
-                { label: t("safetyInfo"), href: "#" },
-                { label: t("bookingPolicy"), href: "#" },
-              ].map(({ label, href }) =>
-                href === "#" ? (
-                  <li key={label}>
-                    <a href="#" className="hover:text-white transition-colors">
-                      {label}
-                    </a>
-                  </li>
-                ) : (
-                  <li key={label}>
-                    <Link
-                      href={href}
-                      className="hover:text-white transition-colors"
-                    >
-                      {label}
-                    </Link>
-                  </li>
-                ),
-              )}
+                { label: t("ourTeam"), href: "/about" },
+                { label: t("safetyInfo"), href: "/faq#safety" },
+                { label: t("bookingPolicy"), href: "/faq#booking" },
+              ].map(({ label, href }) => (
+                <li key={label}>
+                  <Link href={href} className="hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Column 3: الخدمات */}
+          {/* Column 3: الخدمات — each link opens /trips pre-filtered */}
           <div>
             <h3 className="text-base font-bold mb-6">{t("servicesTitle")}</h3>
             <ul className="space-y-3 text-white/70 text-sm">
               {[
-                t("kayakTours"),
-                t("sup"),
-                t("waterBike"),
-                t("privateTours"),
-              ].map((link) => (
-                <li key={link}>
-                  <Link href="/trips" className="hover:text-white transition-colors">
-                    {link}
+                { label: t("trips"), href: tripListingHref({ type: "trip" }) },
+                { label: t("tours"), href: tripListingHref({ type: "tour" }) },
+                { label: t("kayakTours"), href: tripListingHref({ activity: "kayak" }) },
+                { label: t("sup"), href: tripListingHref({ activity: "sup" }) },
+                { label: t("waterBike"), href: tripListingHref({ activity: "waterbike" }) },
+                { label: t("destinationsLink"), href: "/destinations" },
+              ].map(({ label, href }) => (
+                <li key={href}>
+                  <Link href={href} className="hover:text-white transition-colors">
+                    {label}
                   </Link>
                 </li>
               ))}
-              <li>
-                <Link
-                  href="/destinations"
-                  className="hover:text-white transition-colors"
-                >
-                  {t("destinationsLink")}
-                </Link>
-              </li>
             </ul>
           </div>
 

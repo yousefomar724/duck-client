@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isValidObjectId } from '@/server/lib/object-id';
+import { TRIP_ACTIVITIES } from '@/lib/trips/listing-filter';
 
 const objectId = z.string().refine(isValidObjectId, { message: 'Invalid ID' });
 
@@ -58,6 +59,7 @@ const tripBodySchema = z.object({
   refundable: z.boolean().optional(),
   tour_guide_id: objectId.nullable().optional(),
   destination_ids: z.array(objectId).optional(),
+  activities: z.array(z.enum(TRIP_ACTIVITIES)).optional(),
 });
 
 export const createTripBodySchema = tripBodySchema.superRefine((body, ctx) => {

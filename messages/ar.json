@@ -109,7 +109,8 @@
     "guideIncluded": "الكابتن مُضمَّن",
     "guideOptional": "كابتن اختياري",
     "prevSlide": "الرحلة السابقة",
-    "nextSlide": "الرحلة التالية"
+    "nextSlide": "الرحلة التالية",
+    "locationLabel": "المكان"
   },
   "location": {
     "subtitle": "الموقع",
@@ -234,10 +235,9 @@
     "safetyInfo": "معلومات السلامة",
     "bookingPolicy": "سياسة الحجز",
     "servicesTitle": "الخدمات",
-    "kayakTours": "جولات الكاياك",
+    "kayakTours": "الكاياك",
     "sup": "الستاند اب",
-    "waterBike": "الواتر بايك",
-    "privateTours": "الجولات الخاصة",
+    "waterBike": "العجلة المائية",
     "destinationsLink": "الوجهات",
     "support": "الدعم",
     "faqLink": "الأسئلة الشائعة",
@@ -247,7 +247,9 @@
     "backToTop": "العودة إلى الأعلى",
     "instagram": "داك إنترتينمنت على إنستغرام",
     "facebook": "داك إنترتينمنت على فيسبوك",
-    "tiktok": "داك إنترتينمنت على تيك توك"
+    "tiktok": "داك إنترتينمنت على تيك توك",
+    "tours": "الجولات",
+    "trips": "الرحلات"
   },
   "auth": {
     "copyright": "© {year} Duck Entertainment. جميع الحقوق محفوظة.",
@@ -821,7 +823,21 @@
     "viewDetails": "عرض التفاصيل",
     "comingSoon": "متاح قريباً",
     "fromPrice": "يبدأ من {price}",
-    "noTrips": "لا توجد رحلات متاحة حالياً — يرجى المحاولة لاحقاً."
+    "noTrips": "لا توجد رحلات متاحة حالياً — يرجى المحاولة لاحقاً.",
+    "filtersLabel": "تصفية الرحلات",
+    "filters": {
+      "all": "الكل",
+      "tour": "الجولات",
+      "trip": "الرحلات",
+      "kayak": "الكاياك",
+      "sup": "الستاند اب",
+      "waterbike": "العجلة المائية"
+    },
+    "noFilteredTrips": "لا توجد رحلات ضمن هذا التصنيف حالياً.",
+    "showAll": "عرض كل الرحلات والجولات",
+    "tour": "جولة",
+    "trip": "رحلة",
+    "locationLabel": "المكان"
   },
   "tripPage": {
     "breadcrumbHome": "الرئيسية",
@@ -891,7 +907,8 @@
     "photoAlt": "{name} — صورة {n} من {total}",
     "notFoundTitle": "الرحلة غير موجودة",
     "notFoundDescription": "قد تكون هذه الرحلة قد أُزيلت أو تغيّر اسمها.",
-    "notFoundCta": "عرض جميع الرحلات"
+    "notFoundCta": "عرض جميع الرحلات",
+    "locationLabel": "المكان"
   },
   "destinationsPage": {
     "metadata": {

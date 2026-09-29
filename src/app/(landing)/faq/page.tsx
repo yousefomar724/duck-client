@@ -29,12 +29,15 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-/** Topical grouping of the 12 Q&A keys, for a richer page than the homepage accordion. */
-const TOPIC_GROUPS: { titleKey: string; questions: number[] }[] = [
-  { titleKey: "topicSafety", questions: [1, 2, 4, 6] },
-  { titleKey: "topicPreparing", questions: [7, 8, 9] },
-  { titleKey: "topicWhoFor", questions: [5, 3] },
-  { titleKey: "topicBooking", questions: [10, 11, 12] },
+/**
+ * Topical grouping of the 12 Q&A keys, for a richer page than the homepage
+ * accordion. `id` is the anchor the footer links to (`/faq#safety`).
+ */
+const TOPIC_GROUPS: { id: string; titleKey: string; questions: number[] }[] = [
+  { id: "safety", titleKey: "topicSafety", questions: [1, 2, 4, 6] },
+  { id: "preparing", titleKey: "topicPreparing", questions: [7, 8, 9] },
+  { id: "who-for", titleKey: "topicWhoFor", questions: [5, 3] },
+  { id: "booking", titleKey: "topicBooking", questions: [10, 11, 12] },
 ]
 
 export default async function FaqPage() {
@@ -99,7 +102,7 @@ export default async function FaqPage() {
       <section className="bg-white py-16 px-4 md:px-10">
         <div className="max-w-3xl mx-auto space-y-12">
           {TOPIC_GROUPS.map((group) => (
-            <div key={group.titleKey}>
+            <div key={group.id} id={group.id} className="scroll-mt-28 md:scroll-mt-36">
               <h2 className="text-text-dark text-xl md:text-2xl font-bold mb-5">
                 {tPage(group.titleKey)}
               </h2>

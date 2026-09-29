@@ -63,6 +63,14 @@ import {
   ImageWithLogoFallback,
   ImgWithLogoFallback,
 } from "@/components/shared/image-with-logo-fallback"
+import { isTripActivity, type TripActivity } from "@/lib/trips/listing-filter"
+
+/** Same labels as the destination form's activity checkboxes. */
+const TRIP_ACTIVITY_OPTIONS: { id: TripActivity; label: string }[] = [
+  { id: "kayak", label: "كاياك" },
+  { id: "sup", label: "تجديف واقف" },
+  { id: "waterbike", label: "دراجة مائية" },
+]
 
 /** Go gorm.Model serializes primary key as `ID`; normalize to `id` for the UI. */
 function normalizeTourGuides(list: TourGuide[]): TourGuide[] {
@@ -103,6 +111,7 @@ const FIELD_LABELS: Record<string, string> = {
   from: "من تاريخ",
   to: "إلى تاريخ",
   destination_ids: "الوجهات",
+  activities: "الأنشطة",
 }
 
 const EMPTY_FORM_VALUES: TripFormInput = {
@@ -111,6 +120,7 @@ const EMPTY_FORM_VALUES: TripFormInput = {
   description_ar: "",
   description_en: "",
   destination_ids: [],
+  activities: [],
   price: "",
   foreigner_price: "",
   guide_mandatory: false,
@@ -185,6 +195,7 @@ function mapTripToFormValues(tripData: Trip): TripFormInput {
     description_ar: tripDesc.ar || "",
     description_en: tripDesc.en || "",
     destination_ids: tripData.destinations?.map((d) => d.id) || [],
+    activities: (tripData.activities ?? []).filter(isTripActivity),
     price: tripData.price.toString(),
     foreigner_price: (tripData.foreigner_price ?? 0).toString(),
     guide_mandatory: tripData.guide_mandatory ?? false,
@@ -420,6 +431,7 @@ export default function TripForm({
         min_guests: values.is_tour ? 1 : values.min_guests,
         images: allImageUrls,
         destination_ids: values.destination_ids,
+        activities: values.activities,
       }
 
       // Sent even when empty (as null) — omitting it left the previously
@@ -740,6 +752,47 @@ export default function TripForm({
                           لا توجد وجهات متاحة
                         </p>
                       )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Activities */}
+                <FormField
+                  control={form.control}
+                  name="activities"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الأنشطة (اختياري)</FormLabel>
+                      <p className="text-xs text-text-muted">
+                        تحدد ظهور الرحلة عند تصفية صفحة الرحلات حسب النشاط. إذا
+                        تُركت فارغة تُستخدم أنشطة الوجهات المختارة.
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {TRIP_ACTIVITY_OPTIONS.map((opt) => (
+                          <div key={opt.id} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`activity-${opt.id}`}
+                              checked={field.value.includes(opt.id)}
+                              onChange={(e) => {
+                                field.onChange(
+                                  e.target.checked
+                                    ? [...field.value, opt.id]
+                                    : field.value.filter((a) => a !== opt.id),
+                                )
+                              }}
+                              className="w-4 h-4 rounded border-gray-300"
+                            />
+                            <Label
+                              htmlFor={`activity-${opt.id}`}
+                              className="mb-0 text-sm cursor-pointer"
+                            >
+                              {opt.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
