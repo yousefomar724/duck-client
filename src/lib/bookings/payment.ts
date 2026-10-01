@@ -10,6 +10,17 @@ export function refundOwed(booking: Pick<Booking, "refund_owed">): number {
   return booking.refund_owed ?? 0
 }
 
+/**
+ * What the supplier's wallet still holds for this booking. `amount_paid` is
+ * gross until an edit's refund is marked sent; the owed part has already been
+ * debited from the wallet, so it must not be debited again.
+ */
+export function retainedAmount(
+  booking: Pick<Booking, "amount_paid" | "refund_owed">,
+): number {
+  return Math.max(0, amountPaid(booking) - refundOwed(booking))
+}
+
 export function remainingAmount(
   booking: Pick<Booking, "amount" | "amount_paid">,
 ): number {

@@ -4,6 +4,8 @@ import { POST as supplierCancel } from '@/app/api/v1/bookings/[id]/supplier-canc
 import { POST as adminCancel } from '@/app/api/v1/bookings/[id]/admin-cancel/route';
 import { POST as refundSent } from '@/app/api/v1/bookings/[id]/refund-sent/route';
 import { POST as manualConfirm } from '@/app/api/v1/bookings/[id]/manual-confirm/route';
+import { POST as collectBalance } from '@/app/api/v1/bookings/[id]/collect-balance/route';
+import { POST as manualRefund } from '@/app/api/v1/bookings/[id]/manual-refund/route';
 import {
   createSupplierUser,
   createAdminUser,
@@ -248,7 +250,9 @@ describe('booking edit cancel delete routes', () => {
       { params: Promise.resolve({ id: booking.id }) },
     );
     expect(res.status).toBe(200);
-    expect((await res.json()).booking.refund_owed).toBe(0);
+    const sent = (await res.json()).booking;
+    expect(sent.refund_owed).toBe(0);
+    expect(sent.amount_paid).toBe(180);
   });
 
   it('manual confirm records amount_paid for refund route', async () => {
@@ -552,5 +556,173 @@ describe('booking edit trip switch', () => {
     const body = await byAdmin.json();
     expect(body.booking.amount).toBe(250);
     expect(body.booking.trip_id).toBe(other.id);
+  });
+});
+
+describe('booking edit balance after price changes', () => {
+  function post(
+    handler: typeof collectBalance,
+    path: string,
+    bookingId: string,
+    user: { id: string; role: number },
+    body: object = {},
+  ) {
+    return handler(
+      jsonRequest(`http://localhost/api/v1/bookings/${bookingId}/${path}`, {
+        method: 'POST',
+        headers: authHeader(user.id, user.role),
+        body,
+      }),
+      { params: Promise.resolve({ id: bookingId }) },
+    );
+  }
+
+  function patch(bookingId: string, user: { id: string; role: number }, body: object) {
+    return updateBooking(
+      jsonRequest(`http://localhost/api/v1/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: authHeader(user.id, user.role),
+        body,
+      }),
+      { params: Promise.resolve({ id: bookingId }) },
+    );
+  }
+
+  /** Paid in full: 5 locals x 275 = 1375, wallet holding the 1375. */
+  async function paidPrivateTour() {
+    const { supplier, user, wallet } = await createSupplierUser();
+    const privateTour = await createTrip(supplier._id, { price: 275, foreigner_price: 850 });
+    const freeTour = await createTrip(supplier._id, { price: 180, foreigner_price: 500 });
+    await createSupplierStorage(supplier._id, { kayak: 10 });
+    const booking = await createBooking({
+      trip_id: privateTour._id,
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      amount: 1375,
+      amount_paid: 1375,
+      quantity: 5,
+      local_guests: 5,
+      resource_type: 'kayak',
+      pricing_snapshot: { price: 275, foreigner_price: 850, guide_price: 0 },
+      booking_date: futureBookingDate(),
+    });
+    await Wallet.updateOne({ _id: wallet._id }, { amount: 1375 });
+    const walletAmount = async () => (await Wallet.findById(wallet._id))?.amount;
+    return { user, privateTour, freeTour, booking, walletAmount };
+  }
+
+  it('lets the supplier collect the increase on a confirmed booking', async () => {
+    const { user, booking, walletAmount } = await paidPrivateTour();
+
+    const res = await patch(booking.id, user, { local_guests: 7, quantity: 7 });
+    expect(res.status).toBe(200);
+    const edited = (await res.json()).booking;
+    expect(edited.amount).toBe(1925);
+    expect(edited.refund_owed).toBe(0);
+    expect(await walletAmount()).toBe(1375);
+
+    const collect = await post(collectBalance, 'collect-balance', booking.id, user);
+    expect(collect.status).toBe(200);
+    expect((await collect.json()).booking.amount_paid).toBe(1925);
+    expect(await walletAmount()).toBe(1925);
+  });
+
+  it('nets an unsent refund against a later increase instead of stacking it', async () => {
+    const { user, privateTour, freeTour, booking, walletAmount } = await paidPrivateTour();
+
+    // private -> free: 3 x 180 = 540, 835 owed back
+    const down = await patch(booking.id, user, {
+      trip_id: freeTour.id,
+      local_guests: 3,
+      quantity: 3,
+    });
+    expect((await down.json()).booking.refund_owed).toBe(835);
+    expect(await walletAmount()).toBe(540);
+
+    // two more guests before the refund went out: 5 x 180 = 900, 475 owed
+    const smaller = await patch(booking.id, user, { local_guests: 5, quantity: 5 });
+    expect((await smaller.json()).booking.refund_owed).toBe(475);
+    expect(await walletAmount()).toBe(900);
+
+    // back to private with 6 guests: 6 x 275 = 1650, nothing owed, 275 to collect
+    const up = await patch(booking.id, user, {
+      trip_id: privateTour.id,
+      local_guests: 6,
+      quantity: 6,
+    });
+    const upBody = (await up.json()).booking;
+    expect(upBody.amount).toBe(1650);
+    expect(upBody.refund_owed).toBe(0);
+    expect(await walletAmount()).toBe(1375);
+
+    const collect = await post(collectBalance, 'collect-balance', booking.id, user);
+    expect(collect.status).toBe(200);
+    expect(await walletAmount()).toBe(1650);
+
+    const saved = await Booking.findById(booking.id);
+    const ledger = (saved!.payment_entries as { amount: number }[]).reduce(
+      (sum, e) => sum + e.amount,
+      0,
+    );
+    // The seeded 1375 has no entry, so the entries net to what changed since.
+    expect(ledger).toBe(1650 - 1375);
+  });
+
+  it('collects the full increase after the refund was already sent', async () => {
+    const { user, privateTour, freeTour, booking, walletAmount } = await paidPrivateTour();
+
+    await patch(booking.id, user, { trip_id: freeTour.id, local_guests: 3, quantity: 3 });
+    const sent = await post(refundSent, 'refund-sent', booking.id, user);
+    expect((await sent.json()).booking.amount_paid).toBe(540);
+
+    const up = await patch(booking.id, user, {
+      trip_id: privateTour.id,
+      local_guests: 5,
+      quantity: 5,
+    });
+    const upBody = (await up.json()).booking;
+    expect(upBody.amount).toBe(1375);
+    expect(upBody.refund_owed).toBe(0);
+    expect(await walletAmount()).toBe(540);
+
+    const collect = await post(collectBalance, 'collect-balance', booking.id, user, {
+      amount: 835,
+    });
+    expect(collect.status).toBe(200);
+    expect(await walletAmount()).toBe(1375);
+  });
+
+  it('refunds only what the wallet still holds after an edit refund', async () => {
+    const { user, freeTour, booking, walletAmount } = await paidPrivateTour();
+
+    await patch(booking.id, user, { trip_id: freeTour.id, local_guests: 3, quantity: 3 });
+    expect(await walletAmount()).toBe(540);
+
+    const refund = await post(manualRefund, 'manual-refund', booking.id, user);
+    expect(refund.status).toBe(200);
+    expect(await walletAmount()).toBe(0);
+  });
+
+  it('raises a full-payment declaration on a pending booking with the price', async () => {
+    const { supplier, user } = await createSupplierUser();
+    const trip = await createTrip(supplier._id, { price: 275 });
+    await createSupplierStorage(supplier._id, { kayak: 10 });
+    const booking = await createBooking({
+      trip_id: trip._id,
+      supplier_id: supplier._id,
+      status: 'PENDING',
+      amount: 1375,
+      declared_amount: 1375,
+      quantity: 5,
+      local_guests: 5,
+      resource_type: 'kayak',
+      pricing_snapshot: { price: 275, foreigner_price: 850, guide_price: 0 },
+      booking_date: futureBookingDate(),
+    });
+
+    const res = await patch(booking.id, user, { local_guests: 6, quantity: 6 });
+    const body = (await res.json()).booking;
+    expect(body.amount).toBe(1650);
+    expect(body.declared_amount).toBe(1650);
   });
 });

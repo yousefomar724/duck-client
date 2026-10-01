@@ -6,6 +6,7 @@ import { Booking } from '@/server/models/booking';
 import { creditWalletBySupplierId } from '@/server/services/wallet';
 import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
+import { retainedAmount } from '@/lib/bookings/payment';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = requireAuth(request);
@@ -28,7 +29,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return errorResponse(403, 'unauthorized: booking does not belong to your supplier account');
   }
 
-  const refundedAmount = booking.amount_paid;
+  // Any refund an edit already owed was debited from the wallet at edit time.
+  const refundedAmount = retainedAmount(booking);
 
   try {
     if (refundedAmount > 0) {

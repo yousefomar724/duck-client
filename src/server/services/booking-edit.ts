@@ -5,6 +5,7 @@ import { computeBookingAmount } from './booking';
 import { checkAvailability, occupancyChanged, NoAvailabilityError, verifyOccupancy } from './availability';
 import { isValidResourceType } from './resource-type';
 import { canDeleteBookingStatus } from '@/lib/bookings/status';
+import { retainedAmount } from '@/lib/bookings/payment';
 import { DeletedBooking } from '../models/deleted-booking';
 import { creditWalletBySupplierId } from './wallet';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
@@ -324,17 +325,23 @@ export async function applyBookingEdit(
     occupancy_version: booking.occupancy_version,
   };
 
-  if (newAmount < amountPaid) {
-    const owed = amountPaid - newAmount;
-    walletDelta = -owed;
-    booking.refund_owed = (booking.refund_owed ?? 0) + owed;
+  // `amount_paid` stays gross until the refund is actually sent (markRefundSent),
+  // so the owed refund is recomputed from scratch on every edit and only the
+  // change moves through the wallet. A price rise that absorbs an unsent
+  // refund puts that money back; any remainder shows up as a balance to
+  // collect (amount - amount_paid).
+  const owedBefore = booking.refund_owed ?? 0;
+  const owedAfter = Math.max(0, amountPaid - newAmount);
+  const owedDelta = owedAfter - owedBefore;
+  walletDelta = -owedDelta;
+  booking.refund_owed = owedAfter;
+  if (owedDelta !== 0) {
+    const label = owedDelta > 0 ? 'edit refund owed' : 'edit refund owed reduced';
     booking.payment_entries.push({
-      amount: -owed,
+      amount: -owedDelta,
       recorded_at: new Date(),
-      note: patch.note ? `edit refund owed: ${patch.note}` : 'edit refund owed',
+      note: patch.note ? `${label}: ${patch.note}` : label,
     });
-  } else {
-    booking.refund_owed = 0;
   }
 
   if (walletDelta !== 0) {
@@ -366,7 +373,9 @@ export async function applyBookingEdit(
   booking.occupancy_slots = nextOccupancy.occupancy_slots;
   booking.occupancy_version = OCCUPANCY_VERSION;
 
-  if (booking.declared_amount > newAmount) {
+  // A customer who declared full payment still owes the full (new) total, so
+  // confirming the booking collects the increase in one step.
+  if (booking.declared_amount > newAmount || booking.declared_amount === amountBefore) {
     booking.declared_amount = newAmount;
   }
 
@@ -462,6 +471,8 @@ export async function markRefundSent(
 
   const cleared = booking.refund_owed;
   booking.refund_owed = 0;
+  // The money has left the customer's hands, so it no longer counts as paid.
+  booking.amount_paid = Math.max(0, (booking.amount_paid ?? 0) - cleared);
   booking.payment_entries.push({
     amount: 0,
     recorded_at: new Date(),
@@ -525,7 +536,7 @@ export async function deleteBookingByAdmin(
   }
 
   const walletExposure =
-    booking.status === 'REFUNDED' ? 0 : (booking.amount_paid ?? 0);
+    booking.status === 'REFUNDED' ? 0 : retainedAmount(booking);
   const supplierId = booking.supplier_id.toString();
 
   if (walletExposure !== 0) {

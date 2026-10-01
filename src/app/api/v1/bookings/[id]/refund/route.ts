@@ -5,6 +5,7 @@ import { Booking } from '@/server/models/booking';
 import { creditWalletBySupplierId } from '@/server/services/wallet';
 import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
+import { retainedAmount } from '@/lib/bookings/payment';
 
 /**
  * Go called the Kashier Refund API here. Kashier is out of scope for this
@@ -28,7 +29,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return errorResponse(500, `booking is not pending refund, current status: ${booking.status}`);
   }
 
-  const refundedAmount = booking.amount_paid;
+  // Any refund an edit already owed was debited from the wallet at edit time.
+  const refundedAmount = retainedAmount(booking);
 
   try {
     if (refundedAmount > 0) {
