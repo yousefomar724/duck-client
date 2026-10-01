@@ -13,6 +13,10 @@ import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
 
 const editSchema = z.object({
+  trip_id: z
+    .string()
+    .refine(isValidObjectId, { message: 'Invalid trip ID' })
+    .optional(),
   quantity: z.number().int().positive().optional(),
   local_guests: z.number().int().min(0).optional(),
   foreigner_guests: z.number().int().min(0).optional(),

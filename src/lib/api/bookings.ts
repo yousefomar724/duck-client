@@ -159,6 +159,7 @@ export async function adminCancelBooking(
 }
 
 export interface UpdateBookingRequest {
+  trip_id?: string;
   quantity?: number;
   local_guests?: number;
   foreigner_guests?: number;

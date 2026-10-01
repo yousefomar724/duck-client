@@ -398,3 +398,159 @@ describe('booking edit cancel delete routes', () => {
       expect(toSiteYmd(new Date(body.booking.booking_date))).toBe(ymd);
   });
 });
+
+describe('booking edit trip switch', () => {
+  function patch(bookingId: string, user: { id: string; role: number }, body: object) {
+    return updateBooking(
+      jsonRequest(`http://localhost/api/v1/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: authHeader(user.id, user.role),
+        body,
+      }),
+      { params: Promise.resolve({ id: bookingId }) },
+    );
+  }
+
+  it('switches a paid private tour to a cheaper free tour and reprices from the new trip', async () => {
+    const { supplier, user: supplierUser, wallet } = await createSupplierUser();
+    const privateTour = await createTrip(supplier._id, {
+      is_tour: true,
+      price: 500,
+      foreigner_price: 900,
+      guide_mandatory: true,
+      guide_price: 300,
+    });
+    const freeTour = await createTrip(supplier._id, {
+      is_tour: true,
+      price: 200,
+      foreigner_price: 400,
+      name: { en: 'Free Tour', ar: 'جولة حرة' },
+    });
+    await createSupplierStorage(supplier._id, { kayak: 10 });
+
+    // 5 locals x 500 x 2h + mandatory guide 300
+    const booking = await createBooking({
+      trip_id: privateTour._id,
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      amount: 5300,
+      amount_paid: 5300,
+      quantity: 5,
+      local_guests: 5,
+      foreigner_guests: 0,
+      duration: 2,
+      resource_type: 'kayak',
+      pricing_snapshot: { price: 500, foreigner_price: 900, guide_price: 300 },
+      booking_date: futureBookingDate(),
+    });
+    await Wallet.updateOne({ _id: wallet._id }, { amount: 5300 });
+
+    const res = await patch(booking.id, supplierUser, {
+      trip_id: freeTour.id,
+      local_guests: 3,
+      foreigner_guests: 0,
+      quantity: 3,
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    // 3 x 200 x 2h, and the old trip's mandatory guide no longer applies
+    expect(body.booking.amount).toBe(1200);
+    expect(body.booking.refund_owed).toBe(4100);
+
+    const saved = await Booking.findById(booking.id);
+    expect(saved?.trip_id.toString()).toBe(freeTour.id);
+    expect(saved?.pricing_snapshot.price).toBe(200);
+    expect(saved?.pricing_snapshot.guide_price).toBe(0);
+    const revision = saved?.revisions.at(-1);
+    expect(revision?.changes.get('trip_id')).toMatchObject({
+      from: privateTour.id,
+      to: freeTour.id,
+    });
+
+    const updatedWallet = await Wallet.findById(wallet._id);
+    expect(updatedWallet?.amount).toBe(1200);
+  });
+
+  it('gives a non-tour booking a duration when it moves onto a tour', async () => {
+    const { supplier, user: supplierUser } = await createSupplierUser();
+    const rental = await createTrip(supplier._id);
+    const tour = await createTrip(supplier._id, { is_tour: true, price: 200, duration: 3 });
+    await createSupplierStorage(supplier._id, { kayak: 10 });
+
+    const booking = await createBooking({
+      trip_id: rental._id,
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      amount: 360,
+      quantity: 2,
+      local_guests: 2,
+      duration: 0,
+      resource_type: 'kayak',
+      pricing_snapshot: { price: 180, foreigner_price: 500, guide_price: 0 },
+      booking_date: futureBookingDate(),
+    });
+
+    const res = await patch(booking.id, supplierUser, { trip_id: tour.id });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.booking.duration).toBe(3);
+    expect(body.booking.amount).toBe(1200);
+  });
+
+  it('rejects a trip from another supplier or one that is not bookable', async () => {
+    const { supplier, user: supplierUser } = await createSupplierUser();
+    const { supplier: otherSupplier } = await createSupplierUser({
+      email: `other_${Date.now()}@test.com`,
+      username: `other_${Date.now()}`,
+    });
+    const trip = await createTrip(supplier._id);
+    const foreignTrip = await createTrip(otherSupplier._id);
+    const inactiveTrip = await createTrip(supplier._id, { status: 'inactive' });
+    const booking = await createBooking({
+      trip_id: trip._id,
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      pricing_snapshot: { price: 180, foreigner_price: 500, guide_price: 0 },
+      booking_date: futureBookingDate(),
+    });
+
+    const foreign = await patch(booking.id, supplierUser, { trip_id: foreignTrip.id });
+    expect(foreign.status).toBe(400);
+    const inactive = await patch(booking.id, supplierUser, { trip_id: inactiveTrip.id });
+    expect(inactive.status).toBe(400);
+
+    const saved = await Booking.findById(booking.id);
+    expect(saved?.trip_id.toString()).toBe(trip.id);
+  });
+
+  it('requires an admin amount override to switch a price-locked booking', async () => {
+    const { supplier, user: supplierUser } = await createSupplierUser();
+    const { user: admin } = await createAdminUser();
+    const trip = await createTrip(supplier._id);
+    const other = await createTrip(supplier._id, { price: 100 });
+    await createSupplierStorage(supplier._id, { kayak: 10 });
+    const booking = await createBooking({
+      trip_id: trip._id,
+      supplier_id: supplier._id,
+      status: 'CONFIRMED',
+      amount: 540,
+      quantity: 3,
+      local_guests: 3,
+      resource_type: 'kayak',
+      pricing_locked: true,
+      pricing_snapshot: { price: 180, foreigner_price: 500, guide_price: 0 },
+      booking_date: futureBookingDate(),
+    });
+
+    const bySupplier = await patch(booking.id, supplierUser, { trip_id: other.id });
+    expect(bySupplier.status).toBe(403);
+    const byAdminNoOverride = await patch(booking.id, admin, { trip_id: other.id });
+    expect(byAdminNoOverride.status).toBe(400);
+
+    const byAdmin = await patch(booking.id, admin, { trip_id: other.id, amount_override: 250 });
+    expect(byAdmin.status).toBe(200);
+    const body = await byAdmin.json();
+    expect(body.booking.amount).toBe(250);
+    expect(body.booking.trip_id).toBe(other.id);
+  });
+});

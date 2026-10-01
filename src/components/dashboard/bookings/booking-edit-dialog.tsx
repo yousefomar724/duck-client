@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod/v3"
@@ -28,6 +28,8 @@ import { isBookingTimeValid } from "@/lib/booking/schedule"
 import { amountPaid } from "@/lib/bookings/payment"
 import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import { formatCurrency } from "@/lib/constants"
+import { localizedTripName } from "@/lib/bookings/status"
+import * as tripsApi from "@/lib/api/trips"
 import { siteMinutesOfDay, siteWallTimeToUtc, toSiteYmd } from "@/lib/time"
 import type { Booking, Trip } from "@/lib/types"
 import type { UpdateBookingRequest } from "@/lib/api/bookings"
@@ -37,6 +39,7 @@ const DATETIME_LOCAL_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/
 
 const editSchema = z
   .object({
+    trip_id: z.string().min(1),
     full_name: z.string().min(2),
     phone_number: z.string().min(1),
     booking_date: z.string().min(1),
@@ -111,15 +114,17 @@ function previewAmount(
 ): number {
   if (amountOverride && amountOverride > 0) return amountOverride
 
-  const snap = booking.pricing_snapshot
+  // Switching trips reprices from the new trip, mirroring the server.
+  const snap = values.trip_id !== booking.trip_id ? undefined : booking.pricing_snapshot
   const previewTrip = {
     price: snap?.price ?? trip?.price ?? 0,
     foreigner_price: snap?.foreigner_price ?? trip?.foreigner_price ?? 0,
     is_tour: trip?.is_tour ?? false,
   }
 
-  const local = values.local_guests
-  const foreigner = values.foreigner_guests
+  // watch() returns raw input strings; zod only coerces on submit.
+  const local = Number(values.local_guests) || 0
+  const foreigner = Number(values.foreigner_guests) || 0
   const totalGuests = local + foreigner
   const guestMix =
     local > 0 && foreigner > 0 ? "mixed" : foreigner > 0 ? "foreigner" : "local"
@@ -130,10 +135,10 @@ function previewAmount(
     guests: totalGuests,
     localGuests: local,
     foreignerGuests: foreigner,
-    duration: values.duration ?? booking.duration ?? 1,
+    duration: Number(values.duration) || booking.duration || 1,
   })
 
-  if (values.wants_guide) {
+  if (values.wants_guide || trip?.guide_mandatory) {
     total += snap?.guide_price ?? trip?.guide_price ?? 0
   }
 
@@ -150,10 +155,12 @@ export function BookingEditDialog({
   loading,
 }: BookingEditDialogProps) {
   const locked = Boolean(booking?.pricing_locked) && role !== "admin"
+  const [supplierTrips, setSupplierTrips] = useState<Trip[]>([])
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
     defaultValues: {
+      trip_id: "",
       full_name: "",
       phone_number: "",
       booking_date: "",
@@ -173,6 +180,7 @@ export function BookingEditDialog({
   useEffect(() => {
     if (!booking || !open) return
     form.reset({
+      trip_id: booking.trip_id,
       full_name: booking.full_name,
       phone_number: booking.phone_number,
       booking_date: toLocalDatetimeValue(booking.booking_date),
@@ -189,7 +197,44 @@ export function BookingEditDialog({
     })
   }, [booking, open, form])
 
+  // A booking can only move to a bookable trip of its own supplier; the server
+  // enforces the same rule.
+  const supplierId = booking?.supplier_id
+  useEffect(() => {
+    if (!open || !supplierId) return
+    let cancelled = false
+    const load =
+      role === "admin"
+        ? tripsApi.getTrips(undefined, undefined, undefined, {
+            publicStatus: "available",
+          })
+        : tripsApi.getMyTrips()
+    void load.then(({ data }) => {
+      if (cancelled || !data) return
+      setSupplierTrips(
+        data.filter(
+          (t) =>
+            t.supplier_id === supplierId &&
+            t.status !== "inactive" &&
+            t.public_status !== "coming-soon",
+        ),
+      )
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, role, supplierId])
+
+  const tripOptions = useMemo(() => {
+    if (!trip || supplierTrips.some((t) => t.id === trip.id)) return supplierTrips
+    return [trip, ...supplierTrips]
+  }, [trip, supplierTrips])
+
   const values = form.watch()
+  const selectedTrip =
+    tripOptions.find((t) => t.id === values.trip_id) ??
+    (values.trip_id === booking?.trip_id ? trip : undefined)
+  const tripChanged = Boolean(booking) && values.trip_id !== booking?.trip_id
   const amountOverride =
     values.amount_override === "" || values.amount_override == null
       ? undefined
@@ -198,8 +243,8 @@ export function BookingEditDialog({
   const newAmount = useMemo(() => {
     if (!booking) return 0
     if (locked) return booking.amount
-    return previewAmount(booking, trip, values, amountOverride)
-  }, [booking, trip, values, amountOverride, locked])
+    return previewAmount(booking, selectedTrip, values, amountOverride)
+  }, [booking, selectedTrip, values, amountOverride, locked])
 
   const paid = booking ? amountPaid(booking) : 0
   const delta = booking ? newAmount - booking.amount : 0
@@ -229,7 +274,10 @@ export function BookingEditDialog({
       wants_guide: data.wants_guide,
       note: data.note?.trim() || undefined,
     }
-    if (trip?.is_tour) {
+    if (data.trip_id !== booking.trip_id) {
+      payload.trip_id = data.trip_id
+    }
+    if (selectedTrip?.is_tour) {
       payload.duration = data.duration
     }
     if (role === "admin" && amountOverride && amountOverride > 0) {
@@ -254,6 +302,30 @@ export function BookingEditDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2 sm:col-span-2">
+              <Label>{bookingStrings.trip}</Label>
+              <Select
+                value={values.trip_id}
+                onValueChange={(v) => form.setValue("trip_id", v)}
+                disabled={locked || tripOptions.length <= 1}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={localizedTripName(trip)} />
+                </SelectTrigger>
+                <SelectContent>
+                  {tripOptions.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {localizedTripName(t)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {tripChanged && role === "admin" && booking.pricing_locked ? (
+                <p className="text-xs text-amber-700">
+                  {bookingStrings.tripSwitchLockedHint}
+                </p>
+              ) : null}
+            </div>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="edit-full_name">{bookingStrings.customer}</Label>
               <Input id="edit-full_name" {...form.register("full_name")} />
@@ -333,7 +405,7 @@ export function BookingEditDialog({
                 {...form.register("kids_7_12")}
               />
             </div>
-            {trip?.is_tour && (
+            {selectedTrip?.is_tour && (
               <div className="space-y-2">
                 <Label htmlFor="edit-duration">{bookingStrings.durationHours}</Label>
                 <Input

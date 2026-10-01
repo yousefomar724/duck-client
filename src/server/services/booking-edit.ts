@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import type { BookingDoc } from '../models/booking';
-import { Trip } from '../models/trip';
+import { Trip, type TripDoc } from '../models/trip';
 import { computeBookingAmount } from './booking';
 import { checkAvailability, occupancyChanged, NoAvailabilityError, verifyOccupancy } from './availability';
 import { isValidResourceType } from './resource-type';
@@ -18,6 +18,8 @@ import {
 import { SupplierStorage } from '../models/supplier-storage';
 
 export interface BookingEditPatch {
+  /** Move the booking onto another trip of the same supplier (e.g. private -> free tour). */
+  trip_id?: string;
   quantity?: number;
   local_guests?: number;
   foreigner_guests?: number;
@@ -51,6 +53,14 @@ export class BookingEditError extends Error {
 }
 
 const EDITABLE_STATUSES = ['PENDING', 'CONFIRMED'] as const;
+
+function snapshotFromTrip(trip: TripDoc) {
+  return {
+    price: trip.price,
+    foreigner_price: trip.foreigner_price,
+    guide_price: trip.guide_price,
+  };
+}
 
 function snapshotFromBooking(booking: BookingDoc) {
   const snap = booking.pricing_snapshot;
@@ -99,10 +109,30 @@ export async function applyBookingEdit(
     throw new BookingEditError('unauthorized', 403);
   }
 
-  const trip = await Trip.findById(booking.trip_id);
+  const tripChanged =
+    patch.trip_id != null && patch.trip_id !== booking.trip_id.toString();
+  const trip = await Trip.findById(tripChanged ? patch.trip_id : booking.trip_id);
   if (!trip) throw new BookingEditError('trip not found', 404);
 
+  if (tripChanged) {
+    // Wallet credits/debits are keyed by the booking's supplier, so a switch
+    // across suppliers would leave the money in the wrong wallet.
+    if (trip.supplier_id.toString() !== booking.supplier_id.toString()) {
+      throw new BookingEditError('cannot switch to a trip from another supplier');
+    }
+    if (trip.status === 'inactive' || trip.public_status === 'coming-soon') {
+      throw new BookingEditError('trip is not currently available for booking');
+    }
+    if (booking.pricing_locked && patch.amount_override == null) {
+      throw new BookingEditError(
+        'pricing is locked: an admin must set amount_override to switch the trip',
+        actor.role === 1 ? 403 : 400,
+      );
+    }
+  }
+
   const before = {
+    trip_id: booking.trip_id.toString(),
     quantity: booking.quantity,
     local_guests: booking.local_guests,
     foreigner_guests: booking.foreigner_guests,
@@ -121,7 +151,13 @@ export async function applyBookingEdit(
   const nextQuantity = patch.quantity ?? booking.quantity;
   const nextLocalGuests = patch.local_guests ?? booking.local_guests;
   const nextForeignerGuests = patch.foreigner_guests ?? booking.foreigner_guests;
-  const nextDuration = patch.duration ?? booking.duration;
+  // A booking moving from a non-tour (stored duration 0) onto a tour needs a
+  // real hour count or it would price at zero. Mirrors buildBooking's default.
+  const requestedDuration = patch.duration ?? booking.duration;
+  const nextDuration =
+    trip.is_tour && !(requestedDuration >= 1)
+      ? Math.max(1, trip.duration || 1)
+      : requestedDuration;
   const nextWantsGuide = patch.wants_guide ?? booking.wants_guide;
   const nextResourceType = patch.resource_type ?? booking.resource_type ?? '';
   const nextBookingDate = patch.booking_date
@@ -230,7 +266,9 @@ export async function applyBookingEdit(
   } else if (booking.pricing_locked) {
     newAmount = booking.amount;
   } else {
-    const snapshot = snapshotFromBooking(booking);
+    // A trip switch reprices from the new trip's current prices; otherwise the
+    // booking keeps the prices frozen when it was created.
+    const snapshot = tripChanged ? snapshotFromTrip(trip) : snapshotFromBooking(booking);
     const pricingInput = {
       is_tour: trip.is_tour,
       price: snapshot.price,
@@ -256,6 +294,13 @@ export async function applyBookingEdit(
   let walletDelta = 0;
 
   const revertSnapshot = {
+    trip_id: booking.trip_id,
+    currency: booking.currency,
+    pricing_snapshot: {
+      price: booking.pricing_snapshot?.price ?? 0,
+      foreigner_price: booking.pricing_snapshot?.foreigner_price ?? 0,
+      guide_price: booking.pricing_snapshot?.guide_price ?? 0,
+    },
     quantity: booking.quantity,
     local_guests: booking.local_guests,
     foreigner_guests: booking.foreigner_guests,
@@ -298,6 +343,11 @@ export async function applyBookingEdit(
     });
   }
 
+  if (tripChanged) {
+    booking.trip_id = trip._id as Types.ObjectId;
+    booking.currency = trip.currency;
+    booking.pricing_snapshot = snapshotFromTrip(trip);
+  }
   booking.quantity = computedQuantity;
   booking.local_guests = nextLocalGuests;
   booking.foreigner_guests = nextForeignerGuests;
@@ -321,6 +371,7 @@ export async function applyBookingEdit(
   }
 
   const after = {
+    trip_id: booking.trip_id.toString(),
     quantity: booking.quantity,
     local_guests: booking.local_guests,
     foreigner_guests: booking.foreigner_guests,
@@ -359,6 +410,9 @@ export async function applyBookingEdit(
       }).catch(() => {});
     }
     if (err instanceof NoAvailabilityError) {
+      booking.trip_id = revertSnapshot.trip_id;
+      booking.currency = revertSnapshot.currency;
+      booking.pricing_snapshot = revertSnapshot.pricing_snapshot;
       booking.quantity = revertSnapshot.quantity;
       booking.local_guests = revertSnapshot.local_guests;
       booking.foreigner_guests = revertSnapshot.foreigner_guests;
