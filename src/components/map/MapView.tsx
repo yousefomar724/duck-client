@@ -43,9 +43,11 @@ const RTL_PLUGIN_URL = "/mapbox-gl-rtl-text.js"
  * fails module MIME checking), every tile request hangs in `loading` forever,
  * and the map paints as an empty background with no error on the map itself.
  * `scripts/copy-maplibre-worker.mjs` copies the worker into `public/maplibre/`
- * on postinstall so this path is always present and version-matched.
+ * on postinstall so this path is always present and version-matched. It is
+ * published as `.js` because Vercel serves `.mjs` with a non-JavaScript MIME
+ * type, which browsers reject for module workers.
  */
-const WORKER_URL = "/maplibre/maplibre-gl-worker.mjs"
+const WORKER_URL = "/maplibre/maplibre-gl-worker.js"
 
 if (typeof window !== "undefined") {
   maplibregl.setWorkerUrl(WORKER_URL)
