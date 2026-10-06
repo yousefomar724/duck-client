@@ -81,6 +81,28 @@ function isCountryLabelLayer(layer: { filter?: unknown }) {
   return JSON.stringify(layer.filter ?? null).includes('["==","class","country"]')
 }
 
+/** The `text-field` for a CARTO place label layer, or null to keep the stock
+ *  one. English shows English names; otherwise the stock label is kept
+ *  (Arabic for places, `{name_en}` for countries). Country labels also rename
+ *  the "IL" label to Palestine. */
+function placeTextField(
+  locale: string,
+  isCountry: boolean,
+): maplibregl.ExpressionSpecification | null {
+  const english: maplibregl.ExpressionSpecification = [
+    "coalesce",
+    ["get", "name:en"],
+    ["get", "name"],
+  ]
+  if (!isCountry) return locale === "en" ? english : null
+  return [
+    "case",
+    ["==", ["get", "iso_a2"], "IL"],
+    PALESTINE_LABEL,
+    locale === "en" ? english : ["get", "name_en"],
+  ]
+}
+
 /** Tints the CARTO basemap toward the DUCK palette. Matched by `source-layer`
  *  (not layer id) so it survives both the light and dark CARTO styles, and
  *  reapplied on every `styledata` event since a theme swap reloads the whole
@@ -119,38 +141,17 @@ function applyBrandTint(map: MapLibreMap, mapStyle: MapStyle, locale: string) {
       // layer type — leave it at its stock value.
     }
 
-    if (layer.type === "symbol" && sourceLayer === "place" && locale === "en") {
-      try {
-        map.setLayoutProperty(layer.id, "text-field", [
-          "coalesce",
-          ["get", "name:en"],
-          ["get", "name"],
-        ])
-      } catch {
-        // Fall back to the style's default (Arabic) place names.
-      }
-    }
-
-    if (
-      layer.type === "symbol" &&
-      sourceLayer === "place" &&
-      isCountryLabelLayer(layer)
-    ) {
-      // Country layers use `{name_en}` in the stock style, so the non-English
-      // fallback keeps that.
-      const name: maplibregl.ExpressionSpecification =
-        locale === "en"
-          ? ["coalesce", ["get", "name:en"], ["get", "name"]]
-          : ["get", "name_en"]
-      try {
-        map.setLayoutProperty(layer.id, "text-field", [
-          "case",
-          ["==", ["get", "iso_a2"], "IL"],
-          PALESTINE_LABEL,
-          name,
-        ])
-      } catch {
-        // Leave the stock country label.
+    if (layer.type === "symbol" && sourceLayer === "place") {
+      const textField = placeTextField(locale, isCountryLabelLayer(layer))
+      // Set once per layer: this runs on every `styledata`, and two writes of
+      // different values to the same layer would mark the style changed on
+      // every frame, so it never finishes loading (no `load`, no tiles).
+      if (textField) {
+        try {
+          map.setLayoutProperty(layer.id, "text-field", textField)
+        } catch {
+          // Leave the stock place label.
+        }
       }
     }
 
