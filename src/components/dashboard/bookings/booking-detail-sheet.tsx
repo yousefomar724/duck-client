@@ -39,7 +39,7 @@ import {
 } from "@/lib/bookings/status"
 import { amountPaid, outstandingBalance, refundOwed } from "@/lib/bookings/payment"
 import { guestAgeBreakdown } from "@/lib/bookings/guests"
-import { formatCurrency, formatDateTime, formatTripDuration } from "@/lib/constants"
+import { formatBookingDuration, formatCurrency, formatDateTime } from "@/lib/constants"
 import type { Booking, Supplier, TourGuide, Trip } from "@/lib/types"
 import { ChevronDown } from "lucide-react"
 
@@ -418,7 +418,7 @@ export function BookingDetailSheet({
                     />
                     <DetailField
                       label="المدة"
-                      value={formatTripDuration(resolvedTrip) ?? String(resolvedTrip.duration ?? "—")}
+                      value={formatBookingDuration(booking, resolvedTrip) ?? String(resolvedTrip.duration ?? "—")}
                     />
                     <DetailField
                       label="الحد الأقصى للضيوف"

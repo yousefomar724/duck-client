@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  formatBookingDuration,
   formatCurrency,
   formatDate,
   isPaidPayoutStatus,
@@ -12,6 +13,14 @@ describe('constants formatters', () => {
     expect(formatCurrency(180, 'EGP', 'ar')).toMatch(/180/)
     expect(formatCurrency(180, 'EGP', 'ar')).not.toMatch(/[٠-٩]/)
     expect(formatCurrency(180.5, 'EGP', 'en')).toMatch(/180\.5/)
+  });
+
+  it('shows the hours a tour booking was made for, not the trip default', () => {
+    const trip = { duration: 1 };
+    expect(formatBookingDuration({ duration: 2 }, trip)).toBe('ساعتان');
+    expect(formatBookingDuration({ duration: 0 }, trip)).toBe('ساعة واحدة');
+    expect(formatBookingDuration({}, { duration: 1, duration_text: { ar: 'ساعة ونصف' } })).toBe('ساعة ونصف');
+    expect(formatBookingDuration(null, null)).toBeNull();
   });
 
   it('formats date', () => {

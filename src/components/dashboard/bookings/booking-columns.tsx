@@ -18,7 +18,7 @@ import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import {
   formatCurrency,
   formatDateShort,
-  formatTripDuration,
+  formatBookingDuration,
   formatGuestsCount,
   formatRelativeTime,
   formatTimeShort,
@@ -92,7 +92,7 @@ export function getBookingColumns({
         const date = row.original.booking_date
         if (!date) return "—"
         const trip = row.original.trip ?? tripMap.get(row.original.trip_id)
-        const duration = formatTripDuration(trip)
+        const duration = formatBookingDuration(row.original, trip)
         const guests = formatGuestsCount(row.original.quantity)
         return (
           <div>

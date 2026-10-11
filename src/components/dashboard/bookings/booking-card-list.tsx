@@ -17,7 +17,7 @@ import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import {
   formatCurrency,
   formatDateShort,
-  formatTripDuration,
+  formatBookingDuration,
   formatGuestsCount,
   formatRelativeTime,
   formatTimeShort,
@@ -62,6 +62,7 @@ export function BookingCardList({
         const trip = booking.trip ?? tripMap.get(booking.trip_id)
         const supplier =
           booking.supplier ?? supplierMap.get(booking.supplier_id)
+        const duration = formatBookingDuration(booking, trip)
 
         return (
           <Card
@@ -112,13 +113,13 @@ export function BookingCardList({
                 )}
               </div>
 
-              {(formatTripDuration(trip) ||
+              {(duration ||
                 formatGuestsCount(booking.quantity)) && (
                 <div className="flex items-center gap-3 text-xs text-text-muted">
-                  {formatTripDuration(trip) && (
+                  {duration && (
                     <span className="flex items-center gap-1">
                       <Clock className="size-3" />
-                      {formatTripDuration(trip)}
+                      {duration}
                     </span>
                   )}
                   {formatGuestsCount(booking.quantity) && (

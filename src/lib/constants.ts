@@ -320,6 +320,20 @@ export function formatTripDuration(
   return formatDurationHours(trip.duration)
 }
 
+/**
+ * Duration for a specific booking. Tour bookings store the hours the
+ * customer actually picked (which drives the price), so that wins over the
+ * trip's default duration; non-tours store 0 and fall back to the trip.
+ */
+export function formatBookingDuration(
+  booking: { duration?: number } | null | undefined,
+  trip?: Parameters<typeof formatTripDuration>[0],
+): string | null {
+  const booked = formatDurationHours(booking?.duration)
+  if (booked) return booked
+  return formatTripDuration(trip)
+}
+
 /** "ضيف واحد" / "ضيفان" / "٣ ضيوف" for a booking's guest count. */
 export function formatGuestsCount(quantity: number | undefined): string | null {
   if (!quantity || quantity <= 0) return null
