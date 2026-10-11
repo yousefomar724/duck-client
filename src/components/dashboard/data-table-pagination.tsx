@@ -66,7 +66,7 @@ export function DataTablePagination<TData>({
             disabled={!table.getCanPreviousPage()}
             aria-label="الصفحة الأولى"
           >
-            <ChevronsRight className="size-4 rtl:rotate-180" />
+            <ChevronsLeft className="size-4 rtl:rotate-180" />
           </Button>
           <Button
             type="button"
@@ -76,7 +76,7 @@ export function DataTablePagination<TData>({
             disabled={!table.getCanPreviousPage()}
             aria-label="الصفحة السابقة"
           >
-            <ChevronRight className="size-4 rtl:rotate-180" />
+            <ChevronLeft className="size-4 rtl:rotate-180" />
           </Button>
           <Button
             type="button"
@@ -86,7 +86,7 @@ export function DataTablePagination<TData>({
             disabled={!table.getCanNextPage()}
             aria-label="الصفحة التالية"
           >
-            <ChevronLeft className="size-4 rtl:rotate-180" />
+            <ChevronRight className="size-4 rtl:rotate-180" />
           </Button>
           <Button
             type="button"
@@ -96,7 +96,7 @@ export function DataTablePagination<TData>({
             disabled={!table.getCanNextPage()}
             aria-label="الصفحة الأخيرة"
           >
-            <ChevronsLeft className="size-4 rtl:rotate-180" />
+            <ChevronsRight className="size-4 rtl:rotate-180" />
           </Button>
         </div>
       </div>
