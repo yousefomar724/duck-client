@@ -98,7 +98,7 @@ test('guest booking tolerates unavailable browser storage', async ({ page }) => 
 });
 
 test('malformed saved payment details do not crash booking', async ({ page }) => {
-  await page.addInitScript(() => sessionStorage.setItem('duck.pendingInstapay', JSON.stringify({
+  await page.addInitScript(() => localStorage.setItem('duck.pendingInstapay', JSON.stringify({
     booking: { ID: { broken: true }, amount: 100, currency: 'invalid-currency' }, chosenAmount: 100,
   })));
   const pageErrors: string[] = [];

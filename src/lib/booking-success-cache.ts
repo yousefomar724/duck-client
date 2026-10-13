@@ -61,17 +61,28 @@ export function clearLastBookingContext(): void {
 
 export const PENDING_INSTAPAY_KEY = "duck.pendingInstapay"
 
+/**
+ * The InstaPay step lives in localStorage, not sessionStorage: paying means
+ * leaving for the InstaPay app, and mobile browsers often discard the tab (or
+ * the user comes back in a new one), which used to lose the booking ref and
+ * the "send receipt" button. Kept for two days so a shared device doesn't hold
+ * on to someone's booking.
+ */
+export const PENDING_INSTAPAY_TTL_MS = 48 * 60 * 60 * 1000
+
 export type PendingInstapay = {
   booking: Booking
   chosenAmount: number
 }
 
-export function readPendingInstapay(): PendingInstapay | null {
+type StoredPendingInstapay = PendingInstapay & { saved_at: number }
+
+export function readPendingInstapay(now: number = Date.now()): PendingInstapay | null {
   if (typeof window === "undefined") return null
   try {
-    const raw = sessionStorage.getItem(PENDING_INSTAPAY_KEY)
+    const raw = localStorage.getItem(PENDING_INSTAPAY_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as PendingInstapay
+    const parsed = JSON.parse(raw) as StoredPendingInstapay
     const booking = parsed?.booking
     if (
       !booking || typeof booking !== "object" ||
@@ -81,7 +92,16 @@ export function readPendingInstapay(): PendingInstapay | null {
       typeof booking.currency !== "string" || !/^[A-Z]{3}$/.test(booking.currency) ||
       typeof parsed.chosenAmount !== "number" || !Number.isFinite(parsed.chosenAmount) || parsed.chosenAmount < 0
     ) return null
-    return parsed
+    const bookingTime = booking.booking_date ? Date.parse(booking.booking_date) : NaN
+    if (
+      typeof parsed.saved_at !== "number" ||
+      now - parsed.saved_at > PENDING_INSTAPAY_TTL_MS ||
+      (Number.isFinite(bookingTime) && bookingTime < now)
+    ) {
+      localStorage.removeItem(PENDING_INSTAPAY_KEY)
+      return null
+    }
+    return { booking, chosenAmount: parsed.chosenAmount }
   } catch {
     return null
   }
@@ -90,7 +110,8 @@ export function readPendingInstapay(): PendingInstapay | null {
 export function writePendingInstapay(payload: PendingInstapay): void {
   if (typeof window === "undefined") return
   try {
-    sessionStorage.setItem(PENDING_INSTAPAY_KEY, JSON.stringify(payload))
+    const stored: StoredPendingInstapay = { ...payload, saved_at: Date.now() }
+    localStorage.setItem(PENDING_INSTAPAY_KEY, JSON.stringify(stored))
   } catch {
     /* storage full or disabled */
   }
@@ -99,7 +120,7 @@ export function writePendingInstapay(payload: PendingInstapay): void {
 export function clearPendingInstapay(): void {
   if (typeof window === "undefined") return
   try {
-    sessionStorage.removeItem(PENDING_INSTAPAY_KEY)
+    localStorage.removeItem(PENDING_INSTAPAY_KEY)
   } catch {
     /* ignore */
   }

@@ -584,12 +584,25 @@
       "title": "Book a Kayak Tour in Aswan",
       "description": "Reserve a free-style or private captain-led kayak tour on the Nile in Aswan. Available dawn to sunset, seven days a week, by advance booking."
     },
-    "bookingNotConfirmedYet": "Your booking is reserved but NOT confirmed yet. Complete the two steps below to secure it.",
-    "instapayStep1": "Step 1 — Pay {amount} via InstaPay",
-    "instapayStep2": "Step 2 — Send the payment receipt on WhatsApp",
+    "bookingNotConfirmedYet": "Your booking is reserved but NOT confirmed yet. Complete the three steps below to secure it.",
+    "instapayStepDetails": "Step 1 — Send your booking details on WhatsApp",
+    "instapayStepDetailsHint": "This starts a chat with us, so you can go back to it after paying even if this page closes.",
+    "instapaySendDetailsBtn": "Send booking details on WhatsApp",
+    "instapayWhatsappDetailsPrefill": "Hello, I just booked (Ref: #{ref}).\nName: {name}\nDate: {date}\nAmount: {amount}\nI'm paying via InstaPay now and will send the receipt here.",
+    "instapayStepPay": "Step 2 — Pay {amount} via InstaPay",
+    "instapayStepReceipt": "Step 3 — Send the payment receipt in the same WhatsApp chat",
+    "instapayLostPageNote": "If this page closes, open WhatsApp and send your receipt to <num>{number}</num> with booking ref #{ref}.",
+    "instapayCopyRef": "Copy booking ref",
+    "instapayRefCopied": "Booking ref copied",
     "instapayCopyNumber": "Copy number",
     "instapayCopied": "Copied",
     "instapayCopyFailed": "Could not copy. Please select the number and copy it manually."
+  },
+  "pendingPayment": {
+    "title": "You have an unpaid booking",
+    "description": "Booking #{ref} isn't confirmed until you pay {amount} via InstaPay and send the receipt on WhatsApp.",
+    "cta": "Finish payment",
+    "dismiss": "Hide"
   },
   "contact": {
     "heroSubtitle": "Partnerships & Collaboration",

@@ -18,13 +18,24 @@ import {
   Check,
   ChevronLeft,
   Clock,
+  Copy,
   ExternalLink,
   MessageCircle,
   User,
 } from "lucide-react"
-import { buildWhatsAppHref, INSTAPAY_LINK } from "@/lib/support-contact"
+import {
+  buildWhatsAppHref,
+  INSTAPAY_LINK,
+  SUPPORT_WHATSAPP_DISPLAY,
+} from "@/lib/support-contact"
 import { formatISO } from "date-fns"
-import { localYmd, siteWallClock, siteWallTimeToUtc, toSiteYmd } from "@/lib/time"
+import {
+  localYmd,
+  SITE_TIME_ZONE,
+  siteWallClock,
+  siteWallTimeToUtc,
+  toSiteYmd,
+} from "@/lib/time"
 import {
   Select,
   SelectContent,
@@ -80,6 +91,18 @@ import { TripListingPrices } from "@/components/shared/trip-listing-prices"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 
 const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
+
+/** Booking start in Cairo time, for the WhatsApp message the supplier reads. */
+function formatBookingWhen(iso: string | undefined, locale: string): string {
+  if (!iso) return "-"
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
+    timeZone: SITE_TIME_ZONE,
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date)
+}
 const BookingScheduleField = dynamic(() => import("@/components/booking/booking-schedule-field").then((m) => m.BookingScheduleField))
 const FeedbackPromptCard = dynamic(() => import("@/components/feedback/feedback-prompt-card").then((m) => m.FeedbackPromptCard))
 
@@ -192,6 +215,18 @@ function BookPageContent() {
       window.scrollTo({ top: 0, behavior: "smooth" })
     },
     [pathname, searchParams, selectedTrip?.id, tripParam],
+  )
+
+  const copyBookingRef = useCallback(
+    async (ref: string) => {
+      try {
+        await navigator.clipboard.writeText(ref)
+        addToast(t("instapayRefCopied"), "success")
+      } catch {
+        window.prompt(t("bookingRef"), ref)
+      }
+    },
+    [addToast, t],
   )
 
   const startNewBooking = useCallback(() => {
@@ -1846,18 +1881,64 @@ function BookPageContent() {
                   )}
                 </div>
 
+                {/* WhatsApp comes first on purpose: paying means leaving for
+                    the InstaPay app, and mobile browsers often drop this tab
+                    meanwhile. Once the details are in a WhatsApp chat, the user
+                    can send the receipt there without ever coming back. */}
                 <div className="space-y-5 rounded-2xl border-2 border-[#67358f]/25 bg-gradient-to-br from-[#67358f]/[0.06] via-white to-[#f36b21]/[0.07] p-5">
                   <div className="flex gap-3">
                     <span
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#67358f] text-sm font-bold text-white"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-sm font-bold text-white"
                       aria-hidden="true"
                     >
                       1
                     </span>
+                    <div className="min-w-0 flex-1 space-y-3">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-text-dark">
+                          {t("instapayStepDetails")}
+                        </p>
+                        <p className="text-sm text-text-muted">
+                          {t("instapayStepDetailsHint")}
+                        </p>
+                      </div>
+                      <a
+                        href={buildWhatsAppHref(
+                          t("instapayWhatsappDetailsPrefill", {
+                            ref: manualBookingResult.booking.ID,
+                            name: manualBookingResult.booking.full_name || "-",
+                            date: formatBookingWhen(
+                              manualBookingResult.booking.booking_date,
+                              locale,
+                            ),
+                            amount: formatCurrency(
+                              manualBookingResult.chosenAmount,
+                              manualBookingResult.booking.currency || "EGP",
+                              locale,
+                            ),
+                          }),
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] p-3 font-semibold text-white transition-colors duration-200 hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1daa50] focus-visible:ring-offset-2"
+                      >
+                        <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                        {t("instapaySendDetailsBtn")}
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 border-t border-[#67358f]/15 pt-5">
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#67358f] text-sm font-bold text-white"
+                      aria-hidden="true"
+                    >
+                      2
+                    </span>
                     <div className="min-w-0 flex-1 space-y-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="font-semibold text-text-dark">
-                          {t("instapayStep1", {
+                          {t("instapayStepPay", {
                             amount: formatCurrency(
                               manualBookingResult.chosenAmount,
                               manualBookingResult.booking.currency || "EGP",
@@ -1899,11 +1980,11 @@ function BookPageContent() {
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-sm font-bold text-white"
                       aria-hidden="true"
                     >
-                      2
+                      3
                     </span>
                     <div className="min-w-0 flex-1 space-y-3">
                       <p className="font-semibold text-text-dark">
-                        {t("instapayStep2")}
+                        {t("instapayStepReceipt")}
                       </p>
                       <a
                         href={buildWhatsAppHref(
@@ -1920,6 +2001,30 @@ function BookPageContent() {
                       </a>
                     </div>
                   </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-2 rounded-lg border border-duck-navy/10 bg-off-white px-3 py-3 text-center text-sm text-text-dark sm:flex-row sm:text-start">
+                  <p className="flex-1">
+                    {t.rich("instapayLostPageNote", {
+                      number: SUPPORT_WHATSAPP_DISPLAY,
+                      ref: manualBookingResult.booking.ID,
+                      num: (chunks) => (
+                        <span dir="ltr" className="whitespace-nowrap font-semibold">
+                          {chunks}
+                        </span>
+                      ),
+                    })}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void copyBookingRef(String(manualBookingResult.booking.ID))
+                    }
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-duck-cyan/40 bg-white px-3 py-1.5 text-xs font-semibold text-duck-navy transition-colors hover:border-duck-cyan"
+                  >
+                    <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                    {t("instapayCopyRef")}
+                  </button>
                 </div>
 
                 <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">

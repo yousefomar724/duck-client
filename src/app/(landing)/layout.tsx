@@ -4,6 +4,7 @@ import { WhatsAppSupportFab } from "@/components/shared/whatsapp-support-fab"
 import { FeedbackFab } from "@/components/feedback/feedback-fab"
 import { SkipToContent } from "@/components/shared/skip-to-content"
 import { InstallPrompt } from "@/components/shared/install-prompt"
+import { PendingPaymentBanner } from "@/components/shared/pending-payment-banner"
 import { JsonLd } from "@/components/seo/json-ld"
 import { WebMcp } from "@/components/agent/webmcp"
 import { buildSiteGraph } from "@/lib/seo/json-ld"
@@ -43,6 +44,7 @@ export default function LandingLayout({
       <WhatsAppSupportFab />
       <FeedbackFab />
       <InstallPrompt />
+      <PendingPaymentBanner />
       <WebMcp />
     </>
   )
