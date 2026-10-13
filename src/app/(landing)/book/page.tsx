@@ -29,13 +29,7 @@ import {
   SUPPORT_WHATSAPP_DISPLAY,
 } from "@/lib/support-contact"
 import { formatISO } from "date-fns"
-import {
-  localYmd,
-  SITE_TIME_ZONE,
-  siteWallClock,
-  siteWallTimeToUtc,
-  toSiteYmd,
-} from "@/lib/time"
+import { localYmd, siteWallClock, siteWallTimeToUtc, toSiteYmd } from "@/lib/time"
 import {
   Select,
   SelectContent,
@@ -91,18 +85,6 @@ import { TripListingPrices } from "@/components/shared/trip-listing-prices"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 
 const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
-
-/** Booking start in Cairo time, for the WhatsApp message the supplier reads. */
-function formatBookingWhen(iso: string | undefined, locale: string): string {
-  if (!iso) return "-"
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return iso
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
-    timeZone: SITE_TIME_ZONE,
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date)
-}
 const BookingScheduleField = dynamic(() => import("@/components/booking/booking-schedule-field").then((m) => m.BookingScheduleField))
 const FeedbackPromptCard = dynamic(() => import("@/components/feedback/feedback-prompt-card").then((m) => m.FeedbackPromptCard))
 
@@ -1881,64 +1863,18 @@ function BookPageContent() {
                   )}
                 </div>
 
-                {/* WhatsApp comes first on purpose: paying means leaving for
-                    the InstaPay app, and mobile browsers often drop this tab
-                    meanwhile. Once the details are in a WhatsApp chat, the user
-                    can send the receipt there without ever coming back. */}
                 <div className="space-y-5 rounded-2xl border-2 border-[#67358f]/25 bg-gradient-to-br from-[#67358f]/[0.06] via-white to-[#f36b21]/[0.07] p-5">
                   <div className="flex gap-3">
-                    <span
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-sm font-bold text-white"
-                      aria-hidden="true"
-                    >
-                      1
-                    </span>
-                    <div className="min-w-0 flex-1 space-y-3">
-                      <div className="space-y-1">
-                        <p className="font-semibold text-text-dark">
-                          {t("instapayStepDetails")}
-                        </p>
-                        <p className="text-sm text-text-muted">
-                          {t("instapayStepDetailsHint")}
-                        </p>
-                      </div>
-                      <a
-                        href={buildWhatsAppHref(
-                          t("instapayWhatsappDetailsPrefill", {
-                            ref: manualBookingResult.booking.ID,
-                            name: manualBookingResult.booking.full_name || "-",
-                            date: formatBookingWhen(
-                              manualBookingResult.booking.booking_date,
-                              locale,
-                            ),
-                            amount: formatCurrency(
-                              manualBookingResult.chosenAmount,
-                              manualBookingResult.booking.currency || "EGP",
-                              locale,
-                            ),
-                          }),
-                        )}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] p-3 font-semibold text-white transition-colors duration-200 hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1daa50] focus-visible:ring-offset-2"
-                      >
-                        <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                        {t("instapaySendDetailsBtn")}
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 border-t border-[#67358f]/15 pt-5">
                     <span
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#67358f] text-sm font-bold text-white"
                       aria-hidden="true"
                     >
-                      2
+                      1
                     </span>
                     <div className="min-w-0 flex-1 space-y-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="font-semibold text-text-dark">
-                          {t("instapayStepPay", {
+                          {t("instapayStep1", {
                             amount: formatCurrency(
                               manualBookingResult.chosenAmount,
                               manualBookingResult.booking.currency || "EGP",
@@ -1980,11 +1916,11 @@ function BookPageContent() {
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-sm font-bold text-white"
                       aria-hidden="true"
                     >
-                      3
+                      2
                     </span>
                     <div className="min-w-0 flex-1 space-y-3">
                       <p className="font-semibold text-text-dark">
-                        {t("instapayStepReceipt")}
+                        {t("instapayStep2")}
                       </p>
                       <a
                         href={buildWhatsAppHref(
