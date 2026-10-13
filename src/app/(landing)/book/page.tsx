@@ -66,12 +66,14 @@ import { createBookingFormSchema, type BookingFormValues } from "@/lib/booking/f
 import { getTrips } from "@/lib/api/trips"
 import { getOpsAvailability, type OpsAvailability } from "@/lib/api/ops"
 import * as bookingsApi from "@/lib/api/bookings"
+import { settlePendingInstapay } from "@/lib/pending-instapay-status"
 import {
   type SuccessCache,
   SUCCESS_CACHE_KEY,
   readPendingInstapay,
   writePendingInstapay,
   clearPendingInstapay,
+  markPendingInstapayReceiptSent,
 } from "@/lib/booking-success-cache"
 import type { Booking, ResourceType, Trip } from "@/lib/types"
 import { getTripImage, resolveImageUrl } from "@/lib/image-utils"
@@ -180,6 +182,13 @@ function BookPageContent() {
       return
     }
     setManualBookingResult(pending)
+    // Once the supplier confirms (or cancels) it, there is nothing left to pay.
+    void settlePendingInstapay(pending).then((settled) => {
+      if (!settled) return
+      setManualBookingResult((current) =>
+        current?.booking.ID === pending.booking.ID ? null : current,
+      )
+    })
   }, [searchParams])
 
   const navigateToStep = useCallback(
@@ -1930,6 +1939,7 @@ function BookPageContent() {
                         )}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={markPendingInstapayReceiptSent}
                         className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] p-3 font-semibold text-white transition-colors duration-200 hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1daa50] focus-visible:ring-offset-2"
                       >
                         <MessageCircle className="h-5 w-5" aria-hidden="true" />

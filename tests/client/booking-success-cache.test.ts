@@ -3,6 +3,7 @@ import {
   PENDING_INSTAPAY_KEY,
   PENDING_INSTAPAY_TTL_MS,
   clearPendingInstapay,
+  markPendingInstapayReceiptSent,
   readPendingInstapay,
   writePendingInstapay,
 } from '@/lib/booking-success-cache';
@@ -29,6 +30,12 @@ describe('pending payment cache', () => {
     expect(readPendingInstapay()).toEqual(valid);
     clearPendingInstapay();
     expect(readPendingInstapay()).toBeNull();
+  });
+
+  it('remembers that the receipt was sent', () => {
+    localStorage.setItem(PENDING_INSTAPAY_KEY, stored());
+    markPendingInstapayReceiptSent();
+    expect(readPendingInstapay()).toEqual({ ...valid, receiptSent: true });
   });
 
   it('expires after the TTL and removes the entry', () => {

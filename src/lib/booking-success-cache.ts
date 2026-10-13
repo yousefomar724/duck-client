@@ -73,6 +73,8 @@ export const PENDING_INSTAPAY_TTL_MS = 48 * 60 * 60 * 1000
 export type PendingInstapay = {
   booking: Booking
   chosenAmount: number
+  /** Set once the guest taps "Send receipt on WhatsApp"; hides the banner. */
+  receiptSent?: boolean
 }
 
 type StoredPendingInstapay = PendingInstapay & { saved_at: number }
@@ -101,7 +103,11 @@ export function readPendingInstapay(now: number = Date.now()): PendingInstapay |
       localStorage.removeItem(PENDING_INSTAPAY_KEY)
       return null
     }
-    return { booking, chosenAmount: parsed.chosenAmount }
+    return {
+      booking,
+      chosenAmount: parsed.chosenAmount,
+      ...(parsed.receiptSent === true ? { receiptSent: true } : {}),
+    }
   } catch {
     return null
   }
@@ -114,6 +120,21 @@ export function writePendingInstapay(payload: PendingInstapay): void {
     localStorage.setItem(PENDING_INSTAPAY_KEY, JSON.stringify(stored))
   } catch {
     /* storage full or disabled */
+  }
+}
+
+export function markPendingInstapayReceiptSent(): void {
+  if (typeof window === "undefined") return
+  try {
+    const raw = localStorage.getItem(PENDING_INSTAPAY_KEY)
+    if (!raw) return
+    const stored = JSON.parse(raw) as StoredPendingInstapay
+    localStorage.setItem(
+      PENDING_INSTAPAY_KEY,
+      JSON.stringify({ ...stored, receiptSent: true }),
+    )
+  } catch {
+    /* storage full, disabled or corrupt */
   }
 }
 

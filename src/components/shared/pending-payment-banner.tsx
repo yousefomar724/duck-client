@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useSyncExternalStore } from "react"
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Clock, X } from "lucide-react"
@@ -10,6 +10,7 @@ import {
   readPendingInstapay,
 } from "@/lib/booking-success-cache"
 import { formatCurrency } from "@/lib/constants"
+import { settlePendingInstapay } from "@/lib/pending-instapay-status"
 import { cn } from "@/lib/utils"
 
 /** Per visit, so a closed tab (the case this banner exists for) shows it again. */
@@ -49,9 +50,28 @@ export function PendingPaymentBanner() {
   const raw = useSyncExternalStore(subscribe, getSnapshot, () => null)
   const pending = useMemo(() => (raw ? readPendingInstapay() : null), [raw])
   const [dismissedId, setDismissedId] = useState<string | null>(null)
+  const [settledId, setSettledId] = useState<string | null>(null)
+  const onBookPage = pathname === "/book"
 
-  if (!pending || pathname === "/book") return null
-  if (dismissedId === pending.booking.ID || readHiddenId() === pending.booking.ID) {
+  // The saved booking only lives in this browser, so ask the server whether
+  // the supplier has confirmed it; /book runs the same check itself.
+  useEffect(() => {
+    if (!pending || onBookPage) return
+    let cancelled = false
+    void settlePendingInstapay(pending).then((settled) => {
+      if (settled && !cancelled) setSettledId(pending.booking.ID)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [pending, onBookPage])
+
+  if (!pending || onBookPage || pending.receiptSent) return null
+  if (
+    settledId === pending.booking.ID ||
+    dismissedId === pending.booking.ID ||
+    readHiddenId() === pending.booking.ID
+  ) {
     return null
   }
 

@@ -111,6 +111,17 @@ export async function getMyBookings(): Promise<ApiResponse<Booking[]>> {
   return apiClient<Booking[]>('/bookings/my-bookings', { method: 'GET' });
 }
 
+/** Guest-safe status check for a booking made in this browser. */
+export async function getBookingPaymentStatus(
+  id: string,
+  phoneNumber: string,
+): Promise<ApiResponse<{ status: BookingStatus }>> {
+  return apiClient<{ status: BookingStatus }>(
+    `/bookings/${encodeURIComponent(id)}/payment-status`,
+    { method: 'POST', body: JSON.stringify({ phone_number: phoneNumber }) },
+  );
+}
+
 /** Authenticated end-user's own bookings */
 export async function getUserBookings(): Promise<ApiResponse<Booking[]>> {
   return apiClient<Booking[]>('/bookings/user', { method: 'GET' });
