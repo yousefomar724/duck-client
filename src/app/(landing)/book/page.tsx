@@ -136,6 +136,8 @@ function BookPageContent() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const tripParam = searchParams.get("trip")
+  // Set by the map's "Book now" button: only offer trips at that destination.
+  const locationParam = searchParams.get("location")
   const { user } = useAuth()
   const { addToast } = useToast()
   const t = useTranslations("book")
@@ -280,7 +282,7 @@ function BookPageContent() {
       setTripsLoading(true)
       setTripsError(false)
       try {
-        const { data, error } = await getTrips(locale, undefined, undefined, {
+        const { data, error } = await getTrips(locale, undefined, locationParam ?? undefined, {
           publicStatus: "available",
           signal: controller.signal,
         })
@@ -303,7 +305,7 @@ function BookPageContent() {
       window.clearTimeout(timeout)
       controller.abort()
     }
-  }, [locale, tripsRetry])
+  }, [locale, tripsRetry, locationParam])
 
   // Selection changes reuse the loaded list instead of downloading it again.
   useEffect(() => {
