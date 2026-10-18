@@ -100,9 +100,9 @@ export default function LocationSection() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   // MapLibre is ~480 KB of JS plus a 70 KB stylesheet, the RTL text plugin and
   // map tiles, and it spins up a WebGL context. next/dynamic keeps it out of the
-  // initial bundle but still mounts it at load, and fullPage.js keeps every
-  // section mounted — so on the landing page that all happened during first
-  // paint, for a map four sections down. Same gate as ReviewsSection.
+  // initial bundle but still mounts it at load — so on the landing page that all
+  // happened during first paint, for a map several sections down. Same gate as
+  // ReviewsSection.
   const mapInView = useInViewOnce(mapContainerRef, { rootMargin: 300 })
 
   const handleMarkerClick = (event: MarkerClickEvent) => {

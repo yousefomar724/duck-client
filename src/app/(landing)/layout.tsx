@@ -38,8 +38,6 @@ export default function LandingLayout({
       </Suspense>
       <SkipToContent />
       <Navbar />
-      {/* Must stay outside FullpageWrapper: fullPage.js reparents and measures
-          the direct children of its wrapper. */}
       <main id="main-content">{children}</main>
       <WhatsAppSupportFab />
       <FeedbackFab />

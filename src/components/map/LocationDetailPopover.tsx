@@ -348,9 +348,9 @@ export default function LocationDetailPopover({
     </Sheet>
   ) : (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      {/* Portalled to <body>: anchorPoint is in viewport coordinates, and on the
-          landing page fullPage.js puts a transform on #fullpage, which would
-          otherwise become the containing block for this fixed anchor. */}
+      {/* Portalled to <body>: anchorPoint is in viewport coordinates, and any
+          transformed ancestor would otherwise become the containing block for
+          this fixed anchor. */}
       {isHydrated
         ? createPortal(
             <PopoverAnchor asChild>

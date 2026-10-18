@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
@@ -37,23 +37,7 @@ export default function Navbar() {
 
   const isNavbarSolid = forceSolid || isSolid
 
-  useEffect(() => {
-    if (pathname !== "/") return
-
-    const handleSectionChange = (e: Event) => {
-      const { index } = (e as CustomEvent).detail
-      setIsSolid(index >= 3)
-      setIsHidden(false)
-    }
-
-    window.addEventListener("fullpage:sectionchange", handleSectionChange)
-    return () =>
-      window.removeEventListener("fullpage:sectionchange", handleSectionChange)
-  }, [pathname])
-
   useMotionValueEvent(scrollY, "change", (latest) => {
-    if (pathname === "/") return
-
     const previous = scrollY.getPrevious() ?? 0
     const diff = latest - previous
     const isScrollingDown = diff > 0

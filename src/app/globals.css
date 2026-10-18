@@ -140,18 +140,13 @@
     color-scheme: light;
   }
 
-  /* fullPage.js owns vertical panning, but pinch-to-zoom must stay available
-     (WCAG 1.4.4). */
-  #fullpage,
-  .fp-section {
-    touch-action: pinch-zoom;
-  }
-
-  .fp-section:not(.fp-auto-height),
-  .fp-section:not(.fp-auto-height) .fp-overflow {
-    overflow: hidden !important;
-    width: 100% !important;
-    height: 100% !important;
+  /* In-page anchors (e.g. the hero's "/#locations") glide instead of jumping.
+     The root layout sets data-scroll-behavior="smooth" so Next.js turns this off
+     during route changes. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
   .maplibregl-popup-content {
     @apply bg-transparent! shadow-none! p-0! rounded-none!;

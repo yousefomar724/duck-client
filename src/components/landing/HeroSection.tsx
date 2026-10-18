@@ -10,11 +10,10 @@ export default function HeroSection() {
   return (
     <section
       id="hero-section"
-      className="relative flex items-end justify-center pb-10 md:pb-20 w-full h-full"
+      className="relative flex items-end justify-center pb-10 md:pb-20 w-full h-svh"
     >
       {/* Background Video */}
       <BackgroundVideo
-        eager
         src="/videos/hero-v2.mp4"
         poster="/videos/hero-v2-poster-v1.avif"
         className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
@@ -81,6 +80,19 @@ export default function HeroSection() {
                   {t("book")}
                 </motion.div>
               </Link>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+                className="flex"
+              >
+                <Link
+                  href="/#locations"
+                  className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-white text-white font-bold text-xl px-10 py-3 backdrop-blur-sm hover:bg-white/15 transition-all duration-200 drop-shadow-lg"
+                >
+                  {t("exploreLocations")}
+                </Link>
+              </motion.div>
             </div>
           </div>
 

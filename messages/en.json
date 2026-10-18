@@ -31,23 +31,8 @@
     "title": "Create Your Unforgettable \n Water Adventure",
     "description": "Explore Egypt's most beautiful waters like never before. Kayaking, stand-up paddleboarding, water bikes and more — the best water sports experience in Egypt.",
     "book": "Book Now",
+    "exploreLocations": "Explore Destinations",
     "discoverMore": "Discover More"
-  },
-  "redSea": {
-    "title": "Why Choose Us for Your Water Adventure?",
-    "description": "We bring the best water sports experience in Egypt to destinations across the country. We're not just a place for water sports — we're passionate locals who want to share the magic of Egypt's waters with the world.",
-    "discoverMore": "Discover More",
-    "startsFrom": "Starts from EGP",
-    "locations": "Stunning Locations",
-    "rating": "Rating",
-    "yearsExperience": "Years of Experience"
-  },
-  "amaala": {
-    "title": "Your Journey to Exceptional Destinations Starts Here",
-    "description": "From serene sunset paddles to thrilling adventures, we have the perfect water experience for fun, relaxation and rejuvenation in destinations all over Egypt.",
-    "discoverServices": "Discover Our Services",
-    "safetyFirst": "Safety First",
-    "safetyDescription": "All equipment is certified and regularly inspected. Our guides are trained professionals."
   },
   "resorts": {
     "subtitle": "Destinations",

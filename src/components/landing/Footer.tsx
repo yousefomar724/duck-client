@@ -13,10 +13,6 @@ import Image from "next/image"
 import Link from "next/link"
 import { tripListingHref } from "@/lib/trips/listing-filter"
 
-type FullpageWindow = Window & {
-  fullpage_api?: { moveTo: (sectionIndex: number) => void }
-}
-
 /** lucide-react has no TikTok glyph, so it ships inline. */
 function TikTokIcon({ className }: { className?: string }) {
   return (
@@ -52,13 +48,7 @@ const SOCIAL_LINKS = [
 export default function Footer() {
   const t = useTranslations("footer")
   const scrollToTop = () => {
-    if (typeof window === "undefined") return
-    const w = window as FullpageWindow
-    if (w.fullpage_api) {
-      w.fullpage_api.moveTo(1)
-    } else {
-      w.scrollTo({ top: 0, behavior: "smooth" })
-    }
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   return (

@@ -13,8 +13,8 @@ const ELFSIGHT_WIDGET_CLASS =
 export default function ReviewsSection() {
   const t = useTranslations("reviews")
   const sectionRef = useRef<HTMLElement>(null)
-  // The widget is ~1 MB of script and ~860 ms of evaluation. fullPage.js keeps
-  // every section mounted, so it would otherwise load on every page view.
+  // The widget is ~1 MB of script and ~860 ms of evaluation, so it would
+  // otherwise load on every page view, even for visitors who never scroll here.
   const inView = useInViewOnce(sectionRef, { rootMargin: 300 })
 
   return (

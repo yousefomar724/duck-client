@@ -2,15 +2,12 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 
 import HeroSection from "@/components/landing/HeroSection"
-import RedSeaSection from "@/components/landing/RedSeaSection"
-import AmaalaSection from "@/components/landing/AmaalaSection"
 import ResortsSection from "@/components/landing/ResortsSection"
 import OffersSection from "@/components/landing/OffersSection"
 import LocationSection from "@/components/landing/LocationSection"
 import ReviewsSection from "@/components/landing/ReviewsSection"
 import FAQSection from "@/components/landing/FAQSection"
 import Footer from "@/components/landing/Footer"
-import FullpageWrapper from "@/components/landing/FullpageWrapper"
 import { JsonLd } from "@/components/seo/json-ld"
 import { buildFaqJsonLd, getFaqEntries } from "@/lib/seo/faq"
 import { SITE_URL } from "@/lib/site"
@@ -35,9 +32,6 @@ export default async function Home() {
 
   return (
     <>
-      {/* Outside FullpageWrapper on purpose: fullPage.js treats each direct
-          child of its wrapper as a section, so a script node there would be
-          measured as one. */}
       <JsonLd data={faqJsonLd} />
       {/* The hero's poster frame is the LCP element. A <video poster> is fetched
           at default priority and cannot carry fetchpriority itself, so preload it
@@ -50,25 +44,13 @@ export default async function Home() {
         type="image/avif"
         fetchPriority="high"
       />
-      <FullpageWrapper>
-        <div className="section">
-          <HeroSection />
-        </div>
-        <div className="section">
-          <RedSeaSection />
-        </div>
-        <div className="section">
-          <AmaalaSection />
-        </div>
-        <div className="section fp-auto-height">
-          <ResortsSection />
-          <OffersSection />
-          <LocationSection />
-          <ReviewsSection />
-          <FAQSection />
-          <Footer />
-        </div>
-      </FullpageWrapper>
+      <HeroSection />
+      <ResortsSection />
+      <OffersSection />
+      <LocationSection />
+      <ReviewsSection />
+      <FAQSection />
+      <Footer />
     </>
   )
 }

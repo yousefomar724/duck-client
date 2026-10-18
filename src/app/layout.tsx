@@ -162,7 +162,12 @@ export default async function RootLayout({
   const messages = await getMessages()
 
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <head>
         <link rel="preconnect" href={IMAGE_ORIGIN} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={IMAGE_ORIGIN} />

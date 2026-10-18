@@ -217,11 +217,7 @@ export default function OffersSection() {
       reinitVisibleInnerCarousel()
     }
     window.addEventListener("resize", onLayout)
-    window.addEventListener("fullpage:sectionchange", onLayout)
-    return () => {
-      window.removeEventListener("resize", onLayout)
-      window.removeEventListener("fullpage:sectionchange", onLayout)
-    }
+    return () => window.removeEventListener("resize", onLayout)
   }, [emblaApi, reinitVisibleInnerCarousel])
 
   // Dialog computed values
