@@ -115,12 +115,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ['mcp-handler', '@modelcontextprotocol/server'],
   experimental: {
-    // Ships the stylesheets inline in the HTML instead of as render-blocking
-    // <link>s, which is the documented sweet spot for atomic CSS: Tailwind
-    // keeps the bundle small enough that first paint wins. The trade is that
-    // returning visitors re-download it with every HTML response rather than
-    // hitting a cached file. Production builds only.
-    inlineCss: true,
+    // inlineCss is deliberately off. The app ships one global stylesheet
+    // (~190 KB raw, admin and supplier screens included), and inlining put it in
+    // every HTML response twice: once as <style> and again as a string in the
+    // RSC payload. That made the landing HTML ~530 KB to download and parse on
+    // phones. As a <link> it is fetched once and cached across pages.
     optimizePackageImports: [
       'lucide-react',
       'framer-motion',

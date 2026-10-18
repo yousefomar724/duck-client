@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import useEmblaCarousel from "embla-carousel-react"
-import { useReducedMotion } from "framer-motion"
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
 import { ChevronLeft, ChevronRight, Images, X } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import { Dialog as DialogPrimitive } from "radix-ui"
@@ -164,7 +164,7 @@ function TripImageLightbox({
 }) {
   const t = useTranslations("tripPage")
   const locale = useLocale()
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = usePrefersReducedMotion()
   const isRtl = locale === "ar"
   const [selectedIndex, setSelectedIndex] = useState(initialIndex)
   const thumbRefs = useRef<Array<HTMLButtonElement | null>>([])

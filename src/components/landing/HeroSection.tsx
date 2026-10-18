@@ -1,10 +1,15 @@
-"use client"
-
 import { useTranslations } from "next-intl"
-import { motion } from "framer-motion"
 import Link from "next/link"
 import BackgroundVideo from "@/components/landing/BackgroundVideo"
 
+// A server component on purpose: the headline is the LCP element, so it has to
+// paint straight from the HTML rather than after hydration. Entrance motion is
+// CSS (see the hero-* keyframes in globals.css).
+//
+// The Book Now link keeps Next's default prefetch. Forcing prefetch={true} made
+// every landing visit render and download the whole dynamic /book route during
+// startup; the default fetches just its loading shell, which is enough for an
+// instant transition.
 export default function HeroSection() {
   const t = useTranslations("hero")
   return (
@@ -15,6 +20,7 @@ export default function HeroSection() {
       {/* Background Video */}
       <BackgroundVideo
         src="/videos/hero-v2.mp4"
+        mobileSrc="/videos/hero-v2-mobile-v1.mp4"
         poster="/videos/hero-v2-poster-v1.avif"
         className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
       />
@@ -41,12 +47,7 @@ export default function HeroSection() {
         <div className="flex items-end justify-between w-full pb-4 md:pb-10">
           {/* Headline */}
           <div className="w-full md:w-auto">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-white text-5xl md:text-7xl font-bold leading-[1.2] drop-shadow-lg max-w-2xl"
-            >
+            <h1 className="text-white text-5xl md:text-7xl font-bold leading-[1.2] drop-shadow-lg max-w-2xl animate-hero-rise motion-reduce:animate-none">
               {t("title")
                 .split("\n")
                 .map((line, i) => (
@@ -55,44 +56,25 @@ export default function HeroSection() {
                     {i === 0 && <br />}
                   </span>
                 ))}
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-white/90 text-lg md:text-xl mt-4 max-w-2xl drop-shadow-md"
-            >
+            </h1>
+            <p className="text-white/90 text-lg md:text-xl mt-4 max-w-2xl drop-shadow-md animate-hero-fade-rise [animation-delay:300ms] motion-reduce:animate-none">
               {t("description")}
-            </motion.p>
-            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 mt-8 animate-hero-fade-rise [animation-delay:450ms] motion-reduce:animate-none">
               <Link
                 href="/book"
-                prefetch={true}
                 className="inline-flex items-center justify-center rounded-2xl bg-duck-yellow text-neutral-900 font-bold text-xl px-10 py-3 shadow-xl hover:bg-duck-yellow-hover transition-all duration-200 drop-shadow-lg"
-                passHref
               >
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.5 }}
-                  className="w-full h-full flex items-center justify-center"
-                >
-                  {t("book")}
-                </motion.div>
+                {t("book")}
               </Link>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="flex"
+              <Link
+                href="/#locations"
+                // Same page: prefetching would just re-download the home route.
+                prefetch={false}
+                className="inline-flex items-center justify-center rounded-2xl border-2 border-white text-white font-bold text-xl px-10 py-3 backdrop-blur-sm hover:bg-white/15 transition-all duration-200 drop-shadow-lg"
               >
-                <Link
-                  href="/#locations"
-                  className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-white text-white font-bold text-xl px-10 py-3 backdrop-blur-sm hover:bg-white/15 transition-all duration-200 drop-shadow-lg"
-                >
-                  {t("exploreLocations")}
-                </Link>
-              </motion.div>
+                {t("exploreLocations")}
+              </Link>
             </div>
           </div>
 
@@ -100,11 +82,7 @@ export default function HeroSection() {
           <div className="hidden md:flex flex-col items-center gap-2 mb-4 text-white absolute -bottom-20 left-1/2 -translate-x-1/2">
             <span className="text-sm font-medium">{t("discoverMore")}</span>
             <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center p-1">
-              <motion.div
-                animate={{ y: [0, 6, 0] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-                className="w-1 h-2 bg-white rounded-full"
-              />
+              <div className="w-1 h-2 bg-white rounded-full animate-hero-scroll-dot motion-reduce:animate-none" />
             </div>
           </div>
         </div>

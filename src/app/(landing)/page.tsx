@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 
@@ -26,13 +27,20 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Home() {
+async function FaqStructuredData() {
   const faqEntries = await getFaqEntries()
-  const faqJsonLd = buildFaqJsonLd(faqEntries, SITE_URL)
+  return <JsonLd data={buildFaqJsonLd(faqEntries, SITE_URL)} />
+}
 
+// Not async on purpose. Awaiting anything here suspends the whole page, so the
+// first HTML flush carried (landing)/loading.tsx's skeleton and the hero only
+// arrived in a later chunk — on a phone that was most of the LCP time.
+export default function Home() {
   return (
     <>
-      <JsonLd data={faqJsonLd} />
+      <Suspense fallback={null}>
+        <FaqStructuredData />
+      </Suspense>
       {/* The hero's poster frame is the LCP element. A <video poster> is fetched
           at default priority and cannot carry fetchpriority itself, so preload it
           here — React hoists this into <head>. Keep the href in step with

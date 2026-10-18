@@ -3,9 +3,9 @@ import localFont from "next/font/local"
 import "./globals.css"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale, getMessages } from "next-intl/server"
-import { GoogleAnalytics } from "@next/third-parties/google"
 import { ToastContainer } from "@/components/shared/toast-container"
 import { ServiceWorkerRegister } from "@/components/shared/service-worker-register"
+import { DeferredGoogleAnalytics } from "@/components/shared/deferred-google-analytics"
 import { AuthHydrator } from "@/lib/auth/auth-hydrator"
 import { GA_MEASUREMENT_ID } from "@/lib/analytics"
 import { SITE_NAME, SITE_URL } from "@/lib/site"
@@ -183,7 +183,9 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
         <ToastContainer />
         <ServiceWorkerRegister />
-        {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
+        {GA_MEASUREMENT_ID && (
+          <DeferredGoogleAnalytics gaId={GA_MEASUREMENT_ID} />
+        )}
       </body>
     </html>
   )

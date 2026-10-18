@@ -1,12 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { Map, Globe, Sun, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
 import {
   Sheet,
@@ -30,37 +29,45 @@ export default function Navbar() {
   const [isSolid, setIsSolid] = useState(forceSolid)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const { scrollY } = useScroll()
   const t = useTranslations("navbar")
   const locale = useLocale()
   const { isAuthenticated } = useAuth()
 
   const isNavbarSolid = forceSolid || isSolid
 
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    const previous = scrollY.getPrevious() ?? 0
-    const diff = latest - previous
-    const isScrollingDown = diff > 0
+  useEffect(() => {
+    let previous = window.scrollY
+    let frame = 0
 
-    if (isScrollingDown && latest > 100) {
-      setIsHidden(true)
-    } else {
-      setIsHidden(false)
+    const update = () => {
+      frame = 0
+      const latest = window.scrollY
+      const isScrollingDown = latest > previous
+      previous = latest
+
+      setIsHidden(isScrollingDown && latest > 100)
+
+      if (forceSolid) return
+
+      if (latest > window.innerHeight) {
+        setIsSolid(true)
+        return
+      }
+
+      if (isScrollingDown) {
+        setIsSolid(false)
+      }
+    }
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(update)
     }
 
-    if (forceSolid) return
-
-    const threshold = typeof window !== "undefined" ? window.innerHeight : 800
-
-    if (latest > threshold) {
-      setIsSolid(true)
-      return
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      window.removeEventListener("scroll", onScroll)
+      if (frame) window.cancelAnimationFrame(frame)
     }
-
-    if (isScrollingDown) {
-      setIsSolid(false)
-    }
-  })
+  }, [forceSolid])
 
   const navLinks = [
     { key: "locations", href: "/#locations" },
@@ -88,15 +95,11 @@ export default function Navbar() {
 
   return (
     <>
-      <motion.nav
-        variants={{
-          visible: { y: 0 },
-          hidden: { y: "-100%" },
-        }}
-        animate={isHidden ? "hidden" : "visible"}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
+      <nav
         className={cn(
-          "fixed top-0 left-0 right-0 z-999 px-4 md:px-10 transition-colors duration-500 h-20 md:h-28",
+          "fixed top-0 left-0 right-0 z-999 px-4 md:px-10 h-20 md:h-28",
+          "[transition:color_500ms,background-color_500ms,border-color_500ms,box-shadow_500ms,translate_300ms_ease-in-out]",
+          isHidden && "-translate-y-full",
           isNavbarSolid
             ? "bg-white/90 backdrop-blur-md shadow-sm py-0 md:py-3 border-b border-black/5"
             : "bg-transparent py-6",
@@ -351,7 +354,7 @@ export default function Navbar() {
             </button>
           </div>
         </div>
-      </motion.nav>
+      </nav>
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>

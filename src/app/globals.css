@@ -6,6 +6,42 @@
 /* shadcn/ui v4 components use src: variant; define pass-through so utilities generate */
 @custom-variant src (&);
 
+/* Landing hero entrance. Plain CSS so it runs from the server HTML instead of
+   waiting for hydration. The headline only slides, never fades: it is the LCP
+   element, and an element still at opacity 0 does not count as painted. */
+@theme {
+  --animate-hero-rise: hero-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  --animate-hero-fade-rise: hero-fade-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+  --animate-hero-scroll-dot: hero-scroll-dot 1.5s ease-in-out infinite;
+
+  @keyframes hero-rise {
+    from {
+      transform: translateY(24px);
+    }
+  }
+  @keyframes hero-fade-rise {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+  }
+  @keyframes hero-scroll-dot {
+    50% {
+      transform: translateY(6px);
+    }
+  }
+
+  /* 404 page's floating ducks. CSS rather than framer-motion: the root
+     not-found boundary ships with every route's bundle. */
+  --animate-float: float 2.2s ease-in-out infinite;
+  @keyframes float {
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+}
+
 /* Style guide aligned with landing: radius (rounded-lg/xl/2xl), border from --border */
 @theme inline {
   --color-background: var(--background);

@@ -3,7 +3,6 @@
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Compass } from "lucide-react"
-import { motion } from "framer-motion"
 import { useTranslations } from "next-intl"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -41,16 +40,10 @@ export default function NotFound() {
             >
               {digits.map((char, i) =>
                 char === "0" ? (
-                  <motion.div
+                  <div
                     key={i}
-                    className="inline-flex items-end justify-center -mb-1"
+                    className="inline-flex items-end justify-center -mb-1 animate-float motion-reduce:animate-none"
                     aria-hidden
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{
-                      duration: 2.2,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "easeInOut",
-                    }}
                   >
                     <Image
                       src="/duck.png"
@@ -59,7 +52,7 @@ export default function NotFound() {
                       height={96}
                       className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 object-contain"
                     />
-                  </motion.div>
+                  </div>
                 ) : (
                   <span
                     key={i}

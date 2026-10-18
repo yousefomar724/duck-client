@@ -104,6 +104,11 @@ export default function LocationSection() {
   // happened during first paint, for a map several sections down. Same gate as
   // ReviewsSection.
   const mapInView = useInViewOnce(mapContainerRef, { rootMargin: 300 })
+  // The stat counts and map pins need three API calls (~150 KB of JSON). They
+  // used to fire at page load, competing with the hero on a phone's connection
+  // for a section well below the fold. Start them a screen or so early instead.
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const dataNeeded = useInViewOnce(sectionRef, { rootMargin: 800 })
 
   const handleMarkerClick = (event: MarkerClickEvent) => {
     // event.point is relative to the map's own container; since the map here
@@ -124,6 +129,7 @@ export default function LocationSection() {
   }
 
   useEffect(() => {
+    if (!dataNeeded) return
     let cancelled = false
     void (async () => {
       const [destRes, tripsRes, suppliersRes] = await Promise.all([
@@ -146,7 +152,7 @@ export default function LocationSection() {
     return () => {
       cancelled = true
     }
-  }, [locale])
+  }, [locale, dataNeeded])
 
   const filteredLocations = useMemo(() => {
     if (activeFilter === "all") return locations
@@ -154,7 +160,7 @@ export default function LocationSection() {
   }, [locations, activeFilter])
 
   return (
-    <section className="bg-off-white py-20">
+    <section ref={sectionRef} className="bg-off-white py-20">
       <div className="max-w-[1920px] mx-auto px-4 md:px-10">
         {/* Header */}
         <div className="text-center mb-12">

@@ -1,16 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
 import { ChevronDown, Car, MessageCircle } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { buildWhatsAppHref } from "@/lib/support-contact"
 import { FAQ_COUNT } from "@/lib/seo/faq-count"
 import { useTranslations } from "next-intl"
-
-const CONTENT_EASE_OPEN = [0.22, 1, 0.36, 1] as const
-const CONTENT_EASE_CLOSE = [0.4, 0, 0.2, 1] as const
 
 export default function FAQSection() {
   const t = useTranslations("faq")
@@ -23,24 +19,6 @@ export default function FAQSection() {
   const whatsappHref = buildWhatsAppHref(t("transportWhatsappPrefill"))
 
   const [openItem, setOpenItem] = useState<number | null>(null)
-
-  const containerVariants = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.05,
-      },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 16 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.35, ease: CONTENT_EASE_OPEN },
-    },
-  }
 
   return (
     <section id="faq" className="bg-off-white py-20 px-4 md:px-10">
@@ -57,19 +35,13 @@ export default function FAQSection() {
           </p>
         </div>
 
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-start">
           {faqs.map((faq, index) => {
             const isOpen = openItem === index
             const panelId = `faq-panel-${index}`
             const triggerId = `faq-trigger-${index}`
             return (
-              <motion.div key={index} variants={itemVariants} className="min-w-0">
+              <div key={index} className="min-w-0">
                 <div
                   className={cn(
                     "group rounded-2xl bg-white border shadow-sm overflow-hidden",
@@ -110,54 +82,30 @@ export default function FAQSection() {
                       )}
                     />
                   </button>
-                  <motion.div
+                  {/* Animating grid-template-rows between 0fr and 1fr eases the
+                      panel to its natural height without measuring it. */}
+                  <div
                     id={panelId}
                     role="region"
                     aria-labelledby={triggerId}
-                    initial={false}
-                    animate={
+                    className={cn(
+                      "grid border-t border-black/5 transition-[grid-template-rows,opacity] motion-reduce:transition-none",
                       isOpen
-                        ? {
-                            height: "auto",
-                            opacity: 1,
-                            transition: {
-                              height: {
-                                duration: 0.42,
-                                ease: CONTENT_EASE_OPEN,
-                              },
-                              opacity: {
-                                duration: 0.28,
-                                delay: 0.06,
-                                ease: "easeOut",
-                              },
-                            },
-                          }
-                        : {
-                            height: 0,
-                            opacity: 0,
-                            transition: {
-                              height: {
-                                duration: 0.34,
-                                ease: CONTENT_EASE_CLOSE,
-                              },
-                              opacity: {
-                                duration: 0.18,
-                                ease: "easeIn",
-                              },
-                            },
-                          }
-                    }
-                    className="overflow-hidden border-t border-black/5"
+                        ? "grid-rows-[1fr] opacity-100 duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+                        : "grid-rows-[0fr] opacity-0 duration-[340ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+                    )}
                   >
-                    <div className="px-5 pb-4 pt-3 md:px-6 md:pb-5 md:pt-4 text-text-body text-sm leading-relaxed whitespace-pre-line">
-                      {faq.answer}
+                    <div className="min-h-0 overflow-hidden">
+                      <div className="px-5 pb-4 pt-3 md:px-6 md:pb-5 md:pt-4 text-text-body text-sm leading-relaxed whitespace-pre-line">
+                        {faq.answer}
+                      </div>
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
-              </motion.div>
+              </div>
             )
           })}
-        </motion.div>
+        </div>
 
         <div className="mt-12 flex flex-col items-stretch sm:items-center gap-4">
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:justify-center">

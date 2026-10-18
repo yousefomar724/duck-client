@@ -13,15 +13,11 @@ const SRC_DIR = path.join(ROOT, "media-src")
 const OUT_DIR = path.join(ROOT, "public", "videos")
 const FORCE = process.argv.includes("--force")
 
-// Slide 3 currently ships the original /videos/hero.mp4 untouched — it is
-// NOT re-encoded by this script. To re-encode it from media-src/hero-original.mp4,
-// uncomment the entry below, but it MUST land under a new filename
-// (e.g. amaala-v1.mp4) since hero.mp4's bytes are immutable at their URL.
 // CRF values below were picked empirically, not guessed: CRF 23 (the naive
 // "hero.mp4-equivalent quality" starting point) produced 7.6-13.6 Mbps on this
 // footage -- real handheld/GoPro detail costs far more bits per CRF step than
-// hero.mp4's content did. Frame-by-frame comparison at CRF 30 / CRF 26 showed
-// no visible difference from CRF 23, so those are the shipped values.
+// hero.mp4's content did. Frame-by-frame comparison at CRF 30 showed no visible
+// difference from CRF 23, so that is the shipped value.
 const SLIDES = [
   {
     id: "hero-v2",
@@ -32,30 +28,16 @@ const SLIDES = [
     poster: "hero-v2-poster-v1.avif",
   },
   {
-    // Requested range was 23s-50s (27s); at matching quality that ran 9-12 MB.
-    // Trimmed to 23s-37s (14s): the subject drifts out of the mobile
-    // object-cover crop window from ~t15s onward in the 23-40s cut, so this
-    // fixes framing as well as size -- confirmed clean throughout via
-    // frame-by-frame review at both mobile and desktop crop widths.
-    id: "redsea-v1",
-    master: "redsea-v1-master.mp4",
-    crf: 26,
-    ss: 23,
-    t: 14,
-    maxrate: "3000k",
-    bufsize: "6000k",
-    poster: "redsea-v1-poster-v1.avif",
-  },
-  // { id: "amaala-v1", master: "hero-original.mp4", crf: 23, enabled: false },
-  {
-    // Slide 3 ships the untouched legacy hero.mp4, so there is no video to
-    // encode -- and its poster was never a frame grab, it came from a separate
-    // still. Re-encode that same still so the visible frame does not change.
-    id: "hero",
-    posterOnly: true,
-    posterSource: "hero-poster-original.jpg",
-    posterWidth: 1080,
-    poster: "hero-poster-v1.avif",
+    // Served below the md breakpoint (see BackgroundVideo). 720px wide is about
+    // one source pixel per CSS pixel at phone heights, under the hero gradient.
+    // CRF 32 was indistinguishable from CRF 30 frame by frame, at 1.3 MB vs
+    // 1.6 MB. It reuses hero-v2's poster, so no poster entry here.
+    id: "hero-v2-mobile-v1",
+    master: "hero-v2-master.mp4",
+    width: 720,
+    crf: 32,
+    maxrate: "1500k",
+    bufsize: "3000k",
   },
 ]
 
@@ -81,7 +63,7 @@ async function exists(p) {
 }
 
 /**
- * @param {{ id: string; master: string; crf: number; ss?: number; t?: number; maxrate?: string; bufsize?: string }} slide
+ * @param {{ id: string; master: string; crf: number; width?: number; ss?: number; t?: number; maxrate?: string; bufsize?: string }} slide
  */
 async function encodeVideo(slide) {
   const outPath = path.join(OUT_DIR, `${slide.id}.mp4`)
@@ -112,7 +94,7 @@ async function encodeVideo(slide) {
     "0:v:0",
     "-an",
     "-vf",
-    "scale=1080:-2:flags=lanczos+accurate_rnd:out_range=tv,format=yuv420p,setsar=1",
+    `scale=${slide.width ?? 1080}:-2:flags=lanczos+accurate_rnd:out_range=tv,format=yuv420p,setsar=1`,
     "-r",
     "30",
     "-fps_mode",
@@ -239,7 +221,7 @@ async function main() {
       continue
     }
     const encoded = await encodeVideo(slide)
-    if (encoded) await extractPoster(slide)
+    if (encoded && slide.poster) await extractPoster(slide)
   }
 }
 
