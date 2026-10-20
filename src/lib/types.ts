@@ -77,6 +77,16 @@ export interface PricingSnapshot {
   guide_price: number
 }
 
+export interface BookingDiscount {
+  code_id: string
+  code: string
+  type: "percentage" | "fixed"
+  value: number
+  max_discount?: number | null
+  funded_by: "supplier" | "platform"
+  amount: number
+}
+
 export interface BookingRevision {
   at: string
   by_user_id: string
@@ -97,6 +107,11 @@ export interface Booking {
   supplier_id: string
   supplier?: Supplier
   amount: number
+  /** Price before the discount. Missing or 0 on bookings from before this feature. */
+  subtotal?: number
+  discount?: BookingDiscount | null
+  /** Platform money credited to the supplier wallet for this booking. */
+  platform_discount_credited?: number
   currency: string
   full_name: string
   phone_number: string
@@ -145,6 +160,10 @@ export interface Wallet {
   user_id: string
   amount: number
   supplier_id: string
+  /** Customer money still held on bookings, before payouts. */
+  customer_payments?: number
+  /** Duck-funded discount still credited on bookings. */
+  platform_discount_credits?: number
 }
 
 export type DestinationActivity = "waterbike" | "sup" | "kayak"
@@ -295,6 +314,8 @@ export interface CreateBookingRequest {
   source?: BookingSource
   /** Cash collected at the dock. Walk-ins only; omitted means paid in full. */
   amount_paid?: number
+  /** Optional discount code. The server prices the discount; client amounts are ignored. */
+  discount_code?: string
 }
 
 export interface CreateTripRequest {

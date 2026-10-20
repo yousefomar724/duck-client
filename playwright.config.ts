@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Must match scripts/test-server.mjs, which reads the same variable.
+const PORT = Number(process.env.E2E_PORT) || 3000;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -8,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
   },
   projects: [
@@ -28,7 +31,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'node scripts/test-server.mjs',
-    url: 'http://localhost:3000/api/health',
+    url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

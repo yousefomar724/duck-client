@@ -14,5 +14,20 @@ export async function getReportsOverview(from: string, to: string, supplierId?: 
     nationality: { local: number; foreign: number };
     cancellations: { _id: string; count: number }[];
     sources: { _id: string; count: number }[];
+    discount_totals?: {
+      gross: number;
+      supplier_funded_discounts: number;
+      platform_funded_discounts: number;
+      platform_discount_credited: number;
+      customer_revenue: number;
+      supplier_earnings: number;
+    };
+    discount_codes?: {
+      code: string;
+      funded_by: string;
+      uses: number;
+      discount_given: number;
+      revenue: number;
+    }[];
   }>(`/reports/overview?${search.toString()}`);
 }

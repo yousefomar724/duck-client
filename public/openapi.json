@@ -471,6 +471,7 @@
           "hear_about_us": { "type": "string" },
           "referral_text": { "type": "string" },
           "declared_amount": { "type": "number", "minimum": 0 },
+          "discount_code": { "type": "string", "description": "Optional. Priced on the server; a client-sent amount is ignored." },
           "adults": { "type": "integer", "minimum": 0 },
           "kids_1_6": { "type": "integer", "minimum": 0 },
           "kids_7_12": { "type": "integer", "minimum": 0 }

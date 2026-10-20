@@ -3,7 +3,8 @@ import { mkdirSync, mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-const PORT = 3000;
+// E2E_PORT lets the suite run while another app already holds 3000.
+const PORT = Number(process.env.E2E_PORT) || 3000;
 
 async function main() {
   const root = join(process.cwd(), '.mongo-mem');

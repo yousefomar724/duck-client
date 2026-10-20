@@ -42,6 +42,8 @@ export interface BookingFilters {
   datePreset: DatePreset
   dateFrom: string
   dateTo: string
+  hasDiscount?: "all" | "yes"
+  discountCode?: string
 }
 
 const GROUP_ALLOW = new Set(["all", ...STATUS_GROUP_KEYS])
@@ -94,6 +96,8 @@ export function parseFilters(params: URLSearchParams): BookingFilters {
         : "all",
     dateFrom,
     dateTo,
+    hasDiscount: params.get("discount") === "yes" ? "yes" : "all",
+    discountCode: params.get("code") ?? "",
   }
 }
 
@@ -109,6 +113,8 @@ export function filtersToParams(filters: BookingFilters): URLSearchParams {
   if (filters.datePreset !== "all") params.set("date", filters.datePreset)
   if (filters.dateFrom) params.set("from", filters.dateFrom)
   if (filters.dateTo) params.set("to", filters.dateTo)
+  if (filters.hasDiscount === "yes") params.set("discount", "yes")
+  if (filters.discountCode) params.set("code", filters.discountCode)
   return params
 }
 
@@ -199,6 +205,13 @@ export function filterBookingsList(
     if (filters.tripType === "trip" && trip?.is_tour) return false
     if (filters.tripType === "tour" && !trip?.is_tour) return false
     if (!matchesDateFilter(booking.booking_date, filters)) {
+      return false
+    }
+    if (filters.hasDiscount === "yes" && !booking.discount?.code) return false
+    if (
+      filters.discountCode &&
+      booking.discount?.code !== filters.discountCode.trim().toUpperCase()
+    ) {
       return false
     }
 
@@ -307,7 +320,9 @@ export function useBookingFilters(
       filters.tripType !== "all" ||
       filters.datePreset !== "all" ||
       filters.dateFrom !== "" ||
-      filters.dateTo !== ""
+      filters.dateTo !== "" ||
+      filters.hasDiscount === "yes" ||
+      Boolean(filters.discountCode)
     )
   }, [filters])
 

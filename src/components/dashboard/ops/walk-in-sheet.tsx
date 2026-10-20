@@ -52,6 +52,7 @@ export function WalkInSheet({
   const [quantity, setQuantity] = useState("1")
   const [foreigners, setForeigners] = useState("0")
   const [collected, setCollected] = useState("")
+  const [discountCode, setDiscountCode] = useState("")
   const [saving, setSaving] = useState(false)
 
   const qty = Math.max(1, Number.parseInt(quantity, 10) || 1)
@@ -119,6 +120,7 @@ export function WalkInSheet({
       local_guests: localGuests,
       foreigner_guests: foreignerGuests,
       source: "walk_in",
+      ...(discountCode.trim() ? { discount_code: discountCode.trim() } : {}),
       // Omitted means "paid in full" server-side; an explicit 0 records an
       // unpaid walk-in with a balance still to collect.
       amount_paid: typed === "" ? undefined : Math.max(0, Number(typed) || 0),
@@ -135,6 +137,7 @@ export function WalkInSheet({
     setPhone("")
     setForeigners("0")
     setCollected("")
+    setDiscountCode("")
   }
 
   return (
@@ -215,6 +218,16 @@ export function WalkInSheet({
             <p className="text-xs text-text-muted">
               {localGuests} محلي · {foreignerGuests} أجنبي
             </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="walk-in-code">كود خصم (اختياري)</Label>
+            <Input
+              id="walk-in-code"
+              className="min-h-11 uppercase"
+              dir="ltr"
+              value={discountCode}
+              onChange={(e) => setDiscountCode(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="walk-in-collected">المبلغ المحصل</Label>

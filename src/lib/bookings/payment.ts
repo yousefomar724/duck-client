@@ -21,6 +21,29 @@ export function retainedAmount(
   return Math.max(0, amountPaid(booking) - refundOwed(booking))
 }
 
+/** List price before discount. Older bookings have no subtotal and are read as `amount`. */
+export function subtotalOf(
+  booking: Pick<Booking, "amount"> & { subtotal?: number | null },
+): number {
+  if (booking.subtotal != null && booking.subtotal > 0) return booking.subtotal
+  return booking.amount
+}
+
+export function discountAmount(
+  booking: { discount?: { amount?: number } | null },
+): number {
+  return booking.discount?.amount ?? 0
+}
+
+/** What the supplier has earned on this booking: customer money still held, plus Duck's credit. */
+export function supplierEarnings(
+  booking: Pick<Booking, "amount_paid" | "refund_owed"> & {
+    platform_discount_credited?: number | null
+  },
+): number {
+  return retainedAmount(booking) + (booking.platform_discount_credited ?? 0)
+}
+
 export function remainingAmount(
   booking: Pick<Booking, "amount" | "amount_paid">,
 ): number {

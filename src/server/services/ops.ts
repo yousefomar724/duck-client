@@ -691,6 +691,73 @@ export async function getReportsOverview(
           },
         ],
         sources: [{ $group: { _id: { $ifNull: ['$source', 'online'] }, count: { $sum: 1 } } }],
+        // Counts the same bookings as `revenue` (confirmed and later), so
+        // gross − discounts = customer share and earnings = customer share +
+        // Duck's credit. Cancelled, refunded and still-pending bookings carry
+        // no discount cost.
+        discount_totals: [
+          { $match: { status: { $in: [...REVENUE_STATUSES] } } },
+          {
+            $group: {
+              _id: null,
+              gross: {
+                $sum: {
+                  $cond: [{ $gt: ['$subtotal', 0] }, '$subtotal', '$amount'],
+                },
+              },
+              supplier_funded_discounts: {
+                $sum: {
+                  $cond: [
+                    { $eq: ['$discount.funded_by', 'supplier'] },
+                    { $ifNull: ['$discount.amount', 0] },
+                    0,
+                  ],
+                },
+              },
+              platform_funded_discounts: {
+                $sum: {
+                  $cond: [
+                    { $eq: ['$discount.funded_by', 'platform'] },
+                    { $ifNull: ['$discount.amount', 0] },
+                    0,
+                  ],
+                },
+              },
+              platform_credit_on_revenue: {
+                $sum: { $ifNull: ['$platform_discount_credited', 0] },
+              },
+              customer_revenue: { $sum: '$amount' },
+            },
+          },
+        ],
+        // What Duck has actually paid suppliers: credits still standing on any
+        // booking in range. A no-show keeps its credit; a refund reversed it.
+        platform_cost: [
+          {
+            $group: {
+              _id: null,
+              total: { $sum: { $ifNull: ['$platform_discount_credited', 0] } },
+            },
+          },
+        ],
+        discount_codes: [
+          {
+            $match: {
+              'discount.code': { $nin: [null, ''] },
+              status: { $in: [...REVENUE_STATUSES] },
+            },
+          },
+          {
+            $group: {
+              _id: '$discount.code',
+              funded_by: { $first: '$discount.funded_by' },
+              uses: { $sum: 1 },
+              discount_given: { $sum: { $ifNull: ['$discount.amount', 0] } },
+              revenue: { $sum: '$amount' },
+            },
+          },
+          { $sort: { discount_given: -1 } },
+        ],
       },
     },
   ]);
@@ -719,6 +786,33 @@ export async function getReportsOverview(
     nationality: facet.nationality[0] ?? { local: 0, foreign: 0 },
     cancellations: facet.cancellations,
     sources: facet.sources,
+    discount_totals: (() => {
+      const row = facet.discount_totals?.[0] ?? {};
+      const customerRevenue = row.customer_revenue ?? 0;
+      return {
+        gross: row.gross ?? 0,
+        supplier_funded_discounts: row.supplier_funded_discounts ?? 0,
+        platform_funded_discounts: row.platform_funded_discounts ?? 0,
+        platform_discount_credited: facet.platform_cost?.[0]?.total ?? 0,
+        customer_revenue: customerRevenue,
+        supplier_earnings: customerRevenue + (row.platform_credit_on_revenue ?? 0),
+      };
+    })(),
+    discount_codes: (facet.discount_codes ?? []).map(
+      (row: {
+        _id: string;
+        funded_by: string;
+        uses: number;
+        discount_given: number;
+        revenue: number;
+      }) => ({
+        code: row._id,
+        funded_by: row.funded_by,
+        uses: row.uses,
+        discount_given: row.discount_given,
+        revenue: row.revenue,
+      }),
+    ),
   };
 }
 

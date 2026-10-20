@@ -12,6 +12,7 @@ import {
   Bell,
   MoreHorizontal,
   BarChart3,
+  TicketPercent,
   type LucideIcon,
 } from "lucide-react"
 import { SITE_TIME_ZONE } from "./time"
@@ -57,6 +58,11 @@ export const adminNavItems: NavItem[] = [
     title: "الحجوزات",
     href: "/admin/bookings",
     icon: CalendarCheck,
+  },
+  {
+    title: "أكواد الخصم",
+    href: "/admin/discount-codes",
+    icon: TicketPercent,
   },
   {
     title: "الموردين",
@@ -105,6 +111,11 @@ export const supplierNavItems: NavItem[] = [
     title: "الحجوزات",
     href: "/supplier/bookings",
     icon: CalendarCheck,
+  },
+  {
+    title: "أكواد الخصم",
+    href: "/supplier/discount-codes",
+    icon: TicketPercent,
   },
   {
     title: "الملف الشخصي",

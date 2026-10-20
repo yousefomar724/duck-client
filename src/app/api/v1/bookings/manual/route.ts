@@ -5,6 +5,13 @@ import { optionalAuth } from '@/server/auth/guard';
 import { Booking } from '@/server/models/booking';
 import { Supplier } from '@/server/models/supplier';
 import { buildBooking, MinimumGuestsError, persistCreatedBooking, toBookingEmailData, TripUnavailableError, type CreateBookingInput } from '@/server/services/booking';
+import { DiscountApplyError, isDiscountGuessFailure } from '@/server/services/discount';
+import {
+  clientIp,
+  DISCOUNT_GUESS_LIMIT,
+  isRateLimited,
+  recordRateLimitHit,
+} from '@/server/lib/rate-limit';
 import { NoAvailabilityError } from '@/server/services/availability';
 import { confirmBookingPayment } from '@/server/services/booking-payment';
 import { sendSupplierNewManualBookingEmail } from '@/server/lib/mail';
@@ -31,6 +38,7 @@ const manualBookingSchema = z.object({
   source: z.enum(['online', 'walk_in']).optional(),
   /** Cash taken at the dock. Walk-ins only; omitted means the full amount. */
   amount_paid: z.number().min(0).optional(),
+  discount_code: z.string().min(1).optional(),
 });
 
 export async function POST(request: Request) {
@@ -61,6 +69,16 @@ export async function POST(request: Request) {
     }
   } else {
     body.source = 'online';
+  }
+
+  // Checkout answers "no such code" just like the validate endpoint, so it
+  // shares that endpoint's guess limit. Staff entering a code at the dock are
+  // signed in and exempt.
+  const isStaff = session?.role === 1 || session?.role === 2;
+  const guessLimited = Boolean(body.discount_code?.trim()) && !isStaff;
+  const ip = clientIp(request);
+  if (guessLimited && (await isRateLimited(DISCOUNT_GUESS_LIMIT, ip))) {
+    return errorResponse(429, 'Too many attempts. Please try again later.', { code: 'RATE_LIMITED' });
   }
 
   try {
@@ -117,6 +135,12 @@ export async function POST(request: Request) {
     }
     if (err instanceof NoAvailabilityError) {
       return errorResponse(409, err.message, { code: err.code });
+    }
+    if (err instanceof DiscountApplyError) {
+      if (guessLimited && isDiscountGuessFailure(err.code)) {
+        await recordRateLimitHit(DISCOUNT_GUESS_LIMIT, ip);
+      }
+      return errorResponse(err.statusCode, err.message, { code: err.code });
     }
     const message = err instanceof Error ? err.message : 'failed to create booking';
     return errorResponse(500, message);

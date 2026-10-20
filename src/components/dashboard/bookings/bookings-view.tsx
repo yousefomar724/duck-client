@@ -61,6 +61,7 @@ import {
   getBookingRowClassName,
 } from "./booking-columns"
 import { bookingStrings, bookingColumnLabels } from "./booking-strings"
+import { discountStrings } from "@/lib/dashboard/discount-strings"
 import { useBookingActions } from "./use-booking-actions"
 import {
   exportBookingsCsv,
@@ -586,6 +587,21 @@ export function BookingsView({ role }: BookingsViewProps) {
                 <SelectItem value="all">{bookingStrings.allPayments}</SelectItem>
                 <SelectItem value="MANUAL">يدوي</SelectItem>
                 <SelectItem value="KASHIER">كاشير</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={filters.hasDiscount ?? "all"}
+              onValueChange={(v) =>
+                setFilters({ hasDiscount: v === "yes" ? "yes" : "all" })
+              }
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder={discountStrings.hasDiscount} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{discountStrings.allDiscounts}</SelectItem>
+                <SelectItem value="yes">{discountStrings.hasDiscount}</SelectItem>
               </SelectContent>
             </Select>
 

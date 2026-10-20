@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { dbConnect } from '@/server/db/connect';
 import { requireAuth } from '@/server/auth/guard';
 import { Wallet } from '@/server/models/wallet';
+import { walletCreditBreakdown } from '@/server/services/discount';
 import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
 
@@ -28,5 +29,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ user
   const wallet = await Wallet.findOne({ user_id: userId });
   if (!wallet) return errorResponse(404, 'Wallet not found');
 
-  return NextResponse.json(wallet);
+  const breakdown = await walletCreditBreakdown(wallet.supplier_id.toString());
+  return NextResponse.json({
+    ...wallet.toJSON(),
+    ...(breakdown.get(wallet.supplier_id.toString()) ?? {
+      customer_payments: 0,
+      platform_discount_credits: 0,
+    }),
+  });
 }

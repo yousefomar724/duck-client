@@ -16,6 +16,9 @@ interface BookingEmailData {
   played_before?: boolean | null;
   hear_about_us?: string;
   amount: number;
+  subtotal?: number;
+  discount_code?: string;
+  discount_amount?: number;
   currency: string;
   declared_amount?: number;
   status: string;
@@ -183,6 +186,13 @@ function formatBookingEmailBody(
             </table>
             <div style="margin-top: 20px; font-size: 14px; color: #777; border-top: 1px solid #f0f0f0; padding-top: 15px; line-height: 1.8;">
               <strong>رقم الحجز:</strong> <span dir="ltr">${booking.id}</span><br>
+              ${
+                booking.discount_code && booking.discount_amount
+                  ? `<strong>المجموع قبل الخصم:</strong> ${formatCurrency(booking.subtotal || booking.amount + booking.discount_amount, booking.currency, 'ar')}<br>
+              <strong>كود الخصم:</strong> <span dir="ltr">${booking.discount_code}</span><br>
+              <strong>الخصم:</strong> ${formatCurrency(booking.discount_amount, booking.currency, 'ar')}<br>`
+                  : ''
+              }
               <strong>المبلغ الإجمالي:</strong> ${formatCurrency(booking.amount, booking.currency, 'ar')}<br>
               ${
                 booking.declared_amount && booking.declared_amount > 0 && booking.declared_amount < booking.amount

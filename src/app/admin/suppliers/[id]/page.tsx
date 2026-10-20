@@ -295,6 +295,11 @@ export default function AdminSupplierDetailPage() {
           title="رصيد المحفظة"
           value={formatCurrency(wallet?.amount ?? 0)}
           icon={WalletIcon}
+          hint={
+            wallet
+              ? `مدفوعات العملاء ${formatCurrency(wallet.customer_payments ?? 0)} · تغطية دَك ${formatCurrency(wallet.platform_discount_credits ?? 0)}`
+              : undefined
+          }
         />
       </div>
 

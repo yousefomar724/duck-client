@@ -54,6 +54,12 @@ export function OpsBookingCard({
           <span className="text-xs font-medium">
             {formatCurrency(booking.amount, booking.currency)}
           </span>
+          {booking.discount ? (
+            <span className="text-xs text-text-muted" dir="ltr">
+              {booking.discount.code}
+              {booking.discount.funded_by === "platform" ? " · تغطية دَك" : ""}
+            </span>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
           {booking.phone_number ? (

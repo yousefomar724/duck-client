@@ -18,6 +18,7 @@ export function OpsMore({
     { href: `${basePath}/payouts`, title: "المدفوعات" },
     { href: `${basePath}/feedback`, title: "الآراء" },
     { href: `${basePath}/tour-guides`, title: "المرشدين" },
+    { href: `${basePath}/discount-codes`, title: "أكواد الخصم" },
     { href: `${basePath}/reports`, title: opsStrings.reports },
     { href: `${basePath}/customers`, title: opsStrings.customers },
   ]
@@ -25,6 +26,7 @@ export function OpsMore({
     { href: `${basePath}/my-trips`, title: opsStrings.activities },
     { href: `${basePath}/storage`, title: opsStrings.equipment },
     { href: `${basePath}/profile`, title: "الملف الشخصي" },
+    { href: `${basePath}/discount-codes`, title: "أكواد الخصم" },
     { href: `${basePath}/reports`, title: opsStrings.reports },
     { href: `${basePath}/customers`, title: opsStrings.customers },
   ]

@@ -5,7 +5,8 @@ import { computeBookingAmount } from './booking';
 import { checkAvailability, occupancyChanged, NoAvailabilityError, verifyOccupancy } from './availability';
 import { isValidResourceType } from './resource-type';
 import { canDeleteBookingStatus } from '@/lib/bookings/status';
-import { retainedAmount } from '@/lib/bookings/payment';
+import { discountAmount, retainedAmount, subtotalOf } from '@/lib/bookings/payment';
+import { releaseDiscount, repriceFrozenDiscount, undoReleaseDiscount } from './discount';
 import { DeletedBooking } from '../models/deleted-booking';
 import { creditWalletBySupplierId } from './wallet';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
@@ -147,6 +148,8 @@ export async function applyBookingEdit(
     full_name: booking.full_name,
     phone_number: booking.phone_number,
     amount: booking.amount,
+    subtotal: subtotalOf(booking),
+    discount_amount: discountAmount(booking),
   };
 
   const nextQuantity = patch.quantity ?? booking.quantity;
@@ -256,13 +259,20 @@ export async function applyBookingEdit(
     }
   }
 
+  const originalSubtotal = booking.subtotal;
+  const originalDiscountAmount = booking.discount?.amount ?? 0;
+  const originalPlatformCredit = booking.platform_discount_credited ?? 0;
+
   let newAmount: number;
   let computedQuantity = nextQuantity;
+  const repriceDiscount = patch.amount_override == null && !booking.pricing_locked;
 
   if (patch.amount_override != null && actor.role === 2) {
     if (patch.amount_override <= 0) {
       throw new BookingEditError('amount_override must be positive');
     }
+    // The override is the final total. The frozen discount stays for reporting
+    // and the platform credit is left as it is.
     newAmount = patch.amount_override;
   } else if (booking.pricing_locked) {
     newAmount = booking.amount;
@@ -286,8 +296,14 @@ export async function applyBookingEdit(
       duration: durationForPricing,
       wants_guide: nextWantsGuide,
     });
-    newAmount = result.amount;
+    const repriced = repriceFrozenDiscount(result.amount, booking.discount);
+    newAmount = repriced.total;
     computedQuantity = result.quantity;
+    booking.subtotal = result.amount;
+    if (booking.discount) {
+      booking.discount.amount = repriced.discountAmount;
+      booking.markModified('discount');
+    }
   }
 
   const amountBefore = booking.amount;
@@ -323,7 +339,25 @@ export async function applyBookingEdit(
     ends_at: booking.ends_at,
     occupancy_slots: [...(booking.occupancy_slots ?? [])],
     occupancy_version: booking.occupancy_version,
+    subtotal: originalSubtotal,
+    discount_amount: originalDiscountAmount,
+    platform_discount_credited: originalPlatformCredit,
   };
+
+  let platformDelta = 0;
+  if (
+    repriceDiscount &&
+    booking.status === 'CONFIRMED' &&
+    booking.discount?.funded_by === 'platform'
+  ) {
+    platformDelta = (booking.discount.amount ?? 0) - originalPlatformCredit;
+    if (platformDelta !== 0) {
+      await creditWalletBySupplierId(booking.supplier_id.toString(), platformDelta, {
+        allowNegative: true,
+      });
+      booking.platform_discount_credited = booking.discount.amount ?? 0;
+    }
+  }
 
   // `amount_paid` stays gross until the refund is actually sent (markRefundSent),
   // so the owed refund is recomputed from scratch on every edit and only the
@@ -394,6 +428,8 @@ export async function applyBookingEdit(
     full_name: booking.full_name,
     phone_number: booking.phone_number,
     amount: booking.amount,
+    subtotal: subtotalOf(booking),
+    discount_amount: discountAmount(booking),
   };
 
   const changes = buildChanges(before, after);
@@ -418,6 +454,11 @@ export async function applyBookingEdit(
         allowNegative: true,
       }).catch(() => {});
     }
+    if (platformDelta !== 0) {
+      await creditWalletBySupplierId(booking.supplier_id.toString(), -platformDelta, {
+        allowNegative: true,
+      }).catch(() => {});
+    }
     if (err instanceof NoAvailabilityError) {
       booking.trip_id = revertSnapshot.trip_id;
       booking.currency = revertSnapshot.currency;
@@ -435,6 +476,12 @@ export async function applyBookingEdit(
       booking.full_name = revertSnapshot.full_name;
       booking.phone_number = revertSnapshot.phone_number;
       booking.amount = revertSnapshot.amount;
+      booking.subtotal = revertSnapshot.subtotal;
+      if (booking.discount) {
+        booking.discount.amount = revertSnapshot.discount_amount;
+        booking.markModified('discount');
+      }
+      booking.platform_discount_credited = revertSnapshot.platform_discount_credited;
       booking.declared_amount = revertSnapshot.declared_amount;
       booking.refund_owed = revertSnapshot.refund_owed;
       booking.payment_entries = revertSnapshot.payment_entries;
@@ -504,7 +551,17 @@ export async function cancelBookingByStaff(
   booking.cancelled_at = new Date();
   booking.cancelled_by = new Types.ObjectId(actor.user_id);
   booking.cancel_reason = reason?.trim() ?? '';
-  await booking.save();
+
+  // A paid cancellation waits for the refund to give the use back. An unpaid
+  // one (including a free booking) releases immediately.
+  const release =
+    booking.status === 'CANCELLED' ? await releaseDiscount(booking, 'cancelled') : null;
+  try {
+    await booking.save();
+  } catch (err) {
+    if (release) await undoReleaseDiscount(booking, release).catch(() => {});
+    throw err;
+  }
   return booking;
 }
 
@@ -535,8 +592,9 @@ export async function deleteBookingByAdmin(
     return { wallet_adjustment: 0 };
   }
 
+  const platformCredit = booking.platform_discount_credited ?? 0;
   const walletExposure =
-    booking.status === 'REFUNDED' ? 0 : retainedAmount(booking);
+    (booking.status === 'REFUNDED' ? 0 : retainedAmount(booking)) + platformCredit;
   const supplierId = booking.supplier_id.toString();
 
   if (walletExposure !== 0) {
@@ -545,7 +603,10 @@ export async function deleteBookingByAdmin(
     });
   }
 
+  let release: Awaited<ReturnType<typeof releaseDiscount>> | null = null;
   try {
+    // The wallet debit above already includes the platform credit.
+    release = await releaseDiscount(booking, 'deleted', { debitWallet: false });
     await DeletedBooking.create({
       original_id: booking._id,
       snapshot: booking.toObject(),
@@ -562,6 +623,7 @@ export async function deleteBookingByAdmin(
         allowNegative: true,
       }).catch(() => {});
     }
+    if (release) await undoReleaseDiscount(booking, release).catch(() => {});
     throw err;
   }
 

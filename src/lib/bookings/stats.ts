@@ -40,12 +40,17 @@ export interface BookingStats {
   outstanding: number
   pipeline: number
   totalValue: number
+  discountsTotal: number
+  supplierFundedDiscounts: number
+  platformFundedDiscounts: number
 }
 
 type StatsBooking = Pick<
   Booking,
   "status" | "amount" | "amount_paid" | "refund_owed" | "booking_date" | "ends_at"
->
+> & {
+  discount?: Booking["discount"]
+}
 
 export function computeBookingStats(bookings: StatsBooking[]): BookingStats {
   let bookedRevenue = 0
@@ -53,6 +58,9 @@ export function computeBookingStats(bookings: StatsBooking[]): BookingStats {
   let refundDueTotal = 0
   let outstanding = 0
   let pipeline = 0
+  let discountsTotal = 0
+  let supplierFundedDiscounts = 0
+  let platformFundedDiscounts = 0
   let needsActionCount = 0
   let upcoming = 0
   let completed = 0
@@ -79,6 +87,15 @@ export function computeBookingStats(bookings: StatsBooking[]): BookingStats {
     refundDueTotal += refundDue(booking)
     if (!VALUE_EXCLUDED.has(booking.status)) {
       totalValue += booking.amount
+      const discount = booking.discount?.amount ?? 0
+      if (discount > 0) {
+        discountsTotal += discount
+        if (booking.discount?.funded_by === "platform") {
+          platformFundedDiscounts += discount
+        } else {
+          supplierFundedDiscounts += discount
+        }
+      }
     }
   }
 
@@ -95,5 +112,8 @@ export function computeBookingStats(bookings: StatsBooking[]): BookingStats {
     outstanding,
     pipeline,
     totalValue,
+    discountsTotal,
+    supplierFundedDiscounts,
+    platformFundedDiscounts,
   }
 }
