@@ -168,6 +168,26 @@ export const bookingStrings = {
   noRevisions: "لا توجد تعديلات مسجلة",
   durationHours: "المدة (ساعات)",
   note: "ملاحظة",
+  discountCode: "كود الخصم",
+  discountCodeHint: "امسحه لإزالة الخصم. الكود الجديد يُفحص بنفس شروط صفحة الحجز.",
+  discountCodeLockedHint: "السعر مقفل، لا يمكن تغيير كود الخصم",
+  discountRemoved: "سيتم إزالة الخصم",
+  discountCheckedOnSave: "يُحسب الخصم عند الحفظ",
+  /** Same wording the customer sees at checkout (messages/ar.json). */
+  discountErrors: {
+    NOT_FOUND: "هذا الكود غير صالح",
+    DISABLED: "هذا الكود لم يعد نشطاً",
+    NOT_STARTED: "هذا الكود لم يبدأ بعد",
+    EXPIRED: "انتهت صلاحية هذا الكود",
+    WRONG_SUPPLIER: "هذا الكود لا ينطبق على هذه الرحلة",
+    TRIP_NOT_ELIGIBLE: "هذا الكود لا ينطبق على هذه الرحلة",
+    CURRENCY_MISMATCH: "هذا الكود لا ينطبق على هذه العملة",
+    BELOW_MINIMUM: "إجمالي الحجز أقل من الحد الأدنى لهذا الكود",
+    USAGE_LIMIT_REACHED: "تم استخدام هذا الكود بالكامل",
+    ALREADY_USED_BY_CUSTOMER: "تم استخدام هذا الكود من قبل على رقم الهاتف هذا",
+    INVALID_CODE: "استخدم 4–32 حرفاً أو رقماً أو شرطة",
+    INVALID_PHONE: "أدخل رقم هاتف صحيحاً لاستخدام هذا الكود",
+  } as Record<string, string>,
 } as const
 
 export const bookingColumnLabels: Record<string, string> = {

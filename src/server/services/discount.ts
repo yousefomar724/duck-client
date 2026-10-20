@@ -43,6 +43,8 @@ export interface PricedDiscount {
 export interface DiscountRelease {
   redemptionReleased: boolean;
   codeId?: string;
+  /** The row this call released. An edited booking can hold several released rows. */
+  redemptionId?: string;
   /** Wallet debit performed by this call. 0 when the caller debits the exposure itself. */
   walletDebited: number;
   /** Credit that was cleared on the booking, whether or not this call moved the wallet. */
@@ -244,6 +246,35 @@ export async function redeemDiscountForBooking(
 }
 
 /**
+ * Gives the booking's active use back without touching the platform credit.
+ * An edit that swaps or removes a code settles the credit itself.
+ */
+export async function releaseRedemption(
+  booking: BookingDoc,
+  reason: string,
+): Promise<DiscountRelease> {
+  const result: DiscountRelease = {
+    redemptionReleased: false,
+    walletDebited: 0,
+    previousCredit: 0,
+  };
+  const redemption = await DiscountRedemption.findOneAndUpdate(
+    { booking_id: booking._id, status: 'active' },
+    { $set: { status: 'released', released_at: new Date(), released_reason: reason } },
+  );
+  if (redemption) {
+    result.redemptionReleased = true;
+    result.codeId = redemption.code_id.toString();
+    result.redemptionId = redemption.id;
+    await DiscountCode.updateOne(
+      { _id: redemption.code_id, used_count: { $gt: 0 } },
+      { $inc: { used_count: -1 } },
+    );
+  }
+  return result;
+}
+
+/**
  * Gives a use back and, by default, takes the platform credit out of the wallet.
  * Safe to call twice: the second call finds nothing left to release.
  */
@@ -253,24 +284,7 @@ export async function releaseDiscount(
   options: { debitWallet?: boolean } = {},
 ): Promise<DiscountRelease> {
   const debitWallet = options.debitWallet !== false;
-  const result: DiscountRelease = {
-    redemptionReleased: false,
-    walletDebited: 0,
-    previousCredit: 0,
-  };
-
-  const redemption = await DiscountRedemption.findOneAndUpdate(
-    { booking_id: booking._id, status: 'active' },
-    { $set: { status: 'released', released_at: new Date(), released_reason: reason } },
-  );
-  if (redemption) {
-    result.redemptionReleased = true;
-    result.codeId = redemption.code_id.toString();
-    await DiscountCode.updateOne(
-      { _id: redemption.code_id, used_count: { $gt: 0 } },
-      { $inc: { used_count: -1 } },
-    );
-  }
+  const result = await releaseRedemption(booking, reason);
 
   const credited = booking.platform_discount_credited ?? 0;
   if (credited > 0) {
@@ -346,7 +360,9 @@ export async function undoReleaseDiscount(
 ): Promise<void> {
   if (release.redemptionReleased && release.codeId) {
     await DiscountRedemption.updateOne(
-      { booking_id: booking._id, status: 'released' },
+      release.redemptionId
+        ? { _id: release.redemptionId, status: 'released' }
+        : { booking_id: booking._id, status: 'released' },
       { $set: { status: 'active', released_at: null, released_reason: '' } },
     );
     await DiscountCode.updateOne({ _id: release.codeId }, { $inc: { used_count: 1 } });

@@ -184,6 +184,8 @@ export interface UpdateBookingRequest {
   full_name?: string;
   phone_number?: string;
   amount_override?: number;
+  /** Omitted keeps the current code; `null` removes it. */
+  discount_code?: string | null;
   note?: string;
 }
 

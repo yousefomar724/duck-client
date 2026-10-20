@@ -53,6 +53,7 @@ const editSchema = z
     duration: z.coerce.number().int().min(1).optional(),
     wants_guide: z.boolean(),
     amount_override: z.coerce.number().positive().optional().or(z.literal("")),
+    discount_code: z.string().optional(),
     note: z.string().optional(),
   })
   .superRefine((data, ctx) => {
@@ -107,6 +108,16 @@ function cairoIsoFromDatetimeLocal(value: string): string {
   return siteWallTimeToUtc(ymd, Number(hour), Number(minute)).toISOString()
 }
 
+type DiscountChange = "keep" | "remove" | "apply"
+
+/** Mirrors the server: retyping the booking's own code keeps it, a blank field removes it. */
+function discountChangeOf(booking: Booking, typed: string): DiscountChange {
+  const code = typed.trim().toUpperCase()
+  const current = booking.discount?.code ?? ""
+  if (code === current) return "keep"
+  return code ? "apply" : "remove"
+}
+
 function previewAmount(
   booking: Booking,
   trip: Trip | undefined,
@@ -143,7 +154,9 @@ function previewAmount(
     total += snap?.guide_price ?? trip?.guide_price ?? 0
   }
 
-  if (booking.discount) {
+  // A new code is checked and priced by the server on save, so the preview
+  // shows the price before it.
+  if (booking.discount && discountChangeOf(booking, values.discount_code ?? "") === "keep") {
     return applyDiscount(total, booking.discount).total
   }
 
@@ -178,6 +191,7 @@ export function BookingEditDialog({
       duration: 1,
       wants_guide: false,
       amount_override: "",
+      discount_code: "",
       note: "",
     },
   })
@@ -198,6 +212,7 @@ export function BookingEditDialog({
       duration: booking.duration && booking.duration > 0 ? booking.duration : 1,
       wants_guide: booking.wants_guide ?? false,
       amount_override: "",
+      discount_code: booking.discount?.code ?? "",
       note: "",
     })
   }, [booking, open, form])
@@ -251,6 +266,10 @@ export function BookingEditDialog({
     return previewAmount(booking, selectedTrip, values, amountOverride)
   }, [booking, selectedTrip, values, amountOverride, locked])
 
+  const discountChange = booking
+    ? discountChangeOf(booking, values.discount_code ?? "")
+    : "keep"
+
   const paid = booking ? amountPaid(booking) : 0
   const delta = booking ? newAmount - booking.amount : 0
   const refundOwedPreview = Math.max(0, paid - newAmount)
@@ -287,6 +306,10 @@ export function BookingEditDialog({
     }
     if (role === "admin" && amountOverride && amountOverride > 0) {
       payload.amount_override = amountOverride
+    }
+    const change = discountChangeOf(booking, data.discount_code ?? "")
+    if (change !== "keep") {
+      payload.discount_code = change === "apply" ? data.discount_code!.trim() : null
     }
     await onSubmit(booking.ID, payload)
   })
@@ -435,6 +458,21 @@ export function BookingEditDialog({
               </div>
             )}
             <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="edit-discount-code">{bookingStrings.discountCode}</Label>
+              <Input
+                id="edit-discount-code"
+                dir="ltr"
+                className="uppercase"
+                disabled={booking.pricing_locked}
+                {...form.register("discount_code")}
+              />
+              <p className="text-xs text-text-muted">
+                {booking.pricing_locked
+                  ? bookingStrings.discountCodeLockedHint
+                  : bookingStrings.discountCodeHint}
+              </p>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="edit-note">{bookingStrings.note}</Label>
               <Input id="edit-note" {...form.register("note")} />
             </div>
@@ -450,7 +488,7 @@ export function BookingEditDialog({
                 <span>{bookingStrings.priceAfter}</span>
                 <span>{formatCurrency(newAmount, booking.currency)}</span>
               </div>
-              {booking.discount ? (
+              {discountChange === "keep" && booking.discount ? (
                 <div className="flex justify-between text-text-muted">
                   <span>{booking.discount.code}</span>
                   <span>
@@ -458,6 +496,18 @@ export function BookingEditDialog({
                       ? `${booking.discount.value}%`
                       : formatCurrency(booking.discount.value, booking.currency)}
                   </span>
+                </div>
+              ) : null}
+              {discountChange === "remove" ? (
+                <div className="flex justify-between text-amber-700">
+                  <span>{booking.discount?.code}</span>
+                  <span>{bookingStrings.discountRemoved}</span>
+                </div>
+              ) : null}
+              {discountChange === "apply" ? (
+                <div className="flex justify-between text-text-muted">
+                  <span dir="ltr">{values.discount_code?.trim().toUpperCase()}</span>
+                  <span>{bookingStrings.discountCheckedOnSave}</span>
                 </div>
               ) : null}
               {delta !== 0 && (

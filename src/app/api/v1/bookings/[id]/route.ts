@@ -9,6 +9,7 @@ import {
   BookingEditError,
   deleteBookingByAdmin,
 } from '@/server/services/booking-edit';
+import { DiscountApplyError } from '@/server/services/discount';
 import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
 
@@ -30,6 +31,8 @@ const editSchema = z.object({
   full_name: z.string().min(2).optional(),
   phone_number: z.string().min(1).optional(),
   amount_override: z.number().positive().optional(),
+  // Omitted keeps the code; null or "" removes it.
+  discount_code: z.string().max(64).nullable().optional(),
   note: z.string().optional(),
 });
 
@@ -76,6 +79,11 @@ export async function PATCH(
   } catch (err) {
     if (err instanceof BookingEditError) {
       return errorResponse(err.statusCode, err.message);
+    }
+    // Only signed-in staff edit bookings, so a wrong code here is not counted
+    // toward the guess limit, matching staff at checkout.
+    if (err instanceof DiscountApplyError) {
+      return errorResponse(err.statusCode, err.message, { code: err.code });
     }
     throw err;
   }

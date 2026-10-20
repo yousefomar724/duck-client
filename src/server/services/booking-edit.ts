@@ -1,12 +1,22 @@
 import { Types } from 'mongoose';
-import type { BookingDoc } from '../models/booking';
+import type { BookingDiscount, BookingDoc } from '../models/booking';
 import { Trip, type TripDoc } from '../models/trip';
 import { computeBookingAmount } from './booking';
 import { checkAvailability, occupancyChanged, NoAvailabilityError, verifyOccupancy } from './availability';
 import { isValidResourceType } from './resource-type';
 import { canDeleteBookingStatus } from '@/lib/bookings/status';
 import { discountAmount, retainedAmount, subtotalOf } from '@/lib/bookings/payment';
-import { releaseDiscount, repriceFrozenDiscount, undoReleaseDiscount } from './discount';
+import {
+  priceDiscountCode,
+  redeemDiscountForBooking,
+  releaseDiscount,
+  releaseRedemption,
+  repriceFrozenDiscount,
+  undoReleaseDiscount,
+  type DiscountRedeemIntent,
+  type DiscountRelease,
+} from './discount';
+import { normalizeDiscountCode } from '@/lib/booking/discount';
 import { DeletedBooking } from '../models/deleted-booking';
 import { creditWalletBySupplierId } from './wallet';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
@@ -36,7 +46,40 @@ export interface BookingEditPatch {
   phone_number?: string;
   /** Admin-only: bypass snapshot repricing */
   amount_override?: number;
+  /**
+   * Omitted keeps the current discount. A code applies or replaces it, checked
+   * the same way as at checkout. `null` or an empty string removes it.
+   */
+  discount_code?: string | null;
   note?: string;
+}
+
+type DiscountChange = { kind: 'keep' } | { kind: 'remove' } | { kind: 'apply'; code: string };
+
+function discountChangeOf(
+  raw: string | null | undefined,
+  current: BookingDiscount | null | undefined,
+): DiscountChange {
+  if (raw === undefined) return { kind: 'keep' };
+  const typed = raw?.trim() ?? '';
+  if (!typed) return current ? { kind: 'remove' } : { kind: 'keep' };
+  // Retyping the code already on the booking keeps its frozen rule; checking it
+  // again would fail once it has expired.
+  if (current && normalizeDiscountCode(typed) === current.code) return { kind: 'keep' };
+  return { kind: 'apply', code: typed };
+}
+
+function copyDiscount(discount: BookingDiscount | null | undefined): BookingDiscount | null {
+  if (!discount) return null;
+  return {
+    code_id: discount.code_id,
+    code: discount.code,
+    type: discount.type,
+    value: discount.value,
+    max_discount: discount.max_discount,
+    funded_by: discount.funded_by,
+    amount: discount.amount,
+  };
 }
 
 export interface BookingEditActor {
@@ -133,6 +176,19 @@ export async function applyBookingEdit(
     }
   }
 
+  const discountChange = discountChangeOf(patch.discount_code, booking.discount);
+  if (discountChange.kind !== 'keep') {
+    if (patch.amount_override != null) {
+      throw new BookingEditError('cannot change the discount code and override the amount together');
+    }
+    if (booking.pricing_locked) {
+      throw new BookingEditError(
+        'pricing is locked: the discount code cannot be changed',
+        actor.role === 1 ? 403 : 400,
+      );
+    }
+  }
+
   const before = {
     trip_id: booking.trip_id.toString(),
     quantity: booking.quantity,
@@ -149,6 +205,7 @@ export async function applyBookingEdit(
     phone_number: booking.phone_number,
     amount: booking.amount,
     subtotal: subtotalOf(booking),
+    discount_code: booking.discount?.code ?? null,
     discount_amount: discountAmount(booking),
   };
 
@@ -260,12 +317,13 @@ export async function applyBookingEdit(
   }
 
   const originalSubtotal = booking.subtotal;
-  const originalDiscountAmount = booking.discount?.amount ?? 0;
+  const originalDiscount = copyDiscount(booking.discount);
   const originalPlatformCredit = booking.platform_discount_credited ?? 0;
 
   let newAmount: number;
   let computedQuantity = nextQuantity;
   const repriceDiscount = patch.amount_override == null && !booking.pricing_locked;
+  let redeemIntent: DiscountRedeemIntent | undefined;
 
   if (patch.amount_override != null && actor.role === 2) {
     if (patch.amount_override <= 0) {
@@ -296,13 +354,50 @@ export async function applyBookingEdit(
       duration: durationForPricing,
       wants_guide: nextWantsGuide,
     });
-    const repriced = repriceFrozenDiscount(result.amount, booking.discount);
+    let discount = booking.discount;
+    if (discountChange.kind === 'remove') discount = null;
+    if (discountChange.kind === 'apply') {
+      // Same checks as checkout, against the edited booking. The customer's
+      // account, not the staff member's, owns the use.
+      const priced = await priceDiscountCode({
+        rawCode: discountChange.code,
+        subtotal: result.amount,
+        supplierId: booking.supplier_id.toString(),
+        tripId: trip.id,
+        currency: trip.currency,
+        phone: nextPhone,
+        userId: booking.user_id ? booking.user_id.toString() : null,
+      });
+      discount = priced.discount;
+      redeemIntent = priced.redeem;
+    }
+    const repriced = repriceFrozenDiscount(result.amount, discount);
     newAmount = repriced.total;
     computedQuantity = result.quantity;
     booking.subtotal = result.amount;
+    if (discountChange.kind !== 'keep') booking.discount = discount;
     if (booking.discount) {
       booking.discount.amount = repriced.discountAmount;
       booking.markModified('discount');
+    }
+  }
+
+  // Claim the new use before any money moves, so a code that ran out in the
+  // meantime fails the edit cleanly. The old use goes first: a booking holds
+  // one active use at a time.
+  let releasedUse: DiscountRelease | null = null;
+  let redeemedNew = false;
+  if (discountChange.kind !== 'keep') {
+    const reason = discountChange.kind === 'remove' ? 'edit_removed' : 'edit_replaced';
+    releasedUse = await releaseRedemption(booking, reason);
+    if (redeemIntent) {
+      try {
+        await redeemDiscountForBooking(booking, redeemIntent);
+        redeemedNew = true;
+      } catch (err) {
+        await undoReleaseDiscount(booking, releasedUse).catch(() => {});
+        throw err;
+      }
     }
   }
 
@@ -340,22 +435,22 @@ export async function applyBookingEdit(
     occupancy_slots: [...(booking.occupancy_slots ?? [])],
     occupancy_version: booking.occupancy_version,
     subtotal: originalSubtotal,
-    discount_amount: originalDiscountAmount,
+    discount: originalDiscount,
     platform_discount_credited: originalPlatformCredit,
   };
 
+  // A confirmed booking holds exactly the platform-funded discount as credit.
+  // Swapping to a supplier code or removing the code takes it back out.
   let platformDelta = 0;
-  if (
-    repriceDiscount &&
-    booking.status === 'CONFIRMED' &&
-    booking.discount?.funded_by === 'platform'
-  ) {
-    platformDelta = (booking.discount.amount ?? 0) - originalPlatformCredit;
+  if (repriceDiscount && booking.status === 'CONFIRMED') {
+    const targetCredit =
+      booking.discount?.funded_by === 'platform' ? (booking.discount.amount ?? 0) : 0;
+    platformDelta = targetCredit - originalPlatformCredit;
     if (platformDelta !== 0) {
       await creditWalletBySupplierId(booking.supplier_id.toString(), platformDelta, {
         allowNegative: true,
       });
-      booking.platform_discount_credited = booking.discount.amount ?? 0;
+      booking.platform_discount_credited = targetCredit;
     }
   }
 
@@ -429,6 +524,7 @@ export async function applyBookingEdit(
     phone_number: booking.phone_number,
     amount: booking.amount,
     subtotal: subtotalOf(booking),
+    discount_code: booking.discount?.code ?? null,
     discount_amount: discountAmount(booking),
   };
 
@@ -459,6 +555,9 @@ export async function applyBookingEdit(
         allowNegative: true,
       }).catch(() => {});
     }
+    // Give the new use back before restoring the old one; only one can be active.
+    if (redeemedNew) await releaseRedemption(booking, 'edit_failed').catch(() => {});
+    if (releasedUse) await undoReleaseDiscount(booking, releasedUse).catch(() => {});
     if (err instanceof NoAvailabilityError) {
       booking.trip_id = revertSnapshot.trip_id;
       booking.currency = revertSnapshot.currency;
@@ -477,10 +576,8 @@ export async function applyBookingEdit(
       booking.phone_number = revertSnapshot.phone_number;
       booking.amount = revertSnapshot.amount;
       booking.subtotal = revertSnapshot.subtotal;
-      if (booking.discount) {
-        booking.discount.amount = revertSnapshot.discount_amount;
-        booking.markModified('discount');
-      }
+      booking.discount = revertSnapshot.discount;
+      booking.markModified('discount');
       booking.platform_discount_credited = revertSnapshot.platform_discount_credited;
       booking.declared_amount = revertSnapshot.declared_amount;
       booking.refund_owed = revertSnapshot.refund_owed;

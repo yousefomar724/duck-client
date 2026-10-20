@@ -1,8 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const { connect, syncIndexes } = vi.hoisted(() => ({ connect: vi.fn(), syncIndexes: vi.fn().mockResolvedValue(undefined) }));
+const { connect, syncIndexes, syncRedemptionIndexes } = vi.hoisted(() => ({
+  connect: vi.fn(),
+  syncIndexes: vi.fn().mockResolvedValue(undefined),
+  syncRedemptionIndexes: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('mongoose', () => ({ default: { connect } }));
-vi.mock('@/server/models', () => ({ User: { syncIndexes } }));
+vi.mock('@/server/models', () => ({
+  User: { syncIndexes },
+  DiscountRedemption: { syncIndexes: syncRedemptionIndexes },
+}));
 import { dbConnect } from '@/server/db/connect';
 
 afterEach(() => {
@@ -19,6 +26,7 @@ describe('database connection recovery', () => {
     await expect(dbConnect()).resolves.toEqual({});
     expect(connect).toHaveBeenCalledTimes(2);
     expect(syncIndexes).toHaveBeenCalledOnce();
+    expect(syncRedemptionIndexes).toHaveBeenCalledOnce();
   });
 
   it('shares concurrent connection attempts', async () => {

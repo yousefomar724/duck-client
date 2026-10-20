@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 // model "Supplier"` unless something in that graph has already imported the
 // Supplier model. Importing the full set here, once, before any query runs
 // guarantees every ref resolves regardless of which route triggered it.
-import { User } from '../models';
+import { DiscountRedemption, User } from '../models';
 
 declare global {
   var _mongooseConn: Promise<typeof mongoose> | undefined;
@@ -25,8 +25,11 @@ export function dbConnect(): Promise<typeof mongoose> {
       // Self-heals a bad index from an earlier schema version: `wallet_id`
       // defaulted to `null`, defeating its sparse unique index (sparse only
       // skips *absent* fields, not explicit nulls) and causing a duplicate-key
-      // error on the second user ever created. Cheap once-per-process check.
+      // error on the second user ever created. The redemption index used to be
+      // unique per booking outright, which blocked swapping a code on edit.
+      // Cheap once-per-process checks.
       await User.syncIndexes();
+      await DiscountRedemption.syncIndexes();
       return conn;
     }).catch((error) => {
       // A transient outage must not poison every future request in this process.

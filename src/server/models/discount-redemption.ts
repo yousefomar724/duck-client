@@ -42,7 +42,12 @@ DiscountRedemptionSchema.index(
     partialFilterExpression: { status: 'active', once_per_customer: true },
   },
 );
-DiscountRedemptionSchema.index({ booking_id: 1 }, { unique: true });
+// One active use per booking. Released rows stay as history, so an edit that
+// swaps the code keeps a record of the code it replaced.
+DiscountRedemptionSchema.index(
+  { booking_id: 1 },
+  { unique: true, partialFilterExpression: { status: 'active' } },
+);
 DiscountRedemptionSchema.index({ code_id: 1, status: 1 });
 
 export const DiscountRedemption =

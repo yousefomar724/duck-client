@@ -283,9 +283,10 @@ export function BookingsView({ role }: BookingsViewProps) {
     async (id: string, data: bookingsApi.UpdateBookingRequest) => {
       setEditLoading(true)
       try {
-        const { error: err } = await bookingsApi.updateBooking(id, data)
-        if (err) {
-          addToast(err, "error")
+        const result = await bookingsApi.updateBooking(id, data)
+        if (result.error !== null) {
+          const discountError = result.code && bookingStrings.discountErrors[result.code]
+          addToast(discountError || result.error, "error")
           return
         }
         addToast(bookingStrings.editSuccess, "success")
