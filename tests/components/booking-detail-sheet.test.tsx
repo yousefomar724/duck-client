@@ -33,6 +33,23 @@ function renderSheet(overrides: Record<string, unknown> = {}) {
 // Both answers are collected by the public booking form and already appear in
 // the supplier email; they were missing from the dashboard entirely.
 describe('BookingDetailSheet survey answers', () => {
+  it('shows a discount breakdown and the Duck cover label', () => {
+    renderSheet({
+      amount: 900,
+      subtotal: 1000,
+      currency: 'EGP',
+      discount: {
+        code: 'DUCK10',
+        type: 'percentage',
+        value: 10,
+        funded_by: 'platform',
+        amount: 100,
+      },
+    });
+    expect(screen.getByText('DUCK10')).toBeInTheDocument();
+    expect(screen.getByText(/تغطية دَك/)).toBeInTheDocument();
+  });
+
   it('shows the referral channel with its Arabic label', () => {
     renderSheet({ hear_about_us: 'instagram' });
     expect(screen.getByText('كيف عرف عننا')).toBeInTheDocument();

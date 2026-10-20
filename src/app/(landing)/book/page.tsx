@@ -84,6 +84,11 @@ import { useToast } from "@/lib/stores/toast-store"
 import Footer from "@/components/landing/Footer"
 import { useTranslations, useLocale } from "next-intl"
 import { TripListingPrices } from "@/components/shared/trip-listing-prices"
+import {
+  DiscountCodeField,
+  isDiscountErrorCode,
+  type AppliedDiscount,
+} from "@/components/booking/discount-code-field"
 import { ImageWithLogoFallback } from "@/components/shared/image-with-logo-fallback"
 
 const PAYMENT_METHOD = process.env.NEXT_PUBLIC_PAYMENT_METHOD ?? "instapay"
@@ -163,6 +168,7 @@ function BookPageContent() {
   const [submitLoading, setSubmitLoading] = useState(false)
   const [guestsMode, setGuestsMode] = useState<"preset" | "custom">("preset")
   const [paymentAmount, setPaymentAmount] = useState<number>(0)
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null)
   const [manualBookingResult, setManualBookingResult] = useState<{
     booking: Booking
     chosenAmount: number
@@ -509,6 +515,7 @@ function BookPageContent() {
       watchedDuration,
     ],
   )
+  const payableTotal = appliedDiscount?.total ?? totalAmount
 
   const handleSubmit = form.handleSubmit(async (values) => {
     if (!selectedTrip) return
@@ -530,12 +537,18 @@ function BookPageContent() {
     const needsReferral =
       values.hear_about_us === "friend" || values.hear_about_us === "other"
 
-    const minPayment = minimumDeposit(totalAmount)
+    const chargeTotal = appliedDiscount?.total ?? totalAmount
+    const minPayment = minimumDeposit(chargeTotal)
     const chosenAmount =
-      paymentAmount >= minPayment ? paymentAmount : totalAmount
+      chargeTotal === 0
+        ? 0
+        : paymentAmount >= minPayment
+          ? paymentAmount
+          : chargeTotal
 
     const bookingPayload = {
       trip_id: selectedTrip.id,
+      ...(appliedDiscount ? { discount_code: appliedDiscount.code } : {}),
       full_name: values.full_name.trim(),
       phone_number: phoneNumber,
       booking_date,
@@ -564,6 +577,10 @@ function BookPageContent() {
           addToast(t("tripUnavailable"), "error")
           return
         }
+        if (isDiscountErrorCode(result.code)) {
+          addToast(t(`discountError_${result.code}` as "discountError_NOT_FOUND"), "error")
+          return
+        }
         if (result.code === "MINIMUM_GUESTS") {
           addToast(
             t("minGuestsError", { min: selectedTrip.min_guests ?? 1 }),
@@ -582,7 +599,11 @@ function BookPageContent() {
       if (result.data?.booking) {
         const bookingResult = { booking: result.data.booking, chosenAmount }
         setManualBookingResult(bookingResult)
-        writePendingInstapay(bookingResult)
+        if ((result.data.booking.amount ?? chargeTotal) > 0) {
+          writePendingInstapay(bookingResult)
+        } else {
+          clearPendingInstapay()
+        }
         window.scrollTo({ top: 0, behavior: "smooth" })
       }
       return
@@ -1630,13 +1651,41 @@ function BookPageContent() {
                             </span>
                           </div>
                         ) : null}
+                        {appliedDiscount ? (
+                          <>
+                            <div className="flex justify-between border-t pt-3">
+                              <span className="text-text-muted">
+                                {t("reviewSubtotal")}
+                              </span>
+                              <span>
+                                {formatCurrency(
+                                  appliedDiscount.subtotal,
+                                  selectedTrip.currency,
+                                  locale,
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-text-muted">
+                                {t("reviewDiscount", { code: appliedDiscount.code })}
+                              </span>
+                              <span>
+                                {formatCurrency(
+                                  appliedDiscount.discount,
+                                  selectedTrip.currency,
+                                  locale,
+                                )}
+                              </span>
+                            </div>
+                          </>
+                        ) : null}
                         <div className="flex justify-between border-t pt-3">
                           <span className="text-text-muted">
                             {t("reviewTotal")}
                           </span>
                           <span className="font-bold text-duck-cyan">
                             {formatCurrency(
-                              breakdown.total,
+                              appliedDiscount?.total ?? breakdown.total,
                               selectedTrip.currency,
                               locale,
                             )}
@@ -1684,7 +1733,33 @@ function BookPageContent() {
                     </div>
                   ) : null}
                 </div>
-                {PAYMENT_METHOD === "instapay" && totalAmount > 0 && (
+                <DiscountCodeField
+                  tripId={selectedTrip.id}
+                  phone={(phoneToE164(watchedPhone || "") ?? watchedPhone) || ""}
+                  quantity={totalGuests}
+                  localGuests={
+                    watchedGuestMix === "local"
+                      ? totalGuests
+                      : watchedGuestMix === "mixed"
+                        ? Number(watchedLocalGuests) || 0
+                        : 0
+                  }
+                  foreignerGuests={
+                    watchedGuestMix === "foreigner"
+                      ? totalGuests
+                      : watchedGuestMix === "mixed"
+                        ? Number(watchedForeignerGuests) || 0
+                        : 0
+                  }
+                  duration={Number(watchedDuration) || 1}
+                  currency={selectedTrip.currency}
+                  locale={locale}
+                  onChange={(next) => {
+                    setAppliedDiscount(next)
+                    setPaymentAmount(0)
+                  }}
+                />
+                {PAYMENT_METHOD === "instapay" && payableTotal > 0 && (
                   <div className="rounded-2xl border border-duck-cyan/30 bg-duck-cyan/5 p-5 space-y-4">
                     <p className="font-semibold text-text-dark">
                       {t("paymentAmountTitle")}
@@ -1692,15 +1767,15 @@ function BookPageContent() {
                     <div className="flex flex-wrap gap-3">
                       <button
                         type="button"
-                        onClick={() => setPaymentAmount(totalAmount)}
+                        onClick={() => setPaymentAmount(payableTotal)}
                         className={`flex-1 min-w-[140px] rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
-                          paymentAmount === totalAmount || paymentAmount === 0
+                          paymentAmount === payableTotal || paymentAmount === 0
                             ? "border-duck-cyan bg-duck-cyan/10 text-duck-navy"
                             : "border-border hover:border-duck-cyan/50"
                         }`}
                       >
                         <span className="block text-base font-bold">
-                          {formatCurrency(totalAmount, selectedTrip.currency, locale)}
+                          {formatCurrency(payableTotal, selectedTrip.currency, locale)}
                         </span>
                         {/* flex-wrap so the badge drops to its own line on
                             narrow cards instead of colliding with the label. */}
@@ -1714,18 +1789,18 @@ function BookPageContent() {
                       <button
                         type="button"
                         onClick={() =>
-                          setPaymentAmount(minimumDeposit(totalAmount))
+                          setPaymentAmount(minimumDeposit(payableTotal))
                         }
                         className={`flex-1 min-w-[140px] rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
-                          paymentAmount === minimumDeposit(totalAmount) &&
-                          paymentAmount !== totalAmount
+                          paymentAmount === minimumDeposit(payableTotal) &&
+                          paymentAmount !== payableTotal
                             ? "border-duck-cyan bg-duck-cyan/10 text-duck-navy"
                             : "border-border hover:border-duck-cyan/50"
                         }`}
                       >
                         <span className="block text-base font-bold">
                           {formatCurrency(
-                            minimumDeposit(totalAmount),
+                            minimumDeposit(payableTotal),
                             selectedTrip.currency,
                             locale,
                           )}
@@ -1743,9 +1818,9 @@ function BookPageContent() {
                         <input
                           type="number"
                           inputMode="numeric"
-                          min={minimumDeposit(totalAmount)}
-                          max={totalAmount}
-                          value={paymentAmount || totalAmount}
+                          min={minimumDeposit(payableTotal)}
+                          max={payableTotal}
+                          value={paymentAmount || payableTotal}
                           onChange={(e) => {
                             const v = Number(e.target.value)
                             setPaymentAmount(v)
@@ -1759,18 +1834,18 @@ function BookPageContent() {
                       <p className="text-xs text-text-muted">
                         {t("paymentAmountMin", {
                           min: formatCurrency(
-                            minimumDeposit(totalAmount),
+                            minimumDeposit(payableTotal),
                             selectedTrip.currency,
                             locale,
                           ),
                         })}
                       </p>
                     </div>
-                    {paymentAmount > 0 && paymentAmount < totalAmount && (
+                    {paymentAmount > 0 && paymentAmount < payableTotal && (
                       <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
                         {t("partialPaymentRemaining", {
                           remaining: formatCurrency(
-                            totalAmount - paymentAmount,
+                            payableTotal - paymentAmount,
                             selectedTrip.currency,
                             locale,
                           ),
@@ -1784,10 +1859,10 @@ function BookPageContent() {
                     {PAYMENT_METHOD === "instapay" ? (
                       <div className="rounded-xl border border-duck-cyan/30 bg-duck-cyan/5 p-4 space-y-1">
                         <p className="font-semibold text-duck-navy">
-                          {t("nextStepHeading")}
+                          {payableTotal === 0 ? t("freeBookingTitle") : t("nextStepHeading")}
                         </p>
                         <p className="text-sm text-text-dark">
-                          {t("nextStepInstapayNote")}
+                          {payableTotal === 0 ? t("freeBookingNote") : t("nextStepInstapayNote")}
                         </p>
                       </div>
                     ) : null}
@@ -1813,9 +1888,11 @@ function BookPageContent() {
                       >
                         {submitLoading
                           ? t("submitLoading")
-                          : PAYMENT_METHOD === "instapay"
-                            ? t("submitInstapay")
-                            : t("proceedToPayment")}
+                          : payableTotal === 0
+                            ? t("submitFreeBooking")
+                            : PAYMENT_METHOD === "instapay"
+                              ? t("submitInstapay")
+                              : t("proceedToPayment")}
                       </Button>
                     </div>
                   </form>
@@ -1833,10 +1910,14 @@ function BookPageContent() {
                     <Clock className="w-8 h-8 text-amber-600" />
                   </div>
                   <h2 className="text-text-dark text-2xl font-bold">
-                    {t("bookingCreated")}
+                    {manualBookingResult.booking.amount === 0
+                      ? t("freeBookingTitle")
+                      : t("bookingCreated")}
                   </h2>
                   <p className="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm">
-                    {t("bookingNotConfirmedYet")}
+                    {manualBookingResult.booking.amount === 0
+                      ? t("freeBookingNote")
+                      : t("bookingNotConfirmedYet")}
                   </p>
                   <p className="text-text-muted text-sm">
                     {t("bookingRef")}:{" "}
@@ -1874,7 +1955,20 @@ function BookPageContent() {
                   )}
                 </div>
 
-                <div className="space-y-5 rounded-2xl border-2 border-[#67358f]/25 bg-gradient-to-br from-[#67358f]/[0.06] via-white to-[#f36b21]/[0.07] p-5">
+                {manualBookingResult.booking.discount ? (
+                  <p className="text-sm text-text-muted text-center">
+                    {t("reviewDiscount", { code: manualBookingResult.booking.discount.code })}
+                    {" · "}
+                    {formatCurrency(
+                      manualBookingResult.booking.discount.amount,
+                      manualBookingResult.booking.currency || "EGP",
+                      locale,
+                    )}
+                  </p>
+                ) : null}
+                {manualBookingResult.booking.amount > 0 ? (
+                <>
+                <div className="space-y-5 rounded-2xl border-2 border-[#67358f]/25 bg-gradient-to-br from-[#67358f]/[0.06] via-white to-[#f36b21]/[0.07] p-5" data-testid="instapay-step">
                   <div className="flex gap-3">
                     <span
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#67358f] text-sm font-bold text-white"
@@ -1974,6 +2068,8 @@ function BookPageContent() {
                     {t("instapayCopyRef")}
                   </button>
                 </div>
+                </>
+                ) : null}
 
                 <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
                   {t("bookingPendingNote")}

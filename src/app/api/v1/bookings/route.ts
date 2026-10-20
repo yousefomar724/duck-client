@@ -48,6 +48,13 @@ export async function GET(request: Request) {
     if (to) range.$lt = zonedEndOfDayExclusive(to);
     filter.booking_date = range;
   }
+  if (searchParams.get('has_discount') === '1') {
+    filter['discount.code'] = { $exists: true, $nin: [null, ''] };
+  }
+  const discountCode = searchParams.get('discount_code')?.trim();
+  if (discountCode) {
+    filter['discount.code'] = discountCode.toUpperCase();
+  }
   if (q?.trim()) {
     const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     filter.$or = [

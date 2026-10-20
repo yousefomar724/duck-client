@@ -9,6 +9,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { opsStrings } from "./ops-strings"
 import { useOpsScope } from "./use-ops-scope"
 import { formatCurrency } from "@/lib/constants"
+import { discountStrings } from "@/lib/dashboard/discount-strings"
 import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import { DashboardSkeleton } from "@/components/shared/loading-skeletons"
@@ -49,6 +50,45 @@ export function ReportsView({ role }: { role: "admin" | "supplier" }) {
   return (
     <div className="space-y-6">
       <PageHeader title={opsStrings.reports} description={`${from} — ${to}`} />
+      {data.discount_totals ? (
+        <section className="rounded-xl border bg-white p-4 text-sm">
+          <h2 className="mb-3 font-semibold">
+            {role === "admin" ? discountStrings.platformCost : discountStrings.earnings}
+          </h2>
+          <ul className="space-y-2">
+            <li className="flex justify-between"><span>{discountStrings.gross}</span><span>{formatCurrency(data.discount_totals.gross)}</span></li>
+            <li className="flex justify-between"><span>{discountStrings.ownDiscounts}</span><span>{formatCurrency(data.discount_totals.supplier_funded_discounts)}</span></li>
+            <li className="flex justify-between"><span>{discountStrings.duckDiscounts}</span><span>{formatCurrency(data.discount_totals.platform_funded_discounts)}</span></li>
+            <li className="flex justify-between"><span>{discountStrings.paidByCustomers}</span><span>{formatCurrency(data.discount_totals.customer_revenue)}</span></li>
+            <li className="flex justify-between font-medium"><span>{discountStrings.earnings}</span><span>{formatCurrency(data.discount_totals.supplier_earnings)}</span></li>
+            {role === "admin" ? (
+              <li className="flex justify-between"><span>{discountStrings.platformCost}</span><span>{formatCurrency(data.discount_totals.platform_discount_credited)}</span></li>
+            ) : null}
+          </ul>
+          {(data.discount_codes ?? []).length > 0 ? (
+            <table className="mt-4 w-full text-sm">
+              <thead>
+                <tr className="text-right text-text-muted">
+                  <th className="py-1">{discountStrings.codePerformance}</th>
+                  <th>الاستخدام</th>
+                  <th>الخصم</th>
+                  <th>الإيراد</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.discount_codes?.map((row) => (
+                  <tr key={row.code}>
+                    <td className="py-1 font-mono" dir="ltr">{row.code}</td>
+                    <td>{row.uses}</td>
+                    <td>{formatCurrency(row.discount_given)}</td>
+                    <td>{formatCurrency(row.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : null}
+        </section>
+      ) : null}
       <ChartContainer config={chartConfig} className="h-64 w-full">
         <BarChart data={data.by_day.map((d) => ({ day: d._id, revenue: d.revenue, bookings: d.bookings }))}>
           <CartesianGrid vertical={false} />

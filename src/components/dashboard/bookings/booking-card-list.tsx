@@ -140,6 +140,11 @@ export function BookingCardList({
                   <span className="font-bold text-duck-navy">
                     {formatCurrency(booking.amount, booking.currency)}
                   </span>
+                  {booking.discount ? (
+                    <span className="text-xs font-medium text-text-muted" dir="ltr">
+                      {booking.discount.code}
+                    </span>
+                  ) : null}
                   {outstandingBalance(booking) > 0 && (
                     <span className="text-xs font-semibold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">
                       متبقي {formatCurrency(outstandingBalance(booking), booking.currency)}

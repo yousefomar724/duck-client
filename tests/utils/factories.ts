@@ -6,6 +6,7 @@ import { Wallet } from '@/server/models/wallet';
 import { Destination } from '@/server/models/destination';
 import { Trip } from '@/server/models/trip';
 import { Booking } from '@/server/models/booking';
+import { DiscountCode } from '@/server/models/discount-code';
 import { SupplierStorage } from '@/server/models/supplier-storage';
 import { TourGuide } from '@/server/models/tourguide';
 import { signAuthToken } from '@/server/auth/jwt';
@@ -197,6 +198,31 @@ export async function createLegacyBooking(overrides: Record<string, unknown> = {
     occupancy_slots: [],
     starts_at: null,
     ends_at: null,
+    ...overrides,
+  });
+}
+
+export async function makeDiscountCode(overrides: Record<string, unknown> = {}) {
+  const expires = (overrides.expires_at as Date) ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  return DiscountCode.create({
+    code: (overrides.code as string) ?? `SAVE${Date.now().toString(36).toUpperCase()}`,
+    description: 'Test code',
+    type: 'percentage',
+    value: 10,
+    currency: '',
+    max_discount: null,
+    min_booking_amount: null,
+    starts_at: null,
+    expires_at: expires,
+    usage_limit_total: null,
+    once_per_customer: false,
+    used_count: 0,
+    supplier_id: null,
+    trip_ids: [],
+    funded_by: 'platform',
+    created_by_user_id: new mongoose.Types.ObjectId(),
+    created_by_role: 2,
+    status: 'active',
     ...overrides,
   });
 }

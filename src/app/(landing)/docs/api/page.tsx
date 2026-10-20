@@ -54,7 +54,7 @@ const REST_ENDPOINTS = [
   {
     method: "POST",
     path: "/api/v1/bookings/manual",
-    notes: "Guest booking. Optional bearer. Requires PII the user supplied.",
+    notes: "Guest booking. Optional bearer and optional discount_code. The server prices the discount; client amounts are ignored.",
   },
   {
     method: "POST",

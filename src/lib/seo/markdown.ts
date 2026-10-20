@@ -271,7 +271,7 @@ function buildBookMarkdown(): string {
     "",
     `Pick a trip on ${SITE_URL}/trips, then open ${SITE_URL}/book?trip=<id>.`,
     "",
-    "The form asks for name, phone, date, guest counts (Egyptian residents vs foreign visitors), equipment (kayak, water cycle, or SUP), and payment by InstaPay or cash.",
+    "The form asks for name, phone, date, guest counts (Egyptian residents vs foreign visitors), equipment (kayak, water cycle, or SUP), an optional discount_code, and payment by InstaPay or cash. A code that makes the total zero skips InstaPay.",
     "",
     "There is no card gateway. Automated agents should hand the user to the form rather than collecting payment.",
     "",

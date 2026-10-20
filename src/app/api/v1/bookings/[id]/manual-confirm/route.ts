@@ -36,9 +36,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const fallback = booking.declared_amount > 0 ? booking.declared_amount : booking.amount;
-  const amountPaid = body.amount_paid && body.amount_paid > 0 ? body.amount_paid : fallback;
+  let amountPaid = body.amount_paid && body.amount_paid > 0 ? body.amount_paid : fallback;
 
-  if (amountPaid <= 0 || amountPaid > booking.amount) {
+  // A 100% code leaves nothing to collect. Confirming it with 0 is the only
+  // way the booking can leave PENDING.
+  if (booking.amount === 0) {
+    if (body.amount_paid != null && body.amount_paid !== 0) {
+      return errorResponse(400, 'invalid amount_paid: this booking is free');
+    }
+    amountPaid = 0;
+  } else if (amountPaid <= 0 || amountPaid > booking.amount) {
     return errorResponse(400, `invalid amount_paid: must be between 0 and ${booking.amount}`);
   }
 

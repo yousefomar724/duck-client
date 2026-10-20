@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select"
 import { bookingStrings } from "./booking-strings"
 import { calculateBookingTotal } from "@/lib/booking/pricing"
+import { applyDiscount } from "@/lib/booking/discount"
 import { isBookingTimeValid } from "@/lib/booking/schedule"
 import { amountPaid } from "@/lib/bookings/payment"
 import { guestAgeBreakdown } from "@/lib/bookings/guests"
@@ -140,6 +141,10 @@ function previewAmount(
 
   if (values.wants_guide || trip?.guide_mandatory) {
     total += snap?.guide_price ?? trip?.guide_price ?? 0
+  }
+
+  if (booking.discount) {
+    return applyDiscount(total, booking.discount).total
   }
 
   return total
@@ -445,6 +450,16 @@ export function BookingEditDialog({
                 <span>{bookingStrings.priceAfter}</span>
                 <span>{formatCurrency(newAmount, booking.currency)}</span>
               </div>
+              {booking.discount ? (
+                <div className="flex justify-between text-text-muted">
+                  <span>{booking.discount.code}</span>
+                  <span>
+                    {booking.discount.type === "percentage"
+                      ? `${booking.discount.value}%`
+                      : formatCurrency(booking.discount.value, booking.currency)}
+                  </span>
+                </div>
+              ) : null}
               {delta !== 0 && (
                 <div className="flex justify-between text-text-muted">
                   <span>{bookingStrings.priceDelta}</span>

@@ -3,10 +3,9 @@ import { dbConnect } from '@/server/db/connect';
 import { requireAuth } from '@/server/auth/guard';
 import { findActiveUserById } from '@/server/services/user';
 import { Booking } from '@/server/models/booking';
-import { creditWalletBySupplierId } from '@/server/services/wallet';
+import { finalizeManualRefund } from '@/server/services/booking-payment';
 import { errorResponse } from '@/server/lib/json';
 import { isValidObjectId } from '@/server/lib/object-id';
-import { retainedAmount } from '@/lib/bookings/payment';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = requireAuth(request);
@@ -29,39 +28,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return errorResponse(403, 'unauthorized: booking does not belong to your supplier account');
   }
 
-  // Any refund an edit already owed was debited from the wallet at edit time.
-  const refundedAmount = retainedAmount(booking);
-
   try {
-    if (refundedAmount > 0) {
-      await creditWalletBySupplierId(booking.supplier_id.toString(), -refundedAmount, {
-        allowNegative: true,
-      });
-    }
+    await finalizeManualRefund(booking, 'refund');
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'failed to update wallet';
-    return errorResponse(500, message);
-  }
-
-  booking.status = 'REFUNDED';
-  booking.amount_paid = 0;
-  booking.refund_owed = 0;
-  if (refundedAmount > 0) {
-    booking.payment_entries.push({
-      amount: -refundedAmount,
-      recorded_at: new Date(),
-      note: 'refund',
-    });
-  }
-
-  try {
-    await booking.save();
-  } catch (err) {
-    if (refundedAmount > 0) {
-      await creditWalletBySupplierId(booking.supplier_id.toString(), refundedAmount, {
-        allowNegative: true,
-      }).catch(() => {});
-    }
     const message = err instanceof Error ? err.message : 'failed to refund payment';
     return errorResponse(500, message);
   }

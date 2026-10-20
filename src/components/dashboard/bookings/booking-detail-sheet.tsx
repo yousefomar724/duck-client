@@ -37,7 +37,9 @@ import {
   resourceLabels,
   supplierDisplayName,
 } from "@/lib/bookings/status"
-import { amountPaid, outstandingBalance, refundOwed } from "@/lib/bookings/payment"
+import { amountPaid, outstandingBalance, refundOwed, subtotalOf } from "@/lib/bookings/payment"
+import { BookingDiscountNote } from "./booking-discount-note"
+import { discountStrings } from "@/lib/dashboard/discount-strings"
 import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import { formatBookingDuration, formatCurrency, formatDateTime } from "@/lib/constants"
 import type { Booking, Supplier, TourGuide, Trip } from "@/lib/types"
@@ -283,9 +285,20 @@ export function BookingDetailSheet({
                   label={bookingStrings.paymentState}
                   value={<PaymentStateBadge booking={booking} />}
                 />
+                {booking.discount ? (
+                  <DetailField
+                    label={discountStrings.subtotal}
+                    value={formatCurrency(subtotalOf(booking), booking.currency)}
+                  />
+                ) : null}
                 <DetailField
                   label={bookingStrings.amount}
-                  value={formatCurrency(booking.amount, booking.currency)}
+                  value={
+                    <span className="space-y-1">
+                      <span className="block">{formatCurrency(booking.amount, booking.currency)}</span>
+                      <BookingDiscountNote booking={booking} detailed />
+                    </span>
+                  }
                 />
                 <DetailField
                   label={bookingStrings.paid}

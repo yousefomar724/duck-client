@@ -5,6 +5,8 @@ import { SupplierStorage } from '../models/supplier-storage';
 import { isValidResourceType } from './resource-type';
 import { checkAvailability, verifyOccupancy } from './availability';
 import { minimumDeposit } from '@/lib/booking/pricing';
+import { priceDiscountCode, redeemDiscountForBooking, releaseDiscount, type DiscountRedeemIntent } from './discount';
+import type { BookingDiscount } from '../models/booking';
 import { isBookingTimeValid } from '@/lib/booking/schedule';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
 import {
@@ -34,6 +36,8 @@ export interface CreateBookingInput {
   kids_1_6?: number;
   kids_7_12?: number;
   source?: 'online' | 'walk_in';
+  /** Optional code. The discount is priced here; a client-sent amount is never trusted. */
+  discount_code?: string;
 }
 
 export interface BuiltBooking {
@@ -42,6 +46,11 @@ export interface BuiltBooking {
   trip_id: string;
   supplier_id: string;
   amount: number;
+  subtotal: number;
+  discount: BookingDiscount | null;
+  platform_discount_credited: number;
+  /** Present only until persist redeems the code. Not stored on the booking. */
+  discount_redeem?: DiscountRedeemIntent;
   currency: string;
   full_name: string;
   phone_number: string;
@@ -214,7 +223,7 @@ export async function buildBooking(
     turnaroundMinutes: storage?.turnaround_minutes ?? 0,
   });
 
-  const { amount, quantity: computedQuantity, localGuests: computedLocal, foreignerGuests: computedForeigner } = computeBookingAmount(
+  const { amount: subtotal, quantity: computedQuantity, localGuests: computedLocal, foreignerGuests: computedForeigner } = computeBookingAmount(
     {
       is_tour: trip.is_tour,
       price: trip.price,
@@ -225,6 +234,24 @@ export async function buildBooking(
     req,
   );
   quantity = computedQuantity;
+
+  let amount = subtotal;
+  let discount: BookingDiscount | null = null;
+  let discountRedeem: DiscountRedeemIntent | undefined;
+  if (req.discount_code?.trim()) {
+    const priced = await priceDiscountCode({
+      rawCode: req.discount_code,
+      subtotal,
+      supplierId: trip.supplier_id.toString(),
+      tripId: trip.id,
+      currency: trip.currency,
+      phone: req.phone_number,
+      userId,
+    });
+    amount = priced.amount;
+    discount = priced.discount;
+    discountRedeem = priced.redeem;
+  }
 
   const duration = trip.is_tour ? (req.duration ?? 1) : 0;
 
@@ -271,6 +298,10 @@ export async function buildBooking(
     referral_text: req.referral_text ?? '',
     declared_amount: declaredAmount,
     amount_paid: 0,
+    subtotal,
+    discount,
+    platform_discount_credited: 0,
+    discount_redeem: discountRedeem,
     duration,
     pricing_snapshot: {
       price: trip.price,
@@ -288,11 +319,20 @@ export async function buildBooking(
 }
 
 export async function persistCreatedBooking(built: BuiltBooking): Promise<BookingDoc> {
-  const booking = await Booking.create(built);
+  const { discount_redeem: redeem, ...stored } = built;
+  const booking = await Booking.create(stored);
+  let redeemed = false;
   try {
+    if (redeem) {
+      await redeemDiscountForBooking(booking, redeem);
+      redeemed = true;
+    }
     await verifyOccupancy(booking);
     return booking;
   } catch (err) {
+    if (redeemed) {
+      await releaseDiscount(booking, 'booking_failed').catch(() => {});
+    }
     await Booking.deleteOne({ _id: booking._id }).catch(() => {});
     throw err;
   }
@@ -358,6 +398,9 @@ export function toBookingEmailData(booking: BookingDoc) {
     played_before: booking.played_before,
     hear_about_us: booking.hear_about_us,
     amount: booking.amount,
+    subtotal: booking.subtotal,
+    discount_code: booking.discount?.code,
+    discount_amount: booking.discount?.amount,
     currency: booking.currency,
     declared_amount: booking.declared_amount,
     status: booking.status,

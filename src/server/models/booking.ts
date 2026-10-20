@@ -30,6 +30,16 @@ export interface PricingSnapshot {
   guide_price: number;
 }
 
+export interface BookingDiscount {
+  code_id: Types.ObjectId;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  max_discount: number | null;
+  funded_by: 'supplier' | 'platform';
+  amount: number;
+}
+
 export interface BookingRevisionChange {
   from: unknown;
   to: unknown;
@@ -51,6 +61,12 @@ export interface BookingDoc extends mongoose.Document {
   trip_id: Types.ObjectId;
   supplier_id: Types.ObjectId;
   amount: number;
+  /** Price before the discount. 0 on bookings created before discount codes. */
+  subtotal: number;
+  /** Frozen discount rule. Reapplied on edit even if the code later expires. */
+  discount: BookingDiscount | null;
+  /** Platform money already credited to the supplier wallet for this booking. */
+  platform_discount_credited: number;
   currency: string;
   full_name: string;
   phone_number: string;
@@ -103,6 +119,23 @@ const BookingSchema = new Schema<BookingDoc>(
     trip_id: { type: Schema.Types.ObjectId, ref: 'Trip', required: true },
     supplier_id: { type: Schema.Types.ObjectId, ref: 'Supplier', required: true },
     amount: { type: Number, required: true },
+    subtotal: { type: Number, default: 0 },
+    discount: {
+      type: new Schema<BookingDiscount>(
+        {
+          code_id: { type: Schema.Types.ObjectId, ref: 'DiscountCode', required: true },
+          code: { type: String, required: true },
+          type: { type: String, enum: ['percentage', 'fixed'], required: true },
+          value: { type: Number, required: true },
+          max_discount: { type: Number, default: null },
+          funded_by: { type: String, enum: ['supplier', 'platform'], required: true },
+          amount: { type: Number, required: true },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
+    platform_discount_credited: { type: Number, default: 0 },
     currency: { type: String, required: true },
     full_name: { type: String, required: true },
     phone_number: { type: String, required: true },

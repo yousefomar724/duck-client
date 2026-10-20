@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import * as payoutsApi from "@/lib/api/payouts"
 import * as suppliersApi from "@/lib/api/suppliers"
+import * as walletApi from "@/lib/api/wallet"
 import { formatCurrency, formatDate, getPayoutDateString, isPaidPayoutStatus, currencies, payoutStatusColors } from "@/lib/constants"
 import { DASHBOARD_LANG } from "@/lib/dashboard/strings"
 import { resolveLocalizedField } from "@/lib/dashboard/localize"
@@ -56,7 +57,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { PayoutStatus, Payout, Supplier } from "@/lib/types"
+import type { PayoutStatus, Payout, Supplier, Wallet } from "@/lib/types"
 
 const ROW_STATUS_ORDER: PayoutStatus[] = [
   "pending",
@@ -86,6 +87,7 @@ export default function AdminPayouts() {
 
   const [payouts, setPayouts] = useState<Payout[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [wallets, setWallets] = useState<Wallet[]>([])
   const [activeTab, setActiveTab] = useState<"all" | PayoutStatus>("all")
   const [supplierFilter, setSupplierFilter] = useState("all")
   const [isLoading, setIsLoading] = useState(true)
@@ -117,9 +119,10 @@ export default function AdminPayouts() {
       }
       setError(null)
 
-      const [payoutsRes, suppliersRes] = await Promise.all([
+      const [payoutsRes, suppliersRes, walletsRes] = await Promise.all([
         payoutsApi.getPayouts(),
         suppliersApi.getSuppliers(DASHBOARD_LANG),
+        walletApi.getAllWallets(),
       ])
 
       if (payoutsRes.error || suppliersRes.error) {
@@ -129,6 +132,7 @@ export default function AdminPayouts() {
 
       setPayouts(payoutsRes.data || [])
       setSuppliers(suppliersRes.data || [])
+      setWallets(walletsRes.data || [])
     } catch (err) {
       setError("حدث خطأ أثناء تحميل البيانات")
       console.error(err)
@@ -310,6 +314,17 @@ export default function AdminPayouts() {
                     ))}
                   </SelectContent>
                 </Select>
+                {(() => {
+                  const wallet = wallets.find((item) => item.supplier_id === formSupplierId)
+                  if (!wallet) return null
+                  return (
+                    <p className="text-xs text-text-muted">
+                      الرصيد {formatCurrency(wallet.amount)} · مدفوعات العملاء{" "}
+                      {formatCurrency(wallet.customer_payments ?? 0)} · تغطية دَك{" "}
+                      {formatCurrency(wallet.platform_discount_credits ?? 0)}
+                    </p>
+                  )
+                })()}
                 {suppliers.length === 0 && !isLoading ? (
                   <p className="text-xs text-muted-foreground">
                     لا يوجد موردون محمّلون. أعد تحميل الصفحة أو تحقق من الاتصال.

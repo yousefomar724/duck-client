@@ -138,6 +138,11 @@ export function getBookingColumns({
             <span className="font-semibold text-duck-navy whitespace-nowrap">
               {formatCurrency(booking.amount, booking.currency)}
             </span>
+            {booking.discount ? (
+              <div className="text-xs text-text-muted" dir="ltr">
+                {booking.discount.code}
+              </div>
+            ) : null}
             {paid > 0 && (
               <div className="text-xs text-text-muted whitespace-nowrap">
                 مدفوع {formatCurrency(paid, booking.currency)}

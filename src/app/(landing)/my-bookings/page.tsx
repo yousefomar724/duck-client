@@ -182,6 +182,11 @@ function MyBookingsContent() {
                         <TableCell>{b.quantity ?? "—"}</TableCell>
                         <TableCell>
                           {formatCurrency(b.amount, b.currency, locale)}
+                          {b.discount ? (
+                            <span className="block text-xs text-text-muted">
+                              {b.discount.code} · -{formatCurrency(b.discount.amount, b.currency, locale)}
+                            </span>
+                          ) : null}
                         </TableCell>
                         <TableCell className="max-w-[14rem] align-top">
                           <div className="space-y-2">
