@@ -3,9 +3,6 @@
 import { useEffect, useMemo, useState } from "react"
 import PageHeader from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -26,13 +23,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { DateTimePicker } from "@/components/shared/date-time-picker"
 import { discountStrings } from "@/lib/dashboard/discount-strings"
 import {
   cairoPickerToInstant,
   discountDraftError,
+  discountKindOf,
+  discountRuleFor,
   instantToCairoPicker,
+  isValidDraftCode,
 } from "@/lib/booking/discount-form"
+import {
+  DiscountCodeForm,
+  EMPTY_DRAFT,
+  type DiscountFormDraft,
+} from "./discount-code-form"
 import { toSiteYmd } from "@/lib/time"
 import { formatCurrency } from "@/lib/constants"
 import { resolveLocalizedField } from "@/lib/dashboard/localize"
@@ -64,19 +68,7 @@ export function DiscountCodesManager({ role }: { role: "admin" | "supplier" }) {
   const [statusFilter, setStatusFilter] = useState("all")
   const [supplierFilter, setSupplierFilter] = useState("all")
 
-  const [code, setCode] = useState("")
-  const [description, setDescription] = useState("")
-  const [type, setType] = useState<"percentage" | "fixed">("percentage")
-  const [value, setValue] = useState("10")
-  const [currency, setCurrency] = useState("EGP")
-  const [maxDiscount, setMaxDiscount] = useState("")
-  const [minBooking, setMinBooking] = useState("")
-  const [starts, setStarts] = useState<Date | undefined>()
-  const [expires, setExpires] = useState<Date | undefined>()
-  const [limit, setLimit] = useState("")
-  const [once, setOnce] = useState(false)
-  const [tripIds, setTripIds] = useState<string[]>([])
-  const [supplierId, setSupplierId] = useState("platform")
+  const [draft, setDraft] = useState<DiscountFormDraft>(EMPTY_DRAFT)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -120,36 +112,50 @@ export function DiscountCodesManager({ role }: { role: "admin" | "supplier" }) {
 
   const resetForm = (record?: DiscountCodeRecord) => {
     setEditing(record ?? null)
-    setCode(record?.code ?? "")
-    setDescription(record?.description ?? "")
-    setType(record?.type ?? "percentage")
-    setValue(record ? String(record.value) : "10")
-    setCurrency(record?.currency || "EGP")
-    setMaxDiscount(record?.max_discount ? String(record.max_discount) : "")
-    setMinBooking(record?.min_booking_amount ? String(record.min_booking_amount) : "")
-    setStarts(instantToCairoPicker(record?.starts_at))
-    setExpires(instantToCairoPicker(record?.expires_at))
-    setLimit(record?.usage_limit_total ? String(record.usage_limit_total) : "")
-    setOnce(record?.once_per_customer ?? false)
-    setTripIds(record?.trip_ids ?? [])
-    setSupplierId(record?.supplier_id ?? "platform")
+    setDraft(
+      record
+        ? {
+            code: record.code,
+            description: record.description ?? "",
+            kind: discountKindOf(record.type, record.value),
+            value: String(record.value),
+            currency: record.currency || "EGP",
+            maxDiscount: record.max_discount ? String(record.max_discount) : "",
+            minBooking: record.min_booking_amount ? String(record.min_booking_amount) : "",
+            starts: instantToCairoPicker(record.starts_at),
+            expires: instantToCairoPicker(record.expires_at),
+            limit: record.usage_limit_total ? String(record.usage_limit_total) : "",
+            once: record.once_per_customer,
+            tripIds: record.trip_ids,
+            supplierId: record.supplier_id ?? "platform",
+          }
+        : EMPTY_DRAFT,
+    )
     setFormError(null)
   }
 
   const submit = async () => {
-    const numericValue = Number(value)
-    const expiresAt = cairoPickerToInstant(expires)
-    const startsAt = cairoPickerToInstant(starts)
+    if (!isValidDraftCode(draft.code)) {
+      setFormError(discountStrings.codeInvalid)
+      return
+    }
+    const rule = discountRuleFor(
+      draft.kind,
+      Number(draft.value),
+      draft.maxDiscount ? Number(draft.maxDiscount) : null,
+    )
+    const expiresAt = cairoPickerToInstant(draft.expires)
+    const startsAt = cairoPickerToInstant(draft.starts)
     const draftError = discountDraftError({
-      type,
-      value: numericValue,
-      currency,
+      type: rule.type,
+      value: rule.value,
+      currency: draft.currency,
       expiresAt,
       startsAt,
       currentExpiresAt: editing?.expires_at ?? null,
     })
     if (draftError === "percentRange") {
-      setFormError(discountStrings.percentRange)
+      setFormError(rule.type === "fixed" ? discountStrings.amountPositive : discountStrings.percentRange)
       return
     }
     if (draftError === "currencyRequired") {
@@ -161,19 +167,20 @@ export function DiscountCodesManager({ role }: { role: "admin" | "supplier" }) {
       return
     }
     const body = {
-      code,
-      description,
-      type,
-      value: numericValue,
-      currency: type === "fixed" ? currency : undefined,
-      max_discount: type === "percentage" && maxDiscount ? Number(maxDiscount) : null,
-      min_booking_amount: minBooking ? Number(minBooking) : null,
+      code: draft.code.trim(),
+      description: draft.description,
+      type: rule.type,
+      value: rule.value,
+      currency: rule.type === "fixed" ? draft.currency : undefined,
+      max_discount: rule.max_discount ?? null,
+      min_booking_amount: draft.minBooking ? Number(draft.minBooking) : null,
       starts_at: startsAt?.toISOString() ?? null,
       expires_at: expiresAt?.toISOString() ?? "",
-      usage_limit_total: limit ? Number(limit) : null,
-      once_per_customer: once,
-      trip_ids: tripIds,
-      supplier_id: role === "admin" ? (supplierId === "platform" ? null : supplierId) : undefined,
+      usage_limit_total: draft.limit ? Number(draft.limit) : null,
+      once_per_customer: draft.once,
+      trip_ids: draft.tripIds,
+      supplier_id:
+        role === "admin" ? (draft.supplierId === "platform" ? null : draft.supplierId) : undefined,
     }
     setSaving(true)
     const result = editing
@@ -202,11 +209,6 @@ export function DiscountCodesManager({ role }: { role: "admin" | "supplier" }) {
     const { data } = await discountApi.listDiscountRedemptions(record.id)
     setRedemptions(data)
   }
-
-  const visibleTrips =
-    role === "admin" && supplierId !== "platform"
-      ? trips.filter((trip) => trip.supplier_id === supplierId)
-      : trips
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -290,9 +292,11 @@ export function DiscountCodesManager({ role }: { role: "admin" | "supplier" }) {
                     ) : null}
                   </td>
                   <td className="p-3">
-                    {record.type === "percentage"
-                      ? `${record.value}%`
-                      : formatCurrency(record.value, record.currency || "EGP")}
+                    {discountKindOf(record.type, record.value) === "free"
+                      ? discountStrings.kindFree
+                      : record.type === "percentage"
+                        ? `${record.value}%`
+                        : formatCurrency(record.value, record.currency || "EGP")}
                   </td>
                   <td className="p-3">
                     {record.trip_ids.length === 0
@@ -347,147 +351,26 @@ export function DiscountCodesManager({ role }: { role: "admin" | "supplier" }) {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl!">
           <DialogHeader>
-            <DialogTitle>{editing ? "تعديل الكود" : discountStrings.create}</DialogTitle>
+            <DialogTitle>{editing ? discountStrings.edit : discountStrings.create}</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3">
-            {locked ? <p className="text-xs text-amber-700">{discountStrings.locked}</p> : null}
-            {formError ? (
-              <p className="text-sm text-red-600" role="alert">
-                {formError}
-              </p>
-            ) : null}
-            <div className="grid gap-1">
-              <Label htmlFor="discount-code">{discountStrings.code}</Label>
-              <Input
-                id="discount-code"
-                value={code}
-                disabled={locked}
-                dir="ltr"
-                className="uppercase"
-                onChange={(event) => setCode(event.target.value)}
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label>{discountStrings.type}</Label>
-              <Select value={type} onValueChange={(next) => setType(next as "percentage" | "fixed")} disabled={locked}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentage">{discountStrings.percentage}</SelectItem>
-                  <SelectItem value="fixed">{discountStrings.fixed}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="discount-value">{discountStrings.value}</Label>
-              <Input
-                id="discount-value"
-                type="number"
-                min={1}
-                max={type === "percentage" ? 100 : undefined}
-                value={value}
-                disabled={locked}
-                onChange={(event) => setValue(event.target.value)}
-              />
-              {type === "percentage" ? (
-                <p className="text-xs text-text-muted">{discountStrings.freeHint}</p>
-              ) : null}
-            </div>
-            {type === "fixed" ? (
-              <div className="grid gap-1">
-                <Label htmlFor="discount-currency">{discountStrings.currency}</Label>
-                <Input
-                  id="discount-currency"
-                  value={currency}
-                  disabled={locked}
-                  onChange={(event) => setCurrency(event.target.value)}
-                />
-              </div>
-            ) : (
-              <div className="grid gap-1">
-                <Label htmlFor="discount-cap">{discountStrings.maxDiscount}</Label>
-                <Input
-                  id="discount-cap"
-                  type="number"
-                  value={maxDiscount}
-                  onChange={(event) => setMaxDiscount(event.target.value)}
-                />
-              </div>
-            )}
-            <div className="grid gap-1">
-              <Label htmlFor="discount-min">{discountStrings.minBooking}</Label>
-              <Input id="discount-min" type="number" value={minBooking} onChange={(event) => setMinBooking(event.target.value)} />
-            </div>
-            <div className="grid gap-1">
-              <Label>{discountStrings.starts}</Label>
-              <DateTimePicker value={starts} onChange={setStarts} />
-            </div>
-            <div className="grid gap-1">
-              <Label>{discountStrings.expires}</Label>
-              <DateTimePicker value={expires} onChange={setExpires} required />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="discount-limit">{discountStrings.usageLimit}</Label>
-              <Input
-                id="discount-limit"
-                type="number"
-                placeholder={discountStrings.unlimited}
-                value={limit}
-                onChange={(event) => setLimit(event.target.value)}
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox checked={once} onCheckedChange={(checked) => setOnce(checked === true)} />
-              {discountStrings.once}
-            </label>
-            {role === "admin" ? (
-              <div className="grid gap-1">
-                <Label>{discountStrings.supplier}</Label>
-                <Select value={supplierId} onValueChange={setSupplierId} disabled={locked}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="platform">{discountStrings.platform}</SelectItem>
-                    {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {resolveLocalizedField(supplier.name)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
-            <div className="grid gap-1">
-              <Label>{discountStrings.trips}</Label>
-              <p className="text-xs text-text-muted">{discountStrings.allTrips}</p>
-              <div className="max-h-32 space-y-1 overflow-y-auto rounded-md border p-2">
-                {visibleTrips.map((trip) => (
-                  <label key={trip.id} className="flex items-center gap-2 text-sm">
-                    <Checkbox
-                      disabled={locked}
-                      checked={tripIds.includes(trip.id)}
-                      onCheckedChange={(checked) => {
-                        setTripIds((current) =>
-                          checked === true
-                            ? [...current, trip.id]
-                            : current.filter((id) => id !== trip.id),
-                        )
-                      }}
-                    />
-                    {resolveLocalizedField(trip.name)}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="discount-note">{discountStrings.descriptionLabel}</Label>
-              <Input id="discount-note" value={description} onChange={(event) => setDescription(event.target.value)} />
-            </div>
-          </div>
+          {locked ? <p className="text-xs text-amber-700">{discountStrings.locked}</p> : null}
+          {formError ? (
+            <p className="text-sm text-red-600" role="alert">
+              {formError}
+            </p>
+          ) : null}
+          {/* Keyed so the conditions section opens for each code that has some. */}
+          <DiscountCodeForm
+            key={editing?.id ?? "new"}
+            role={role}
+            draft={draft}
+            onChange={setDraft}
+            trips={trips}
+            suppliers={suppliers}
+            locked={locked}
+          />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               {discountStrings.cancel}
