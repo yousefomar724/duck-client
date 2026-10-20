@@ -7,7 +7,8 @@ test('locale switch sets cookie and rtl', async ({ page }) => {
   await page.getByRole('combobox').click();
   await page.getByRole('option', { name: /Arabic|العربية/i }).click();
   await page.getByRole('button', { name: /Save|حفظ/i }).click();
-  await page.waitForLoadState('networkidle');
+  // Not 'networkidle': the hero video streams after load, so the network never settles.
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   const cookies = await page.context().cookies();
   expect(cookies.some((c) => c.name === 'locale' && c.value === 'ar')).toBeTruthy();
 });
