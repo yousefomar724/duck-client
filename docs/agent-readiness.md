@@ -6,7 +6,7 @@ Guiding rule: never advertise an endpoint that 404s.
 
 ## After deploy
 
-Set `NEXT_PUBLIC_SITE_URL=https://duckegy.com` in Vercel. Every absolute URL in `.well-known` JSON is derived from `SITE_URL` in `src/lib/site.ts`.
+Set `NEXT_PUBLIC_SITE_URL=https://www.duckegy.com` in Vercel. The apex host redirects to www, and every absolute URL in `.well-known` JSON is derived from `SITE_URL` in `src/lib/site.ts`. An apex value is rewritten to www so canonicals never point at the redirect.
 
 Then re-scan at [isitagentready.com](https://isitagentready.com). Expect **10 of 12** checks to pass. The two that stay open are intentional:
 

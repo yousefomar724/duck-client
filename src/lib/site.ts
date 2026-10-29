@@ -1,4 +1,11 @@
 /**
+ * The apex host 308-redirects to www. Canonicals, the sitemap, robots, and
+ * JSON-LD have to name the host that returns 200. Pointing them at the apex
+ * makes Google treat the live www pages as alternates of a redirect.
+ */
+const CANONICAL_PRODUCTION_HOST = "www.duckegy.com"
+
+/**
  * Canonical origin for the public site.
  *
  * Resolution order:
@@ -9,19 +16,34 @@
  * Used by `metadataBase`, canonical tags, robots.txt and sitemap.xml so that
  * every absolute URL in the app comes from a single place.
  */
+export function canonicalSiteOrigin(raw: string): string {
+  const withScheme = raw.includes("://") ? raw : `https://${raw}`
+  const url = new URL(withScheme)
+  if (url.hostname === "duckegy.com") {
+    url.hostname = CANONICAL_PRODUCTION_HOST
+    url.protocol = "https:"
+  }
+  return url.origin
+}
+
 function resolveSiteUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL
   if (explicit) {
-    const raw = explicit.includes("://") ? explicit : `https://${explicit}`
     try {
-      return new URL(raw).origin
+      return canonicalSiteOrigin(explicit)
     } catch {
       /* fall through */
     }
   }
 
   const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  if (vercel) return `https://${vercel}`
+  if (vercel) {
+    try {
+      return canonicalSiteOrigin(vercel)
+    } catch {
+      /* fall through */
+    }
+  }
 
   return "http://localhost:3000"
 }

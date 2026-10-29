@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { formatCurrency } from '@/lib/constants';
+import { SITE_URL } from '@/lib/site';
 import { SITE_TIME_ZONE } from '@/lib/time';
 
 interface BookingEmailData {
@@ -29,7 +30,7 @@ interface BookingEmailData {
   is_tour?: boolean;
 }
 
-const SUPPLIER_BOOKINGS_URL = 'https://duckegy.com/supplier/bookings';
+const SUPPLIER_BOOKINGS_URL = `${SITE_URL}/supplier/bookings`;
 
 function formatBookingStatusAr(status: string): string {
   const map: Record<string, string> = {
