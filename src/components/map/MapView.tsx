@@ -20,6 +20,13 @@ import {
   FOCUSED_ZOOM,
   MAP_MARKER_URL,
 } from "./map-data"
+import {
+  isBoundaryLayer,
+  isCountryLabelLayer,
+  isPlaceLabelLayer,
+  palestineBoundaryFilter,
+  placeTextField,
+} from "./place-labels"
 
 export type MapStyle = "light" | "dark"
 export type MapInstance = MapRef
@@ -63,46 +70,6 @@ function toLngLat([lat, lng]: [number, number]): [number, number] {
   return [lng, lat]
 }
 
-/** CARTO's tiles carry a single country label for the whole area (`iso_a2`
- *  "IL") and no Palestine feature, so that label is renamed in place. */
-const PALESTINE_LABEL = "Palestine"
-
-/** The West Bank and Gaza outlines are admin-level-2 lines with `ISR` on one
- *  side and no country on the other. Hiding them leaves Palestine as one area
- *  bounded only by its borders with Egypt, Jordan, Lebanon and Syria. The Golan
- *  line is tagged `disputed` without an `adm0_*` side, so it is unaffected. */
-const HIDE_INTERNAL_PALESTINE_LINES = [
-  "none",
-  ["all", ["==", "adm0_l", "ISR"], ["!has", "adm0_r"]],
-  ["all", ["==", "adm0_r", "ISR"], ["!has", "adm0_l"]],
-]
-
-function isCountryLabelLayer(layer: { filter?: unknown }) {
-  return JSON.stringify(layer.filter ?? null).includes('["==","class","country"]')
-}
-
-/** The `text-field` for a CARTO place label layer, or null to keep the stock
- *  one. English shows English names; otherwise the stock label is kept
- *  (Arabic for places, `{name_en}` for countries). Country labels also rename
- *  the "IL" label to Palestine. */
-function placeTextField(
-  locale: string,
-  isCountry: boolean,
-): maplibregl.ExpressionSpecification | null {
-  const english: maplibregl.ExpressionSpecification = [
-    "coalesce",
-    ["get", "name:en"],
-    ["get", "name"],
-  ]
-  if (!isCountry) return locale === "en" ? english : null
-  return [
-    "case",
-    ["==", ["get", "iso_a2"], "IL"],
-    PALESTINE_LABEL,
-    locale === "en" ? english : ["get", "name_en"],
-  ]
-}
-
 /** Tints the CARTO basemap toward the DUCK palette. Matched by `source-layer`
  *  (not layer id) so it survives both the light and dark CARTO styles, and
  *  reapplied on every `styledata` event since a theme swap reloads the whole
@@ -132,7 +99,9 @@ function applyBrandTint(map: MapLibreMap, mapStyle: MapStyle, locale: string) {
         map.setPaintProperty(layer.id, "fill-color", landColor)
       } else if (
         layer.type === "line" &&
-        (sourceLayer === "transportation" || sourceLayer === "boundary")
+        (sourceLayer === "transportation" ||
+          sourceLayer === "roads" ||
+          isBoundaryLayer(sourceLayer))
       ) {
         map.setPaintProperty(layer.id, "line-opacity", 0.45)
       }
@@ -141,31 +110,36 @@ function applyBrandTint(map: MapLibreMap, mapStyle: MapStyle, locale: string) {
       // layer type — leave it at its stock value.
     }
 
-    if (layer.type === "symbol" && sourceLayer === "place") {
+    if (layer.type === "symbol" && isPlaceLabelLayer(sourceLayer)) {
       const textField = placeTextField(locale, isCountryLabelLayer(layer))
       // Set once per layer: this runs on every `styledata`, and two writes of
       // different values to the same layer would mark the style changed on
       // every frame, so it never finishes loading (no `load`, no tiles).
       if (textField) {
         try {
-          map.setLayoutProperty(layer.id, "text-field", textField)
+          map.setLayoutProperty(
+            layer.id,
+            "text-field",
+            textField as maplibregl.ExpressionSpecification,
+          )
         } catch {
           // Leave the stock place label.
         }
       }
     }
 
-    if (layer.type === "line" && sourceLayer === "boundary") {
+    if (layer.type === "line" && isBoundaryLayer(sourceLayer)) {
       const filter = map.getFilter(layer.id)
       // This runs on every `styledata`, so only wrap the style's own filter
       // once; re-wrapping would never compare equal and would loop.
-      if (!JSON.stringify(filter ?? null).includes('"ISR"')) {
+      if (!JSON.stringify(filter ?? null).includes('"B53"')) {
+        const hide = palestineBoundaryFilter(sourceLayer)
         try {
           map.setFilter(
             layer.id,
             (filter
-              ? ["all", filter, HIDE_INTERNAL_PALESTINE_LINES]
-              : HIDE_INTERNAL_PALESTINE_LINES) as maplibregl.FilterSpecification,
+              ? ["all", filter, hide]
+              : hide) as unknown as maplibregl.FilterSpecification,
           )
         } catch {
           // Leave the stock boundary lines.
