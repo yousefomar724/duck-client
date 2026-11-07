@@ -172,8 +172,7 @@ These are ported unchanged on purpose; changing them is accounting policy, not p
   on both sides. It still balances, but it is not a cumulative balance sheet.
 - **Asset movement report:** keeps the ERP's fixed 2,500 / 1,000 EGP adjustments and ignores its date
   range.
-- **Tour profitability:** keeps its demo fallback figures for tour types with no invoices and the flat
-  27% direct cost. A later session replaces both.
+- **Tour profitability** (now on real data): net revenue from posted invoice lines less posted direct costs (5100 accounts + 5210) attributed by cost center, then activity, shared by net revenue; unmatched costs are `unallocatedCosts`. Cost centers, dashboard, provider settlements (`fin_provider_settlements`) and purchases (`fin_purchase_invoices`) are wired in `services/profit.ts`, `settlements.ts`, `purchases.ts`.
 - **Internal controls** (approval limit, two-step approval, segregation of duties) are stored and
   returned but not enforced, as in the ERP. Locked-period blocking is always on.
 - **Acceptance step 6** books revenue a second time, as the ERP's script did. It is harmless now that
