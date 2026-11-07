@@ -224,6 +224,8 @@ export const tripSchema = new Schema<TripDoc>(
     operationalStatus: { type: String, enum: ['Active', 'Seasonal', 'Maintenance', 'Inactive'], default: 'Active' },
     websiteDisplayStatus: { type: String, enum: ['Published', 'Draft', 'Hidden'], default: 'Published' },
     websiteTripId: optionalString,
+    /** Mirrored from a Duck Aswan trip: prices and delete are read-only in the ERP. */
+    duckSynced: { type: Boolean, default: undefined },
     internalNotes: { type: String, default: '' },
     priceAuditTrail: { type: [priceAuditSchema], default: [] },
     scheduledPriceChanges: { type: [scheduledPriceSchema], default: [] },
@@ -262,6 +264,8 @@ export const bookingSchema = new Schema<BookingDoc>(
     invoiceNumber: optionalString,
     notes: optionalString,
     websiteRef: optionalString,
+    /** Mirrored from a Duck Aswan booking (`websiteRef` is its Duck id): read-only in the ERP. */
+    duckSynced: { type: Boolean, default: undefined },
   },
   finOptions(),
 );

@@ -33,6 +33,7 @@ import {
   tripSchema,
 } from './settings';
 import { finUserSchema } from './users';
+import { duckLinkSchema, syncOutboxSchema } from './sync';
 
 export const FINANCE_PREFIX = 'fin_';
 
@@ -74,6 +75,9 @@ function build(conn: Connection, prefix: string) {
     Trip: make(conn, prefix, 'Trip', 'trips', tripSchema),
     Booking: make(conn, prefix, 'Booking', 'bookings', bookingSchema),
     User: make(conn, prefix, 'User', 'users', finUserSchema),
+    // Duck → ERP sync: booking ↔ document links and the write outbox.
+    DuckLink: make(conn, prefix, 'DuckLink', 'duck_links', duckLinkSchema),
+    SyncOutbox: make(conn, prefix, 'SyncOutbox', 'sync_outbox', syncOutboxSchema),
   };
 }
 

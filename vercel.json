@@ -3,6 +3,10 @@
     {
       "path": "/api/v1/cron/release-bookings",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/v1/cron/finance-sync",
+      "schedule": "30 3 * * *"
     }
   ]
 }

@@ -145,14 +145,20 @@ export async function createManualJournal(ctx: FinCtx, data: Record<string, unkn
   });
 }
 
-export async function reverseJournalEntry(ctx: FinCtx, journalId: string, reason: string): Promise<JournalEntry> {
+/** `date` defaults to today; the Duck sync passes the date of the change it reverses. */
+export async function reverseJournalEntry(
+  ctx: FinCtx,
+  journalId: string,
+  reason: string,
+  date: string = today(),
+): Promise<JournalEntry> {
   const original = await ctx.m.JournalEntry.findById(journalId).session(ctx.session);
   if (!original) throw notFound(`Journal ${journalId} not found.`);
   if (original.status !== 'posted') throw badRequest('Only posted journal entries can be reversed.');
 
   const reversal = await createJournalEntry(ctx, {
     journalNumber: `REV-${original.journalNumber}`,
-    date: today(),
+    date,
     sourceDocument: 'Reversal',
     sourceDocumentNumber: original.journalNumber,
     sourceId: original._id,

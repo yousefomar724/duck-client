@@ -208,13 +208,7 @@ export const BookingsView: React.FC = () => {
             <span>{lang === 'ar' ? 'عرض كتالوج الرحلات' : 'Catalog Master'}</span>
           </button>
 
-          <button
-            onClick={openNewBooking}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#0c1226] bg-[#fdfb45] hover:bg-yellow-300 rounded shadow-xs transition-colors"
-          >
-            <Plus className="w-4 h-4 text-[#0c1226]" />
-            <span>{lang === 'ar' ? 'حجز رحلة جديدة' : 'New Trip Booking'}</span>
-          </button>
+          {/* Bookings are created in Duck admin and synced here, so there is no "New Trip Booking" action. */}
         </div>
       </div>
 
@@ -370,6 +364,13 @@ export const BookingsView: React.FC = () => {
                           <FileText className="w-3 h-3" />
                           <span>{bkg.invoiceNumber}</span>
                         </button>
+                      ) : bkg.duckSynced ? (
+                        <span
+                          className="inline-flex items-center px-2.5 py-1 text-[11px] font-semibold rounded border border-slate-700 text-slate-400"
+                          title={lang === 'ar' ? 'متزامن من Duck، للقراءة فقط' : 'Synced from Duck, read-only'}
+                        >
+                          {lang === 'ar' ? 'متزامن من Duck' : 'Synced from Duck'}
+                        </span>
                       ) : (
                         <button
                           onClick={() => handleConvertToInvoice(bkg)}

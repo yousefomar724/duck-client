@@ -6,6 +6,10 @@ import { badRequest, notFound, so, type FinCtx } from './context';
 import { createInvoice, getInvoice } from './invoices';
 import { cleanUpdates, lineId, num, round2, toOut, toOutList, today, yearOf, ymd } from './util';
 
+/** Duck Aswan bookings are mirrored from Duck, which invoices them through the sync. */
+export const DUCK_BOOKING_READ_ONLY =
+  'This booking is synced from Duck and is read-only here. Change it in Duck admin.';
+
 export async function getBookings(ctx: FinCtx): Promise<BookingItem[]> {
   const rows = await ctx.m.Booking.find().sort({ createdAt: -1, _id: -1 }).lean().session(ctx.session);
   return toOutList<BookingItem>(rows);
@@ -86,8 +90,9 @@ export async function createBooking(ctx: FinCtx, data: Record<string, unknown>):
 export async function updateBooking(ctx: FinCtx, id: string, updates: unknown): Promise<BookingItem> {
   const booking = await ctx.m.Booking.findById(id).session(ctx.session);
   if (!booking) throw notFound(`Booking ${id} not found.`);
-  // The number and the invoice link are owned by the server.
-  booking.set(cleanUpdates<BookingDoc>(updates, ['bookingNumber', 'invoiceId', 'invoiceNumber']));
+  if (booking.duckSynced) throw badRequest(DUCK_BOOKING_READ_ONLY);
+  // The number, the invoice link and the Duck flag are owned by the server.
+  booking.set(cleanUpdates<BookingDoc>(updates, ['bookingNumber', 'invoiceId', 'invoiceNumber', 'duckSynced']));
   await booking.save(so(ctx));
   await logAudit(ctx, 'UPDATE_BOOKING', 'Booking', booking.bookingNumber, `Updated booking ${booking.bookingNumber}`);
   return toOut<BookingItem>(booking);
@@ -98,6 +103,7 @@ export async function convertBookingToInvoice(ctx: FinCtx, bookingId: string): P
   const booking = await ctx.m.Booking.findById(bookingId).session(ctx.session);
   if (!booking) throw notFound(`Booking ${bookingId} not found.`);
   if (booking.invoiceId) return getInvoice(ctx, booking.invoiceId);
+  if (booking.duckSynced) throw badRequest(DUCK_BOOKING_READ_ONLY);
   if (booking.status === 'Cancelled') throw badRequest('A cancelled booking cannot be invoiced.');
 
   const costCenter = booking.destination.includes('Soheil') ? 'CC-SOHL' : 'CC-ELPH';

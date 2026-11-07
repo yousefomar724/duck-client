@@ -1,5 +1,6 @@
 import mongoose, { Schema, Types } from 'mongoose';
 import { softDeletePlugin, schemaOptions } from '../db/plugins';
+import { noteBookingWrite } from '../finance/sync/outbox';
 
 export type BookingStatus =
   | 'PENDING'
@@ -225,6 +226,17 @@ const BookingSchema = new Schema<BookingDoc>(
 );
 
 BookingSchema.plugin(softDeletePlugin);
+
+// Duck Aswan bookings are mirrored into the finance ERP. The hook only queues
+// the booking (after the response, never throwing), so it cannot fail or slow
+// the write. Covers every save path: create, confirm, collect, edit, status,
+// cancel, refund. updateMany paths queue explicitly (see availability.ts).
+BookingSchema.post('save', function (doc: BookingDoc) {
+  noteBookingWrite(doc);
+});
+BookingSchema.post('deleteOne', { document: true, query: false }, function (this: BookingDoc) {
+  noteBookingWrite(this, 'booking deleted');
+});
 
 BookingSchema.index({ supplier_id: 1, resource_type: 1, status: 1, occupancy_slots: 1 });
 BookingSchema.index({ supplier_id: 1, booking_date: 1 });
