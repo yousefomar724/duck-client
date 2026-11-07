@@ -13,6 +13,7 @@ import { discountStrings } from "@/lib/dashboard/discount-strings"
 import { resolveLocalizedField } from "@/lib/dashboard/localize"
 import { ErrorDisplay } from "@/components/shared/error-display"
 import { DashboardSkeleton } from "@/components/shared/loading-skeletons"
+import { MANUAL_DISCOUNT_CODE } from "@/lib/booking/discount"
 
 const chartConfig = {
   revenue: { label: "الإيرادات", color: "var(--duck-cyan)" },
@@ -78,7 +79,7 @@ export function ReportsView({ role }: { role: "admin" | "supplier" }) {
               <tbody>
                 {data.discount_codes?.map((row) => (
                   <tr key={row.code}>
-                    <td className="py-1 font-mono" dir="ltr">{row.code}</td>
+                    <td className="py-1 font-mono" dir="ltr">{row.code === MANUAL_DISCOUNT_CODE ? "خصم يدوي" : row.code}</td>
                     <td>{row.uses}</td>
                     <td>{formatCurrency(row.discount_given)}</td>
                     <td>{formatCurrency(row.revenue)}</td>

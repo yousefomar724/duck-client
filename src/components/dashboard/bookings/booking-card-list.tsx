@@ -25,6 +25,7 @@ import {
 import type { Booking, Supplier, Trip } from "@/lib/types"
 import type { BookingActionType } from "./booking-actions"
 import { cn } from "@/lib/utils"
+import { discountDisplayName } from "./booking-discount-note"
 import { Calendar, ChevronLeft, Clock, User, Users } from "lucide-react"
 
 interface BookingCardListProps {
@@ -142,7 +143,7 @@ export function BookingCardList({
                   </span>
                   {booking.discount ? (
                     <span className="text-xs font-medium text-text-muted" dir="ltr">
-                      {booking.discount.code}
+                      {discountDisplayName(booking.discount)}
                     </span>
                   ) : null}
                   {outstandingBalance(booking) > 0 && (

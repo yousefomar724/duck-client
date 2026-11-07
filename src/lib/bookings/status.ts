@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import type { Booking, BookingStatus } from "@/lib/types"
+import { PAST_BOOKING_GRACE_MS } from "@/lib/booking/occupancy"
 
 export type BookingStatusGroup =
   | "needsAction"
@@ -237,8 +238,34 @@ export function canSupplierCancelBooking(status: string): boolean {
   return status === "PENDING" || status === "CONFIRMED"
 }
 
-export function canEditBooking(status: string): boolean {
-  return status === "PENDING" || status === "CONFIRMED"
+/** Statuses an admin can still correct after the trip is over. */
+export const ENDED_CORRECTABLE_STATUSES: BookingStatus[] = ["COMPLETED", "NO_SHOW"]
+
+/**
+ * Mirrors the server. Anyone can edit an upcoming booking; only an admin can
+ * correct one whose time has passed or that has ended.
+ */
+export function canEditBooking(
+  status: string,
+  role: "admin" | "supplier" = "supplier",
+  bookingDate?: string | null,
+  now = new Date(),
+): boolean {
+  if (status === "PENDING" || status === "CONFIRMED") {
+    if (role === "admin" || !bookingDate) return true
+    return new Date(bookingDate).getTime() >= now.getTime() - PAST_BOOKING_GRACE_MS
+  }
+  return role === "admin" && ENDED_CORRECTABLE_STATUSES.includes(status as BookingStatus)
+}
+
+/** The edit corrects a trip that already happened: no capacity check, date stays in the past. */
+export function isEndedBookingCorrection(
+  booking: Pick<Booking, "status" | "booking_date">,
+  now = new Date(),
+): boolean {
+  if (ENDED_CORRECTABLE_STATUSES.includes(booking.status)) return true
+  if (!booking.booking_date) return false
+  return new Date(booking.booking_date).getTime() < now.getTime() - PAST_BOOKING_GRACE_MS
 }
 
 /** Dock-side status changes. Anything else is a 409. */

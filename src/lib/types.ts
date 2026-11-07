@@ -78,8 +78,13 @@ export interface PricingSnapshot {
 }
 
 export interface BookingDiscount {
-  code_id: string
+  /** `null` for a manual discount. */
+  code_id: string | null
+  /** The code, or `MANUAL` for a manual discount. */
   code: string
+  /** `manual` when staff set the discount by hand. Missing means `code`. */
+  source?: "code" | "manual"
+  reason?: string
   type: "percentage" | "fixed"
   value: number
   max_discount?: number | null

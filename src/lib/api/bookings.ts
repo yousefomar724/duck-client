@@ -186,6 +186,14 @@ export interface UpdateBookingRequest {
   amount_override?: number;
   /** Omitted keeps the current code; `null` removes it. */
   discount_code?: string | null;
+  /** A discount set by hand. Replaces any code; `discount_code: null` removes it. */
+  manual_discount?: {
+    type: 'percentage' | 'fixed';
+    value: number;
+    /** Admin only. */
+    funded_by?: 'supplier' | 'platform';
+    reason?: string;
+  };
   note?: string;
 }
 

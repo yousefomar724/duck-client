@@ -26,6 +26,7 @@ import {
 import type { Booking, Supplier, Trip } from "@/lib/types"
 import type { BookingActionType } from "./booking-actions"
 import { cn } from "@/lib/utils"
+import { discountDisplayName } from "./booking-discount-note"
 
 interface BookingColumnsOptions {
   role: "admin" | "supplier"
@@ -140,7 +141,7 @@ export function getBookingColumns({
             </span>
             {booking.discount ? (
               <div className="text-xs text-text-muted" dir="ltr">
-                {booking.discount.code}
+                {discountDisplayName(booking.discount)}
               </div>
             ) : null}
             {paid > 0 && (

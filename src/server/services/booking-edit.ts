@@ -16,7 +16,12 @@ import {
   type DiscountRedeemIntent,
   type DiscountRelease,
 } from './discount';
-import { normalizeDiscountCode } from '@/lib/booking/discount';
+import {
+  isManualDiscount,
+  MANUAL_DISCOUNT_CODE,
+  MAX_PERCENTAGE_DISCOUNT,
+  normalizeDiscountCode,
+} from '@/lib/booking/discount';
 import { DeletedBooking } from '../models/deleted-booking';
 import { creditWalletBySupplierId } from './wallet';
 import { resolveGuestBreakdown } from '@/lib/bookings/guests';
@@ -51,15 +56,81 @@ export interface BookingEditPatch {
    * the same way as at checkout. `null` or an empty string removes it.
    */
   discount_code?: string | null;
+  /**
+   * A discount typed in by hand, with no code behind it. Replaces any code on
+   * the booking. Send `discount_code: null` to remove it.
+   */
+  manual_discount?: ManualDiscountInput;
   note?: string;
 }
 
-type DiscountChange = { kind: 'keep' } | { kind: 'remove' } | { kind: 'apply'; code: string };
+export interface ManualDiscountInput {
+  type: 'percentage' | 'fixed';
+  value: number;
+  /** Admin only. A supplier's manual discount always comes out of their earnings. */
+  funded_by?: 'supplier' | 'platform';
+  reason?: string;
+}
+
+type DiscountChange =
+  | { kind: 'keep' }
+  | { kind: 'remove' }
+  | { kind: 'apply'; code: string }
+  | { kind: 'manual'; discount: BookingDiscount };
+
+/** Statuses an admin can still correct after the trip is over. */
+const ENDED_STATUSES = ['COMPLETED', 'NO_SHOW'] as const;
+
+function manualDiscountOf(input: ManualDiscountInput, actor: BookingEditActor): BookingDiscount {
+  if (!Number.isFinite(input.value) || input.value <= 0) {
+    throw new BookingEditError('manual discount value must be positive');
+  }
+  if (input.type === 'percentage' && input.value > MAX_PERCENTAGE_DISCOUNT) {
+    throw new BookingEditError(`a percentage discount cannot exceed ${MAX_PERCENTAGE_DISCOUNT}%`);
+  }
+  if (actor.role === 1 && input.funded_by === 'platform') {
+    throw new BookingEditError('suppliers cannot give a platform-funded discount', 403);
+  }
+  // Mirrors codes: an admin's discount is the platform's, a supplier's is their own.
+  const fundedBy = input.funded_by ?? (actor.role === 2 ? 'platform' : 'supplier');
+  return {
+    code_id: null,
+    code: MANUAL_DISCOUNT_CODE,
+    source: 'manual',
+    reason: input.reason?.trim() ?? '',
+    type: input.type,
+    value: input.value,
+    max_discount: null,
+    funded_by: fundedBy,
+    amount: 0,
+  };
+}
+
+function sameManualRule(a: BookingDiscount, b: BookingDiscount): boolean {
+  return (
+    a.type === b.type &&
+    a.value === b.value &&
+    a.funded_by === b.funded_by &&
+    (a.reason ?? '') === (b.reason ?? '')
+  );
+}
 
 function discountChangeOf(
   raw: string | null | undefined,
+  manual: ManualDiscountInput | undefined,
   current: BookingDiscount | null | undefined,
+  actor: BookingEditActor,
 ): DiscountChange {
+  if (manual) {
+    if (raw !== undefined) {
+      throw new BookingEditError('send either a discount code or a manual discount, not both');
+    }
+    const discount = manualDiscountOf(manual, actor);
+    if (current && isManualDiscount(current) && sameManualRule(current, discount)) {
+      return { kind: 'keep' };
+    }
+    return { kind: 'manual', discount };
+  }
   if (raw === undefined) return { kind: 'keep' };
   const typed = raw?.trim() ?? '';
   if (!typed) return current ? { kind: 'remove' } : { kind: 'keep' };
@@ -74,12 +145,22 @@ function copyDiscount(discount: BookingDiscount | null | undefined): BookingDisc
   return {
     code_id: discount.code_id,
     code: discount.code,
+    source: discount.source ?? 'code',
+    reason: discount.reason ?? '',
     type: discount.type,
     value: discount.value,
     max_discount: discount.max_discount,
     funded_by: discount.funded_by,
     amount: discount.amount,
   };
+}
+
+/** What a revision records about the discount, so a manual change shows up too. */
+function discountRuleOf(discount: BookingDiscount | null | undefined): string | null {
+  if (!discount) return null;
+  const value = discount.type === 'percentage' ? `${discount.value}%` : String(discount.value);
+  const reason = discount.reason ? ` (${discount.reason})` : '';
+  return `${discount.code} ${value} ${discount.funded_by}${reason}`;
 }
 
 export interface BookingEditActor {
@@ -139,7 +220,12 @@ export async function applyBookingEdit(
   patch: BookingEditPatch,
   actor: BookingEditActor,
 ): Promise<BookingDoc> {
-  if (!EDITABLE_STATUSES.includes(booking.status as (typeof EDITABLE_STATUSES)[number])) {
+  const ended = ENDED_STATUSES.includes(booking.status as (typeof ENDED_STATUSES)[number]);
+  const editable = EDITABLE_STATUSES.includes(
+    booking.status as (typeof EDITABLE_STATUSES)[number],
+  );
+  // An admin can correct a trip that already happened; nobody else can.
+  if (!editable && !(ended && actor.role === 2)) {
     throw new BookingEditError(`cannot edit booking with status: ${booking.status}`);
   }
 
@@ -154,6 +240,22 @@ export async function applyBookingEdit(
     throw new BookingEditError('unauthorized', 403);
   }
 
+  const nextBookingDate = patch.booking_date
+    ? new Date(patch.booking_date)
+    : booking.booking_date;
+  const now = Date.now();
+  const nextIsPast = nextBookingDate.getTime() < now - PAST_BOOKING_GRACE_MS;
+  if (ended && nextBookingDate.getTime() > now) {
+    throw new BookingEditError('an ended booking cannot be moved to a future date');
+  }
+  if (nextIsPast && actor.role !== 2) {
+    throw new BookingEditError('booking date must be in the future');
+  }
+  // Correcting a trip that already took place. The slot is in the past, so
+  // equipment capacity is not checked again, and the trip may have been
+  // switched off since.
+  const correction = ended || nextIsPast;
+
   const tripChanged =
     patch.trip_id != null && patch.trip_id !== booking.trip_id.toString();
   const trip = await Trip.findById(tripChanged ? patch.trip_id : booking.trip_id);
@@ -165,7 +267,7 @@ export async function applyBookingEdit(
     if (trip.supplier_id.toString() !== booking.supplier_id.toString()) {
       throw new BookingEditError('cannot switch to a trip from another supplier');
     }
-    if (trip.status === 'inactive' || trip.public_status === 'coming-soon') {
+    if (!correction && (trip.status === 'inactive' || trip.public_status === 'coming-soon')) {
       throw new BookingEditError('trip is not currently available for booking');
     }
     if (booking.pricing_locked && patch.amount_override == null) {
@@ -176,7 +278,12 @@ export async function applyBookingEdit(
     }
   }
 
-  const discountChange = discountChangeOf(patch.discount_code, booking.discount);
+  const discountChange = discountChangeOf(
+    patch.discount_code,
+    patch.manual_discount,
+    booking.discount,
+    actor,
+  );
   if (discountChange.kind !== 'keep') {
     if (patch.amount_override != null) {
       throw new BookingEditError('cannot change the discount code and override the amount together');
@@ -206,6 +313,7 @@ export async function applyBookingEdit(
     amount: booking.amount,
     subtotal: subtotalOf(booking),
     discount_code: booking.discount?.code ?? null,
+    discount_rule: discountRuleOf(booking.discount),
     discount_amount: discountAmount(booking),
   };
 
@@ -221,9 +329,6 @@ export async function applyBookingEdit(
       : requestedDuration;
   const nextWantsGuide = patch.wants_guide ?? booking.wants_guide;
   const nextResourceType = patch.resource_type ?? booking.resource_type ?? '';
-  const nextBookingDate = patch.booking_date
-    ? new Date(patch.booking_date)
-    : booking.booking_date;
   const nextFullName = patch.full_name?.trim() ?? booking.full_name;
   const nextPhone = patch.phone_number?.trim() ?? booking.phone_number;
 
@@ -266,10 +371,6 @@ export async function applyBookingEdit(
     );
   }
 
-  if (nextBookingDate.getTime() < Date.now() - PAST_BOOKING_GRACE_MS) {
-    throw new BookingEditError('booking date must be in the future');
-  }
-
   if (!isBookingTimeValid(nextBookingDate)) {
     throw new BookingEditError('booking time must be between 06:00 and 18:30 Cairo');
   }
@@ -299,7 +400,7 @@ export async function applyBookingEdit(
     },
   );
 
-  if (nextResourceType && capacityChanged) {
+  if (nextResourceType && capacityChanged && !correction) {
     try {
       await checkAvailability(
         booking.supplier_id.toString(),
@@ -356,6 +457,7 @@ export async function applyBookingEdit(
     });
     let discount = booking.discount;
     if (discountChange.kind === 'remove') discount = null;
+    if (discountChange.kind === 'manual') discount = discountChange.discount;
     if (discountChange.kind === 'apply') {
       // Same checks as checkout, against the edited booking. The customer's
       // account, not the staff member's, owns the use.
@@ -439,10 +541,11 @@ export async function applyBookingEdit(
     platform_discount_credited: originalPlatformCredit,
   };
 
-  // A confirmed booking holds exactly the platform-funded discount as credit.
-  // Swapping to a supplier code or removing the code takes it back out.
+  // A confirmed booking holds exactly the platform-funded discount as credit,
+  // and keeps it after the trip is over. Swapping to a supplier code or
+  // removing the code takes it back out.
   let platformDelta = 0;
-  if (repriceDiscount && booking.status === 'CONFIRMED') {
+  if (repriceDiscount && booking.status !== 'PENDING') {
     const targetCredit =
       booking.discount?.funded_by === 'platform' ? (booking.discount.amount ?? 0) : 0;
     platformDelta = targetCredit - originalPlatformCredit;
@@ -525,6 +628,7 @@ export async function applyBookingEdit(
     amount: booking.amount,
     subtotal: subtotalOf(booking),
     discount_code: booking.discount?.code ?? null,
+    discount_rule: discountRuleOf(booking.discount),
     discount_amount: discountAmount(booking),
   };
 
@@ -543,7 +647,7 @@ export async function applyBookingEdit(
 
   try {
     await booking.save();
-    await verifyOccupancy(booking);
+    if (!correction) await verifyOccupancy(booking);
   } catch (err) {
     if (walletDelta !== 0) {
       await creditWalletBySupplierId(booking.supplier_id.toString(), -walletDelta, {

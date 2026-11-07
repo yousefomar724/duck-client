@@ -33,6 +33,15 @@ const editSchema = z.object({
   amount_override: z.number().positive().optional(),
   // Omitted keeps the code; null or "" removes it.
   discount_code: z.string().max(64).nullable().optional(),
+  // A discount typed in by hand. Replaces any code; `discount_code: null` removes it.
+  manual_discount: z
+    .object({
+      type: z.enum(['percentage', 'fixed']),
+      value: z.number().positive(),
+      funded_by: z.enum(['supplier', 'platform']).optional(),
+      reason: z.string().max(200).optional(),
+    })
+    .optional(),
   note: z.string().optional(),
 });
 

@@ -3,6 +3,7 @@ import { z } from 'zod/v3';
 import {
   discountDisplayStatus,
   discountedDeposit,
+  isReservedDiscountCode,
   normalizeDiscountCode,
   type DiscountDisplayStatus,
 } from '@/lib/booking/discount';
@@ -210,6 +211,7 @@ export async function listDiscountCodes(
 export async function createDiscountCode(actor: Actor, input: DiscountWriteInput) {
   const code = normalizeDiscountCode(input.code);
   if (!code) throw new DiscountCodeError('invalid code', 400);
+  if (isReservedDiscountCode(code)) throw new DiscountCodeError('this code name is reserved', 400);
 
   const starts = parseInstant(input.starts_at);
   const expires = parseInstant(input.expires_at);
@@ -320,6 +322,9 @@ export async function updateDiscountCode(
   if (input.code !== undefined && (code.used_count ?? 0) === 0) {
     const normalized = normalizeDiscountCode(input.code);
     if (!normalized) throw new DiscountCodeError('invalid code', 400);
+    if (isReservedDiscountCode(normalized)) {
+      throw new DiscountCodeError('this code name is reserved', 400);
+    }
     code.code = normalized;
   }
   if (input.description !== undefined) code.description = input.description.trim();

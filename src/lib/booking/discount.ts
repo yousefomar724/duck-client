@@ -62,6 +62,38 @@ export function normalizeDiscountCode(raw: string): string | null {
   return code;
 }
 
+/**
+ * The `code` stored on a booking whose discount staff typed in by hand rather
+ * than from a code. No real code may take this name, so filters and reports
+ * that group by code show manual discounts as one row.
+ */
+export const MANUAL_DISCOUNT_CODE = 'MANUAL';
+
+export function isReservedDiscountCode(code: string): boolean {
+  return code.trim().toUpperCase() === MANUAL_DISCOUNT_CODE;
+}
+
+export function isManualDiscount(
+  discount: { source?: string | null; code?: string | null } | null | undefined,
+): boolean {
+  return discount?.source === 'manual';
+}
+
+/** Highest value a percentage discount may take. 100 makes the booking free. */
+export const MAX_PERCENTAGE_DISCOUNT = 100;
+
+/** English label for the finance ledger and invoices. */
+export function discountLedgerLabel(
+  discount: { source?: string | null; code?: string | null; reason?: string | null } | null | undefined,
+): string {
+  if (!discount) return '';
+  if (isManualDiscount(discount)) {
+    const reason = discount.reason?.trim();
+    return reason ? `Manual discount: ${reason}` : 'Manual discount';
+  }
+  return discount.code ? `Discount code ${discount.code}` : '';
+}
+
 export interface DiscountEligibilityCode {
   status: 'active' | 'disabled';
   deleted?: boolean;

@@ -32,8 +32,14 @@ export interface PricingSnapshot {
 }
 
 export interface BookingDiscount {
-  code_id: Types.ObjectId;
+  /** `null` for a manual discount, which has no code behind it. */
+  code_id: Types.ObjectId | null;
+  /** The code typed, or `MANUAL_DISCOUNT_CODE` for a manual discount. */
   code: string;
+  /** `manual` when staff set the rule by hand on the booking. Missing means `code`. */
+  source?: 'code' | 'manual';
+  /** Why staff gave a manual discount. */
+  reason?: string;
   type: 'percentage' | 'fixed';
   value: number;
   max_discount: number | null;
@@ -124,8 +130,10 @@ const BookingSchema = new Schema<BookingDoc>(
     discount: {
       type: new Schema<BookingDiscount>(
         {
-          code_id: { type: Schema.Types.ObjectId, ref: 'DiscountCode', required: true },
+          code_id: { type: Schema.Types.ObjectId, ref: 'DiscountCode', default: null },
           code: { type: String, required: true },
+          source: { type: String, enum: ['code', 'manual'], default: 'code' },
+          reason: { type: String, default: '' },
           type: { type: String, enum: ['percentage', 'fixed'], required: true },
           value: { type: Number, required: true },
           max_discount: { type: Number, default: null },

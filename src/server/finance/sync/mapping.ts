@@ -1,6 +1,7 @@
 import type { InvoiceLine } from '@/lib/finance/erp-types';
 import { toSiteYmd } from '@/lib/time';
 import { round2 } from '../services/util';
+import { discountLedgerLabel } from '@/lib/booking/discount';
 
 /**
  * Pure mapping from a Duck booking to what the ERP should hold for it. No
@@ -16,7 +17,7 @@ export interface DuckBookingLike {
   status: string;
   amount: number;
   subtotal?: number | null;
-  discount?: { code?: string; amount?: number } | null;
+  discount?: { code?: string; amount?: number; source?: string; reason?: string } | null;
   currency?: string;
   full_name: string;
   phone_number: string;
@@ -246,7 +247,7 @@ export function invoiceSpec(b: DuckBookingLike, trip: DuckTripLike | null, targe
   if (priceCut > 0.005) reductions.push({ label: 'Price adjustment', amount: priceCut });
   const codeDiscount = round2(gross - b.amount);
   if (codeDiscount > 0.005) {
-    reductions.push({ label: b.discount?.code ? `Discount code ${b.discount.code}` : 'Discount', amount: codeDiscount });
+    reductions.push({ label: discountLedgerLabel(b.discount) || 'Discount', amount: codeDiscount });
   }
   const waived = round2(b.amount - target);
   if (waived > 0.005) reductions.push({ label: target > 0 ? 'No-show: unpaid balance waived' : 'Waived', amount: waived });

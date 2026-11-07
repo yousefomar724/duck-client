@@ -24,12 +24,18 @@ import {
 } from "@/components/ui/select"
 import { bookingStrings } from "./booking-strings"
 import { calculateBookingTotal } from "@/lib/booking/pricing"
-import { applyDiscount } from "@/lib/booking/discount"
+import {
+  applyDiscount,
+  isManualDiscount,
+  MAX_PERCENTAGE_DISCOUNT,
+  type DiscountRule,
+} from "@/lib/booking/discount"
 import { isBookingTimeValid } from "@/lib/booking/schedule"
 import { amountPaid } from "@/lib/bookings/payment"
 import { guestAgeBreakdown } from "@/lib/bookings/guests"
 import { formatCurrency } from "@/lib/constants"
-import { localizedTripName } from "@/lib/bookings/status"
+import { isEndedBookingCorrection, localizedTripName } from "@/lib/bookings/status"
+import { discountDisplayName } from "./booking-discount-note"
 import * as tripsApi from "@/lib/api/trips"
 import { siteMinutesOfDay, siteWallTimeToUtc, toSiteYmd } from "@/lib/time"
 import type { Booking, Trip } from "@/lib/types"
@@ -53,10 +59,31 @@ const editSchema = z
     duration: z.coerce.number().int().min(1).optional(),
     wants_guide: z.boolean(),
     amount_override: z.coerce.number().positive().optional().or(z.literal("")),
+    discount_mode: z.enum(["none", "code", "manual"]),
     discount_code: z.string().optional(),
+    manual_type: z.enum(["percentage", "fixed"]),
+    manual_value: z.string().optional(),
+    manual_funded_by: z.enum(["platform", "supplier"]),
+    manual_reason: z.string().max(200).optional(),
     note: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.discount_mode === "manual") {
+      const value = Number(data.manual_value)
+      if (!Number.isFinite(value) || value <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: bookingStrings.manualDiscountPositive,
+          path: ["manual_value"],
+        })
+      } else if (data.manual_type === "percentage" && value > MAX_PERCENTAGE_DISCOUNT) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: bookingStrings.manualDiscountPercentRange,
+          path: ["manual_value"],
+        })
+      }
+    }
     const match = DATETIME_LOCAL_RE.exec(data.booking_date)
     if (!match) {
       ctx.addIssue({
@@ -108,14 +135,50 @@ function cairoIsoFromDatetimeLocal(value: string): string {
   return siteWallTimeToUtc(ymd, Number(hour), Number(minute)).toISOString()
 }
 
-type DiscountChange = "keep" | "remove" | "apply"
+type DiscountChange = "keep" | "remove" | "apply" | "manual"
 
-/** Mirrors the server: retyping the booking's own code keeps it, a blank field removes it. */
-function discountChangeOf(booking: Booking, typed: string): DiscountChange {
-  const code = typed.trim().toUpperCase()
-  const current = booking.discount?.code ?? ""
-  if (code === current) return "keep"
-  return code ? "apply" : "remove"
+type DiscountFields = Pick<
+  EditFormValues,
+  | "discount_mode"
+  | "discount_code"
+  | "manual_type"
+  | "manual_value"
+  | "manual_funded_by"
+  | "manual_reason"
+>
+
+function manualRuleOf(values: DiscountFields): DiscountRule | null {
+  const value = Number(values.manual_value)
+  if (!Number.isFinite(value) || value <= 0) return null
+  return { type: values.manual_type, value, max_discount: null }
+}
+
+/**
+ * Mirrors the server: retyping the booking's own code keeps it, a blank field
+ * or "no discount" removes it, and an unchanged manual rule keeps it.
+ */
+function discountChangeOf(booking: Booking, values: DiscountFields): DiscountChange {
+  const current = booking.discount
+  if (values.discount_mode === "none") return current ? "remove" : "keep"
+  if (values.discount_mode === "manual") {
+    const rule = manualRuleOf(values)
+    if (
+      current &&
+      isManualDiscount(current) &&
+      rule &&
+      current.type === rule.type &&
+      current.value === rule.value &&
+      current.funded_by === values.manual_funded_by &&
+      (current.reason ?? "") === (values.manual_reason ?? "").trim()
+    ) {
+      return "keep"
+    }
+    return "manual"
+  }
+  const code = (values.discount_code ?? "").trim().toUpperCase()
+  if (current && !isManualDiscount(current) && code === current.code) return "keep"
+  if (!code) return current ? "remove" : "keep"
+  return "apply"
 }
 
 function previewAmount(
@@ -155,12 +218,35 @@ function previewAmount(
   }
 
   // A new code is checked and priced by the server on save, so the preview
-  // shows the price before it.
-  if (booking.discount && discountChangeOf(booking, values.discount_code ?? "") === "keep") {
+  // shows the price before it. A manual rule is priced here the same way.
+  const change = discountChangeOf(booking, values)
+  if (booking.discount && change === "keep") {
     return applyDiscount(total, booking.discount).total
+  }
+  if (change === "manual") {
+    const rule = manualRuleOf(values)
+    if (rule) return applyDiscount(total, rule).total
   }
 
   return total
+}
+
+function discountDefaults(booking: Booking, role: "admin" | "supplier"): DiscountFields {
+  const discount = booking.discount
+  const manual = isManualDiscount(discount)
+  return {
+    discount_mode: !discount ? "none" : manual ? "manual" : "code",
+    discount_code: discount && !manual ? discount.code : "",
+    manual_type: manual && discount ? discount.type : "percentage",
+    manual_value: manual && discount ? String(discount.value) : "",
+    manual_funded_by:
+      manual && discount
+        ? discount.funded_by
+        : role === "admin"
+          ? "platform"
+          : "supplier",
+    manual_reason: manual && discount ? (discount.reason ?? "") : "",
+  }
 }
 
 export function BookingEditDialog({
@@ -191,7 +277,12 @@ export function BookingEditDialog({
       duration: 1,
       wants_guide: false,
       amount_override: "",
+      discount_mode: "none",
       discount_code: "",
+      manual_type: "percentage",
+      manual_value: "",
+      manual_funded_by: role === "admin" ? "platform" : "supplier",
+      manual_reason: "",
       note: "",
     },
   })
@@ -212,10 +303,10 @@ export function BookingEditDialog({
       duration: booking.duration && booking.duration > 0 ? booking.duration : 1,
       wants_guide: booking.wants_guide ?? false,
       amount_override: "",
-      discount_code: booking.discount?.code ?? "",
+      ...discountDefaults(booking, role),
       note: "",
     })
-  }, [booking, open, form])
+  }, [booking, open, form, role])
 
   // A booking can only move to a bookable trip of its own supplier; the server
   // enforces the same rule.
@@ -266,9 +357,10 @@ export function BookingEditDialog({
     return previewAmount(booking, selectedTrip, values, amountOverride)
   }, [booking, selectedTrip, values, amountOverride, locked])
 
-  const discountChange = booking
-    ? discountChangeOf(booking, values.discount_code ?? "")
-    : "keep"
+  const discountChange = booking ? discountChangeOf(booking, values) : "keep"
+  const manualPreview =
+    values.discount_mode === "manual" ? manualRuleOf(values) : null
+  const correction = booking ? isEndedBookingCorrection(booking) : false
 
   const paid = booking ? amountPaid(booking) : 0
   const delta = booking ? newAmount - booking.amount : 0
@@ -307,9 +399,16 @@ export function BookingEditDialog({
     if (role === "admin" && amountOverride && amountOverride > 0) {
       payload.amount_override = amountOverride
     }
-    const change = discountChangeOf(booking, data.discount_code ?? "")
-    if (change !== "keep") {
-      payload.discount_code = change === "apply" ? data.discount_code!.trim() : null
+    const change = discountChangeOf(booking, data)
+    if (change === "apply") payload.discount_code = data.discount_code!.trim()
+    if (change === "remove") payload.discount_code = null
+    if (change === "manual") {
+      payload.manual_discount = {
+        type: data.manual_type,
+        value: Number(data.manual_value),
+        reason: data.manual_reason?.trim() || undefined,
+        ...(role === "admin" ? { funded_by: data.manual_funded_by } : {}),
+      }
     }
     await onSubmit(booking.ID, payload)
   })
@@ -329,6 +428,15 @@ export function BookingEditDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {correction ? (
+            <div
+              className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 space-y-1"
+              data-testid="edit-correction-banner"
+            >
+              <p className="font-medium">{bookingStrings.endedCorrectionTitle}</p>
+              <p>{bookingStrings.endedCorrectionHint}</p>
+            </div>
+          ) : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2 sm:col-span-2">
               <Label>{bookingStrings.trip}</Label>
@@ -458,20 +566,121 @@ export function BookingEditDialog({
               </div>
             )}
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="edit-discount-code">{bookingStrings.discountCode}</Label>
-              <Input
-                id="edit-discount-code"
-                dir="ltr"
-                className="uppercase"
+              <Label>{bookingStrings.discountMode}</Label>
+              <Select
+                value={values.discount_mode}
+                onValueChange={(v) =>
+                  form.setValue("discount_mode", v as EditFormValues["discount_mode"])
+                }
                 disabled={booking.pricing_locked}
-                {...form.register("discount_code")}
-              />
-              <p className="text-xs text-text-muted">
-                {booking.pricing_locked
-                  ? bookingStrings.discountCodeLockedHint
-                  : bookingStrings.discountCodeHint}
-              </p>
+              >
+                <SelectTrigger data-testid="edit-discount-mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{bookingStrings.discountModeNone}</SelectItem>
+                  <SelectItem value="code">{bookingStrings.discountModeCode}</SelectItem>
+                  <SelectItem value="manual">{bookingStrings.discountModeManual}</SelectItem>
+                </SelectContent>
+              </Select>
+              {booking.pricing_locked ? (
+                <p className="text-xs text-text-muted">
+                  {bookingStrings.discountCodeLockedHint}
+                </p>
+              ) : null}
             </div>
+            {values.discount_mode === "code" && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="edit-discount-code">{bookingStrings.discountCode}</Label>
+                <Input
+                  id="edit-discount-code"
+                  dir="ltr"
+                  className="uppercase"
+                  disabled={booking.pricing_locked}
+                  {...form.register("discount_code")}
+                />
+                <p className="text-xs text-text-muted">{bookingStrings.discountCodeHint}</p>
+              </div>
+            )}
+            {values.discount_mode === "manual" && (
+              <>
+                <div className="space-y-2">
+                  <Label>{bookingStrings.manualDiscountType}</Label>
+                  <Select
+                    value={values.manual_type}
+                    onValueChange={(v) =>
+                      form.setValue("manual_type", v as EditFormValues["manual_type"])
+                    }
+                    disabled={booking.pricing_locked}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">
+                        {bookingStrings.manualDiscountPercentage}
+                      </SelectItem>
+                      <SelectItem value="fixed">{bookingStrings.manualDiscountFixed}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-manual-value">{bookingStrings.manualDiscountValue}</Label>
+                  <Input
+                    id="edit-manual-value"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={values.manual_type === "percentage" ? MAX_PERCENTAGE_DISCOUNT : undefined}
+                    dir="ltr"
+                    disabled={booking.pricing_locked}
+                    {...form.register("manual_value")}
+                  />
+                  {form.formState.errors.manual_value?.message ? (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.manual_value.message}
+                    </p>
+                  ) : null}
+                </div>
+                {role === "admin" && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>{bookingStrings.manualDiscountFundedBy}</Label>
+                    <Select
+                      value={values.manual_funded_by}
+                      onValueChange={(v) =>
+                        form.setValue(
+                          "manual_funded_by",
+                          v as EditFormValues["manual_funded_by"],
+                        )
+                      }
+                      disabled={booking.pricing_locked}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="platform">
+                          {bookingStrings.manualDiscountFundedPlatform}
+                        </SelectItem>
+                        <SelectItem value="supplier">
+                          {bookingStrings.manualDiscountFundedSupplier}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="edit-manual-reason">{bookingStrings.manualDiscountReason}</Label>
+                  <Input
+                    id="edit-manual-reason"
+                    placeholder={bookingStrings.manualDiscountReasonPlaceholder}
+                    disabled={booking.pricing_locked}
+                    {...form.register("manual_reason")}
+                  />
+                  <p className="text-xs text-text-muted">{bookingStrings.manualDiscountHint}</p>
+                </div>
+              </>
+            )}
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="edit-note">{bookingStrings.note}</Label>
               <Input id="edit-note" {...form.register("note")} />
@@ -490,7 +699,7 @@ export function BookingEditDialog({
               </div>
               {discountChange === "keep" && booking.discount ? (
                 <div className="flex justify-between text-text-muted">
-                  <span>{booking.discount.code}</span>
+                  <span>{discountDisplayName(booking.discount)}</span>
                   <span>
                     {booking.discount.type === "percentage"
                       ? `${booking.discount.value}%`
@@ -500,8 +709,18 @@ export function BookingEditDialog({
               ) : null}
               {discountChange === "remove" ? (
                 <div className="flex justify-between text-amber-700">
-                  <span>{booking.discount?.code}</span>
+                  <span>{discountDisplayName(booking.discount)}</span>
                   <span>{bookingStrings.discountRemoved}</span>
+                </div>
+              ) : null}
+              {discountChange === "manual" && manualPreview ? (
+                <div className="flex justify-between text-text-muted">
+                  <span>{bookingStrings.manualDiscountLabel}</span>
+                  <span>
+                    {manualPreview.type === "percentage"
+                      ? `${manualPreview.value}%`
+                      : formatCurrency(manualPreview.value, booking.currency)}
+                  </span>
                 </div>
               ) : null}
               {discountChange === "apply" ? (

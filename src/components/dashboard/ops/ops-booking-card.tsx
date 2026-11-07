@@ -12,6 +12,7 @@ import { OpsStatusActions } from "./ops-status-actions"
 import { Button } from "@/components/ui/button"
 import { Phone, MessageCircle } from "lucide-react"
 import { phoneToWhatsAppDigits } from "@/lib/booking/phone"
+import { discountDisplayName } from "@/components/dashboard/bookings/booking-discount-note"
 
 export function OpsBookingCard({
   booking,
@@ -56,7 +57,7 @@ export function OpsBookingCard({
           </span>
           {booking.discount ? (
             <span className="text-xs text-text-muted" dir="ltr">
-              {booking.discount.code}
+              {discountDisplayName(booking.discount)}
               {booking.discount.funded_by === "platform" ? " · تغطية دَك" : ""}
             </span>
           ) : null}

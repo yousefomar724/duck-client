@@ -83,7 +83,7 @@ export function hasBookingActions(
     booking.payment_method === "MANUAL" &&
     canCollectBalance(booking.status) &&
     remainingAmount(booking) > 0
-  const editEnabled = canEditBooking(booking.status)
+  const editEnabled = canEditBooking(booking.status, role, booking.booking_date)
   const supplierCancelEnabled =
     role === "supplier" && canSupplierCancelBooking(booking.status)
   const refundSentEnabled = refundOwed(booking) > 0
@@ -134,7 +134,7 @@ export function BookingActions({
     booking.payment_method === "MANUAL" &&
     canCollectBalance(booking.status) &&
     remaining > 0
-  const editEnabled = canEditBooking(booking.status)
+  const editEnabled = canEditBooking(booking.status, role, booking.booking_date)
   const supplierCancelEnabled =
     role === "supplier" && canSupplierCancelBooking(booking.status)
   const refundSentEnabled = refundOwed(booking) > 0

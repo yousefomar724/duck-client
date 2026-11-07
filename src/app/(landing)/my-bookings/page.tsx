@@ -33,6 +33,7 @@ import { useToast } from "@/lib/stores/toast-store"
 import Footer from "@/components/landing/Footer"
 import { useTranslations, useLocale } from "next-intl"
 import { buildWhatsAppHref } from "@/lib/support-contact"
+import { isManualDiscount } from "@/lib/booking/discount"
 
 function canCancelBooking(status: string): boolean {
   return status === "CONFIRMED" || status === "SUCCESS" || status === "PAID"
@@ -184,7 +185,7 @@ function MyBookingsContent() {
                           {formatCurrency(b.amount, b.currency, locale)}
                           {b.discount ? (
                             <span className="block text-xs text-text-muted">
-                              {b.discount.code} · -{formatCurrency(b.discount.amount, b.currency, locale)}
+                              {isManualDiscount(b.discount) ? "" : `${b.discount.code} · `}-{formatCurrency(b.discount.amount, b.currency, locale)}
                             </span>
                           ) : null}
                         </TableCell>

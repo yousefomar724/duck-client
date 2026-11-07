@@ -1,5 +1,6 @@
 import { Types, type HydratedDocument } from 'mongoose';
 import { toSiteYmd } from '@/lib/time';
+import { discountLedgerLabel, isManualDiscount } from '@/lib/booking/discount';
 import { Booking } from '@/server/models/booking';
 import type { DuckLinkDoc, DuckLinkInvoice } from '../models/sync';
 import { logAudit } from '../services/audit';
@@ -253,7 +254,7 @@ async function upsertErpBooking(
     foreignerUnitPrice: snap.foreigner_price ?? 0,
     subtotal: round2(subtotalOf(b)),
     discountAmount: round2(Math.max(0, subtotalOf(b) - b.amount)),
-    discountReason: b.discount?.code ? `Discount code ${b.discount.code}` : '',
+    discountReason: discountLedgerLabel(b.discount),
     totalAmount: round2(b.amount),
     depositPaid: paid,
     balanceDue: round2(Math.max(0, b.amount - paid)),
@@ -315,7 +316,7 @@ async function issueInvoice(
     tripType: trip?.name ?? tripName(null),
     responsibleEmployee: SYNC_ACTOR.name,
     lines: spec.lines.map((l) => ({ ...l, id: undefined })),
-    notes: `Duck booking ${String(b._id)}${b.discount?.code ? ` · discount code ${b.discount.code}` : ''}`,
+    notes: `Duck booking ${String(b._id)}${b.discount?.code ? ` · ${isManualDiscount(b.discount) ? discountLedgerLabel(b.discount) : `discount code ${b.discount.code}`}` : ''}`,
   });
   await ctx.m.Invoice.updateOne({ _id: invoice.id }, { $set: { duckSynced: true } }, so(ctx));
   const entry: DuckLinkInvoice = {

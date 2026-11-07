@@ -4,6 +4,7 @@ import {
   canEditBooking,
   canSupplierCancelBooking,
   deleteNeedsStrongConfirm,
+  isEndedBookingCorrection,
   isUpcoming,
   matchesStatusGroup,
 } from '@/lib/bookings/status';
@@ -13,6 +14,23 @@ describe('booking action guards', () => {
     expect(canEditBooking('PENDING')).toBe(true);
     expect(canEditBooking('CONFIRMED')).toBe(true);
     expect(canEditBooking('COMPLETED')).toBe(false);
+  });
+
+  it('lets only an admin correct a booking that has ended or whose time passed', () => {
+    const now = new Date('2026-06-10T12:00:00Z');
+    const past = '2026-06-01T10:00:00Z';
+    const soon = '2026-06-10T11:00:00Z';
+    expect(canEditBooking('COMPLETED', 'admin', past, now)).toBe(true);
+    expect(canEditBooking('NO_SHOW', 'admin', past, now)).toBe(true);
+    expect(canEditBooking('CANCELLED', 'admin', past, now)).toBe(false);
+    expect(canEditBooking('COMPLETED', 'supplier', past, now)).toBe(false);
+    expect(canEditBooking('CONFIRMED', 'admin', past, now)).toBe(true);
+    expect(canEditBooking('CONFIRMED', 'supplier', past, now)).toBe(false);
+    // Inside the two-hour dock grace window a supplier can still edit.
+    expect(canEditBooking('CONFIRMED', 'supplier', soon, now)).toBe(true);
+    expect(isEndedBookingCorrection({ status: 'CONFIRMED', booking_date: past }, now)).toBe(true);
+    expect(isEndedBookingCorrection({ status: 'CONFIRMED', booking_date: soon }, now)).toBe(false);
+    expect(isEndedBookingCorrection({ status: 'COMPLETED', booking_date: soon }, now)).toBe(true);
   });
 
   it('allows supplier cancel on pending and confirmed', () => {
