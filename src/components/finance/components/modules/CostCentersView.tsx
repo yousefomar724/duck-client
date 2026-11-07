@@ -1,51 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useErp } from '../../context/ErpContext';
+import { currentMonth, monthRange } from '../../utils/period';
 import { Compass, MapPin, Ship, Layers, TrendingUp } from 'lucide-react';
 
 export const CostCentersView: React.FC = () => {
-  const { costCenters, invoices, expenses, formatMoney, lang, t } = useErp();
+  const { fetchCostCenterProfitability, journalEntries, formatMoney, lang, t } = useErp();
 
-  // Location profitability data
-  const locations = [
-    {
-      code: 'CC-ELPH',
-      nameEn: 'Elephantine Island Station',
-      nameAr: 'محطة جزيرة إلفنتين',
-      revenue: 168000,
-      directCost: 78000,
-      margin: 90000,
-      marginPct: 53.5,
-    },
-    {
-      code: 'CC-SOHL',
-      nameEn: 'Gharb Soheil Nubian Station',
-      nameAr: 'محطة غرب سهيل النوبية',
-      revenue: 95000,
-      directCost: 46000,
-      margin: 49000,
-      marginPct: 51.5,
-    },
-    {
-      code: 'CC-MAIN',
-      nameEn: 'DUCK Main Operations HQ',
-      nameAr: 'المقر الرئيسي وعمليات أسوان',
-      revenue: 145000,
-      directCost: 62000,
-      margin: 83000,
-      marginPct: 57.2,
-    },
-  ];
+  // Revenue (41xx) and direct cost per cost center from posted journal lines in the selected month
+  const [month, setMonth] = useState<string>(currentMonth());
+  const [report, setReport] = useState<any>(null);
+  const { start, end } = monthRange(month);
 
-  // Activities profitability data
-  const activities = [
-    { name: 'Kayak Fleet (Single & Double)', code: 'CC-KYK', revenue: 148500, directCost: 52000, margin: 96500, marginPct: 65 },
-    { name: 'SUP Paddleboards', code: 'CC-SUP', revenue: 82000, directCost: 28000, margin: 54000, marginPct: 65.8 },
-    { name: 'Nile Water Bikes', code: 'CC-WBK', revenue: 94000, directCost: 34000, margin: 60000, marginPct: 63.8 },
-    { name: 'Private Felucca & Boat Tours', code: 'CC-BOAT', revenue: 67500, directCost: 29000, margin: 38500, marginPct: 57.0 },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    fetchCostCenterProfitability(start, end)
+      .then((data) => !cancelled && setReport(data))
+      .catch((err) => {
+        console.error('Error loading cost centers:', err);
+        if (!cancelled) setReport(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [start, end, journalEntries]);
+
+  const rows: any[] = report?.centers || [];
+  const locations = rows.filter((c) => c.type === 'Location');
+  const activities = rows.filter((c) => c.type === 'Activity');
+  const unallocated = report?.unallocated;
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 className="text-xl font-bold text-white tracking-wide flex items-center gap-2">
           <Compass className="w-5 h-5 text-[#147d9f]" />
@@ -56,6 +42,14 @@ export const CostCentersView: React.FC = () => {
             ? 'تحليل ربحية كل موقع تشغيلي في النيل وكل نشاط رياضي دون تكرار حسابات الدليل'
             : 'Multidimensional profitability across Nile docks, activities, and tour captains without account duplication.'}
         </p>
+      </div>
+        <input
+          type="month"
+          value={month}
+          onChange={(e) => e.target.value && setMonth(e.target.value)}
+          aria-label={lang === 'ar' ? 'الفترة' : 'Period'}
+          className="self-start px-2.5 py-1.5 text-xs font-mono bg-slate-900 border border-slate-700 text-slate-200 rounded focus:outline-none focus:border-[#147d9f]"
+        />
       </div>
 
       {/* Location Profitability */}
@@ -70,7 +64,7 @@ export const CostCentersView: React.FC = () => {
             <div key={loc.code} className="bg-[#0a0f21] border border-slate-800/80 p-5 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold text-[#147d9f]">{loc.code}</span>
-                <span className="text-xs font-bold text-emerald-400">{loc.marginPct}% Margin</span>
+                <span className="text-xs font-bold text-emerald-400">{loc.marginPct}% {lang === 'ar' ? 'هامش' : 'Margin'}</span>
               </div>
 
               <div>
@@ -119,7 +113,7 @@ export const CostCentersView: React.FC = () => {
               <tbody className="divide-y divide-slate-800/40 text-slate-200">
                 {activities.map((act) => (
                   <tr key={act.code} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-3 px-4 font-bold text-white">{act.name}</td>
+                    <td className="py-3 px-4 font-bold text-white">{lang === 'ar' ? act.nameAr : act.nameEn}</td>
                     <td className="py-3 px-4 font-mono font-semibold text-[#147d9f]">{act.code}</td>
                     <td className="py-3 px-4 text-right font-mono font-semibold text-white">{formatMoney(act.revenue)}</td>
                     <td className="py-3 px-4 text-right font-mono text-red-400">-{formatMoney(act.directCost)}</td>
@@ -132,6 +126,15 @@ export const CostCentersView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {unallocated && (unallocated.revenue !== 0 || unallocated.directCost !== 0) && (
+        <p className="text-[11px] text-slate-400">
+          {lang === 'ar' ? 'غير موزع على مركز تكلفة:' : 'Not assigned to a cost center:'}{' '}
+          <span className="font-mono">
+            {lang === 'ar' ? 'الإيرادات' : 'Revenue'} {formatMoney(unallocated.revenue)} · {lang === 'ar' ? 'التكاليف المباشرة' : 'Direct costs'} {formatMoney(unallocated.directCost)}
+          </span>
+        </p>
+      )}
     </div>
   );
 };

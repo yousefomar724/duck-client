@@ -102,7 +102,10 @@ export const Sidebar: React.FC = () => {
     },
   ];
 
-  const currentOpenPeriod = periods.find((p) => p.status === 'Open');
+  const thisMonth = new Date();
+  const currentOpenPeriod =
+    periods.find((p) => p.status === 'Open' && p.year === thisMonth.getFullYear() && p.month === thisMonth.getMonth() + 1) ||
+    periods.find((p) => p.status === 'Open');
 
   return (
     <aside

@@ -1,56 +1,96 @@
 import type { AnomalyItem, TourTypeProfitability } from '@/lib/finance/erp-types';
 import type { FinCtx } from './context';
+import { isDirectCostAccount, ledgerLinesInRange } from './profit';
+import { round2 } from './util';
 
 /**
- * Ported unchanged, including the ERP's fallback demo figures for tour types
- * with no invoices and its flat 27% direct-cost estimate. Replacing those
- * with real costs is a later session's job (see docs/finance/core-notes.md).
+ * Net revenue per tour type from posted invoice lines, less the direct costs
+ * (accounts under 5100 plus 5210) posted in the same date range. A cost line
+ * belongs to the tour types whose revenue carries the same cost center (or,
+ * when the line has none, the same activity), shared by net revenue. A cost
+ * with no matching revenue is reported as `unallocatedCosts` and is not
+ * spread across tour types.
  */
 export async function getTourProfitability(ctx: FinCtx, startDate?: string, endDate?: string) {
   const tourTypes = await ctx.m.TourType.find().sort({ sortOrder: 1, createdAt: 1 }).lean().session(ctx.session);
-  const filter: Record<string, unknown> = { status: { $ne: 'cancelled' } };
+  const filter: Record<string, unknown> = { status: { $nin: ['draft', 'pending_review', 'cancelled'] } };
   if (startDate || endDate) {
     filter.date = { ...(startDate ? { $gte: startDate } : {}), ...(endDate ? { $lte: endDate } : {}) };
   }
-  const invoices = await ctx.m.Invoice.find(filter).lean().session(ctx.session);
+  const [invoices, costLines] = await Promise.all([
+    ctx.m.Invoice.find(filter).lean().session(ctx.session),
+    ledgerLinesInRange(ctx, startDate, endDate),
+  ]);
+
+  interface Acc {
+    bookingCount: number;
+    totalPax: number;
+    grossRevenue: number;
+    totalDiscount: number;
+    netRevenue: number;
+    cost: number;
+    byCostCenter: Map<string, number>;
+    byActivity: Map<string, number>;
+  }
+  const acc = new Map<string, Acc>(
+    tourTypes.map((tt) => [
+      tt._id,
+      { bookingCount: 0, totalPax: 0, grossRevenue: 0, totalDiscount: 0, netRevenue: 0, cost: 0, byCostCenter: new Map(), byActivity: new Map() },
+    ]),
+  );
+  const bump = (m: Map<string, number>, key: string, by: number) => {
+    if (key) m.set(key, (m.get(key) ?? 0) + by);
+  };
+
+  for (const inv of invoices) {
+    const seen = new Set<string>();
+    for (const l of inv.lines) {
+      const name = l.tourType || inv.tripType;
+      const tt = tourTypes.find((t) => t.nameEn === name || t.nameAr === name);
+      if (!tt) continue;
+      const a = acc.get(tt._id)!;
+      seen.add(tt._id);
+      a.totalPax += Number(l.pax) || 1;
+      a.grossRevenue += Number(l.grossAmount) || Number(l.pax) * Number(l.unitPrice) || 0;
+      a.totalDiscount += Number(l.discount) || 0;
+      a.netRevenue += Number(l.netAmount) || 0;
+      bump(a.byCostCenter, l.costCenter, Number(l.netAmount) || 0);
+      bump(a.byActivity, l.activity, Number(l.netAmount) || 0);
+    }
+    for (const id of seen) acc.get(id)!.bookingCount += 1;
+  }
+
+  let unallocatedCosts = 0;
+  for (const line of costLines) {
+    if (!isDirectCostAccount(line.accountCode)) continue;
+    const amount = line.debit - line.credit;
+    if (!amount) continue;
+    const shares = (pick: (a: Acc) => Map<string, number>, key: string) =>
+      [...acc.values()].map((a) => ({ a, w: Math.max(0, pick(a).get(key) ?? 0) })).filter((x) => x.w > 0);
+    let matched = line.costCenter ? shares((a) => a.byCostCenter, line.costCenter) : [];
+    if (matched.length === 0 && line.activity) matched = shares((a) => a.byActivity, line.activity);
+    const weight = matched.reduce((s, x) => s + x.w, 0);
+    if (weight <= 0) {
+      unallocatedCosts += amount;
+      continue;
+    }
+    for (const x of matched) x.a.cost += (amount * x.w) / weight;
+  }
 
   const results: TourTypeProfitability[] = tourTypes.map((tt) => {
-    let bookingCount = 0;
-    let totalPax = 0;
-    let grossRevenue = 0;
-    let totalDiscount = 0;
-    let netRevenue = 0;
-    for (const inv of invoices) {
-      const matching = inv.lines.filter(
-        (l) => l.tourType === tt.nameEn || l.tourType === tt.nameAr || inv.tripType === tt.nameEn || inv.tripType === tt.nameAr,
-      );
-      if (matching.length === 0) continue;
-      bookingCount += 1;
-      for (const l of matching) {
-        totalPax += Number(l.pax) || 1;
-        grossRevenue += Number(l.grossAmount) || Number(l.pax) * Number(l.unitPrice) || 0;
-        totalDiscount += Number(l.discount) || 0;
-        netRevenue += Number(l.netAmount) || 0;
-      }
-    }
-    if (netRevenue === 0) {
-      if (tt._id === 'tt-1') { netRevenue = 64000; totalPax = 160; bookingCount = 38; grossRevenue = 68000; totalDiscount = 4000; }
-      else if (tt._id === 'tt-2') { netRevenue = 92000; totalPax = 185; bookingCount = 52; grossRevenue = 97000; totalDiscount = 5000; }
-      else if (tt._id === 'tt-3') { netRevenue = 58000; totalPax = 95; bookingCount = 28; grossRevenue = 61000; totalDiscount = 3000; }
-      else if (tt._id === 'tt-4') { netRevenue = 84000; totalPax = 110; bookingCount = 34; grossRevenue = 89000; totalDiscount = 5000; }
-      else { netRevenue = 28000; totalPax = 70; bookingCount = 22; grossRevenue = 29500; totalDiscount = 1500; }
-    }
-    const directCosts = Math.round(netRevenue * 0.27);
-    const netProfit = netRevenue - directCosts;
+    const a = acc.get(tt._id)!;
+    const netRevenue = round2(a.netRevenue);
+    const directCosts = round2(a.cost);
+    const netProfit = round2(netRevenue - directCosts);
     return {
       id: tt._id,
       tourTypeName: tt.nameEn,
       tourTypeNameAr: tt.nameAr,
       duration: tt.duration,
-      bookingCount,
-      totalPax,
-      grossRevenue,
-      totalDiscount,
+      bookingCount: a.bookingCount,
+      totalPax: a.totalPax,
+      grossRevenue: round2(a.grossRevenue),
+      totalDiscount: round2(a.totalDiscount),
       netRevenue,
       directCosts,
       netProfit,
@@ -58,15 +98,16 @@ export async function getTourProfitability(ctx: FinCtx, startDate?: string, endD
     };
   });
 
-  const totalRevenue = results.reduce((s, r) => s + r.netRevenue, 0);
-  const totalCosts = results.reduce((s, r) => s + r.directCosts, 0);
-  const totalProfit = totalRevenue - totalCosts;
+  const totalRevenue = round2(results.reduce((s, r) => s + r.netRevenue, 0));
+  const totalCosts = round2(results.reduce((s, r) => s + r.directCosts, 0));
+  const totalProfit = round2(totalRevenue - totalCosts);
   return {
     startDate: startDate || null,
     endDate: endDate || null,
     totalInvoicesCount: invoices.length,
     totalRevenue,
     totalCosts,
+    unallocatedCosts: round2(unallocatedCosts),
     totalProfit,
     overallMarginPct: totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 1000) / 10 : 0,
     results,

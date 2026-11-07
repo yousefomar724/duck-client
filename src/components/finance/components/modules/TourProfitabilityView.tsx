@@ -28,6 +28,7 @@ export const TourProfitabilityView: React.FC = () => {
     totalInvoicesCount: number;
     totalRevenue: number;
     totalCosts: number;
+    unallocatedCosts?: number;
     totalProfit: number;
     overallMarginPct: number;
     results: TourTypeProfitability[];
@@ -251,6 +252,13 @@ export const TourProfitabilityView: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {reportData && (reportData.unallocatedCosts || 0) > 0 && (
+        <p className="text-[11px] opacity-75">
+          {lang === 'ar' ? 'تكاليف مباشرة غير موزعة على نوع رحلة:' : 'Unallocated direct costs (no matching tour revenue):'}{' '}
+          <span className="font-mono">{formatMoney(reportData.unallocatedCosts || 0)}</span>
+        </p>
       )}
 
       {/* Tour Types Profitability Table */}
