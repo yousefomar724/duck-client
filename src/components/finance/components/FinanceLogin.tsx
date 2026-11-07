@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useErp } from '../context/ErpContext';
+import { FinanceLogo } from './FinanceLogo';
 import { Globe, Sun, Moon, LogIn, Lock, User as UserIcon, AlertCircle } from 'lucide-react';
 
 export const FinanceLogin: React.FC = () => {
@@ -77,20 +78,9 @@ export const FinanceLogin: React.FC = () => {
           }`}
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded bg-[#147d9f] flex items-center justify-center text-[#fdfb45] shadow-sm font-black text-xl tracking-wider border border-[#147d9f]/40">
-              🦆
-            </div>
+            <FinanceLogo className="h-12 w-auto" />
             <div>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`font-extrabold text-base tracking-wide uppercase font-sans ${
-                    isLight ? 'text-slate-900' : 'text-white'
-                  }`}
-                >
-                  DUCK
-                </span>
-                <span className="text-xs text-[#147d9f] font-semibold tracking-wider uppercase">Accounting ERP</span>
-              </div>
+              <span className="text-xs text-[#147d9f] font-semibold tracking-wider uppercase">Accounting ERP</span>
               <p className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 {lang === 'ar' ? 'نظام الحسابات والعمليات النيلية المتكامل' : 'Nile Water Activities & Financial Engine'}
               </p>

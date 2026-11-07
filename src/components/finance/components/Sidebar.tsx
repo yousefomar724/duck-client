@@ -1,5 +1,6 @@
 import React from 'react';
 import { useErp, ActiveModule } from '../context/ErpContext';
+import { FinanceLogo } from './FinanceLogo';
 import {
   LayoutDashboard,
   FileText,
@@ -115,6 +116,14 @@ export const Sidebar: React.FC = () => {
           : 'bg-[#0a0f21] border-slate-800/80 text-slate-300'
       }`}
     >
+      <div
+        className={`px-4 py-3 border-b flex justify-center ${
+          isLight ? 'bg-white border-slate-200' : 'bg-[#0a0f21] border-slate-800/80'
+        }`}
+      >
+        <FinanceLogo className="h-12 w-auto" />
+      </div>
+
       {/* Current Period Status Banner */}
       <div
         className={`px-4 py-3 border-b flex items-center justify-between text-xs transition-colors ${
