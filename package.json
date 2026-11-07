@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "node scripts/copy-maplibre-worker.mjs",
     "seed": "node --env-file=.env.local scripts/seed.mjs",
+    "finance:create-admin": "node --env-file=.env.local scripts/finance-create-admin.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "marker": "node scripts/optimize-marker.mjs",
     "encode:videos": "node scripts/encode-videos.mjs",
