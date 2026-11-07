@@ -1,5 +1,6 @@
 import mongoose, { Schema, Types } from 'mongoose';
 import { softDeletePlugin, schemaOptions } from '../db/plugins';
+import { noteTripWrite } from '../finance/sync/outbox';
 import type { LocalizedText } from './supplier';
 import { TRIP_ACTIVITIES, type TripActivity } from '@/lib/trips/listing-filter';
 
@@ -121,6 +122,11 @@ const TripSchema = new Schema<TripDoc>(
 );
 
 TripSchema.plugin(softDeletePlugin);
+
+// Duck Aswan trips are mirrored into the finance ERP's trips catalog (queued, never blocking).
+TripSchema.post('save', function (doc: TripDoc) {
+  noteTripWrite(doc);
+});
 
 TripSchema.set('toJSON', {
   ...schemaOptions.toJSON,

@@ -1,7 +1,7 @@
 import type { CustomerReceipt, ExpenseLine, ExpenseVoucher, InvoiceStatus } from '@/lib/finance/erp-types';
 import { logAudit } from './audit';
 import { nextYearNumber } from './counters';
-import { badRequest, notFound, so, type FinCtx } from './context';
+import { DUCK_SYNC_ACTOR_ID, badRequest, notFound, so, type FinCtx } from './context';
 import { RECEIVABLE_ACCOUNT, paymentAccountFor } from './invoices';
 import { createJournalEntry } from './journals';
 import { genId, lineId, num, round2, toOut, toOutList, today, yearOf, ymd } from './util';
@@ -27,6 +27,9 @@ export async function createCustomerReceipt(ctx: FinCtx, data: Record<string, un
   const invoice = data.invoiceId ? await ctx.m.Invoice.findById(String(data.invoiceId)).session(ctx.session) : null;
   if (data.invoiceId && !invoice) throw notFound(`Invoice ${String(data.invoiceId)} not found.`);
   if (invoice) {
+    if (invoice.duckSynced && ctx.actor.id !== DUCK_SYNC_ACTOR_ID) {
+      throw badRequest(`Invoice ${invoice.invoiceNumber} belongs to a Duck booking: record its payments in Duck admin.`);
+    }
     if (!COLLECTABLE.includes(invoice.status)) {
       throw badRequest(`Invoice ${invoice.invoiceNumber} is ${invoice.status} and cannot take a payment.`);
     }

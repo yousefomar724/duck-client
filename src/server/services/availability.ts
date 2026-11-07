@@ -10,6 +10,8 @@ import { occupancySlotsEqual, slotHHMM } from '@/lib/booking/occupancy';
 import { BOOKING_SLOT_MINUTES } from '@/lib/booking/schedule';
 import { ALLOWED_RESOURCE_TYPES } from '../models/supplier-storage';
 import { Booking, type BookingDoc } from '../models/booking';
+import { duckSupplierId } from '../finance/sync/config';
+import { enqueueFinanceSync } from '../finance/sync/outbox';
 import { SupplierStorage, type SupplierStorageDoc } from '../models/supplier-storage';
 
 export class NoAvailabilityError extends Error {
@@ -82,13 +84,18 @@ export async function resourceLimitsForSupplier(
 }
 
 export async function releaseEndedBookings(now = new Date()): Promise<number> {
-  const result = await Booking.updateMany(
-    {
-      status: { $in: [...RELEASE_STATUSES] },
-      ends_at: { $lt: now },
-    },
-    { $set: { status: 'COMPLETED' } },
-  );
+  const filter = {
+    status: { $in: [...RELEASE_STATUSES] },
+    ends_at: { $lt: now },
+  };
+  // updateMany skips the save hook, so Duck Aswan bookings are queued for the
+  // finance sync here. Only looked up when the sync is on.
+  const duckSupplier = duckSupplierId();
+  const duckIds = duckSupplier
+    ? (await Booking.find({ ...filter, supplier_id: duckSupplier }).select('_id').lean<{ _id: Types.ObjectId }[]>()).map((b) => String(b._id))
+    : [];
+  const result = await Booking.updateMany(filter, { $set: { status: 'COMPLETED' } });
+  if (duckIds.length) enqueueFinanceSync('booking', duckIds, 'release cron');
   return result.modifiedCount;
 }
 

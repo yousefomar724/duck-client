@@ -13,6 +13,7 @@ Duck: same MongoDB, same Vercel deploy, collections prefixed `fin_`.
 | Route handlers | `src/app/api/v1/finance/**/route.ts` |
 | First-admin script | `scripts/finance-create-admin.mjs` |
 | Tests | `tests/api/finance-auth.test.ts`, `tests/api/finance-ledger.test.ts` |
+| Duck Aswan booking sync (outbox, mapping, cron, backfill) | `src/server/finance/sync/`, see `docs/finance/booking-sync.md` |
 
 No new dependencies.
 

@@ -588,12 +588,17 @@ export const TripsCatalogView: React.FC = () => {
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => openScheduleModal(trip)}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded font-medium border transition-colors ${
+                        disabled={trip.duckSynced}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                           isLight
                             ? 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                             : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                         }`}
-                        title={lang === 'ar' ? 'جدولة تعديل مستقبلي للأسعار' : 'Schedule Future Price Change'}
+                        title={
+                          trip.duckSynced
+                            ? lang === 'ar' ? 'الأسعار تُدار من لوحة Duck' : 'Prices are managed in Duck admin'
+                            : lang === 'ar' ? 'جدولة تعديل مستقبلي للأسعار' : 'Schedule Future Price Change'
+                        }
                       >
                         <Calendar className="w-3 h-3 text-sky-400" />
                         <span>{lang === 'ar' ? 'جدولة سعر' : 'Schedule Rate'}</span>
@@ -633,8 +638,13 @@ export const TripsCatalogView: React.FC = () => {
 
                       <button
                         onClick={() => handleDeleteTrip(trip.id, trip.name)}
-                        className="p-1 rounded text-red-400 hover:bg-red-500/10 transition-colors"
-                        title={lang === 'ar' ? 'حذف الرحلة' : 'Delete Trip'}
+                        disabled={trip.duckSynced}
+                        className="p-1 rounded text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        title={
+                          trip.duckSynced
+                            ? lang === 'ar' ? 'رحلة متزامنة من Duck ولا يمكن حذفها هنا' : 'Synced from Duck: cannot be deleted here'
+                            : lang === 'ar' ? 'حذف الرحلة' : 'Delete Trip'
+                        }
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -955,6 +965,13 @@ export const TripsCatalogView: React.FC = () => {
                   <DollarSign className="w-4 h-4" />
                   <span>{lang === 'ar' ? 'تسعير الجنسيات (Nationality-Based Pricing)' : 'Nationality-Based Pricing Settings'}</span>
                 </div>
+                {editingTrip?.duckSynced && (
+                  <p className="text-[11px] text-amber-400">
+                    {lang === 'ar'
+                      ? 'هذه الرحلة متزامنة من Duck: الأسعار تُعدَّل من لوحة Duck فقط.'
+                      : 'Synced from Duck: prices are changed in Duck admin only.'}
+                  </p>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
@@ -963,9 +980,10 @@ export const TripsCatalogView: React.FC = () => {
                       type="number"
                       required
                       min={0}
+                      disabled={editingTrip?.duckSynced}
                       value={tripForm.egyptianPrice}
                       onChange={(e) => setTripForm({ ...tripForm, egyptianPrice: Number(e.target.value) })}
-                      className={`w-full rounded p-2 font-mono font-bold border focus:outline-none focus:border-[#147d9f] ${
+                      className={`w-full rounded p-2 font-mono font-bold border disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:border-[#147d9f] ${
                         isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-slate-900 border-slate-800 text-slate-100'
                       }`}
                     />
@@ -976,7 +994,7 @@ export const TripsCatalogView: React.FC = () => {
                     <input
                       type="number"
                       min={0}
-                      disabled={tripForm.isForeignerPricePending}
+                      disabled={tripForm.isForeignerPricePending || editingTrip?.duckSynced}
                       value={tripForm.isForeignerPricePending ? '' : (tripForm.foreignerPrice || '')}
                       onChange={(e) => setTripForm({ ...tripForm, foreignerPrice: e.target.value ? Number(e.target.value) : null })}
                       placeholder={tripForm.isForeignerPricePending ? 'Pending Verification' : 'e.g. 850'}
@@ -1011,6 +1029,7 @@ export const TripsCatalogView: React.FC = () => {
                   <input
                     type="checkbox"
                     id="isPendingCheck"
+                    disabled={editingTrip?.duckSynced}
                     checked={tripForm.isForeignerPricePending}
                     onChange={(e) => {
                       const checked = e.target.checked;

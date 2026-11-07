@@ -29,6 +29,9 @@ export class MissingRecordError extends Error {
 export const badRequest = (message: string) => new FinanceError(400, message);
 export const notFound = (message: string) => new FinanceError(404, message);
 
+/** Actor id of the Duck booking sync; only it may post payments against Duck-synced invoices. */
+export const DUCK_SYNC_ACTOR_ID = 'system:duck-sync';
+
 /** The authenticated finance user a service call acts as (audit trail, createdBy…). */
 export interface FinanceActor {
   id: string;

@@ -16,6 +16,18 @@ export async function getOfficialTrips(ctx: FinCtx): Promise<OfficialTripItem[]>
 
 const nullablePrice = (v: unknown) => (v === undefined || v === null || v === '' ? null : num(v));
 
+/** Trips mirrored from Duck Aswan take their prices from Duck; they cannot be deleted here either. */
+export const DUCK_TRIP_PRICES_READ_ONLY =
+  'This trip is synced from Duck: its prices are changed in Duck admin and it cannot be deleted here.';
+
+function assertNoDuckPriceChange(trip: Pick<TripDoc, 'egyptianPrice' | 'foreignerPrice' | 'isForeignerPricePending'>, updates: Record<string, unknown>) {
+  const changed =
+    (updates.egyptianPrice !== undefined && num(updates.egyptianPrice) !== trip.egyptianPrice) ||
+    (updates.foreignerPrice !== undefined && nullablePrice(updates.foreignerPrice) !== trip.foreignerPrice) ||
+    (updates.isForeignerPricePending !== undefined && Boolean(updates.isForeignerPricePending) !== trip.isForeignerPricePending);
+  if (changed) throw badRequest(DUCK_TRIP_PRICES_READ_ONLY);
+}
+
 export async function createOfficialTrip(ctx: FinCtx, data: Record<string, unknown>): Promise<OfficialTripItem> {
   const str = (k: string, fallback: string) => (typeof data[k] === 'string' && data[k] ? String(data[k]) : fallback);
   const tripCode = typeof data.tripCode === 'string' && data.tripCode ? data.tripCode : await nextPlainNumber(ctx, 'TRIP', 3);
@@ -60,6 +72,7 @@ export async function createOfficialTrip(ctx: FinCtx, data: Record<string, unkno
 export async function updateOfficialTrip(ctx: FinCtx, id: string, updates: Record<string, unknown>): Promise<OfficialTripItem> {
   const trip = await ctx.m.Trip.findById(id).session(ctx.session);
   if (!trip) throw notFound(`Trip ${id} not found.`);
+  if (trip.duckSynced) assertNoDuckPriceChange(trip, updates);
 
   const egyptianChanged = updates.egyptianPrice !== undefined && num(updates.egyptianPrice) !== trip.egyptianPrice;
   const foreignerChanged = updates.foreignerPrice !== undefined && nullablePrice(updates.foreignerPrice) !== trip.foreignerPrice;
@@ -82,7 +95,15 @@ export async function updateOfficialTrip(ctx: FinCtx, id: string, updates: Recor
     });
   }
 
-  const patch = cleanUpdates<TripDoc>(updates, ['priceAuditTrail', 'scheduledPriceChanges', 'priceChangeReason', 'currency']);
+  const patch = cleanUpdates<TripDoc>(updates, [
+    'priceAuditTrail',
+    'scheduledPriceChanges',
+    'priceChangeReason',
+    'currency',
+    'duckSynced',
+    // A mirrored trip stays linked to its Duck trip.
+    ...(trip.duckSynced ? ['websiteTripId'] : []),
+  ]);
   if (patch.egyptianPrice !== undefined) patch.egyptianPrice = num(patch.egyptianPrice);
   if ('foreignerPrice' in patch) patch.foreignerPrice = nullablePrice(patch.foreignerPrice);
   trip.set(patch);
@@ -93,6 +114,8 @@ export async function updateOfficialTrip(ctx: FinCtx, id: string, updates: Recor
 
 /** Deleted for good: nothing re-seeds demo trips any more. */
 export async function deleteOfficialTrip(ctx: FinCtx, id: string): Promise<void> {
+  const existing = await ctx.m.Trip.findById(id).select('duckSynced').lean().session(ctx.session);
+  if (existing?.duckSynced) throw badRequest(DUCK_TRIP_PRICES_READ_ONLY);
   const trip = await ctx.m.Trip.findByIdAndDelete(id, so(ctx));
   if (!trip) throw notFound(`Trip ${id} not found.`);
   await logAudit(ctx, 'DELETE_TRIP', 'OfficialTrip', id, `Deleted trip ${trip.name}`);
@@ -101,6 +124,7 @@ export async function deleteOfficialTrip(ctx: FinCtx, id: string): Promise<void>
 export async function schedulePriceChange(ctx: FinCtx, tripId: string, change: Record<string, unknown>): Promise<ScheduledPriceChange> {
   const trip = await ctx.m.Trip.findById(tripId).session(ctx.session);
   if (!trip) throw notFound(`Trip ${tripId} not found.`);
+  if (trip.duckSynced) throw badRequest(DUCK_TRIP_PRICES_READ_ONLY);
   const effectiveDate = typeof change.effectiveDate === 'string' && change.effectiveDate ? change.effectiveDate : today();
   const item: ScheduledPriceChange = {
     id: genId('spc'),

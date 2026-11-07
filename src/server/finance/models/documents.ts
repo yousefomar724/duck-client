@@ -68,6 +68,8 @@ export const invoiceSchema = new Schema<InvoiceDoc>(
     approvedBy: optionalString,
     postedAt: optionalString,
     isLegacyImported: { type: Boolean, default: undefined },
+    /** Issued by the Duck booking sync; its payments are recorded in Duck, not here. */
+    duckSynced: { type: Boolean, default: undefined },
   },
   finOptions(),
 );

@@ -730,6 +730,8 @@ export interface OfficialTripItem {
   operationalStatus: 'Active' | 'Seasonal' | 'Maintenance' | 'Inactive';
   websiteDisplayStatus: 'Published' | 'Draft' | 'Hidden';
   websiteTripId?: string;
+  /** Mirrored from a Duck Aswan trip (Duck addition): prices and delete are read-only. */
+  duckSynced?: boolean;
   internalNotes: string;
   createdAt: string;
   updatedAt: string;
@@ -765,6 +767,8 @@ export interface BookingItem {
   invoiceNumber?: string;
   notes?: string;
   websiteRef?: string;
+  /** Mirrored from a Duck Aswan booking (Duck addition): read-only, created in Duck admin. */
+  duckSynced?: boolean;
   createdAt: string;
 }
 
