@@ -13,6 +13,21 @@ const eslintConfig = defineConfig([
     files: ["src/game/**/*.{ts,tsx}"],
     rules: { "react-hooks/immutability": "off" },
   },
+  {
+    // The finance ERP was ported verbatim from the owner's AI Studio app and
+    // its markup/behaviour must stay byte-for-byte comparable, so the loose
+    // typing and style the original shipped with is not rewritten here. The
+    // dev mock embeds the ERP's own seed data.
+    files: ["src/components/finance/**/*.{ts,tsx}", "src/dev/finance-mock/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "react/no-unescaped-entities": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "@next/next/no-img-element": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

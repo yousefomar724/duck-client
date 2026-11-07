@@ -8,6 +8,7 @@ import { SITE_URL } from "@/lib/site"
  */
 const PRIVATE_PATHS = [
   "/admin",
+  "/finance",
   "/supplier",
   "/profile",
   "/my-bookings",

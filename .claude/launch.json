@@ -11,6 +11,15 @@
       "autoPort": true
     },
     {
+      "name": "dev-finance-mock",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev:finance-mock"
+      ],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
       "name": "prod",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
