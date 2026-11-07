@@ -3,6 +3,7 @@ import type { OfficialTripItem } from '@/lib/finance/erp-types';
 import { Destination } from '@/server/models/destination';
 import { Trip } from '@/server/models/trip';
 import { logAudit } from '../services/audit';
+import { nextSortOrder } from '../services/catalog';
 import { nextPlainNumber } from '../services/counters';
 import { so, type FinCtx } from '../services/context';
 import { genId, today } from '../services/util';
@@ -86,6 +87,45 @@ async function mirroredFields(trip: RawDuckTrip) {
   };
 }
 
+/** Id of the tour type a Duck trip owns in Settings → tour types. */
+export const duckTourTypeId = (duckTripId: string) => `duck-${duckTripId}`;
+
+/**
+ * One tour type per mirrored Duck Aswan trip, so Tour Profitability (which
+ * groups invoice lines by tour type name) sees synced revenue. Its English
+ * name is exactly the invoice lines' `tourType` (the trip name); it is
+ * renamed with the trip and never deleted, and `active` follows the trip.
+ * Tour types created by hand are never touched.
+ */
+async function upsertDuckTourType(ctx: FinCtx, trip: RawDuckTrip, fields: Awaited<ReturnType<typeof mirroredFields>>) {
+  const _id = duckTourTypeId(String(trip._id));
+  const want = {
+    nameEn: fields.name,
+    nameAr: trip.name?.ar?.trim() || fields.name,
+    duration: fields.duration,
+    active: fields.operationalStatus === 'Active',
+  };
+  const existing = await ctx.m.TourType.findById(_id).session(ctx.session);
+  if (!existing) {
+    await ctx.m.TourType.create([{ _id, ...want, sortOrder: await nextSortOrder(ctx, 'TourType') }], so(ctx));
+    await logAudit(ctx, 'DUCK_SYNC_TOUR_TYPE', 'Settings', _id, `Added tour type ${want.nameEn} for Duck trip ${String(trip._id)}`);
+    return;
+  }
+  const changed = (Object.keys(want) as (keyof typeof want)[]).filter((k) => existing[k] !== want[k]);
+  if (!changed.length) return;
+  const renamed = existing.nameEn !== want.nameEn;
+  const from = existing.nameEn;
+  existing.set(want);
+  await existing.save(so(ctx));
+  await logAudit(
+    ctx,
+    'DUCK_SYNC_TOUR_TYPE',
+    'Settings',
+    _id,
+    renamed ? `Renamed tour type ${from} to ${want.nameEn} (Duck trip renamed)` : `Updated tour type ${want.nameEn}: ${changed.join(', ')}`,
+  );
+}
+
 export interface MirroredTrip {
   id: string;
   name: string;
@@ -104,6 +144,7 @@ export interface MirroredTrip {
 export async function mirrorDuckTrip(ctx: FinCtx, trip: RawDuckTrip): Promise<MirroredTrip> {
   const websiteTripId = String(trip._id);
   const fields = await mirroredFields(trip);
+  await upsertDuckTourType(ctx, trip, fields);
   const existing = await ctx.m.Trip.findOne({ websiteTripId }).session(ctx.session);
 
   if (!existing) {

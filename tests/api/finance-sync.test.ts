@@ -20,6 +20,10 @@ import { syncDuckBooking } from '@/server/finance/sync/booking-sync';
 import { flushFinanceSync } from '@/server/finance/sync/outbox';
 import { processOutbox } from '@/server/finance/sync/runner';
 import { readSyncMeta } from '@/server/finance/sync/state';
+import { SYNC_ACTOR } from '@/server/finance/sync/config';
+import { duckTourTypeId } from '@/server/finance/sync/trip-sync';
+import { readCtx } from '@/server/finance/services/context';
+import { getTourProfitability } from '@/server/finance/services/reports';
 import {
   authHeader,
   createBooking,
@@ -457,6 +461,34 @@ describe('Duck Aswan → finance ERP booking sync', () => {
     );
     expect(sched.status).toBe(400);
     expect((await fin().Trip.findById(mirrored._id).lean())!.egyptianPrice).toBe(200);
+  });
+
+  it('shows synced revenue under its trip in tour profitability, through a tour type per Duck trip', async () => {
+    const manual = (await fin().TourType.create({ nameEn: 'Hand-made tour', nameAr: 'يدوي', duration: '1 h', active: true, sortOrder: 1 })).toObject();
+    const booking = await duckBooking({ amount: 180, subtotal: 180, quantity: 1, local_guests: 1 });
+    await duckCall(manualConfirm, booking, '/manual-confirm', supplierUser, { amount_paid: 180 });
+    await drain();
+    // An edit re-issues the invoice; the reversed one must not count twice.
+    await duckCall(editBooking, booking, '', supplierUser, { local_guests: 2, foreigner_guests: 0, quantity: 2 }, 'PATCH');
+    await drain();
+
+    const ttId = duckTourTypeId(trip.id);
+    const tourType = (await fin().TourType.findById(ttId).lean())!;
+    const { activeInvoice } = await erpState(booking.id);
+    expect(tourType).toMatchObject({ nameEn: 'Test Trip', nameAr: 'رحلة تجريبية', active: true });
+    expect(activeInvoice!.lines.every((l) => l.tourType === tourType.nameEn)).toBe(true);
+
+    const { results: rows } = await getTourProfitability(readCtx(SYNC_ACTOR));
+    expect(rows.find((r) => r.id === ttId)).toMatchObject({ tourTypeName: 'Test Trip', bookingCount: 1, netRevenue: 360 });
+
+    // Renamed and deactivated with the trip, never duplicated; hand-made tour types are left alone.
+    trip.name = { en: 'Sunset Kayak', ar: 'كاياك الغروب' };
+    trip.status = 'inactive';
+    await trip.save();
+    await drain();
+    expect(await fin().TourType.findById(ttId).lean()).toMatchObject({ nameEn: 'Sunset Kayak', nameAr: 'كاياك الغروب', active: false });
+    expect(await fin().TourType.countDocuments({ _id: { $regex: '^duck-' } })).toBe(1);
+    expect(await fin().TourType.findById(manual._id).lean()).toMatchObject({ nameEn: 'Hand-made tour', active: true });
   });
 
   it('makes synced bookings and their invoices read-only in the ERP', async () => {

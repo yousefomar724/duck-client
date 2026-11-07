@@ -75,6 +75,13 @@ supplier's bookings stay out entirely.
     boat/felucca, else "Group / Extras".
   - Duration, minimum and maximum guests.
   - Status: inactive or deleted → Inactive, coming-soon → Draft, deleted → Hidden.
+- One **tour type** per mirrored trip in Settings → tour types (`id: duck-<Duck trip id>`), so Tour
+  Profitability, which groups invoice lines by tour type name, sees synced revenue:
+  - `nameEn` is exactly the invoice lines' `tourType` (the trip name), `nameAr` the Arabic name.
+  - The duration comes from the trip, and `active` follows it.
+  - It is renamed with the trip and never deleted. Tour types made by hand are never touched. If
+    someone removes it in Settings, the next sync of the trip adds it back.
+  - After a rename, invoices issued under the old name no longer match it.
 - On a mirrored trip the server rejects price changes, scheduled price changes and delete (400).
   `TripsCatalogView` disables those controls. Other fields stay editable.
 
