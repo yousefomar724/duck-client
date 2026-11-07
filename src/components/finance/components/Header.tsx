@@ -37,7 +37,7 @@ export const Header: React.FC = () => {
 
   return (
     <header
-      className={`h-16 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors border-b ${
+      className={`h-16 shrink-0 px-4 lg:px-6 flex items-center justify-between z-40 transition-colors border-b ${
         isLight
           ? 'bg-white border-slate-200 shadow-xs text-slate-800'
           : 'bg-[#080d1c] border-slate-800/80 text-white'
@@ -45,7 +45,7 @@ export const Header: React.FC = () => {
     >
       {/* Brand & Identity */}
       <div className="flex items-center gap-3">
-        <FinanceLogo className="h-10 w-auto" />
+        <FinanceLogo className="h-10 w-auto" variant={isLight ? 'light' : 'dark'} />
         <div>
           <span className="text-xs text-[#147d9f] font-semibold tracking-wider uppercase">
             Accounting ERP

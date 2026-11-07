@@ -121,15 +121,15 @@ export const FinanceApp: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen flex flex-col antialiased font-sans transition-colors ${
+      className={`h-dvh overflow-hidden flex flex-col antialiased font-sans transition-colors ${
         isLight ? 'bg-slate-100 text-slate-900' : 'bg-[#0c1226] text-slate-100'
       }`}
     >
       <Header />
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         <Sidebar />
         <main
-          className={`flex-1 overflow-y-auto p-4 lg:p-6 transition-colors ${
+          className={`flex-1 min-h-0 overflow-y-auto p-4 lg:p-6 transition-colors ${
             isLight ? 'bg-slate-50/80 text-slate-900' : 'bg-[#080d1c]/60 text-slate-100'
           }`}
         >

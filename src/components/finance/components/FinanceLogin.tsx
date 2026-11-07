@@ -78,7 +78,7 @@ export const FinanceLogin: React.FC = () => {
           }`}
         >
           <div className="flex items-center gap-3">
-            <FinanceLogo className="h-12 w-auto" />
+            <FinanceLogo className="h-12 w-auto" variant={isLight ? 'light' : 'dark'} />
             <div>
               <span className="text-xs text-[#147d9f] font-semibold tracking-wider uppercase">Accounting ERP</span>
               <p className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>

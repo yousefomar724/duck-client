@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useErp, ActiveModule } from '../context/ErpContext';
 import { FinanceLogo } from './FinanceLogo';
 import {
@@ -48,6 +48,12 @@ interface NavSection {
 export const Sidebar: React.FC = () => {
   const { activeModule, setActiveModule, lang, periods, theme } = useErp();
   const isLight = theme === 'light';
+  const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const active = navRef.current?.querySelector<HTMLElement>('[data-active="true"]');
+    active?.scrollIntoView({ block: 'nearest' });
+  }, [activeModule]);
 
   const sections: NavSection[] = [
     {
@@ -110,23 +116,23 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside
-      className={`w-64 border-r flex flex-col shrink-0 overflow-y-auto select-none transition-colors ${
+      className={`w-64 h-full min-h-0 border-r flex flex-col shrink-0 select-none transition-colors ${
         isLight
           ? 'bg-white border-slate-200 text-slate-700'
           : 'bg-[#0a0f21] border-slate-800/80 text-slate-300'
       }`}
     >
       <div
-        className={`px-4 py-3 border-b flex justify-center ${
+        className={`px-4 py-3 border-b flex justify-center shrink-0 ${
           isLight ? 'bg-white border-slate-200' : 'bg-[#0a0f21] border-slate-800/80'
         }`}
       >
-        <FinanceLogo className="h-12 w-auto" />
+        <FinanceLogo className="h-12 w-auto" variant={isLight ? 'light' : 'dark'} />
       </div>
 
       {/* Current Period Status Banner */}
       <div
-        className={`px-4 py-3 border-b flex items-center justify-between text-xs transition-colors ${
+        className={`px-4 py-3 border-b flex items-center justify-between text-xs shrink-0 transition-colors ${
           isLight ? 'bg-slate-50 border-slate-200' : 'bg-[#0c142b] border-slate-800/60'
         }`}
       >
@@ -142,7 +148,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Nav List */}
-      <div className="flex-1 px-3 py-4 space-y-6">
+      <div ref={navRef} className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-6">
         {sections.map((sec, sIdx) => (
           <div key={sIdx}>
             <div
@@ -159,6 +165,7 @@ export const Sidebar: React.FC = () => {
                 return (
                   <button
                     key={item.id}
+                    data-active={isActive ? 'true' : undefined}
                     onClick={() => setActiveModule(item.id)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded transition-colors text-left ${
                       isActive
@@ -184,7 +191,7 @@ export const Sidebar: React.FC = () => {
 
       {/* DUCK Nile Footer */}
       <div
-        className={`p-3 border-t text-[11px] flex items-center justify-between transition-colors ${
+        className={`p-3 border-t text-[11px] flex items-center justify-between shrink-0 transition-colors ${
           isLight ? 'border-slate-200 text-slate-500 bg-slate-50/50' : 'border-slate-800/80 text-slate-400 bg-transparent'
         }`}
       >
