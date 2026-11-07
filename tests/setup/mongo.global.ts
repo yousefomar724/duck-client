@@ -1,8 +1,8 @@
 import { mkdirSync, mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 
-let mongo: MongoMemoryServer;
+let mongo: MongoMemoryReplSet;
 
 export async function setup() {
   // Keep mongod data on the project volume. Windows %TEMP% often lives on C:
@@ -14,11 +14,12 @@ export async function setup() {
   process.env.TMP = root;
   const dbPath = mkdtempSync(join(root, 'instance-'));
 
-  mongo = await MongoMemoryServer.create({
-    instance: {
-      dbPath,
-      args: ['--wiredTigerCacheSizeGB', '0.25'],
-    },
+  // A single-node replica set, not a standalone server: the finance module
+  // writes multi-document changes in transactions, which standalone mongod
+  // does not support.
+  mongo = await MongoMemoryReplSet.create({
+    replSet: { count: 1, storageEngine: 'wiredTiger' },
+    instanceOpts: [{ dbPath, args: ['--wiredTigerCacheSizeGB', '0.25'] }],
   });
   process.env.MONGODB_URI = mongo.getUri();
 }

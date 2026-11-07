@@ -21,8 +21,20 @@ export function signAuthToken(claims: AuthClaims): string {
   return jwt.sign(claims, secret(), { expiresIn: '72h' });
 }
 
+/** Audience of finance (ERP) session tokens — see src/server/finance/auth/jwt.ts. */
+const FINANCE_AUDIENCE = 'duck-finance';
+
 export function verifyAuthToken(token: string): AuthClaims {
-  return jwt.verify(token, secret()) as unknown as AuthClaims;
+  const decoded = jwt.verify(token, secret()) as jwt.JwtPayload;
+  // Finance tokens may share JWT_SECRET; they must never pass as a Duck session.
+  const aud = decoded.aud;
+  if (aud === FINANCE_AUDIENCE || (Array.isArray(aud) && aud.includes(FINANCE_AUDIENCE))) {
+    throw new Error('invalid token audience');
+  }
+  if (typeof decoded.user_id !== 'string' || ![0, 1, 2].includes(decoded.role)) {
+    throw new Error('invalid token claims');
+  }
+  return decoded as unknown as AuthClaims;
 }
 
 /** 1h password-reset token, distinguished from session tokens by `type`. */
