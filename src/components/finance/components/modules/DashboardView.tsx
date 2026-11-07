@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useErp } from '../../context/ErpContext';
+import { currentMonth, monthRange } from '../../utils/period';
 import {
   TrendingUp,
   CreditCard,
@@ -15,34 +16,49 @@ import {
 } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
-  const { invoices, receipts, expenses, accounts, fixedAssets, formatMoney, lang, setActiveModule, t } = useErp();
+  const { invoices, receipts, fixedAssets, fetchDashboard, formatMoney, lang, setActiveModule, t, journalEntries } = useErp();
 
-  // Metrics calculations
-  const totalInvoiced = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
-  const totalCollected = receipts.reduce((sum, r) => sum + (r.amount || 0), 0);
-  const totalReceivables = invoices.reduce((sum, inv) => sum + (inv.balance || 0), 0);
-  const totalExpenses = expenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0);
-  const operatingProfit = totalInvoiced - totalExpenses;
+  // Every KPI is read from the books for one month (the current one by default).
+  const [month, setMonth] = useState<string>(currentMonth());
+  const [summary, setSummary] = useState<any>(null);
+  const { start, end } = monthRange(month);
 
-  // Liquid funds across Cash & Banks
-  const cashAcc = accounts.find((a) => a.code === '1111')?.balance || 0;
-  const bankAcc = accounts.find((a) => a.code === '1112')?.balance || 0;
-  const vodafoneAcc = accounts.find((a) => a.code === '1113')?.balance || 0;
-  const instaAcc = accounts.find((a) => a.code === '1114')?.balance || 0;
+  useEffect(() => {
+    let cancelled = false;
+    fetchDashboard(start, end)
+      .then((data) => !cancelled && setSummary(data))
+      .catch((err) => console.error('Error loading dashboard:', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [start, end, journalEntries]);
+
+  const inPeriod = (d: string) => d >= start && d <= end;
+  const periodInvoices = invoices.filter((inv) => inPeriod(inv.date));
+  const periodReceipts = receipts.filter((r) => inPeriod(r.date));
+
+  const totalInvoiced = summary?.totalInvoiced ?? 0;
+  const totalCollected = summary?.totalCollected ?? 0;
+  const totalReceivables = summary?.receivables ?? 0;
+  const operatingProfit = summary?.operatingProfit ?? 0;
+
+  // Liquid funds across Cash & Banks (closing balances at the end of the period)
+  const cashAcc = summary?.cash?.['1111'] ?? 0;
+  const bankAcc = summary?.cash?.['1112'] ?? 0;
+  const vodafoneAcc = summary?.cash?.['1113'] ?? 0;
+  const instaAcc = summary?.cash?.['1114'] ?? 0;
   const totalLiquidity = cashAcc + bankAcc + vodafoneAcc + instaAcc;
 
   // Fleet Asset Total Value
   const totalFleetCost = fixedAssets.reduce((sum, a) => sum + a.acquisitionCost, 0);
   const totalFleetNetBook = fixedAssets.reduce((sum, a) => sum + a.netBookValue, 0);
 
-  // Breakdown by activity from invoice lines
+  // Breakdown by activity: the 41xx revenue account balances in the period
   const activityRevenue: Record<string, number> = {};
-  invoices.forEach((inv) => {
-    inv.lines.forEach((l) => {
-      const act = l.activity || 'Kayak';
-      activityRevenue[act] = (activityRevenue[act] || 0) + l.netAmount;
-    });
+  (summary?.revenueByAccount || []).forEach((r: any) => {
+    activityRevenue[lang === 'ar' ? r.nameAr : r.nameEn] = r.amount;
   });
+  const revenueTotal = Object.values(activityRevenue).reduce((s, v) => s + v, 0);
 
   return (
     <div className="space-y-6">
@@ -63,6 +79,13 @@ export const DashboardView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => e.target.value && setMonth(e.target.value)}
+            aria-label={lang === 'ar' ? 'الفترة' : 'Period'}
+            className="px-2.5 py-1.5 text-xs font-mono bg-slate-900 border border-slate-700 text-slate-200 rounded focus:outline-none focus:border-[#147d9f]"
+          />
           <button
             onClick={() => setActiveModule('invoices')}
             className="px-3.5 py-2 text-xs font-semibold bg-[#147d9f] hover:bg-[#116986] text-white rounded shadow-sm transition-colors"
@@ -89,7 +112,7 @@ export const DashboardView: React.FC = () => {
           </div>
           <div className="text-2xl font-bold text-white tracking-tight">{formatMoney(totalInvoiced)}</div>
           <div className="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
-            <span>{invoices.length} {lang === 'ar' ? 'فاتورة مسجلة' : 'invoices issued'}</span>
+            <span>{periodInvoices.length} {lang === 'ar' ? 'فاتورة مسجلة' : 'invoices issued'}</span>
           </div>
         </div>
 
@@ -101,7 +124,7 @@ export const DashboardView: React.FC = () => {
           </div>
           <div className="text-2xl font-bold text-white tracking-tight">{formatMoney(totalCollected)}</div>
           <div className="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
-            <span>{receipts.length} {lang === 'ar' ? 'سند قبض معتمد' : 'confirmed receipts'}</span>
+            <span>{periodReceipts.length} {lang === 'ar' ? 'سند قبض معتمد' : 'confirmed receipts'}</span>
           </div>
         </div>
 
@@ -205,7 +228,7 @@ export const DashboardView: React.FC = () => {
 
           <div className="space-y-3">
             {Object.entries(activityRevenue).map(([act, amount]) => {
-              const pct = totalInvoiced > 0 ? Math.round((amount / totalInvoiced) * 100) : 0;
+              const pct = revenueTotal > 0 ? Math.round((amount / revenueTotal) * 100) : 0;
               return (
                 <div key={act} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">

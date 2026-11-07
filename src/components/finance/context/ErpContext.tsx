@@ -103,6 +103,8 @@ interface ErpContextType {
   journalEntries: JournalEntry[];
   customers: Customer[];
   suppliers: Supplier[];
+  purchaseInvoices: PurchaseInvoice[];
+  providerSettlements: ProviderSettlement[];
   fixedAssets: FixedAsset[];
   costCenters: CostCenter[];
   periods: AccountingPeriod[];
@@ -141,6 +143,14 @@ interface ErpContextType {
   createUser: (data: { name: string; username: string; email: string; role: UserRole; password: string }) => Promise<User>;
   resetUserPassword: (userId: string, password: string) => Promise<User>;
   fetchTourProfitability: (startDate?: string, endDate?: string) => Promise<any>;
+  fetchCostCenterProfitability: (startDate?: string, endDate?: string) => Promise<any>;
+  fetchDashboard: (startDate?: string, endDate?: string) => Promise<any>;
+  createProviderSettlement: (data: { providerId: string; periodStart: string; periodEnd: string; advancesDeducted?: number; notes?: string }) => Promise<ProviderSettlement>;
+  approveProviderSettlement: (id: string) => Promise<ProviderSettlement>;
+  payProviderSettlement: (id: string, data: { paidFromAccountCode: string }) => Promise<ProviderSettlement>;
+  createPurchaseInvoice: (data: any) => Promise<PurchaseInvoice>;
+  approvePurchaseInvoice: (id: string) => Promise<PurchaseInvoice>;
+  payPurchaseInvoice: (id: string, data: { amount: number; paidFromAccountCode: string }) => Promise<PurchaseInvoice>;
 
   createOpeningBalanceBatch: (data: Partial<OpeningBalanceBatch>) => Promise<OpeningBalanceBatch>;
   updateOpeningBalanceBatch: (id: string, data: Partial<OpeningBalanceBatch>) => Promise<OpeningBalanceBatch>;
@@ -342,6 +352,8 @@ export const ErpProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
+  const [providerSettlements, setProviderSettlements] = useState<ProviderSettlement[]>([]);
   const [fixedAssets, setFixedAssets] = useState<FixedAsset[]>([]);
   const [openingBalances, setOpeningBalances] = useState<OpeningBalanceBatch[]>([]);
   const [assetCategories, setAssetCategories] = useState<AssetCategoryItem[]>([]);
@@ -368,6 +380,8 @@ export const ErpProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setJournalEntries(state.journalEntries || []);
     setCustomers(state.customers || []);
     setSuppliers(state.suppliers || []);
+    setPurchaseInvoices(state.purchaseInvoices || []);
+    setProviderSettlements(state.providerSettlements || []);
     setFixedAssets(state.fixedAssets || []);
     setOpeningBalances(state.openingBalances || []);
     setAssetCategories(state.assetCategories || []);
@@ -741,6 +755,56 @@ export const ErpProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     return await res.json();
   };
+
+  const rangeQuery = (startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    return params.toString();
+  };
+
+  const getJson = async (path: string, fallback: string): Promise<any> => {
+    const res = await apiFetch(path);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || fallback);
+    }
+    return await res.json();
+  };
+
+  const fetchCostCenterProfitability = (startDate?: string, endDate?: string) =>
+    getJson(`/cost-centers/profitability?${rangeQuery(startDate, endDate)}`, 'Failed to fetch cost center profitability');
+
+  const fetchDashboard = (startDate?: string, endDate?: string) =>
+    getJson(`/dashboard?${rangeQuery(startDate, endDate)}`, 'Failed to fetch dashboard');
+
+  const postAndRefresh = async <T,>(path: string, body: unknown, fallback: string): Promise<T> => {
+    const res = await apiFetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || fallback);
+    }
+    const out = await res.json();
+    await refreshData();
+    return out;
+  };
+
+  const createProviderSettlement: ErpContextType['createProviderSettlement'] = (data) =>
+    postAndRefresh('/provider-settlements', data, 'Failed to create settlement');
+  const approveProviderSettlement: ErpContextType['approveProviderSettlement'] = (id) =>
+    postAndRefresh(`/provider-settlements/${id}/approve`, {}, 'Failed to approve settlement');
+  const payProviderSettlement: ErpContextType['payProviderSettlement'] = (id, data) =>
+    postAndRefresh(`/provider-settlements/${id}/pay`, data, 'Failed to pay settlement');
+  const createPurchaseInvoice: ErpContextType['createPurchaseInvoice'] = (data) =>
+    postAndRefresh('/purchase-invoices', data, 'Failed to create purchase invoice');
+  const approvePurchaseInvoice: ErpContextType['approvePurchaseInvoice'] = (id) =>
+    postAndRefresh(`/purchase-invoices/${id}/approve`, {}, 'Failed to approve purchase invoice');
+  const payPurchaseInvoice: ErpContextType['payPurchaseInvoice'] = (id, data) =>
+    postAndRefresh(`/purchase-invoices/${id}/pay`, data, 'Failed to pay purchase invoice');
 
   const officialTrips: OfficialTripItem[] = settings?.officialTrips || [];
   const activityTypes: ActivityTypeItem[] = settings?.activityTypes || [];
@@ -1210,6 +1274,8 @@ export const ErpProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         journalEntries,
         customers,
         suppliers,
+        purchaseInvoices,
+        providerSettlements,
         fixedAssets,
         openingBalances,
         assetCategories,
@@ -1244,6 +1310,14 @@ export const ErpProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         createUser,
         resetUserPassword,
         fetchTourProfitability,
+        fetchCostCenterProfitability,
+        fetchDashboard,
+        createProviderSettlement,
+        approveProviderSettlement,
+        payProviderSettlement,
+        createPurchaseInvoice,
+        approvePurchaseInvoice,
+        payPurchaseInvoice,
         createOpeningBalanceBatch,
         updateOpeningBalanceBatch,
         postOpeningBalanceBatch,
